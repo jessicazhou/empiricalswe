@@ -6,9 +6,6 @@ created Fri Mar 30, 2018
 
 import urllib.request
 from bs4 import BeautifulSoup
-from sklearn.feature_extraction.text import CountVectorizer 
-import nltk
-from nltk.collocations import *
 import io
 import os
 
@@ -26,6 +23,7 @@ FOLDER: [GITHUB PROJECT NAME]
 """
 
 #link of the wiki with input
+#TODO, pass in github urls in autoscraper.py
 wiki = "https://github.com/jekyll/jekyll/wiki"
 
 #create BeautifulSoup object of html of entirety of webpage
@@ -40,9 +38,7 @@ soup = BeautifulSoup(the_page)
 print (soup.prettify())
 #print (soup.title.string)
 
-#TODO, get files to save in specific places
-
-#create a folder titled [PROJECTNAME_USERNAME]
+#create a folder titled [PROJECTNAME_USERNAME] and save files in it
 pathname = 1
 directory = "project_name/" 
 #while pathname < 4:
@@ -66,8 +62,6 @@ directory = "project_name/"
     os.chdir(subdirectory)
     for a in links:
         print (a['href'])
-        #haha = open('helloworld.txt','w')
-        #1f.write(a['href'])
         url = wiki + a['href']
        
         with io.open("tab_" + a.string + ".txt", 'w', encoding='utf-8') as f:
@@ -79,10 +73,7 @@ directory = "project_name/"
             
 
    # pathname += 1
-    #directory = "test outputs 2/"  + str(pathname)
 
-
-#f.write(soup.title.string) Home · jekyll/jekyll Wiki · GitHub
 f.close()
 
 
