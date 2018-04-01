@@ -10,6 +10,7 @@ from sklearn.feature_extraction.text import CountVectorizer
 import nltk
 from nltk.collocations import *
 import io
+import os
 
 """
 current organization
@@ -34,35 +35,48 @@ response.close
 soup = BeautifulSoup(the_page)
 
 #print object to console (for testing/immediate purposes)
-print(soup.get_text())
+#print(soup.get_text())
             
-#print (soup.prettify())
+print (soup.prettify())
 #print (soup.title.string)
 
-#TODO create a folder titled with name of Github Project
+#todo, get files to save in specific places
 
+#create a folder titled [PROJECTNAME_USERNAME]
+pathname = 1
+directory = "name of project here/" 
+while pathname < 4:
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+   
+    #create a txt file of this name + write object to the file
+    f = open('helloworld.txt','w') #TODO naming
+    #f.write('hello world')
+    f.write(soup.prettify())
 
+    #create folder titled with [PROJECTNAME_TABS]
+    subdirectory = directory + "/wiki tabs"
+    os.makedirs(subdirectory)
 
+    #loop through all the links/subpage in the wiki navigation
+    #create text file for each subpage
+    links = soup.findAll('a',attrs={'class':'wiki-page-link'})
+    
+    for a in links:
+        print (a['href'])
+        #haha = open('helloworld.txt','w')
+        #1f.write(a['href'])
+        url = wiki + a['href']
+        with io.open("tab_" + a.string + ".txt", 'w', encoding='utf-8') as f:
+            response = urllib.request.urlopen(url)
+            the_page = response.read()
+            response.close
+            soup = BeautifulSoup(the_page)
+            f.write(soup.prettify())              
+            
 
-#create a txt file of this name + write object to the file
-f = open('helloworld.txt','w')
-#f.write('hello world')
-f.write(soup.prettify())
-
-#loop through all the links/subpage in the wiki navigation
-#create text file for each subpage
-links = soup.findAll('a',attrs={'class':'wiki-page-link'})
-for a in links:
-    print (a['href'])
-    #haha = open('helloworld.txt','w')
-    #1f.write(a['href'])
-    url = wiki + a['href']
-    with io.open("tab_" + a.string + ".txt", 'w', encoding='utf-8') as f:
-        response = urllib.request.urlopen(url)
-        the_page = response.read()
-        response.close
-        soup = BeautifulSoup(the_page)
-        f.write(soup.prettify())
+    pathname += 1
+    #directory = "test outputs 2/"  + str(pathname)
 
 
 #f.write(soup.title.string) Home · jekyll/jekyll Wiki · GitHub
