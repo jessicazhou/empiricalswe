@@ -40,33 +40,36 @@ soup = BeautifulSoup(the_page)
 print (soup.prettify())
 #print (soup.title.string)
 
-#todo, get files to save in specific places
+#TODO, get files to save in specific places
 
 #create a folder titled [PROJECTNAME_USERNAME]
 pathname = 1
-directory = "name of project here/" 
-while pathname < 4:
+directory = "project_name/" 
+#while pathname < 4:
     if not os.path.exists(directory):
         os.makedirs(directory)
    
     #create a txt file of this name + write object to the file
-    f = open('helloworld.txt','w') #TODO naming
+    os.chdir(directory)
+    f = open('mainwiki.txt','w') #TODO naming
     #f.write('hello world')
     f.write(soup.prettify())
 
     #create folder titled with [PROJECTNAME_TABS]
-    subdirectory = directory + "/wiki tabs"
+    subdirectory = "wiki tabs"
     os.makedirs(subdirectory)
 
     #loop through all the links/subpage in the wiki navigation
     #create text file for each subpage
     links = soup.findAll('a',attrs={'class':'wiki-page-link'})
-    
+
+    os.chdir(subdirectory)
     for a in links:
         print (a['href'])
         #haha = open('helloworld.txt','w')
         #1f.write(a['href'])
         url = wiki + a['href']
+       
         with io.open("tab_" + a.string + ".txt", 'w', encoding='utf-8') as f:
             response = urllib.request.urlopen(url)
             the_page = response.read()
@@ -75,7 +78,7 @@ while pathname < 4:
             f.write(soup.prettify())              
             
 
-    pathname += 1
+   # pathname += 1
     #directory = "test outputs 2/"  + str(pathname)
 
 
