@@ -46,36 +46,36 @@ print (soup.prettify())
 pathname = 1
 directory = "project_name/" 
 #while pathname < 4:
-    if not os.path.exists(directory):
-        os.makedirs(directory)
+if not os.path.exists(directory):
+    os.makedirs(directory)
    
-    #create a txt file of this name + write object to the file
-    os.chdir(directory)
-    f = open('mainwiki.txt','w') #TODO naming
-    #f.write('hello world')
-    f.write(soup.prettify())
+#create a txt file of this name + write object to the file
+os.chdir(directory)
+f = open('mainwiki.txt','w') #TODO naming
+#f.write('hello world')
+f.write(soup.prettify())
 
-    #create folder titled with [PROJECTNAME_TABS]
-    subdirectory = "wiki tabs"
-    os.makedirs(subdirectory)
+#create folder titled with [PROJECTNAME_TABS]
+subdirectory = "wiki tabs"
+os.makedirs(subdirectory)
 
-    #loop through all the links/subpage in the wiki navigation
-    #create text file for each subpage
-    links = soup.findAll('a',attrs={'class':'wiki-page-link'})
+#loop through all the links/subpage in the wiki navigation
+#create text file for each subpage
+links = soup.findAll('a',attrs={'class':'wiki-page-link'})
 
-    os.chdir(subdirectory)
-    for a in links:
-        print (a['href'])
-        #haha = open('helloworld.txt','w')
-        #1f.write(a['href'])
-        url = wiki + a['href']
+os.chdir(subdirectory)
+for a in links:
+    print (a['href'])
+    #haha = open('helloworld.txt','w')
+    #1f.write(a['href'])
+    url = wiki + a['href']
        
-        with io.open("tab_" + a.string + ".txt", 'w', encoding='utf-8') as f:
-            response = urllib.request.urlopen(url)
-            the_page = response.read()
-            response.close
-            soup = BeautifulSoup(the_page)
-            f.write(soup.prettify())              
+    with io.open("tab_" + a.string + ".txt", 'w', encoding='utf-8') as f:
+        response = urllib.request.urlopen(url)
+        the_page = response.read()
+        response.close
+        soup = BeautifulSoup(the_page)
+        f.write(soup.prettify())              
             
 
    # pathname += 1
