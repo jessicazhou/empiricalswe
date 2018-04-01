@@ -39,21 +39,14 @@ soup = BeautifulSoup(the_page)
 #print (soup.prettify())
 #print (soup.title.string)
 
-#create a folder titled [PROJECTNAME_USERNAME] and save files in it
-#TODO, naming
-pathname = 1
-#directory = "project_name/" 
+#create a folder titled [PROJECTNAME_by_USERNAME] and save files in it
 directory = soup.title.string
-    #sample string:
-    #Home · jekyll/jekyll Wiki · GitHub
-    #follows format
-        #Home · [user or organization]/[project] Wiki · GitHub
-
-directory = directory.replace("/",' ')
-dir1 = directory.split()
-dirname = dir1[3]+"_by_"+dir1[2]+"/"
-
-#dir1 =[Home, . ,]
+    #captures the following sample string: Home · jekyll/jekyll Wiki · GitHub
+    #follows format: Home · [user or organization]/[project] Wiki · GitHub
+    #string processing 
+    directory = directory.replace("/",' ')
+    dir1 = directory.split()
+    dirname = dir1[3]+"_by_"+dir1[2]+"/" 
 
 input()
 
@@ -63,11 +56,10 @@ if not os.path.exists(dirname):
    
 #create a txt file of this name + write object to the file
 os.chdir(dirname)
-f = open(dir1[2]+'_mainwiki.txt','w') #TODO naming
-#f.write('hello world')
+f = open(dir1[2]+'_mainwiki.txt','w') 
 f.write(soup.prettify())
 
-#create folder titled with [PROJECTNAME_TABS] #TODO naming
+#create folder titled with [PROJECTNAME_TABS] 
 subdirectory = "wiki_tabs"
 os.makedirs(subdirectory)
 
