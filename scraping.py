@@ -8,6 +8,7 @@ import urllib.request
 from bs4 import BeautifulSoup
 import io
 import os
+import string
 
 """
 current organization
@@ -35,25 +36,39 @@ soup = BeautifulSoup(the_page)
 #print object to console (for testing/immediate purposes)
 #print(soup.get_text())
             
-print (soup.prettify())
+#print (soup.prettify())
 #print (soup.title.string)
 
 #create a folder titled [PROJECTNAME_USERNAME] and save files in it
+#TODO, naming
 pathname = 1
-directory = "project_name/" 
+#directory = "project_name/" 
+directory = soup.title.string
+    #sample string:
+    #Home · jekyll/jekyll Wiki · GitHub
+    #follows format
+        #Home · [user or organization]/[project] Wiki · GitHub
+
+directory = directory.replace("/",' ')
+dir1 = directory.split()
+dirname = dir1[3]+"_by_"+dir1[2]+"/"
+
+#dir1 =[Home, . ,]
+
+input()
+
 #while pathname < 4:
-if not os.path.exists(directory):
-    os.makedirs(directory)
+if not os.path.exists(dirname):
+    os.makedirs(dirname)
    
-<<<<<<< HEAD
 #create a txt file of this name + write object to the file
-os.chdir(directory)
-f = open('mainwiki.txt','w') #TODO naming
+os.chdir(dirname)
+f = open(dir1[2]+'_mainwiki.txt','w') #TODO naming
 #f.write('hello world')
 f.write(soup.prettify())
 
-#create folder titled with [PROJECTNAME_TABS]
-subdirectory = "wiki tabs"
+#create folder titled with [PROJECTNAME_TABS] #TODO naming
+subdirectory = "wiki_tabs"
 os.makedirs(subdirectory)
 
 #loop through all the links/subpage in the wiki navigation
@@ -63,29 +78,11 @@ links = soup.findAll('a',attrs={'class':'wiki-page-link'})
 os.chdir(subdirectory)
 for a in links:
     print (a['href'])
-    #haha = open('helloworld.txt','w')
-    #1f.write(a['href'])
     url = wiki + a['href']
-=======
-    #create a txt file of this name + write object to the file
-    os.chdir(directory)
-    f = open('mainwiki.txt','w') #TODO naming
-    #f.write('hello world')
-    f.write(soup.prettify())
-
-    #create folder titled with [PROJECTNAME_TABS]
-    subdirectory = "wiki tabs"
-    os.makedirs(subdirectory)
 
     #loop through all the links/subpage in the wiki navigation
     #create text file for each subpage
     links = soup.findAll('a',attrs={'class':'wiki-page-link'})
-
-    os.chdir(subdirectory)
-    for a in links:
-        print (a['href'])
-        url = wiki + a['href']
->>>>>>> fe9b6334fb52f10a44b06f50892a946d4723fb89
        
     with io.open("tab_" + a.string + ".txt", 'w', encoding='utf-8') as f:
         response = urllib.request.urlopen(url)
