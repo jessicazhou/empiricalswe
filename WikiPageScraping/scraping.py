@@ -24,7 +24,7 @@ FOLDER: [GITHUB PROJECT NAME]
 """
 
 #link of the wiki with input
-#TODO, pass in github urls in autoscraper.py
+#pass in github urls in autoscraper.py
 wiki= sys.argv[1]
 
 #create BeautifulSoup object of html of entirety of webpage
@@ -60,11 +60,11 @@ if not os.path.exists(dirname):
    
 #create a txt file of this name + write object to the file
 os.chdir(dirname)
-f = open(dir1[2]+'_mainwiki.txt','w') #TODO naming
+f = open(dir1[3]+'_mainwiki.txt','w') 
 #f.write('hello world')
 f.write(soup.prettify())
 
-#create folder titled with [PROJECTNAME_TABS] #TODO naming
+#create folder titled with [PROJECTNAME_TABS] 
 subdirectory = "wiki_tabs"
 os.makedirs(subdirectory)
 
