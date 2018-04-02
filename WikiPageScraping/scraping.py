@@ -25,7 +25,7 @@ FOLDER: [GITHUB PROJECT NAME]
 
 #link of the wiki with input
 #TODO, pass in github urls in autoscraper.py
-wiki = "https://github.com/jekyll/jekyll/wiki"
+wiki= sys.argv[1]
 
 #create BeautifulSoup object of html of entirety of webpage
 response = urllib.request.urlopen(wiki)
@@ -39,16 +39,20 @@ soup = BeautifulSoup(the_page)
 #print (soup.prettify())
 #print (soup.title.string)
 
-#create a folder titled [PROJECTNAME_by_USERNAME] and save files in it
+#create a folder titled [PROJECTNAME_USERNAME] and save files in it
+#TODO, naming
+pathname = 1
+#directory = "project_name/" 
 directory = soup.title.string
-    #captures the following sample string: Home · jekyll/jekyll Wiki · GitHub
-    #follows format: Home · [user or organization]/[project] Wiki · GitHub
-    #string processing 
-    directory = directory.replace("/",' ')
-    dir1 = directory.split()
-    dirname = dir1[3]+"_by_"+dir1[2]+"/" 
+    #sample string:
+    #Home · jekyll/jekyll Wiki · GitHub
+    #follows format
+        #Home · [user or organization]/[project] Wiki · GitHub
 
-input()
+directory = directory.replace("/",' ')
+dir1 = directory.split()
+dirname = dir1[3]+"_by_"+dir1[2]+"/"
+#dir1 =[Home, . ,]
 
 #while pathname < 4:
 if not os.path.exists(dirname):
@@ -56,10 +60,11 @@ if not os.path.exists(dirname):
    
 #create a txt file of this name + write object to the file
 os.chdir(dirname)
-f = open(dir1[2]+'_mainwiki.txt','w') 
+f = open(dir1[2]+'_mainwiki.txt','w') #TODO naming
+#f.write('hello world')
 f.write(soup.prettify())
 
-#create folder titled with [PROJECTNAME_TABS] 
+#create folder titled with [PROJECTNAME_TABS] #TODO naming
 subdirectory = "wiki_tabs"
 os.makedirs(subdirectory)
 
