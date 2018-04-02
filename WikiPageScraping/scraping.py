@@ -3,7 +3,7 @@ created Fri Mar 30, 2018
 @author: jessicazhou
 
 """
-
+import sys
 import urllib.request
 from bs4 import BeautifulSoup
 import io

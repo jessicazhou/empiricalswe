@@ -4,6 +4,8 @@ created Sat Mar 31, 2018
 
 """
 
+#python3 autoscraping.py sampleURLS.txt
+
 import os
 import sys
 
@@ -13,4 +15,4 @@ with open(param_1) as f:
         line=line.replace(".git","/wiki")
         os.system("python3 scraping.py " + line)
         #or /home/jess/Documents/spring 18/research/this scraping thing/scripts!/WikiPageScraping
-        system("pause")
+        sys("pause")
