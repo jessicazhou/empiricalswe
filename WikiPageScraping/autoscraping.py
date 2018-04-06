@@ -61,10 +61,11 @@ with open(param_1) as f:
             #if project exists
             if(urlcheck(line)):
                 print("project exists")
-                output.write("project exists")
+                output.write("project exists\n")
 
                 line=line.replace(".git\n","/wiki") 
 
+                #if the /wiki url doesn't redirect
                 r = requests.get(line, allow_redirects=False)
                 if(str(r) != '<Response [302]>'):
                     print("wiki exists")
