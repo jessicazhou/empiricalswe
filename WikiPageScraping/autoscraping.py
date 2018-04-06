@@ -9,6 +9,7 @@ created Sat Mar 31, 2018
 import os
 import io
 import sys
+import requests
 import urllib.request
 from bs4 import BeautifulSoup
 import csv
@@ -54,34 +55,43 @@ with open(param_1) as f:
      
         for line in f:
 
-            line=line.replace(".git\n","/wiki") #TODO
             print(line)
-            output.write(line)
+            output.write(line+"\n")
 
-            #if wiki tab exists
+            #if project exists
             if(urlcheck(line)):
-                print("wiki tab exists")
-                output.write("wiki tab exists")
+                print("project exists")
+                output.write("project exists")
 
-                response = urllib.request.urlopen(line)
-                the_page = response.read()
-                response.close
-                soup = BeautifulSoup(the_page)
+                line=line.replace(".git\n","/wiki") 
 
-                #if the sidebar exists, there is custom content to scrape
-                link = soup.find_all("div",class_="has-rightbar")
-                if(len(link)>0):
-                    print("content in wiki")
-                    output.write("content in wiki")
+                r = requests.get(line, allow_redirects=False)
+                if(str(r) != '<Response [302]>'):
+                    print("wiki exists")
+                    output.write("wiki exists\n")
 
-                    os.system("python3 scraping.py " + line)
-                    #or /home/jess/Documents/spring 18/research/this scraping thing/scripts!/WikiPageScraping
+                    response = urllib.request.urlopen(line)
+                    the_page = response.read()
+                    response.close
+                    soup = BeautifulSoup(the_page)
+
+                    #if the sidebar exists, there is custom content to scrape
+                    link = soup.find_all("div",class_="has-rightbar")
+                    if(len(link)>0):
+                        print("content in wiki")
+                        output.write("content in wiki\n")
+
+                        os.system("python3 scraping.py " + line)
+                        #or /home/jess/Documents/spring 18/research/this scraping thing/scripts!/WikiPageScraping
+                    else:
+                        print("content not in wiki")
+                        output.write("content not in wiki\n")
                 else:
-                    print("content not in wiki")
-                    output.write("content not in wiki")
+                    print("wiki tab doesn't exist")
+                    output.write("wiki tab doesn't exist\n")
             else:
-                print("wiki page not found")
-                output.write("wiki page not found")
+                print("project doesn't exist")
+                output.write("project doesn't exist\n")
             print("\n________________________\n\n")
             output.write("\n________________________\n\n")
 

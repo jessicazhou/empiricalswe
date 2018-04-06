@@ -1,4 +1,4 @@
-
+import requests
 import os
 import sys
 import urllib.request
@@ -6,10 +6,19 @@ from bs4 import BeautifulSoup
 
 line = "https://github.com/jessicazhou/empiricalswe/wiki"
 
+"""3
 response = urllib.request.urlopen(line)
 the_page = response.read()
 response.close
 soup = BeautifulSoup(the_page)
+"""
+
+pls=requests.get(line, allow_redirects=False)
+
+print(pls)
+
+if(str(pls) == '<Response [302]>') :
+    print('hi')
 
 #links = soup.findAll('a',attrs={'class':'wiki-page-link'})
 
@@ -19,6 +28,8 @@ soup = BeautifulSoup(the_page)
 
 #<a class="btn btn-sm btn-primary" href=/hessicazhou/empiricalswe/wiki/_new" 
 
+
+"""3
 link = soup.find_all("div",class_="has-rightbar")
 print(link)
 print(len(link))
@@ -26,6 +37,7 @@ print(len(link))
 
 link = soup.find_all("div", {"class": "btn btn-sm btn-primary"})
 print(link) #this is an empty set
+"""
 
 #<div class="has-rightbar">
 
