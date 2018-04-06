@@ -7,10 +7,13 @@ created Sat Mar 31, 2018
 #python3 autoscraping.py sampleURLS.txt
 
 import os
+import io
 import sys
 import urllib.request
 from bs4 import BeautifulSoup
-import csvimport time
+import csv
+import time
+
 start_time = time.time()
 
 """
@@ -33,7 +36,7 @@ with open('results.csv','w') as newFile:
 
 param_1= sys.argv[1]
 
-output = open('output.csv','w') 
+output = open('output.txt','w') 
 
 def urlcheck(url):
    
@@ -51,14 +54,14 @@ with open(param_1) as f:
      
         for line in f:
 
-            line=line.replace(".git","/wiki")
+            line=line.replace(".git\n","/wiki") #TODO
             print(line)
-            output.print(line)
+            output.write(line)
 
             #if wiki tab exists
             if(urlcheck(line)):
                 print("wiki tab exists")
-                output.print("wiki tab exists")
+                output.write("wiki tab exists")
 
                 response = urllib.request.urlopen(line)
                 the_page = response.read()
@@ -69,20 +72,21 @@ with open(param_1) as f:
                 link = soup.find_all("div",class_="has-rightbar")
                 if(len(link)>0):
                     print("content in wiki")
-                    output.print("content in wiki")
+                    output.write("content in wiki")
 
                     os.system("python3 scraping.py " + line)
                     #or /home/jess/Documents/spring 18/research/this scraping thing/scripts!/WikiPageScraping
                 else:
                     print("content not in wiki")
-                    output.print("content not in wiki")
+                    output.write("content not in wiki")
             else:
                 print("wiki page not found")
-                output.print("wiki page not found")
-            print("________________________")
-            output.print("________________________")
+                output.write("wiki page not found")
+            print("\n________________________\n\n")
+            output.write("\n________________________\n\n")
+
 print("--- %s seconds ---" % (time.time() - start_time))
-output.print("--- %s seconds ---" % (time.time() - start_time))
+output.write("--- %s seconds ---" % (time.time() - start_time))
   
 
    
