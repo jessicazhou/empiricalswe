@@ -1,6 +1,16 @@
-Takes an input of a list of github wiki pages to scrape with BeautifulSoup for further analysis.
-To run this script: python3 scraping.py
+Takes an input of a list of github pages to scrape the content of wiki tab with BeautifulSoup for further analysis.
 
+Prerequisite: 
+Python 3.6.5
+beautifulsoup4-4.6.0
+bs4-0.0.1
+html5lib-1.0.1
+
+Sample Command:
+python3 autoscraping.py sampleURLS.txt
+
+Notes:
+Before running the script, please change the file directory in line 73 of autoscraping.py to your file directory.
 
 
 Learning Python and BS as I go, so here are some references I found helpful:
@@ -21,4 +31,3 @@ https://stackoverflow.com/questions/38252434/beautifulsoup-to-find-a-link-that-c
 
 Creating files, looping
 https://stackoverflow.com/questions/12560600/creating-a-new-file-filename-contains-loop-variable-python
-
