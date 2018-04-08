@@ -49,9 +49,7 @@ with open(param_1) as f:
             break #safeguard for eof whitespace
 
         linecount+=1
-        output.write(line+"\n")
-
-        
+        output.write(line+"\n")        
 
         #if project exists
         if(urlcheck(line)):

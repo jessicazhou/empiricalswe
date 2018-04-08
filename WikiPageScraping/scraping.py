@@ -34,37 +34,30 @@ the_page = response.read()
 response.close
 soup = BeautifulSoup(the_page, "html5lib")
 
-        #create a folder titled [PROJECTNAME_USERNAME] and save files in it
+        
 pathname = 1
-        #directory = "project_name/" 
+        
+
+#create a folder titled [PROJECTNAME_USERNAME] and save files in it
 directory = soup.title.string
             #sample string:
             #Home · jekyll/jekyll Wiki · GitHub
             #follows format
                 #Home · [user or organization]/[project] Wiki · GitHub
 
-directory = directory.replace("/",' ')
+directory = directory.replace("/",' ') #directory = "project_name/" 
 dir1 = directory.split()
 dirname = dir1[3]+"_by_"+dir1[2]+"/"
         #dir1 =[Home, . ,]
 
 if not os.path.exists(dirname):
     os.makedirs(dirname)
-      
 os.chdir(dirname)
-#create a txt file of this name + write object to the file
-f = open(dir1[3]+'_mainwiki.txt','w') 
-#f.write('hello world')
-f.write(str(soup)) #soup.prettify
-
-#create folder titled with [PROJECTNAME_TABS] 
-subdirectory = "wiki_tabs"
-os.makedirs(subdirectory)
 
 #loop through all the links/subpage in the wiki navigation
 #create text file for each subpage
 links = soup.findAll('a',attrs={'class':'wiki-page-link'})
-os.chdir(subdirectory)
+
 for a in links:
     print (a['href'])
     git= 'https://github.com'
