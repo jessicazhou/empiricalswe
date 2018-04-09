@@ -66,7 +66,7 @@ with open(param_1) as f:
                 #print("content in wiki")
                 output.write("content in wiki\n")
                 os.system("python3 /home/jess/Documents/spring\\ 18/research/this\\ scraping\\ thing/scripts!/WikiPageScraping/scraping.py " + line)
-                #or /home/jess/Documents/spring 18/research/this scraping thing/scripts!/WikiPageScraping                                                    
+                                                  
         else:
             #print("project doesn't exist")
             output.write("project doesn't exist\n")

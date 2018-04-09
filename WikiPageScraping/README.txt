@@ -10,7 +10,8 @@ Sample Command:
 python3 autoscraping.py sampleURLS.txt
 
 Notes:
-Before running the script, please change the file directory in line 73 of autoscraping.py to your file directory.
+Before running the script, please change the file directory in line 68 of autoscraping.py to your file directory.
+Make sure sampleURLS.txt has newline after last URL entry for the script to process it (looking for ".git\n") 
 
 
 Learning Python and BS as I go, so here are some references I found helpful:
