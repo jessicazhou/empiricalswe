@@ -12,6 +12,7 @@ import string
 import urllib
 import time
 
+
 """
 current organization
 
@@ -50,6 +51,7 @@ dir1 = directory.split()
 dirname = dir1[3]+"_by_"+dir1[2]+"/"
         #dir1 =[Home, . ,]
 
+
 if not os.path.exists(dirname):
     os.makedirs(dirname)
 os.chdir(dirname)
@@ -62,14 +64,14 @@ for a in links:
     print (a['href'])
     git= 'https://github.com'
     url = git + a['href']
-    print("this is the url ", url)
+
 
         #create text file for each subpage
     with io.open("tab_" + a.string + ".txt", 'w', encoding='utf-8') as f:
-        print("this is the url ", url)
+    
         try:
           response = urllib.request.urlopen(url)
-          print("this is the url ", url)
+
 
           the_page1 = response.read()
           response.close
