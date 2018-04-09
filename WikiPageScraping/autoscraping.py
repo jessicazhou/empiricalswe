@@ -75,9 +75,10 @@ with open(param_1) as f:
         output.write("\n________________________\n\n")
 
 #print("--- %s seconds ---" % (time.time() - start_time))
-    output.write("Total projects: "+str(linecount)+"\nwiki tab with content: "+str(wikitab)+" "+str(wikitab/linecount))
-    output.write("\nProjects that don't exist anymore: "+str(noproject)+" "+str(noproject/linecount))
+    output.write("Total projects: "+str(linecount)+"\nwiki tab with content: "+str(wikitab)+" {:.2%}".format(wikitab/linecount))
+    output.write("\nProjects that don't exist anymore: "+str(noproject)+" {:.2%}".format(noproject/linecount))
     output.write("\nRuntime: %s seconds" %(time.time() - start_time))
+    output.close()
 
 
   

@@ -86,12 +86,9 @@ for a in links:
           response.close
           soup1 = BeautifulSoup(the_page1, "html5lib")
           f.write(str(soup1)) 
-        
-        
     
-        #f.close()
-        # pathname += 1
-
+    f.close()
+      
 
 
 
