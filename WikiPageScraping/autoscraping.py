@@ -44,10 +44,9 @@ with open(param_1) as f:
     linecount=0
 
     for line in f:
-        print("we here ",line)
         if(len(line)<18):
+            print("break\n")
             break #safeguard for eof whitespace
-
         linecount+=1
         output.write(line+"\n")        
 
@@ -59,8 +58,6 @@ with open(param_1) as f:
             the_page = response.read()
             response.close
             soup = BeautifulSoup(the_page, "html5lib")
-
-
             #os.chdir(foldername)
             #if the sidebar exists, there is custom content to scrape
             link = soup.find_all("div",class_="has-rightbar")
