@@ -1,5 +1,5 @@
 Takes an input of a list of github pages to scrape the content of wiki tab with BeautifulSoup for further analysis.
-Creates report of which projects 1) have content in wiki or 2) don't exist. All other projects 3) don't have a wiki tab, or have an empty wikitab.
+Creates report of whether projects 1) exist, 2) contain wiki tab, and 3) if there is any content in the wiki tab.
 
 Prerequisite: 
 Python 3.6.5
@@ -11,8 +11,7 @@ Sample Command:
 python3 autoscraping.py sampleURLS.txt
 
 Notes:
-Before running the script, please change the file directory in line 68 of autoscraping.py to your file directory.
-Make sure sampleURLS.txt has newline after last URL entry for the script to process it (looking for ".git\n") 
+Before running the script, please change the file directory in line 68 of autoscraping.py to your file directory. Make sure sampleURLS.txt has newline after last URL entry for the script to process it (looking for ".git\n").
 
 
 
