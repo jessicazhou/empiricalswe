@@ -45,7 +45,7 @@ with open(param_1) as f:
 
     for line in f:
         if(len(line)<18):
-            print("break\n")
+            print("end of file processing\n")
             break #safeguard for eof whitespace
         linecount+=1
         output.write(line+"\n")        
