@@ -1,4 +1,5 @@
 Takes an input of a list of github pages to scrape the content of wiki tab with BeautifulSoup for further analysis.
+Creates report of which projects 1) have content in wiki or 2) don't exist. All other projects 3) don't have a wiki tab, or have an empty wikitab.
 
 Prerequisite: 
 Python 3.6.5
@@ -14,7 +15,10 @@ Before running the script, please change the file directory in line 68 of autosc
 Make sure sampleURLS.txt has newline after last URL entry for the script to process it (looking for ".git\n") 
 
 
-Learning Python and BS as I go, so here are some references I found helpful:
+
+
+
+Python & BeautifulSoup references:
 
 BeautifulSoup documentation
 https://www.crummy.com/software/BeautifulSoup/bs4/doc/
