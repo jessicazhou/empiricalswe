@@ -16,6 +16,10 @@ Make sure sampleURLS.txt has newline after last URL entry for the script to proc
 Sample Command:
 python3 autoscraping.py sampleURLS.txt
 
+Sample line of URL in sampleURLs.txt as input:
+https://github.com/jekyll/jekyll.git
+
+
 Sample output: [git url];[project code, either 1, 2, or 3]
    at quick glance, this means:
    1 = no project
