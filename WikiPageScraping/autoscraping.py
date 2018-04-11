@@ -51,14 +51,14 @@ with open(param_1) as f:
             print("end of file processing\n")
             break #safeguard for eof whitespace
         linecount+=1
-        print("project #"+str(linecount)+"\n")
-        fline=line.replace("\n","")
-        output.write(fline+";")        
+        print("#"+str(linecount)+"\n")
+        fline = line
+        fline=fline.replace("\n","")
+        output.write(fline+" ;")        
 
         #if project exists
         if(urlcheck(line)):
             line=line.replace(".git\n","/wiki") 
-            
             response = urllib.request.urlopen(line)
             the_page = response.read()
             response.close
@@ -84,7 +84,7 @@ with open(param_1) as f:
 
 output.write("\n\nTotal projects: "+str(linecount)+"\nProjects with wiki tab and wiki content: "+str(wikitab)+" / "+str(linecount)+" or {:.2%}".format(wikitab/linecount))
 output.write("\nProjects that don't exist anymore: "+str(noproject)+" / "+str(linecount)+" or {:.2%}".format(noproject/linecount))
-output.write("\nProjects with no wiki tab or no wiki content: "+str(nowikiornocontent)+" / "+str(linecount)+" or {:.2%}".format(noproject/linecount))
+output.write("\nProjects with no wiki tab or no wiki content: "+str(nowikiornocontent)+" / "+str(linecount)+" or {:.2%}".format(nowikiornocontent/linecount))
 output.write("\nRuntime: %s seconds" %(time.time() - start_time))
 output.close()
 
