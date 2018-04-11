@@ -76,6 +76,7 @@ for a in links:
           the_page1 = response.read()
           response.close
           soup1 = BeautifulSoup(the_page1, "html5lib")
+          soup1= soup1.findAll('div',attrs={'class':'wiki-body'})
           f.write(str(soup1))      
         except urllib.error.HTTPError as e: #if too many requests sent to server / too many tabs
           time.sleep(10)
