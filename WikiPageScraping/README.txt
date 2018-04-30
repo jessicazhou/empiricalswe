@@ -15,19 +15,26 @@ Make sure sampleURLS.txt has newline after last URL entry for the script to proc
 Sample Command:
 python3 autoscraping.py sampleURLS.txt
 
+Notes:
+Before running the script, please change the file directory in line 68 of autoscraping.py to your file directory. Make sure sampleURLS.txt has newline after last URL entry for the script to process it (looking for ".git\n").
+
+
+
+---------------------------------------------------
+SAMPLE INPUT FILE: sampleURLS.txt
 Sample line of URL in sampleURLs.txt as input:
 https://github.com/jekyll/jekyll.git
 
-
+SAMPLE OUTPUT FILE: output.txt
 Sample output: [git url];[project code, either 1, 2, or 3]
    at quick glance, this means:
    1 = no project
    2 = no wiki or no content exist
    3 = wiki and content exist
                
-
-Notes:
-Before running the script, please change the file directory in line 68 of autoscraping.py to your file directory. Make sure sampleURLS.txt has newline after last URL entry for the script to process it (looking for ".git\n").
+POSTPROCESSING: after autoscraping.py use txtprocessor.py to convert output.txt to a csv file
+python3 txtprocessor.py output.txt 
+SAMPLE POST PROCESSING OUTPUT FILE: output.csv
 
 
 

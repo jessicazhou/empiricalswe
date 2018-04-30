@@ -35,35 +35,43 @@ with open('names.csv', 'w', newline='') as csvfile:
 
 with open(param_1, 'r') as input:
     #output = open('output.csv', 'wb')
-
-    with open('names.csv', 'w', newline='') as csvfile:
+     with open('outputcsv.csv', 'w', newline='') as csvfile:
         fieldnames = ['author', 'project name', 'url', '(1) no project', '(2) no wiki/no content', '(3) wiki and content']
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
         writer.writeheader()
-    
-    next(input) #skip the first line of input
-    for line in input #sample line: https://github.com/0-afflatus/grail_test.git ;3
-        #tokenize by space
-        data=line.split(' ;',2)  #data[0] = https://github.com/0-afflatus/grail_test.git data[1] = 3
-        #first item = url
-        #store url
-        url = data[0] 
+        next(input) #skip the first line of input sample line: 'https://github.com/0-afflatus/grail_test.git ;3'
+        for line in input: 
+            #tokenize by space
+            data=line.split(' ;',3)  #data[0] = https://github.com/0-afflatus/grail_test.git data[1] = 3
+            #first item = url
+            #store url
+            print(data)
+            print(data[0])
+            print(data[1])
+
+            url = data[0] #first url
+            cat = data[1] #second item = category
+        
             #then tokenize url
-            token = urlparse(url)  
-            token = token.path       # /0-afflatus/grail_test.git       
-            token = token.split('/')  
-                #store author
-                author =  token[0]
-                #store project
-                project = token[1]
-        #second item = category
-        cat = data[1]
-        if(cat==1):
-            writer.writerow({'author': author, 'project name': project, 'url': url, '(1) no project': 'x', '(2) no wiki/no content':' ', '(3) wiki and content':' '})
-        else if(cat==2):
-            writer.writerow({'author': author, 'project name': project, 'url': url, '(1) no project': ' ', '(2) no wiki/no content':'x', '(3) wiki and content':' '})
-        else:
-            writer.writerow({'author': author, 'project name': project, 'url': url, '(1) no project': ' ', '(2) no wiki/no content':' ', '(3) wiki and content':'x'})
+            token = urlparse(url) #ParseResult(scheme='https', netloc='github.com', path='/0zone/MapApi.git', params='', query='', fragment='')
+            urlpath = token.path       # /0-afflatus/grail_test.git   
+            print("path of url: {} \n".format(urlpath)) 
+            gitinfo = urlpath.split('/')  
+            print("split up url: {} \n".format(gitinfo)) 
+            #store author
+            author =  gitinfo[1]
+            #store project
+            project = gitinfo[2]
+            
+            if(cat=='1\n'):
+                print("in cat 1")
+                writer.writerow({'author': author, 'project name': project, 'url': url, '(1) no project': 'x', '(2) no wiki/no content':' ', '(3) wiki and content':' '})
+            elif(cat=='2\n'):
+                print("in cat 2")
+                writer.writerow({'author': author, 'project name': project, 'url': url, '(1) no project': ' ', '(2) no wiki/no content':'x', '(3) wiki and content':' '})
+            else:
+                print("in cat 3")
+                writer.writerow({'author': author, 'project name': project, 'url': url, '(1) no project': ' ', '(2) no wiki/no content':' ', '(3) wiki and content':'x'})
 
         
         
