@@ -16,27 +16,27 @@ To help better understand the occurence of documentation within wiki pages in op
         3 - # projects with wiki pages that have content
     (3) Converts the text report to CSV for further analysis
 
+Inputs of 383 and 87,674 projects as well as their respective outputs, have been provided as well.
+
 ---------------------------------------------------
 (1 & 2) SCRAPING sample command:
     python3 autoscraping.py sampleURLS.txt
 
     in repository:
-    SAMPLE INPUT FILE: text list of Github URLS:
-                            1input_sampleURLS.txt
+    SAMPLE INPUT FILE: (file of URLs) 1input_sampleURLS.txt
 
-    SAMPLE OUTPUT FILES: text report file:    
-                            2output.txt
-                         wikipage scrapes (see 87674 for examples):
-                            [folder] [projectname_by_author]
-                                -[text] html file for each tab
-                                -[text] tab 2
-                                -[text] tab 3
+    SAMPLE OUTPUT FILES: (folder) 2Output_383_report_and_scraped_wikis
+                                (file report) 2output.txt
+                                (folder Github repo Wiki #1)
+                                    (html file) tab_1
+                                    (html file) tab_2
+                                    ....
+                                (folder Github repo Wiki #2)
+                                (folder Github repo Wiki #3)
                                 .....
-                            [projectfolder2]    
-                            [projectfolder3]
-                            .....
 
-#TODO - linking postprocessing to scraping                
+
+             
 (3) POSTPROCESSING: 
     python3 txtprocessor.py output_from_autoscraping.txt 
 
@@ -64,10 +64,15 @@ In a sample of 87,674 Github projects:
    3) existing Wiki:      1,213     1.38%
 Factoring out the 12,891 no longer existing projects, that leaves 74,783 Github projects, 1,213, or 1.62% of which have Wiki pages.
 
-ERRORS:
+NOTED ERRORS/TODOS:
 If # folders of downloaded projects =/= # projects with wikipages in report
     -there may be project names that begin with "." (saving the project as a dot file under current program)
     -two distinct URLS (changed username,project name, or both) map to the same project 
+-Linking postprocessing to scraping   
+-Might be better to have output be authorname then projectname
+-If URL redirects to another project URL (project/author change), capture new URL
+-Run stops at the same place in batches 4 - androrat by naltaleaj, 6 - hgi-reports.git by wtsi-hgi, 7 - coffee-react-rtansform by gusvargas)
+
 
 ----------------------------------------------------
 
