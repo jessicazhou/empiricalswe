@@ -1,7 +1,3 @@
-Takes an input of a list of github pages to scrape the content of wiki tab with BeautifulSoup for further analysis.
-
-Creates report of 1) projects that have content in wiki or 2) projects that don't exist or 3) don't have a wiki tab, or have an empty wikitab.
-
 Prerequisite: 
 Python 3.6.5
 beautifulsoup4-4.6.0
@@ -12,31 +8,68 @@ Notes:
 Before running the script, please change the file directory in line 73 of autoscraping.py to your file directory.
 Make sure sampleURLS.txt has newline after last URL entry for the script to process it (looking for ".git\n") 
 
-Sample Command:
-python3 autoscraping.py sampleURLS.txt
-
-Notes:
-Before running the script, please change the file directory in line 68 of autoscraping.py to your file directory. Make sure sampleURLS.txt has newline after last URL entry for the script to process it (looking for ".git\n").
-
+To help better understand the occurence of documentation within wiki pages in open source software projects, the scripts:
+    (1) Take an input of a list of Github projects
+    (2) Scrapes web pages of Github projects that actually have wiki pages with BeautifulSoup & generates a text report detailing:
+        1 - # projects that no longer exist
+        2 - # projects with default (empty) / no wiki page
+        3 - # projects with wiki pages that have content
+    (3) Converts the text report to CSV for further analysis
 
 ---------------------------------------------------
-SAMPLE INPUT FILE: sampleURLS.txt
-Sample line of URL in sampleURLs.txt as input:
-https://github.com/jekyll/jekyll.git
+(1 & 2) SCRAPING sample command:
+    python3 autoscraping.py sampleURLS.txt
 
-SAMPLE OUTPUT FILE: output.txt
-Sample output: [git url];[project code, either 1, 2, or 3]
-   at quick glance, this means:
-   1 = no project
-   2 = no wiki or no content exist
-   3 = wiki and content exist
-               
-POSTPROCESSING: after autoscraping.py use txtprocessor.py to convert output.txt to a csv file
-python3 txtprocessor.py output.txt 
-SAMPLE POST PROCESSING OUTPUT FILE: output.csv
+    in repository:
+    SAMPLE INPUT FILE: text list of Github URLS:
+                            1input_sampleURLS.txt
+
+    SAMPLE OUTPUT FILES: text report file:    
+                            2output.txt
+                         wikipage scrapes (see 87674 for examples):
+                            [folder] [projectname_by_author]
+                                -[text] html file for each tab
+                                -[text] tab 2
+                                -[text] tab 3
+                                .....
+                            [projectfolder2]    
+                            [projectfolder3]
+                            .....
+
+#TODO - linking postprocessing to scraping                
+(3) POSTPROCESSING: 
+    python3 txtprocessor.py output_from_autoscraping.txt 
+
+    in repository:
+    INPUT: text report file:
+                2output.txt
+    OUTPUT FILE: csv file 
+                3output.csv
 
 
+In the folder "00Run_87674_URLs_and_Wikis" 
+the same process is applied to a group of 87,674 Github links, 
+split into 9 batches of ~10k projects each.
 
+Each .txt in "1input_txt_1_to_9" folder corresponds to 
+one of "2output_downloaded_wiki_and_txt_report"'s output folders (containing output.txt & scraped projects) 
+and one of "3output_csv_files"'s csv files.
+
+----------------------------------------------------
+
+OBSERVATIONS:
+In a sample of 87,674 Github projects: 
+   1) don't exist:        12,891    14.70%
+   2) empty or no Wiki:   73,570    83.91%
+   3) existing Wiki:      1,213     1.38%
+Factoring out the 12,891 no longer existing projects, that leaves 74,783 Github projects, 1,213, or 1.62% of which have Wiki pages.
+
+ERRORS:
+If # folders of downloaded projects =/= # projects with wikipages in report
+    -there may be project names that begin with "." (saving the project as a dot file under current program)
+    -two distinct URLS (changed username,project name, or both) map to the same project 
+
+----------------------------------------------------
 
 Python & BeautifulSoup references:
 
