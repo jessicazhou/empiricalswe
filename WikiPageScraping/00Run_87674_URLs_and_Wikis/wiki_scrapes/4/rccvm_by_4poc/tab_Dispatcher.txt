@@ -1,0 +1,249 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>(planning document)</p>
+<p>The dispatcher runs as a HTTP service within the qemu vm, its a generic backend to run programs and receiving their responses through a REST interface. The dispatcher is blocking requests until the response is available so make sure to setup timeouts carefully.
+Requests and responses are JSON encoded objects. It will return either a 200 response or 500 if an error occurred, in which case a JSON with the error description will be included.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#post-execute" id="user-content-post-execute"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><code>POST /execute</code>
+</h2>
+<p>Will execute commands and return their response.</p>
+<ul>
+<li>creates a temporary directory</li>
+<li>write files specified in the request</li>
+<li>execute commands
+<ul>
+<li>as a different non-privileged user</li>
+<li>with the working directory changed to temp</li>
+<li>with the specified environment variables merged</li>
+</ul>
+</li>
+<li>respond with the collected stderr/stdout and return codes</li>
+</ul>
+<p>If the client or something else terminates the HTTP connection, spawned commands will be forcibly stopped.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#request-object" id="user-content-request-object"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Request Object</h3>
+<table>
+<thead>
+<tr>
+<th>Property</th>
+<th>Type</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>command</code></td>
+<td>mixed</td>
+<td></td>
+<td>Specify a <code>string</code> that is executed as a shell command or a <code>array</code> of such shell commands that are executed in order.</td>
+</tr>
+<tr>
+<td><code>env</code></td>
+<td>object</td>
+<td></td>
+<td>Environment variables to execute with.</td>
+</tr>
+<tr>
+<td><code>output.join</code></td>
+<td>boolean</td>
+<td>true</td>
+<td>Joins the output (stdout/stderr/retcode) of all executed commands together, any return code unlike 0 will take precedence.</td>
+</tr>
+<tr>
+<td><code>output.type</code></td>
+<td>string</td>
+<td>"plaintext"</td>
+<td>Specify encoding used in the OutputObjects.</td>
+</tr>
+<tr>
+<td><code>files</code></td>
+<td>object</td>
+<td></td>
+<td>Object of filename, input object pairs that are written before execution. Filenames are relative to the temporary directory.</td>
+</tr>
+</tbody>
+</table>
+<h3>
+<a aria-hidden="true" class="anchor" href="#response-object" id="user-content-response-object"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Response Object</h3>
+<table>
+<thead>
+<tr>
+<th>Property</th>
+<th>Type</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>output</code></td>
+<td>mixed</td>
+<td></td>
+<td>Either <code>array</code> or <code>object</code> depends on <code>output.join</code> in the response.</td>
+</tr>
+</tbody>
+</table>
+<h2>
+<a aria-hidden="true" class="anchor" href="#post-sessionnew" id="user-content-post-sessionnew"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><code>POST /session/new</code>
+</h2>
+<p>Creates a new interactive session, it returns a sessionId and the "initial prompt" output.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#request-object-1" id="user-content-request-object-1"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Request Object</h3>
+<table>
+<thead>
+<tr>
+<th>Property</th>
+<th>Type</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>command</code></td>
+<td>string</td>
+<td></td>
+<td>Specify a shell command that starts a interactive prompt.</td>
+</tr>
+<tr>
+<td><code>env</code></td>
+<td>object</td>
+<td></td>
+<td>Environment variables to execute with.</td>
+</tr>
+<tr>
+<td><code>output.type</code></td>
+<td>string</td>
+<td>"plaintext"</td>
+<td>Specify encoding used in the OutputObjects.</td>
+</tr>
+</tbody>
+</table>
+<h3>
+<a aria-hidden="true" class="anchor" href="#response-object-1" id="user-content-response-object-1"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Response Object</h3>
+<table>
+<thead>
+<tr>
+<th>Property</th>
+<th>Type</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>sessionId</td>
+<td>string</td>
+<td></td>
+<td>Session identifier used to control the session.</td>
+</tr>
+<tr>
+<td>output.stdout</td>
+<td>OutputObject</td>
+<td></td>
+<td>The stdout output of the interactive command.</td>
+</tr>
+<tr>
+<td>output.stderr</td>
+<td>OutputObject</td>
+<td></td>
+<td>The stderr output of the interactive command.</td>
+</tr>
+</tbody>
+</table>
+<h2>
+<a aria-hidden="true" class="anchor" href="#post-sessionexecute" id="user-content-post-sessionexecute"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><code>POST /session/execute</code>
+</h2>
+<p>Execute a command within the session and return its response. If possible it tries to omit the prompt.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#post-sessiondelete" id="user-content-post-sessiondelete"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><code>POST /session/delete</code>
+</h2>
+<p>Closes a session.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#inputobject" id="user-content-inputobject"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>InputObject</h2>
+<p>You may provide input data for STDIN or files in UTF-8 encoded plaintext or Base64 binary.</p>
+<table>
+<thead>
+<tr>
+<th>Property</th>
+<th>Type</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>type</code></td>
+<td>string</td>
+<td><code>"plaintext"</code></td>
+<td>Input encoding <code>plaintext</code> or <code>base64</code>.</td>
+</tr>
+<tr>
+<td><code>data</code></td>
+<td>string</td>
+<td></td>
+<td>Input content in the encoding specified.</td>
+</tr>
+</tbody>
+</table>
+<h3>
+<a aria-hidden="true" class="anchor" href="#examples" id="user-content-examples"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Examples</h3>
+<pre><code>{
+    "type": "plaintext",
+    "data": "print('Hello World')"
+}
+</code></pre>
+<p>The default value of type is <code>plaintext</code> so you may omit it:</p>
+<pre><code>{
+    "data": "print('Hello World')"
+}
+</code></pre>
+<pre><code>{
+    "type": "base64",
+    "data": "sOmEBaSe64=="
+}
+</code></pre>
+<h2>
+<a aria-hidden="true" class="anchor" href="#outputobject" id="user-content-outputobject"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>OutputObject</h2>
+<p>You may request a specific output encoding in your request.</p>
+<table>
+<thead>
+<tr>
+<th>Property</th>
+<th>Type</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>type</code></td>
+<td>string</td>
+<td><code>"plaintext"</code></td>
+<td>Output encoding <code>plaintext</code> or <code>base64</code>.</td>
+</tr>
+<tr>
+<td><code>data</code></td>
+<td>string</td>
+<td></td>
+<td>Output content in the encoding specified.</td>
+</tr>
+</tbody>
+</table>
+<h3>
+<a aria-hidden="true" class="anchor" href="#examples-1" id="user-content-examples-1"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Examples</h3>
+<pre><code>{
+    "type": "plaintext",
+    "data": "Hello World\n"
+}
+</code></pre>
+<pre><code>{
+    "type": "base64",
+    "data": "sOmEBaSe64=="
+}
+</code></pre>
+
+        </div>
+
+    </div>]

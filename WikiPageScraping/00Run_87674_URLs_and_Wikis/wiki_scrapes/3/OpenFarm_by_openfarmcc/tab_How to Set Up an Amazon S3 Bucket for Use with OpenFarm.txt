@@ -1,0 +1,102 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <h2>
+<a aria-hidden="true" class="anchor" href="#about-the-openfarm-setup" id="user-content-about-the-openfarm-setup"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>About the Openfarm Setup</h2>
+<p>OpenFarm uses Amazon S3 for cloud storage of media files such as profile and guide images.</p>
+<p>OpenFarm has a server-side permission policy that Rails and PaperClip use when deleting / updating images and a “client-side” policy for users to dump unprocessed media into.</p>
+<p><strong><em>NOTE: You should not need to set up AWS to do image uploading on your local instance. On development environments OpenFarm defaults to the standard Rails upload methods. If you want to set up AWS to work on that process, please proceed.</em></strong></p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#why-have-we-done-it-this-way" id="user-content-why-have-we-done-it-this-way"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Why Have We Done It This Way?</h2>
+<p>This setup is slightly more complicated than a direct upload setup, but creates a number of benefits such as:</p>
+<ul>
+<li>It frees web workers from the resource-intensive task of accepting large file uploads.</li>
+<li>It allows OpenFarm to be hosted on services like Heroku, where there is a 30 second request timeout.</li>
+<li>It allows the API to accept URLs of files hosted elsewhere (not just S3, but services like Imgur/Wordpress, etc.)</li>
+<li>By POSTing URLs instead of files, we can defer the process of downloading/cropping/resizing images to a background worker which creates a better experience for API and Website users.</li>
+<li>We can pay a third party (currently S3) to manage the file storage infrastructure, which frees up developers to work on more pertinent tasks and features.</li>
+</ul>
+<h2>
+<a aria-hidden="true" class="anchor" href="#a-step-by-step-guide-to-client-side-setup-for-s3" id="user-content-a-step-by-step-guide-to-client-side-setup-for-s3"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>A Step-by-Step Guide to Client-Side Setup for S3</h2>
+<ol>
+<li>Create a new S3 bucket. (<a href="https://www.google.com/search?q=how+to+create+a+new+s3+bucket&amp;oq=how+to+create+a+new+s3+bucket" rel="nofollow">Search Google</a> if you don’t know how to do this.)</li>
+<li>In the Bucket settings panel, select <strong>Permissions</strong> &gt; <strong>Add CORS Configuration</strong>. <br/> <img alt="Add CORS Configuration" src="https://cloud.githubusercontent.com/assets/4491168/6646919/b39599c8-c986-11e4-937e-c48f7a426f5f.png"/>
+</li>
+<li>Replace the sample configuration by pasting in the following configuration:<blockquote><pre>&lt;?xml version="1.0" encoding="UTF-8"?&gt;
+&lt;CORSConfiguration xmlns="<a href="http://s3.amazonaws.com/doc/2006-03-01/" rel="nofollow">http://s3.amazonaws.com/doc/2006-03-01/</a>"&gt;
+&lt;CORSRule&gt;
+&lt;AllowedOrigin&gt;*&lt;/AllowedOrigin&gt;
+&lt;AllowedMethod&gt;POST&lt;/AllowedMethod&gt;
+&lt;AllowedMethod&gt;PUT&lt;/AllowedMethod&gt;
+&lt;AllowedHeader&gt;*&lt;/AllowedHeader&gt;
+&lt;/CORSRule&gt;
+&lt;/CORSConfiguration&gt;</pre></blockquote> <img alt="CORS Configuration Editor" src="https://cloud.githubusercontent.com/assets/4491168/6646921/b39e53ce-c986-11e4-9db0-1b67ee9ac21a.png"/>
+</li>
+<li>Click <strong>Save</strong>. Click <strong>Close</strong>.</li>
+<li>Create an IAM user for the S3 bucket. Select <strong><em>my account</em></strong> &gt; <strong>Security Credentials</strong> in the top right of the page, then click <strong>Get Started with IAM Users</strong> in the pop-up dialog. <br/> <img alt="Security Credentials" src="https://cloud.githubusercontent.com/assets/4491168/6646924/b3ace984-c986-11e4-875e-471f8b78d09a.png"/> <img alt="Get Started with IAM Users" src="https://cloud.githubusercontent.com/assets/4491168/6646923/b3a9ca7e-c986-11e4-91c5-cdde989ada9b.png"/>
+</li>
+<li>Click <strong>Create New Users</strong>. Enter at least one user name, and check the <strong>Generate an access key for each user</strong> checkbox if it is not already checked. Click <strong>Create</strong>. <br/> <img alt="Create User" src="https://cloud.githubusercontent.com/assets/4491168/6646922/b3a0fcf0-c986-11e4-91f8-99eed1b6380d.png"/>
+</li>
+<li>Click <strong>Show User Security Credentials</strong>. <em>Be sure to copy these credentials to some local textfile now. It is your only chance to do so.</em> You can download the credentials to a local file or simply copy-and-paste. Click <strong>Close</strong>. <br/> <img alt="Show User Security Credentials" src="https://cloud.githubusercontent.com/assets/4491168/6646925/b3afe152-c986-11e4-87bf-d9c18bb46386.png"/>
+</li>
+<li>Add the credentials to the file <code>config/app_environment_variables.rb</code>. The correct format is like this, though your bucket name and key values will be different:<pre>ENV['S3_BUCKET_NAME']        = 'mybucketname'
+ENV['S3_ACCESS_KEY']         = 'ABCDEFGHIJKLMNOPQRST'
+ENV['S3_SECRET_KEY']         = 'a+/1SHdo8DbWX9/aBcDeFgHIjKLmnOpqrSTuVwx+'</pre>
+</li>
+<li>Click <strong>Policies</strong>. If this is the first time you have used this part of the interface, there will be an introductory page: if so, click <strong>Get Started</strong>. <br/> <img alt="managedpolicies" src="https://cloud.githubusercontent.com/assets/4491168/6647578/11059aa8-c98d-11e4-9d21-af065dc303d9.png"/>
+</li>
+<li>Click <strong>Create Policy</strong>. <br/> <img alt="createpolicy" src="https://cloud.githubusercontent.com/assets/4491168/6647574/10dd96ac-c98d-11e4-95a5-50f615571bbb.png"/>
+</li>
+<li>Select <strong>Create Your Own Policy</strong>. <br/> <img alt="createyourownpolicy" src="https://cloud.githubusercontent.com/assets/4491168/6647575/10eed1f6-c98d-11e4-89e2-5c397980665b.png"/>
+</li>
+<li>For <strong>Policy Name</strong> enter “Client”; for <strong>Policy Document</strong> enter the following (but replace <code>YOUR_NAME_HERE</code> with your name):<blockquote><pre>{
+"Version": "2012-10-17",
+"Statement": [
+{
+"Effect": "Allow",
+"Action": ["s3:PutObject", "s3:PutObjectAcl"],
+"Resource": "arn:aws:s3:::YOUR_NAME_HERE/temp/*"
+}
+]
+}</pre></blockquote> <img alt="iampolicyclient" src="https://cloud.githubusercontent.com/assets/4491168/6647576/10f10322-c98d-11e4-85c8-4c547e4fe119.png"/>
+</li>
+<li>Click <strong>Create Policy</strong>.</li>
+<li>Again click <strong>Create Policy</strong> and select <strong>Create Your Own Policy</strong>. For <strong>Policy Name</strong> enter “Server”; for <strong>Policy Document</strong> enter the following (but replace <code>YOUR_NAME_HERE</code> with your name):<blockquote><pre>{
+"Version": "2012-10-17",
+"Statement": [
+{
+"Effect": "Allow",
+"Action": [
+"s3:DeleteObject",
+"s3:DeleteObjectVersion",
+"s3:GetObject",
+"s3:GetObjectAcl",
+"s3:PutObject",
+"s3:PutObjectAcl"
+],
+"Resource": [
+"arn:aws:s3:::YOUR_NAME_HERE/*"
+]
+}
+]
+}</pre></blockquote>
+</li>
+<li>Your bucket should be ready to take uploads at this point.</li>
+<li>The following steps are suggested (not required) in order to set objects in the <code>temp/</code> directory to expire after a day. If you don’t do this, they will pile up.</li>
+<li>Select <strong>Services</strong> &gt; <strong>S3</strong> <br/> <img alt="servicess3" src="https://cloud.githubusercontent.com/assets/4491168/6647580/111cac5c-c98d-11e4-856b-4ddb700c8e94.png"/>
+</li>
+<li>In the list of buckets, click on the bucket you created earlier.</li>
+<li>Click <strong>Properties</strong> and select <strong>Lifecycle</strong> from the accordion menu. <br/> <img alt="lifecycle" src="https://cloud.githubusercontent.com/assets/4491168/6647577/10f5215a-c98d-11e4-97e5-c0f4fd58890a.png"/>
+</li>
+<li>Click <strong>Add Rule</strong>.</li>
+<li>Next to <strong>Apply the Rule to:</strong> select <strong>A Prefix</strong> and enter “<tt>temp/</tt>” in the input box. Click <strong>Configure Rule &gt;</strong> <br/> <img alt="applytheruleto" src="https://cloud.githubusercontent.com/assets/4491168/6647573/10d985f8-c98d-11e4-922b-383441108bde.png"/>
+</li>
+<li>From the <strong>Action on Objects</strong> drop-down menu select <strong>Permanently Delete Only</strong>; set the <strong>Permanently Delete</strong> input setting to “<tt>1</tt>” <strong>days after the object's creation date.</strong> Click <strong>Review &gt;</strong> <br/> <img alt="permanentlydelete" src="https://cloud.githubusercontent.com/assets/4491168/6647579/11095206-c98d-11e4-8060-74baac526b80.png"/>
+</li>
+<li>Review your rule and name it if you want to (it will be named “Rule for: temp/” by default), then click <strong>Create and Activate Rule</strong>.</li>
+<li>Raise an issue if this doesn’t work.</li>
+</ol>
+<p>Note that it might take some time for your bucket's name to be properly propagated through DNS. In the mean time you might get 307 redirect preflight error messages.</p>
+
+        </div>
+
+    </div>]

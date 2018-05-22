@@ -1,0 +1,128 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <h4>
+<a aria-hidden="true" class="anchor" href="#nueva-soluci%C3%B3n-para-evitar-el-interbloqueo-de-los-fil%C3%B3sofos-comensales" id="user-content-nueva-solución-para-evitar-el-interbloqueo-de-los-filósofos-comensales"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Nueva solución para evitar el interbloqueo de los filósofos comensales.</h4>
+<ul>
+<li>Idea: Evitar que todos tomen el tenedor derecho, sólo uno de ellos compite por el tenedor izquierdo-</li>
+<li>Semáforo que controla el tenedor derecho: <strong>S[i]</strong>
+</li>
+<li>Semáforo que controla el tenedor izquierdo: <strong>S[(i+1)%5]</strong>
+</li>
+</ul>
+<pre><code>Filosofo(id){
+    Mientras(1){
+        piensa();
+        Si(i=0 O Filosofo != 0){
+            wait(S[(i+1)%5]);
+            wait(S[i]);
+            come();
+            signal(S[i]);
+            signal(S[(i+1)%5]);
+        }    Otro{
+            wait(S[i]);
+            wait(S[(i+1)%5]);
+            come();
+            signal(S[(i+1)%5]);
+            signal(S[i]);
+        }
+    }
+}
+</code></pre>
+<ul>
+<li>Los interbloqueos ocurren cuando las tareas están implementadas indefinidamente de acceder a algunos recursos utilizados por otras tareas.</li>
+</ul>
+<h4>
+<a aria-hidden="true" class="anchor" href="#abrazo-mortal-dead-lock" id="user-content-abrazo-mortal-dead-lock"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Abrazo Mortal (Dead-Lock)</h4>
+<p>Es el nombre que se da cuando ocurre que una tarea <strong>A</strong> reserva un recurso <strong>Ra</strong> en exclusión mútua y otra tarea <strong>B</strong> reserva un recurso <strong>Rb</strong> en exclusión mútua, luego sin soltar los recursos adquiridos <strong>A</strong> queda en espera del recurso <strong>Rb</strong> y <strong>B</strong> queda en espera del recurso <strong>Ra</strong>.</p>
+<p><strong>Ra</strong> y <strong>Rb</strong> son candados</p>
+<pre><code>// Al inicio 
+*Ra* = 0;  // Abiertos
+*Rb* = 0;  // Abierto
+
+TareaA(){
+  Mientras(1){
+    lock(&amp;Ra);
+    tomotenedorA();
+    lock(&amp;Rb);
+    tomotenedorB();
+    unlock(&amp;Rb);
+    unlock(&amp;Ra);
+  }
+}
+TareaB(){
+  Mientras(1){
+    lock(&amp;Rb);
+    tomotenedorB();
+    lock(&amp;Ra);
+    tomotenedorA();
+    unlock(&amp;Ra);
+    unlock(&amp;Rb);
+  }
+}
+
+</code></pre>
+<h4>
+<a aria-hidden="true" class="anchor" href="#sincronizaci%C3%B3n-de-dos-tareas" id="user-content-sincronización-de-dos-tareas"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Sincronización de Dos Tareas</h4>
+<h3>
+<a aria-hidden="true" class="anchor" href="#productor---consumidor" id="user-content-productor---consumidor"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Productor - Consumidor</h3>
+<h5>
+<a aria-hidden="true" class="anchor" href="#con-compartimiento-as%C3%ADncrono" id="user-content-con-compartimiento-asíncrono"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Con compartimiento asíncrono</h5>
+<p>En un sistema real el productor introduce un producto al buffer y avisa que ya se tiene algo con un cambio al Semáforo de vacías.</p>
+<p>Al inicio se implementa con una cola circular MOD N,
+Se tienen el frente y el posterior donde</p>
+<pre><code>F=(F+1)%N;
+P=(P+1)%N;
+</code></pre>
+<p>Se incertan los objetos en el posterior
+Se retiran lo objetos del anterior F</p>
+<pre><code>// Al inicio 
+F=0;
+P=0;
+
+Productor{
+  Mientras(1){
+    producto=produce();
+    wait(vacias);
+    productos[posterior]= producto;
+    posterior=(posterior+1)%N;
+    signal(llenas);
+  }
+}
+
+Consumidor{
+  Mientras(1){
+    wait(llenas);
+    articulo=productos[frente];
+    frente=(frente+N)%N;
+    signal(vacias);
+  }
+}
+</code></pre>
+<p>En la ejecución de tareas concurrentes se definen dos tipos de propiedades.
+<br/>Propiedades de seguridad
+<br/> Nada malo puede suceder.
+<br/>Propiedades de vivacidad
+<br/> Algo bueno eventualmente pasará.</p>
+<ul>
+<li>
+<p>Alicia y Beto
+<br/>  * Seguridad:
+<br/>    * No debe ocurrir que el pato y el cocodrilo estén en el estanque simultaneamente.
+<br/>  * Vivacidad:
+<br/>    * Si sólo una mascota quiere entrar al estanque, esta entra.
+<br/>    * Si ambas mascotas quieren entrar, sólo una de ellas entra.</p>
+</li>
+<li>
+<p>Productor - Consumidor
+<br/>    * Seguridad:
+<br/>	* No puede ser que el productor meta más datos que la capacidad del buffer.
+<br/>	* No puede pasar que el consumidor tome datos que no se han generado.
+<br/>    * Vivacidad:
+<br/>	* El consumidor eventualmente tomará un producto del buffer.
+<br/>	* El productor eventualmente podrá almacenar un producto en el buffer.</p>
+</li>
+</ul>
+
+        </div>
+
+    </div>]

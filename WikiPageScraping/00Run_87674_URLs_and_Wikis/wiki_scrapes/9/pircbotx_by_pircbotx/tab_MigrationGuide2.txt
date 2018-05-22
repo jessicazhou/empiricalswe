@@ -1,0 +1,312 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p><strong>Warning:</strong> This guide is still being written</p>
+<p>2.0 is the next major version of PircBotX, changing the direction of PircBotX from "PircBot with some improvements" to "<strong>A Modern Java IRC Library</strong>".</p>
+<p>Up until now PircBotX has been keeping roughly the same API and same way of doing things as PircBot did. Lately however this restriction has meant more work to do things you want in a less clear way. 2.0 aims to solve this with a significantly cleaner and better API. Read below for an explanation on why things changed and how you can move your bot to 2.0</p>
+<h1>
+<a aria-hidden="true" class="anchor" href="#new-configuration-class" id="user-content-new-configuration-class"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>New Configuration class</h1>
+<h2>
+<a aria-hidden="true" class="anchor" href="#why-was-this-created" id="user-content-why-was-this-created"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Why was this created?</h2>
+<p>The PircBotX class originally had many configuration setters mixed in with unrelated methods like sendMessage or getUser. Confusingly, changing most of these after connect didn't do anything to the current connection; they only applied to the next one. This added a ton of methods to the already large method list and just wasn't a good way to handle configuration</p>
+<p>In PircBotX 2.0 a new Configuration class was created to handle all configuration options in a single location. This has other advantages: You can now save a bot configuration in a file or a database. With the Configuration Builder, you can also have a template configuration with global options and then copy the template into other builders.</p>
+<p>Several new configuration options were also added</p>
+<ul>
+<li>Automatically join channels on connect with <code>addAutoJoinChannel</code>
+</li>
+<li>Multiple DCC options (see DCC section for more information)</li>
+<li>Automatically identify to nickserv with <code>setNickservPassword</code>
+</li>
+<li>Use the ident server with <code>setUseIdentServer</code> (see IdentServer section for more information)</li>
+<li>Use your own classes instead (IE custom Channel or User classes) with <code>setBotFactory</code>
+</li>
+<li>WebIRC is explicitly enabled or disabled with <code>setWebIrcEnabled</code>
+</li>
+<li>Change the default locale with <code>setLocale</code>
+</li>
+<li>Change potential channel prefixes with <code>setChannelPrefixes</code>
+</li>
+</ul>
+<h2>
+<a aria-hidden="true" class="anchor" href="#how-will-this-change-my-code" id="user-content-how-will-this-change-my-code"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>How will this change my code?</h2>
+<p>Configuration is passed to the PircBotX constructor instead of the <code>connect</code> method. You also obviously need to move where you configure your bot to the Configuration class</p>
+<p>Old code</p>
+<pre><code>//Create a new bot
+PircBotX bot = new PircBotX();
+
+//Setup this bot
+bot.setName("PircBotX"); //Set the nick of the bot. CHANGE IN YOUR CODE
+bot.setLogin("LQ"); //login part of hostmask, eg name:login@host
+bot.setVerbose(true); //Print everything, which is what you want to do 90% of the time
+bot.setAutoNickChange(true); //Automatically change nick when the current one is in use
+bot.setCapEnabled(true); //Enable CAP features
+
+//This class is a listener, so add it to the bots known listeners
+bot.getListenerManager().addListener(new PircBotXExample());
+
+//bot.connect throws various exceptions for failures
+try {
+         //Connect to the freenode IRC network
+         bot.connect("irc.freenode.net");
+         //Join the official #pircbotx channel
+         bot.joinChannel("#pircbotx");
+} catch (Exception ex) {
+         ex.printStackTrace();
+}
+</code></pre>
+<p>New code</p>
+<pre><code>//Setup this bot
+Configuration configuration = new Configuration.Builder()
+	.setName("PircBotX") //Set the nick of the bot. CHANGE IN YOUR CODE
+	.setLogin("LQ") //login part of hostmask, eg name:login@host
+	.setAutoNickChange(true) //Automatically change nick when the current one is in use
+	.setCapEnabled(true) //Enable CAP features
+	.addListener(new PircBotXExample()) //This class is a listener, so add it to the bots known listeners
+	.setServerHostname("irc.freenode.net")
+	.addAutoJoinChannel("#pircbotx") //Join the official #pircbotx channel
+	.buildConfiguration();
+PircBotX bot = new PircBotX(configuration);
+
+//Connect to server
+try {
+	bot.connect();
+} catch (Exception ex) {
+         ex.printStackTrace();
+}
+</code></pre>
+<h1>
+<a aria-hidden="true" class="anchor" href="#sending-moved-to-output-classes" id="user-content-sending-moved-to-output-classes"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Sending moved to Output classes</h1>
+<h2>
+<a aria-hidden="true" class="anchor" href="#why-did-this-change" id="user-content-why-did-this-change"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Why did this change?</h2>
+<p>Originally all sending was handled through the send<code>*</code> methods in the PircBotX class, each having multiple overloads to attempt to cover all possible options. This resulted in a huge method list and a awkward calling syntax</p>
+<p>In 2.0 output has been moved to context-specific Output classes: OutputIRC, OutputUser, OutputChannel, OutputCAP, and lastly OutputRaw. Each class only contains send methods that would apply for that specific destination, resulting in a much cleaner API.</p>
+<p>New methods</p>
+<ul>
+<li>
+<code>channel.send().who()</code> - Ask for WHO list of channel</li>
+<li>
+<code>channel.send().getMode()</code> - Ask for channel mode</li>
+</ul>
+<p>Changed methods</p>
+<ul>
+<li>All</li>
+<li>Join a channel manually with <code>sendIrc().joinChannel("#channel")</code> (Note that Configuration.addAutoJoinChannel("#channel") will join a channel automatically on connect)</li>
+</ul>
+<h2>
+<a aria-hidden="true" class="anchor" href="#how-will-this-change-my-code-1" id="user-content-how-will-this-change-my-code-1"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>How will this change my code?</h2>
+<p>Most users should of been using <code>event.respond(message)</code> as it covers most cases where you want to "respond" to an event (channel message responds with a channel message, private action responds with a private action, etc). Users who only rely on <code>respond(message)</code> are unaffected.</p>
+<p>For other users, each Output object is meant to be called from a send() method, so the send prefix was dropped from the method names themselves. See the examples below for how older versions handled sending lines and 2.0 handles sending lines. As most users interact with the bot in a Listener, these examples use provided Event objects</p>
+<pre><code>//Tell a user hello
+event.getBot().sendMessage(event.getUser(), "Hello!");
+event.getUser().send().message("Hello!");
+
+//Tell the channel we like pizza
+event.getBot().sendAction(event.getChannel(), "Really likes pizza");
+event.getChannel().send().action("Really likes pizza");
+
+//Tell a user in the channel they are wrong
+event.getBot().sendMessage(event.getChannel(), event.getUser(), "That is incorrect");
+event.getChannel().send().message(event.getUser(), "That is incorrect");
+
+//Start a channel list
+event.getBot().listChannels();
+event.getBot().sendIRC().listChannels();
+
+//Change our nick to PircBotXUser2
+event.getBot().changeNick("PircBotXUser2");
+event.getBot().sendIRC().changeNick("PircBotXUser2");
+
+//Send a raw line to the server immediately
+event.getBot().sendRawLineNow("Some raw line");
+event.getBot().sendRaw().rawLineNow("Some raw line");
+
+//Join a channel (Note, Configuration.addAutoJoinChannel is most likely what your wanting to use)
+event.getBot().joinChannel("#pircbotx");
+event.getBot().sendIrc().joinChannel("#pircbotx");
+
+//Part a channel
+event.getBot().partChannel(event.getChannel(), "Goodbye");
+event.getChannel().send().part("Goodbye");
+</code></pre>
+<h1>
+<a aria-hidden="true" class="anchor" href="#better-connection-handling" id="user-content-better-connection-handling"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Better Connection Handling</h1>
+<h2>
+<a aria-hidden="true" class="anchor" href="#why-did-this-change-1" id="user-content-why-did-this-change-1"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Why did this change?</h2>
+<p>PircBotX's original connection handling was to create an InputThread and OutputThread in connect(), and on disconnect if reconnect was enabled it would try to reconnect again. This was awkward to deal with, especially exceptions in the IO threads (print to console) or reconnect (sent as an event) and with users who wanted to run all threads in a thread pool.</p>
+<p>In 2.0 all IO threads have been eliminated. OutputThread has been replaced by a Conditional lock in OutputRaw and InputThread has been replaced by InputParser.</p>
+<p>The active connection is now handled by the new <code>startBot()</code> method. <code>startBot()</code> will (if autoReconnect is enabled in configuration) continuously connect to the server until <code>stopBotReconnect()</code> is called or an exception is thrown during the connection.</p>
+<p>This new process makes connection handling much easier</p>
+<ol>
+<li>You can run the bot in whatever thread you want</li>
+<li>Reconnecting should be significantly more stable</li>
+<li>Any exceptions from any future connection come from <code>startBot()</code>, allowing you to handle them in 1 place instead of during connect() and during reconnect</li>
+<li>Less places where an exception forces PircBotX to log to the console</li>
+<li>Fundamentally PircBotX's "core" doesn't worry about thread management, giving users much more control</li>
+</ol>
+<h2>
+<a aria-hidden="true" class="anchor" href="#how-will-this-change-my-code-2" id="user-content-how-will-this-change-my-code-2"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>How will this change my code?</h2>
+<p>You will need to call <code>startBot()</code> instead of connect() to connect to the server, but remember that it blocks <strong>until the bot disconnects from the server</strong>. Note that <code>connect()</code> still exists do the actual connection, but it is now protected.</p>
+<p>Reconnect is completely rewritten</p>
+<ul>
+<li>
+<code>bot.reconnect()</code> was removed since <code>startBot()</code> will continually call <code>connect()</code>
+</li>
+<li>Reconnect event was removed since its no longer necessary.</li>
+<li>Like other options,  disabling (default) and enabling automatic reconnection has moved to <code>autoReconnect</code> in the configuraton class</li>
+</ul>
+<h1>
+<a aria-hidden="true" class="anchor" href="#dcc-overhauled" id="user-content-dcc-overhauled"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>DCC Overhauled</h1>
+<h2>
+<a aria-hidden="true" class="anchor" href="#why-did-this-change-2" id="user-content-why-did-this-change-2"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Why did this change?</h2>
+<p>DCC has always been difficult to work with since its a multi-step process. The API wasn't much better, leaving a lot of guess work up to the user.</p>
+<p>2.0 is finally overhauling DCC support with a significantly cleaner API in the new org.pircbotx.dcc package. The model has changed to "block until the user accepts or an Exception is thrown" which should significantly simplify DCC handling. The old DccChat and ReceiveChat classes have been split up into SendChat, ReceiveChat, SendFileTransfer, and ReceiveFileTransfer. These objects represent an active transfer that's already been accepted; no more wondering if the object you have is valid. Sending a DCC request has also been moved to the OutputUser class (see Output section for more information). Lastly, the IncommingFileTransferEvent and IncommingChatRequestEvent classes contain all the information about the request, instead of keeping them in a request field.</p>
+<p>There are also several new features</p>
+<ul>
+<li>
+<strong>Passive DCC Support</strong> (also known as reverse DCC)
+<ul>
+<li>Receiving a passive DCC request is handled automatically</li>
+<li>Sending a passive DCC request by default can be enabled in Configuration with <code>dccPassiveRequest</code>
+</li>
+<li>Individually enable passive DCC with the <code>passive</code> parameter in the send methods <code>dccChat</code> and <code>dccFile</code>
+</li>
+</ul>
+</li>
+<li>Chat
+<ul>
+<li>Send and received lines are now logged</li>
+<li>The encoding specified in the configuration is used for the connection</li>
+</ul>
+</li>
+<li>File Transfer
+<ul>
+<li>Since a filename can have quotes or spaces, there is now a "safe" filename and a "raw" filename, which should fix problems from not knowing which one was valid</li>
+</ul>
+</li>
+</ul>
+<h2>
+<a aria-hidden="true" class="anchor" href="#how-will-this-change-my-code-3" id="user-content-how-will-this-change-my-code-3"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>How will this change my code?</h2>
+<p>Make sure your code is updated with the following concepts</p>
+<ul>
+<li>The new dcc classes (SendChat, ReceiveChat, SendFileTransfer, and ReceiveFileTransfer) represent an <em>active</em> transfer. If the request times out, user can't connect, or some other error happens you will receive an Exception instead</li>
+<li>Sending or accepting a DCC request blocks until the transfer is active.</li>
+</ul>
+<p>Following are some examples on how code has changed</p>
+<pre><code>/** Accept an incoming DCC chat **/
+//Old
+public void onIncomingChatRequest(IncomingChatRequestEvent event) throws Exception {
+	DccChat chat = event.getChat();
+	chat.accept();
+	String line;
+	while ((line = chat.readLine()) != null) {
+		String response = "You said " + line;
+		chat.sendLine(response);
+		System.out.println("Sent line: " + response);
+	}
+}
+//2.0
+@Override
+public void onIncomingChatRequest(IncomingChatRequestEvent event) throws Exception {
+	ReceiveChat chat = event.accept();
+	chat.sendLine("Hello incomming request!");
+	String line;
+	while ((line = chat.readLine()) != null)
+		chat.sendLine("You said " + line);
+	System.out.println("Chat ended");
+}
+
+/** Accept an incoming DCC file transfer. Add .txt to prevent executables **/
+//Old
+public void onIncomingFileTransfer(IncomingFileTransferEvent event) throws Exception {
+	DccFileTransfer transfer = event.getTransfer();
+	//If the filename had quotes this would throw an exception since "file".txt isn't a valid filename
+	File file = File.createTempFile("pircbotx-dcc", event.getSafeFilename() + ".txt");
+	transfer.receive(file, true);
+}
+//2.0
+@Override
+public void onIncomingFileTransfer(IncomingFileTransferEvent event) throws Exception {	
+	File file = File.createTempFile("pircbotx-dcc", event.getSafeFilename() + ".txt");
+	event.accept(file).transfer();
+}
+
+/** Chat with a user **/
+//Old
+DccChat chat = event.getBot().dccSendChatRequest(event.getUser(), 5000);
+String line;
+while ((line = chat.readLine()) != null) {
+	String response = "You said " + line;
+	chat.sendLine(response);
+	System.out.println("Sent line: " + response);
+}
+//2.0
+event.getUser().send().dccChat(true);
+String line;
+while ((line = chat.readLine()) != null)
+	chat.sendLine("You said " + line);
+
+/** Send file to a user **/
+File file = new File("aFile.txt");
+//Old
+event.getBot().dccSendFile(file, event.getUser(), 120000);
+//2.0
+event.getUser().send().dccFile(file).transfer();
+</code></pre>
+<h1>
+<a aria-hidden="true" class="anchor" href="#new-dependencies-on-several-libraries" id="user-content-new-dependencies-on-several-libraries"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>New Dependencies on Several Libraries</h1>
+<h2>
+<a aria-hidden="true" class="anchor" href="#why-did-this-change-3" id="user-content-why-did-this-change-3"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Why did this change?</h2>
+<p>Ever since the original project's conception there have been no dependencies on any external library. However as PircBotX continues to evolve not using libraries has meant more work and potentially bugs.</p>
+<p>2.0 uses the following libraries</p>
+<ul>
+<li>
+<a href="http://www.slf4j.org/" rel="nofollow">slf4j</a> - Modern logging facade framework to replace odd log() method and System.out.println. It allows users to use a logging framework of their own choice instead of using one dictated by us.</li>
+<li>
+<a href="https://commons.apache.org/proper/commons-lang/" rel="nofollow">Apache Commons Lang 3</a> - Extremely useful Java utility library to replace many redundant utility methods as well as access many more useful ones</li>
+<li>
+<a href="https://code.google.com/p/guava-libraries/" rel="nofollow">Google Guava</a> - Another useful utility library to provide features like better collections and easier method argument checking</li>
+<li>
+<a href="https://commons.apache.org/proper/commons-codec/" rel="nofollow">Apache Commons Codec</a> - Provides a tested and proven Base64 implementation. Technically this library is not needed if you do not use SASL CAP authentication</li>
+</ul>
+<h2>
+<a aria-hidden="true" class="anchor" href="#how-will-this-change-my-code-4" id="user-content-how-will-this-change-my-code-4"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>How will this change my code?</h2>
+<p>We always recommend using a dependency manager like Maven which will handle downloading and updating the libraries automatically for you. However if you cannot, you'll have to download the jars from the projects website.</p>
+<p>As slf4j only provides an abstract logging api, you still need to provide an actual logging implementation. If you do not have one already, we recommend logback due to its native integration with slf4j</p>
+<h1>
+<a aria-hidden="true" class="anchor" href="#multibotmanager-overhauled" id="user-content-multibotmanager-overhauled"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><code>MultiBotManager</code> Overhauled</h1>
+<h2>
+<a aria-hidden="true" class="anchor" href="#why-did-this-change-4" id="user-content-why-did-this-change-4"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Why did this change?</h2>
+<p>With big changes like the new Configuration class and the elimination of IO threads (see their respective sections for more information), MultiBotManager had to be mostly rewritten. Its goal however is still the same: Make handling multiple bots an easy, painless process.</p>
+<p>MultiBotManager has a defined lifecycle now.</p>
+<ol>
+<li>When created, any added bots or configurations are queued</li>
+<li>When <code>start()</code> is called, all queued bots are connected. Any bots added after this point are automatically connected</li>
+<li>When <code>stop()</code> is called, <code>sendIRC().quitServer()</code> is called on all bots. No more bots can be added, the Manager is finished</li>
+</ol>
+<ul>
+<li>An optional <code>stopAndWait()</code> method is provided to block until all bots have shutdown.</li>
+</ul>
+<h2>
+<a aria-hidden="true" class="anchor" href="#how-will-this-change-my-code-5" id="user-content-how-will-this-change-my-code-5"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>How will this change my code?</h2>
+<p>All of the configuration setters and adding a bot methods have been simplified to 2 methods: <code>addBot(configuration)</code> and if you for some reason want to provide the bot yourself <code>addBot(bot)</code></p>
+<p><code>connectAll()</code> was replaced by <code>start()</code> which connects all the bots in the thread pool. It also no longer throws any Exceptions, these are logged since they occur in other threads</p>
+<p><code>disconnectAll()</code> was replaced by <code>stop()</code> which sends tells all bots to <code>quitServer()</code> and shuts down the thread pool. If you want to wait for all the bots to shutdown, use <code>stopAndWait()</code></p>
+<h1>
+<a aria-hidden="true" class="anchor" href="#standalone-identserver" id="user-content-standalone-identserver"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Standalone <code>IdentServer</code>
+</h1>
+<h2>
+<a aria-hidden="true" class="anchor" href="#why-did-this-change-5" id="user-content-why-did-this-change-5"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Why did this change?</h2>
+<p>IdentServer has been mostly untouched since PircBot. The issues were numerous</p>
+<ul>
+<li>Only supported 1 bot. Confusingly, calling startIdentServer on another bot caused IOException's</li>
+<li>All other exceptions were silently ignored, causing debug pains</li>
+<li>No way to manage the created thread</li>
+</ul>
+<p>Since fundamentally you can only have 1 IdentServer running at a time regardless of how many bots there are, IdentServer was rewritten as a standalone server. Bots must be told to use the running identserver with <code>setIdentServerEnabled</code> in the Configuration class</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#how-will-this-change-my-code-6" id="user-content-how-will-this-change-my-code-6"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>How will this change my code?</h2>
+<p>As IdentServer is standalone you must start it yourself with IdentServer.startServer() . PircBotX must also be told to use the ident server with <code>setIdentServerEnabled</code> in Configuration. Everything else is handled automatically.</p>
+<p>You can stop the IdentServer with IdentServer.stopServer() .</p>
+
+        </div>
+
+    </div>]

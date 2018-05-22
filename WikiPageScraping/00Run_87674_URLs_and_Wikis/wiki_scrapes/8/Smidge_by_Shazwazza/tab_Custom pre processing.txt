@@ -1,0 +1,137 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <h1>
+<a aria-hidden="true" class="anchor" href="#custom-pre-processing-pipeline" id="user-content-custom-pre-processing-pipeline"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Custom pre-processing pipeline</h1>
+<p>It's easy to customize how your files are processed. This can be done at a global/default level, at the bundle level or at an individual file level.</p>
+<p>Each processor is of type <code>Smidge.FileProcessors.IPreProcessor</code> which contains a single method: <code>Task ProcessAsync(FileProcessContext fileProcessContext, Func&lt;string, Task&gt; next);</code>. A pre-processor works like middleware and that it will need to call the next one in the chain, this allows a pre-processor to execute before and after other pre-processors if necessary.</p>
+<p>The built-in processors are:</p>
+<ul>
+<li><code>CssImportProcessor</code></li>
+<li><code>CssUrlProcessor</code></li>
+<li><code>CssMinifier</code></li>
+<li>
+<code>JsMinifier</code> (JsMin)</li>
+<li><code>NuglifyCss</code></li>
+<li><code>NuglifyJs</code></li>
+<li><code>UglifyNodeMinifier</code></li>
+</ul>
+<p>But you can create and add your own just by adding the instance to the IoC container, for example if you created a dotless processor::</p>
+<div class="highlight highlight-source-cs"><pre><span class="pl-smi">services</span>.<span class="pl-en">AddScoped</span>&lt;<span class="pl-en">IPreProcessor</span>, <span class="pl-en">DotLessProcessor</span>&gt;();</pre></div>
+<h4>
+<a aria-hidden="true" class="anchor" href="#global-custom-pipeline" id="user-content-global-custom-pipeline"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Global custom pipeline</h4>
+<p>If you want to override the default processing pipeline for all files, then you'd add your own implementation of <code>Smidge.FileProcessors.PreProcessPipelineFactory</code> to the IoC container after you've called <code>AddSmidge();</code>, like:</p>
+<div class="highlight highlight-source-cs"><pre><span class="pl-smi">services</span>.<span class="pl-en">AddSingleton</span>&lt;<span class="pl-en">PreProcessPipelineFactory</span>, <span class="pl-en">MyCustomPreProcessPipelineFactory</span>&gt;();</pre></div>
+<p>and override the <code>GetDefault</code> method. You can see the default implementation here: <a href="https://github.com/Shazwazza/Smidge/blob/master/src/Smidge/FileProcessors/PreProcessPipelineFactory.cs">https://github.com/Shazwazza/Smidge/blob/master/src/Smidge/FileProcessors/PreProcessPipelineFactory.cs</a></p>
+<p>Alternatively in Smidge 2.0 you can specify a callback in options to modify the default pipeline, for example:</p>
+<div class="highlight highlight-source-cs"><pre><span class="pl-smi">services</span>.<span class="pl-en">AddSmidge</span>(<span class="pl-smi">_config</span>)
+    .<span class="pl-en">Configure</span>&lt;<span class="pl-en">SmidgeOptions</span>&gt;(<span class="pl-smi">options</span> <span class="pl-k">=&gt;</span>
+    {
+        <span class="pl-smi">options</span>.<span class="pl-smi">PipelineFactory</span>.<span class="pl-smi">OnGetDefault</span> <span class="pl-k">=</span> <span class="pl-smi">GetDefaultPipelineFactory</span>;
+    });</pre></div>
+<p>The <code>GetDefaultPipeline</code> method could do something like:</p>
+<div class="highlight highlight-source-cs"><pre><span class="pl-c"><span class="pl-c">///</span> &lt;<span class="pl-ent"><span class="pl-ent">summary</span></span>&gt;</span>
+<span class="pl-c"><span class="pl-c">///</span> A callback used to modify the default pipeline to use Nuglify for JS processing</span>
+<span class="pl-c"><span class="pl-c">///</span> &lt;/<span class="pl-ent"><span class="pl-ent">summary</span></span>&gt;</span>
+<span class="pl-c"><span class="pl-c">///</span> &lt;<span class="pl-ent"><span class="pl-ent">param</span></span> <span class="pl-e"><span class="pl-e">name</span></span>=<span class="pl-s"><span class="pl-pds">"</span>fileType<span class="pl-pds">"</span></span>&gt;&lt;/<span class="pl-ent"><span class="pl-ent">param</span></span>&gt;</span>
+<span class="pl-c"><span class="pl-c">///</span> &lt;<span class="pl-ent"><span class="pl-ent">param</span></span> <span class="pl-e"><span class="pl-e">name</span></span>=<span class="pl-s"><span class="pl-pds">"</span>processors<span class="pl-pds">"</span></span>&gt;&lt;/<span class="pl-ent"><span class="pl-ent">param</span></span>&gt;</span>
+<span class="pl-c"><span class="pl-c">///</span> &lt;<span class="pl-ent"><span class="pl-ent">returns</span></span>&gt;&lt;/<span class="pl-ent"><span class="pl-ent">returns</span></span>&gt;</span>
+<span class="pl-k">private</span> <span class="pl-k">static</span> <span class="pl-en">PreProcessPipeline</span> <span class="pl-en">GetDefaultPipelineFactory</span>(<span class="pl-en">WebFileType</span> <span class="pl-smi">fileType</span>, <span class="pl-en">IReadOnlyCollection</span>&lt;<span class="pl-en">IPreProcessor</span>&gt; <span class="pl-smi">processors</span>)
+{
+    <span class="pl-k">switch</span> (<span class="pl-smi">fileType</span>)
+    {
+        <span class="pl-k">case</span> <span class="pl-smi">WebFileType</span>.<span class="pl-smi">Js</span>:
+            <span class="pl-k">return</span> <span class="pl-k">new</span> <span class="pl-en">PreProcessPipeline</span>(<span class="pl-k">new</span> <span class="pl-en">IPreProcessor</span>[]
+            {
+                <span class="pl-smi">processors</span>.<span class="pl-en">OfType</span>&lt;<span class="pl-en">NuglifyJs</span>&gt;().<span class="pl-en">Single</span>()
+            });                
+    }
+    <span class="pl-c"><span class="pl-c">//</span>returning null will fallback to the logic defined in the registered PreProcessPipelineFactory</span>
+    <span class="pl-k">return</span> <span class="pl-c1">null</span>;
+}</pre></div>
+<h4>
+<a aria-hidden="true" class="anchor" href="#individual-file-custom-pipeline" id="user-content-individual-file-custom-pipeline"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Individual file custom pipeline</h4>
+<p>If you want to customize the pipeline for any given file it's really easy. Each registered file is of type <code>Smidge.Models.IFile</code> which contains a property called <code>Pipeline</code> of type <code>Smidge.FileProcessors.PreProcessPipeline</code>. So if you wanted to customize the pipeline for a single JS file, you could do something like:</p>
+<div class="highlight highlight-source-cs"><pre>@<span class="pl-smi">inject</span> <span class="pl-smi">Smidge</span>.<span class="pl-smi">FileProcessors</span>.<span class="pl-smi">PreProcessPipelineFactory</span> <span class="pl-smi">PipelineFactory</span>
+
+@{ <span class="pl-smi">Smidge</span>.<span class="pl-en">RequiresJs</span>(<span class="pl-k">new</span> <span class="pl-en">JavaScriptFile</span>(<span class="pl-s"><span class="pl-pds">"</span>~/Js/test2.js<span class="pl-pds">"</span></span>)
+        {
+            <span class="pl-smi">Pipeline</span> <span class="pl-k">=</span> <span class="pl-smi">PipelineFactory</span>.<span class="pl-en">GetPipeline</span>(
+                <span class="pl-c"><span class="pl-c">//</span>add as many processor types as you want</span>
+                <span class="pl-k">typeof</span>(<span class="pl-en">DotLess</span>), <span class="pl-k">typeof</span>(<span class="pl-en">JsMin</span>))
+        })</pre></div>
+<h4>
+<a aria-hidden="true" class="anchor" href="#bundle-level-custom-pipeline" id="user-content-bundle-level-custom-pipeline"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Bundle level custom pipeline</h4>
+<p>If you want to customize the pipeline for a particular bundle, you can just create your bundle with a custom pipeline like:</p>
+<div class="highlight highlight-source-cs"><pre><span class="pl-smi">services</span>.<span class="pl-en">AddSmidge</span>()
+    .<span class="pl-en">Configure</span>&lt;<span class="pl-en">Bundles</span>&gt;(<span class="pl-smi">bundles</span> <span class="pl-k">=&gt;</span>
+    {                   
+        <span class="pl-smi">bundles</span>.<span class="pl-en">Create</span>(<span class="pl-s"><span class="pl-pds">"</span>test-bundle-3<span class="pl-pds">"</span></span>, 
+            <span class="pl-smi">bundles</span>.<span class="pl-smi">PipelineFactory</span>.<span class="pl-en">GetPipeline</span>(
+                <span class="pl-c"><span class="pl-c">//</span>add as many processor types as you want</span>
+                <span class="pl-k">typeof</span>(<span class="pl-en">DotLess</span>), <span class="pl-k">typeof</span>(<span class="pl-en">JsMin</span>)), 
+            <span class="pl-smi">WebFileType</span>.<span class="pl-smi">Js</span>, 
+            <span class="pl-s"><span class="pl-pds">"</span>~/Js/Bundle2<span class="pl-pds">"</span></span>);
+    });</pre></div>
+<p><em>There are quite a few overloads for creating bundles with custom pipelines.</em></p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#minification-benchmarks" id="user-content-minification-benchmarks"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Minification benchmarks</h2>
+<p>With Smidge 2.0 there are a couple of minification pre-processor options. By default Smidge will use JsMin but you could swap this for <a href="https://github.com/xoofx/NUglify">Nuglify</a> or Uglify (via <a href="https://github.com/aspnet/JavaScriptServices">NodeServices</a>) if you chose to. This decision would depend on if you wanted some of the more advanced features of either of these engines. It's worth seeing the benchmarks of these minification engines because Smidge executes at runtime so in theory you'd want it to execute as fast as possible. Smidge does a file based cache so once the files are processed for a given version they don't get re-processed on the next app restart (i.e. the processing only happens once). (NOTE: a smaller Minified % is better)</p>
+<table>
+<thead>
+<tr>
+<th align="right">Method</th>
+<th align="right">Median</th>
+<th align="right">StdDev</th>
+<th align="right">Scaled</th>
+<th align="right">Scaled-SD</th>
+<th align="right">Minified %</th>
+<th align="right">Gen 0</th>
+<th align="right">Gen 1</th>
+<th align="right">Gen 2</th>
+<th align="right">Bytes Allocated/Op</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="right">JsMin</td>
+<td align="right">10.2008 ms</td>
+<td align="right">0.3102 ms</td>
+<td align="right">1.00</td>
+<td align="right">0.00</td>
+<td align="right">51.75%</td>
+<td align="right">-</td>
+<td align="right">-</td>
+<td align="right">-</td>
+<td align="right">155,624.67</td>
+</tr>
+<tr>
+<td align="right">Nuglify</td>
+<td align="right">69.0778 ms</td>
+<td align="right">0.0180 ms</td>
+<td align="right">6.72</td>
+<td align="right">0.16</td>
+<td align="right">32.71%</td>
+<td align="right">53.00</td>
+<td align="right">22.00</td>
+<td align="right">15.00</td>
+<td align="right">4,837,313.07</td>
+</tr>
+<tr>
+<td align="right">JsServicesUglify</td>
+<td align="right">1,548.3951 ms</td>
+<td align="right">7.6388 ms</td>
+<td align="right">150.95</td>
+<td align="right">3.73</td>
+<td align="right">32.63%</td>
+<td align="right">0.97</td>
+<td align="right">-</td>
+<td align="right">-</td>
+<td align="right">576,056.55</td>
+</tr>
+</tbody>
+</table>
+<p>The last benchmark may be a bit misleading because the processing is done via NodeJs which executes in a separate process so I'm unsure if the actual memory usage of that can be properly captured by <a href="https://github.com/dotnet/BenchmarkDotNet">BenchmarkDotNet</a> but you can see it's speed is much slower.</p>
+
+        </div>
+
+    </div>]

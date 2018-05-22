@@ -1,0 +1,77 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>We are still learning from our own experiences and from the community. The goal of this section is to collect programming wisdom from Spice developers and to guide new ones. Since we're all still learning, this section <em>will</em> change.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#defining-local-variables" id="user-content-defining-local-variables"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Defining Local Variables</h2>
+<p>We have to be careful when defining our own functions because we might clobber existing ones. JavaScript's scope is created within functions; therefore, to hide helper functions, you have to define it inside another function. Functionception.</p>
+<p>Here is one common pattern used by programmers. It is used in projects such as <a href="http://underscorejs.org/docs/underscore.html" rel="nofollow">Underscore</a> and <a href="http://coffeescript.org/#lexical_scope" rel="nofollow">CoffeeScript</a>:</p>
+<div class="highlight highlight-source-js"><pre>(<span class="pl-k">function</span> () {
+    <span class="pl-s"><span class="pl-pds">"</span>use strict<span class="pl-pds">"</span></span>;
+    <span class="pl-c"><span class="pl-c">//</span> These variables are local.</span>
+    <span class="pl-k">var</span> root <span class="pl-k">=</span> <span class="pl-c1">this</span>,
+        countries <span class="pl-k">=</span> [<span class="pl-s"><span class="pl-pds">"</span>Malaysia<span class="pl-pds">"</span></span>, <span class="pl-s"><span class="pl-pds">"</span>United States<span class="pl-pds">"</span></span>, <span class="pl-s"><span class="pl-pds">"</span>Japan<span class="pl-pds">"</span></span>, <span class="pl-s"><span class="pl-pds">"</span>Philippines<span class="pl-pds">"</span></span>, <span class="pl-s"><span class="pl-pds">"</span>China<span class="pl-pds">"</span></span>];
+
+    <span class="pl-c"><span class="pl-c">//</span> This, my dear readers, is a local function.</span>
+    <span class="pl-k">function</span> <span class="pl-en">awesomeSynonyms</span>() {
+        <span class="pl-k">return</span> [<span class="pl-s"><span class="pl-pds">"</span>Sweet<span class="pl-pds">"</span></span>, <span class="pl-s"><span class="pl-pds">"</span>Cool<span class="pl-pds">"</span></span>];
+    }
+
+    <span class="pl-c"><span class="pl-c">//</span> This function will be called when the plugin executes.</span>
+    <span class="pl-c"><span class="pl-c">//</span> ddg_spice_detect_lang is a globally accessible function (or method)</span>
+    <span class="pl-c"><span class="pl-c">//</span> because it's attached to the global object called root.</span>
+    <span class="pl-smi">root</span>.<span class="pl-en">ddg_spice_detect_awesomeness</span> <span class="pl-k">=</span> <span class="pl-k">function</span> () {
+        <span class="pl-k">var</span> awesome <span class="pl-k">=</span> <span class="pl-en">awesomeSynonyms</span>();
+    };
+}).<span class="pl-c1">call</span>(<span class="pl-c1">this</span>);</pre></div>
+<p>The outer function creates a scope which means that everything you define in it is local (provided that you use the <code>var</code> keyword if it's a variable). If everything in it is local, then how do we make <code>ddg_spice_detect_awesomeness</code> global? This is where <code>this</code> comes in. <code>this</code> outside the function refers to the <code>window</code> object and we pass that object to the inner function. We then attach <code>ddg_spice_detect_awesomeness</code> to the object and we're all set.</p>
+<p>Confused yet? Don't worry, all you need to know is that everything attached to <code>root</code> is global, and we don't want a lot of global variables. You can read more about <code>this</code> in the <a href="http://bonsaiden.github.com/JavaScript-Garden/#function.this">JavaScript Garden</a>. The outer function is called an immediate function. You can learn more about immediate functions in <a href="http://stackoverflow.com/questions/592396/what-is-the-purpose-of-a-self-executing-function-in-javascript" rel="nofollow">Stack Overflow</a>.</p>
+<p>Here is another variation of the same function that we recently picked up from <a href="http://shop.oreilly.com/product/9780596806767.do" rel="nofollow">JavaScript Patterns</a> (<a href="http://www.jspatterns.com/self-executing-functions/" rel="nofollow">blog version</a>):</p>
+<div class="highlight highlight-source-js"><pre>(<span class="pl-k">function</span> (<span class="pl-smi">root</span>) {
+    <span class="pl-s"><span class="pl-pds">"</span>use strict<span class="pl-pds">"</span></span>;
+    <span class="pl-c"><span class="pl-c">//</span> These variables are local.</span>
+    <span class="pl-k">var</span> countries <span class="pl-k">=</span> [<span class="pl-s"><span class="pl-pds">"</span>Malaysia<span class="pl-pds">"</span></span>, <span class="pl-s"><span class="pl-pds">"</span>United States<span class="pl-pds">"</span></span>, <span class="pl-s"><span class="pl-pds">"</span>Japan<span class="pl-pds">"</span></span>, <span class="pl-s"><span class="pl-pds">"</span>Philippines<span class="pl-pds">"</span></span>, <span class="pl-s"><span class="pl-pds">"</span>China<span class="pl-pds">"</span></span>];
+
+    <span class="pl-c"><span class="pl-c">//</span> This, my dear readers, is a local function.</span>
+    <span class="pl-k">function</span> <span class="pl-en">awesomeSynonyms</span>() {
+        <span class="pl-k">return</span> [<span class="pl-s"><span class="pl-pds">"</span>Sweet<span class="pl-pds">"</span></span>, <span class="pl-s"><span class="pl-pds">"</span>Cool<span class="pl-pds">"</span></span>];
+    }
+
+    <span class="pl-c"><span class="pl-c">//</span> This function will be called when the plugin executes.</span>
+    <span class="pl-c"><span class="pl-c">//</span> ddg_spice_detect_lang is a globally accessible function (or method)</span>
+    <span class="pl-c"><span class="pl-c">//</span> because it's attached to the global object called root.</span>
+    <span class="pl-smi">root</span>.<span class="pl-en">ddg_spice_detect_awesomeness</span> <span class="pl-k">=</span> <span class="pl-k">function</span> () {
+        <span class="pl-k">var</span> awesome <span class="pl-k">=</span> <span class="pl-en">awesomeSynonyms</span>();
+    };
+}(<span class="pl-c1">this</span>));</pre></div>
+<p>It passes the global object as a parameter to the immediate function and we can refer to is as <code>root</code> (you can also name it <code>global</code> if you want).</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#assigning-an-object-to-items" id="user-content-assigning-an-object-to-items"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Assigning an Object to <code>items</code>
+</h2>
+<p>Instead of setting each property of the object in <code>items</code> like so:</p>
+<div class="highlight highlight-source-js"><pre><span class="pl-k">var</span> items <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-en">Array</span>();
+items[<span class="pl-c1">0</span>] <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-en">Array</span>();
+items[<span class="pl-c1">0</span>].<span class="pl-smi">a</span> <span class="pl-k">=</span> <span class="pl-k">...</span>;
+items[<span class="pl-c1">0</span>].<span class="pl-smi">h</span> <span class="pl-k">=</span> <span class="pl-k">...</span>;
+items[<span class="pl-c1">0</span>].<span class="pl-smi">u</span> <span class="pl-k">=</span> <span class="pl-k">...</span>;
+<span class="pl-k">...</span></pre></div>
+<p>We think it's easier to read this:</p>
+<div class="highlight highlight-source-js"><pre><span class="pl-k">var</span> items <span class="pl-k">=</span> [[]];
+items[<span class="pl-c1">0</span>] <span class="pl-k">=</span> {
+    a<span class="pl-k">:</span> <span class="pl-k">...</span>,
+    h<span class="pl-k">:</span> <span class="pl-k">...</span>,
+    u<span class="pl-k">:</span> <span class="pl-k">...</span>,
+    <span class="pl-k">...</span>
+};</pre></div>
+<h2>
+<a aria-hidden="true" class="anchor" href="#getting-rid-of-bugs" id="user-content-getting-rid-of-bugs"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Getting Rid of Bugs</h2>
+<p>JavaScript has a lot of quirks but it has some <a href="http://www.livestream.com/etsy/video?clipId=pla_1463e546-47ed-4a93-b59a-bd52b236e8b8" rel="nofollow">good parts</a>. To remind us of the good parts, it is important to use <a href="http://www.jshint.com/" rel="nofollow">JSHint</a>. Why? On JSHint's website:</p>
+<blockquote>
+<p>Our goal is to help JavaScript developers write complex programs without worrying about typos and language gotchas.</p>
+</blockquote>
+<h2>
+<a aria-hidden="true" class="anchor" href="#examples" id="user-content-examples"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Examples</h2>
+<p>Take a look at the <a href="https://github.com/duckduckgo/zeroclickinfo-spice/tree/master/share/spice/movie">Rotten Tomatoes</a> plugin.</p>
+
+        </div>
+
+    </div>]

@@ -1,0 +1,446 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>If you haven't read the <strong>Introduction Series</strong>, turn back now, because <em>here be dragons</em>...</p>
+<p>Still here? Okay, let's dive in.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#1-code-out-of-the-aether---discovering-injectors" id="user-content-1-code-out-of-the-aether---discovering-injectors"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>1. Code Out Of The Aether - Discovering Injectors</h3>
+<p>If you've read the Introduction Series, you know how to leverage the Mixin processor to merge code you provide into a <strong>target class</strong>. In fact, even with more complex functionality like <em>Intrinsic Proxies</em>, the code which ultimately ends up in the target class is only ever going to be a blend of original bytecode and new code supplied by you.</p>
+<p><strong>Callback Injectors</strong> are the first Mixin technology you will learn about where this is no longer the case: with <strong>Callback Injectors</strong>, the Mixin processor can be instructed to <strong>generate new code</strong> for us.</p>
+<p><strong>Callback Injectors</strong> consist of two parts:</p>
+<ul>
+<li>A <strong>regular mixin method</strong> known as a <strong>handler method</strong>, this method is <strong>added</strong> to the target class by our mixin with some custom code within it.</li>
+<li>An <strong>injection point</strong> definition - this is an annotation which tells the mixin processor where to create instructions inside an <strong>existing method</strong> (known as the <strong>target method</strong>) which will <strong>invoke our handler method</strong>.</li>
+</ul>
+<p>Before we go into too much detail, let's introduce our case study example. The following diagram shows a schematic view of some code in an extremely simple class <code>Flard</code>:</p>
+<p><img alt="" src="https://raw.githubusercontent.com/SpongePowered/Mixin/master/docs/images/flard_00.png"/></p>
+<p>The class <code>Flard</code> contains:</p>
+<ul>
+<li>A <code>protected</code> field <code>position</code>
+</li>
+<li>A <code>public</code> method <code>setPos</code>
+</li>
+<li>A <code>protected</code> method <code>update</code>
+</li>
+</ul>
+<p>The internal behaviour of <code>Flard</code> is that whenever a property is mutated, the setter for the property always calls the <code>update()</code> method before returning. The <code>update</code> method handles sending the object state to the server when properties are changed.</p>
+<blockquote>
+<p>Notice that even though the methods return <code>void</code>, I have still included an explicit <code>return</code> in the code listing. This is included because - in bytecode terms - there is no such thing as an <em>implicit</em> return, there is always a <code>RETURN</code> opcode in the method bytecode. This is an important fact to bear in mind when we consider <em>Injection Points</em> later on.</p>
+</blockquote>
+<p>Let's consider the flow of execution when the <code>setPos</code> setter is called from some external code:</p>
+<p><img alt="" src="https://raw.githubusercontent.com/SpongePowered/Mixin/master/docs/images/flard_01.png"/></p>
+<p>Nothing unusual is happening here, the arrows show exactly what we would expect to happen given the code listings.</p>
+<h4>
+<a aria-hidden="true" class="anchor" href="#11-recapping---stuff-you-already-know" id="user-content-11-recapping---stuff-you-already-know"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>1.1 Recapping - Stuff You Already Know™</h4>
+<p>So far, so boring. Let's assume that we want to get in on the <code>update()</code> action, we want to add some custom logic - maybe notify some observer class - when <code>update()</code> is called. We already know that we can change the behaviour of the <code>update()</code> method by <a href="https://github.com/SpongePowered/Mixin/wiki/Introduction-to-Mixins---Overwriting-Methods">overwriting it with a modified version</a> and even use <em><a href="https://github.com/SpongePowered/Mixin/wiki/Introduction-to-Mixins---Overwriting-Methods#2-intrinsic-proxy-methods">Intrinsic Proxy</a> displacement</em> to preserve the original method. However we also know that overwrites have <strong>a lot</strong> of <a href="https://github.com/SpongePowered/Mixin/wiki/Introduction-to-Mixins---Overwriting-Methods#12-with-great-power-comes-great-possibility-to-screw-things-up">drawbacks</a>, both in terms of maintainability and also interoperability.</p>
+<p>So how do we add custom logic to the method without overwriting it?</p>
+<p>Answer: <em>tell the method to invoke some custom of our own custom code!</em></p>
+<p><img alt="" src="https://raw.githubusercontent.com/SpongePowered/Mixin/master/docs/images/invoke.png"/></p>
+<h4>
+<a aria-hidden="true" class="anchor" href="#12-who-you-gonna-call-on-update" id="user-content-12-who-you-gonna-call-on-update"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>1.2 Who you gonna call? On Update!</h4>
+<p>Step one in our journey to discover Injectors actually turns out to be something we know already as well: adding <em>new</em> methods into a target class. The method we will inject is known as a <strong>handler</strong> and in general we will mark handler methods with the prefix "<code>on</code>", much like the event sink naming convention used in many frameworks.</p>
+<p>We will name our new <strong>handler</strong> method for this example <code>onUpdate</code>, since we will be hooking onto the <code>update</code> method.</p>
+<blockquote>
+<p>Using this nomenclature of <code>on</code> followed by the name of the target method aids readability of the mixin code, since anyone reading the mixin can get an idea of what the method is hooking into without having to inspect the injector's definition.</p>
+</blockquote>
+<p>So let's assume that our first step is to add our new <strong>handler</strong> method <code>onUpdate</code> into the target class using a mixin. In our example the <strong>handler</strong> method simply invokes <code>foo</code> on some singleton observer object, imaginatively named <code>Observer</code>:</p>
+<p><img alt="" src="https://raw.githubusercontent.com/SpongePowered/Mixin/master/docs/images/flard_02.png"/></p>
+<p>Well this is great and everything, but our new method is basically going to just sit there and do nothing at this point, so let's look at how we do the actual <em>injecting</em> part of Injectors:</p>
+<h4>
+<a aria-hidden="true" class="anchor" href="#13-heads-shoulders-knees-returns-knees-returns" id="user-content-13-heads-shoulders-knees-returns-knees-returns"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>1.3 HEADs, Shoulders, Knees, RETURNs, Knees, RETURNs!</h4>
+<p>The first thing we need to be able to do before we start is identify parts of the target method. Let's decorate the <code>update()</code> method with markers which show some of the areas we are able to easily identify:</p>
+<p><img alt="" src="https://raw.githubusercontent.com/SpongePowered/Mixin/master/docs/images/flard_03.png"/></p>
+<p>The markers indicate parts of the method's anatomy:</p>
+<ul>
+<li>
+<strong>HEAD</strong> indicates a point <em>immediately before the first opcode</em> in a method body, the "head" of the method.</li>
+<li>
+<strong>RETURN</strong> indicates a point <em>immediately before a <code>RETURN</code> opcode</em> in the method.</li>
+</ul>
+<p>There are other points in a method that we will be able to identify but for now we will focus on these simple markers. In injector terminology, these places in a method are known as <strong>injection points</strong>.</p>
+<h4>
+<a aria-hidden="true" class="anchor" href="#14-hey-i-just-mixed-in-and-this-is-crazy-but-im-a-method-so-call-me-maybe" id="user-content-14-hey-i-just-mixed-in-and-this-is-crazy-but-im-a-method-so-call-me-maybe"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>1.4 Hey I just mixed in, and this is crazy, but I'm a method, so call me maybe?</h4>
+<p>We're now ready to connect the dots. We will start by decorating our <code>onUpdate</code> <strong>handler</strong> method with an Injector declaration:</p>
+<p><img alt="" src="https://raw.githubusercontent.com/SpongePowered/Mixin/master/docs/images/flard_04.png"/></p>
+<p>As you can see, the <code>@Inject</code> annotation needs two pieces of information: the <strong>method</strong> to inject into and the point <strong>at</strong> which to do so. In code, this looks like this:</p>
+<div class="highlight highlight-source-java"><pre><span class="pl-k">@Inject</span>(<span class="pl-c1">method</span> <span class="pl-k">=</span> <span class="pl-s"><span class="pl-pds">"</span>update<span class="pl-pds">"</span></span>, <span class="pl-c1">at</span> <span class="pl-k">=</span> <span class="pl-k">@At</span>(<span class="pl-s"><span class="pl-pds">"</span>HEAD<span class="pl-pds">"</span></span>))
+<span class="pl-k">protected</span> <span class="pl-k">void</span> onUpdate() {
+    <span class="pl-smi">Observer</span><span class="pl-k">.</span>instance<span class="pl-k">.</span>foo(<span class="pl-c1">this</span>);
+}</pre></div>
+<p>When the mixin processor applies the mixin method, it sees the <code>@Inject</code> annotation and generates code in the <strong>target</strong> method to invoke the <strong>handler</strong> method:</p>
+<p><img alt="" src="https://raw.githubusercontent.com/SpongePowered/Mixin/master/docs/images/flard_05.png"/></p>
+<p>The injected callback to our <strong>handler</strong> function is shown here in purple. Unlike an overwrite, the original behaviour of the <strong>target</strong> method is untouched, and our <strong>handler</strong> method simply receives a callback at the start of the method.</p>
+<p>Ultimately, using injectors boils down to the following steps:</p>
+<ol>
+<li>Identify the <strong>injection point</strong> (more on these below)</li>
+<li>Write your <strong>handler method</strong>
+</li>
+<li>Decorate the handler method with an <strong><code>@Inject</code></strong> annotation to create the injection relationship.</li>
+</ol>
+<p>Now we understand the basics, we're ready to dive into the nitty gritty.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#2-building-handler-methods" id="user-content-2-building-handler-methods"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>2. Building Handler Methods</h3>
+<p>The above introduction is simplified for the purposes of introducing the concept of Injectors. In reality, all Injector <strong>handler methods</strong> must accept a <code>CallbackInfo</code> object in their arguments. This object is generated by the callback and serves as a handle which can be used when making <em>Cancellable Injections</em> (more on those below).</p>
+<p>Our example code from above thus looks like this in reality:</p>
+<div class="highlight highlight-source-java"><pre><span class="pl-k">@Inject</span>(<span class="pl-c1">method</span> <span class="pl-k">=</span> <span class="pl-s"><span class="pl-pds">"</span>update<span class="pl-pds">"</span></span>, <span class="pl-c1">at</span> <span class="pl-k">=</span> <span class="pl-k">@At</span>(<span class="pl-s"><span class="pl-pds">"</span>HEAD<span class="pl-pds">"</span></span>))
+<span class="pl-k">protected</span> <span class="pl-k">void</span> onUpdate(<span class="pl-smi">CallbackInfo</span> ci) {
+    <span class="pl-smi">Observer</span><span class="pl-k">.</span>instance<span class="pl-k">.</span>foo(<span class="pl-c1">this</span>);
+}</pre></div>
+<blockquote>
+<p>Our above example is also simplified because the target method takes no arguments and returns <code>void</code>.</p>
+</blockquote>
+<h4>
+<a aria-hidden="true" class="anchor" href="#21-grabbing-the-targets-arguments" id="user-content-21-grabbing-the-targets-arguments"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>2.1 Grabbing the Target's Arguments</h4>
+<p>When injecting into a <strong>target method</strong> which has arguments, the <strong>target method</strong> arguments can also be passed to the <strong>handler</strong> methods as part of the injection. Let's take the <code>setPos(int, int)</code> method from the example above:</p>
+<div class="highlight highlight-source-java"><pre><span class="pl-c"><span class="pl-c">/**</span></span>
+<span class="pl-c"> * A target method, setPos</span>
+<span class="pl-c"> <span class="pl-c">*/</span></span>
+<span class="pl-k">public</span> <span class="pl-k">void</span> setPos(<span class="pl-k">int</span> x, <span class="pl-k">int</span> y) {
+    <span class="pl-smi">Point</span> p <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-smi">Point</span>(x, y);
+    <span class="pl-c1">this</span><span class="pl-k">.</span>position <span class="pl-k">=</span> p;
+    <span class="pl-c1">this</span><span class="pl-k">.</span>update();
+}</pre></div>
+<p>If we were to create an injector for this method, we could optionally choose to consume the two integer arguments (<code>x</code> and <code>y</code>) in our <strong>handler</strong> method. We do this by simply adding them to our <strong>handler method</strong>'s signature:</p>
+<div class="highlight highlight-source-java"><pre><span class="pl-c"><span class="pl-c">/**</span></span>
+<span class="pl-c"> * Handler method, onSetPos. Note the two int variables x and y</span>
+<span class="pl-c"> * which appear before the callbackinfo</span>
+<span class="pl-c"> <span class="pl-c">*/</span></span>
+<span class="pl-k">@Inject</span>(<span class="pl-c1">method</span> <span class="pl-k">=</span> <span class="pl-s"><span class="pl-pds">"</span>setPos<span class="pl-pds">"</span></span>, <span class="pl-c1">at</span> <span class="pl-k">=</span> <span class="pl-k">@At</span>(<span class="pl-s"><span class="pl-pds">"</span>HEAD<span class="pl-pds">"</span></span>))
+<span class="pl-k">protected</span> <span class="pl-k">void</span> onSetPos(<span class="pl-k">int</span> x, <span class="pl-k">int</span> y, <span class="pl-smi">CallbackInfo</span> ci) {
+    <span class="pl-smi">System</span><span class="pl-k">.</span>out<span class="pl-k">.</span>printf(<span class="pl-s"><span class="pl-pds">"</span>Position is being set to (%d, %d)<span class="pl-cce">\n</span><span class="pl-pds">"</span></span>, x, y);
+}</pre></div>
+<p>Notice that we still include the <code>CallbackInfo</code> argument. The code injected into <code>setPos</code> now looks like this, notice that the call is passing the <code>x</code> and <code>y</code> arguments when calling our <strong>handler</strong> method <code>onSetPos</code>:</p>
+<p><img alt="" src="https://raw.githubusercontent.com/SpongePowered/Mixin/master/docs/images/flard_06.png"/></p>
+<p>The method arguments and callbackinfo together provide <strong>context</strong> for the injection, and allow you to alter the behaviour of your handler accordingly. For example:</p>
+<div class="highlight highlight-source-java"><pre><span class="pl-c"><span class="pl-c">/**</span></span>
+<span class="pl-c"> * Handler method, onSetPos</span>
+<span class="pl-c"> <span class="pl-c">*/</span></span>
+<span class="pl-k">@Inject</span>(<span class="pl-c1">method</span> <span class="pl-k">=</span> <span class="pl-s"><span class="pl-pds">"</span>setPos<span class="pl-pds">"</span></span>, <span class="pl-c1">at</span> <span class="pl-k">=</span> <span class="pl-k">@At</span>(<span class="pl-s"><span class="pl-pds">"</span>HEAD<span class="pl-pds">"</span></span>))
+<span class="pl-k">protected</span> <span class="pl-k">void</span> onSetPos(<span class="pl-k">int</span> x, <span class="pl-k">int</span> y, <span class="pl-smi">CallbackInfo</span> ci) {
+    <span class="pl-c"><span class="pl-c">//</span> Check if setting position to origin</span>
+    <span class="pl-k">if</span> (x <span class="pl-k">==</span> <span class="pl-c1">0</span> <span class="pl-k">&amp;&amp;</span> y <span class="pl-k">==</span> <span class="pl-c1">0</span>) {
+        <span class="pl-c1">this</span><span class="pl-k">.</span>handleOriginPosition();
+    }
+}</pre></div>
+<h3>
+<a aria-hidden="true" class="anchor" href="#3-cancellable-injections" id="user-content-3-cancellable-injections"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>3. Cancellable Injections</h3>
+<p>So far, our injections haven't altered the structure of the target method at all, they simply call our handler function allowing it to perform whatever tasks we require, leaving the target method unchanged. <strong>Cancellable Injections</strong> allow us to create injections which can prematurely <em>return</em> from the target method.</p>
+<p>Looking at the code which would be injected by our <code>setPos</code> example from above, we can see that the injected code consists of the creation of a new <code>CallbackInfo</code> instance, followed by a call to our <strong>handler method</strong>. However now let's alter our injector declaration in the <code>@Inject</code> annotation to include the <code>cancellable</code> flag. We will also add some logic to our handler body:</p>
+<div class="highlight highlight-source-java"><pre><span class="pl-c"><span class="pl-c">/**</span></span>
+<span class="pl-c"> * Cancellable injection, note that we set the "cancellable"</span>
+<span class="pl-c"> * flag to "true" in the injector annotation</span>
+<span class="pl-c"> <span class="pl-c">*/</span></span>
+<span class="pl-k">@Inject</span>(<span class="pl-c1">method</span> <span class="pl-k">=</span> <span class="pl-s"><span class="pl-pds">"</span>setPos<span class="pl-pds">"</span></span>, <span class="pl-c1">at</span> <span class="pl-k">=</span> <span class="pl-k">@At</span>(<span class="pl-s"><span class="pl-pds">"</span>HEAD<span class="pl-pds">"</span></span>), <span class="pl-c1">cancellable</span> <span class="pl-k">=</span> <span class="pl-c1">true</span>)
+<span class="pl-k">protected</span> <span class="pl-k">void</span> onSetPos(<span class="pl-k">int</span> x, <span class="pl-k">int</span> y, <span class="pl-smi">CallbackInfo</span> ci) {
+    <span class="pl-c"><span class="pl-c">//</span> Check whether setting position to origin and do some custom logic</span>
+    <span class="pl-k">if</span> (x <span class="pl-k">==</span> <span class="pl-c1">0</span> <span class="pl-k">&amp;&amp;</span> y <span class="pl-k">==</span> <span class="pl-c1">0</span>) {
+        <span class="pl-c"><span class="pl-c">//</span> Some custom logic</span>
+        <span class="pl-c1">this</span><span class="pl-k">.</span>position <span class="pl-k">=</span> <span class="pl-smi">Point</span><span class="pl-c1"><span class="pl-k">.</span>ORIGIN</span>;
+        <span class="pl-c1">this</span><span class="pl-k">.</span>handleOriginPosition();
+        
+        <span class="pl-c"><span class="pl-c">//</span> Call update() just like the original method would have</span>
+        <span class="pl-c1">this</span><span class="pl-k">.</span>update();
+        
+        <span class="pl-c"><span class="pl-c">//</span> Mark the callback as cancelled</span>
+        ci<span class="pl-k">.</span>cancel();
+    }
+    
+    <span class="pl-c"><span class="pl-c">//</span> Execution proceeds as normal at this point, no custom handling</span>
+}</pre></div>
+<p>In the above code, the <strong>handler</strong> checks whether the position is being set to <code>(0, 0)</code> and performs some custom logic instead, marking the callback as <strong>cancelled</strong> to cause the target method (<code>setPos</code>) to <strong>return immediately after the injection</strong>. We can see how his works by looking at the code injected into <code>setPos</code>, which looks like this:</p>
+<p><img alt="" src="https://raw.githubusercontent.com/SpongePowered/Mixin/master/docs/images/flard_07.png"/></p>
+<p>As you can see, marking the injection as cancellable causes the mixin processor to inject code which checks whether the <code>CallbackInfo</code> was marked as cancelled, and return immediately if so.</p>
+<blockquote>
+<p>Note: calling <code>cancel()</code> on a <em>non-cancellable</em> <code>CallbackInfo</code> will raise an exception!</p>
+</blockquote>
+<p>This type of injection where we <strong>inject at the method <code>HEAD</code> and conditionally return</strong> is known as a <strong>Short Circuit Injection</strong> and is a very good replacement for things which would otherwise need to be <code>@Overwrite</code>. It is also possible to write a <strong>Short Circuit</strong> Injection which <strong>always cancels</strong>, this type of injector is know as a <strong>Permanent Short Circuit</strong> Injection or <strong>RoadBlock Injection</strong>.</p>
+<blockquote>
+<p>Note that in most cases, RoadBlocks are preferable to <code>Overwrites</code>. This is partly because they allow other transformers to act on the original method without raising errors; but also because keeping our injected code in a separate method makes stack traces much more meaningful when exceptions occur in injected code.</p>
+</blockquote>
+<h3>
+<a aria-hidden="true" class="anchor" href="#4-taking-aim---injection-points" id="user-content-4-taking-aim---injection-points"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>4. Taking Aim - Injection Points</h3>
+<p>So far, we have encountered two different <strong>Injection Points</strong>: <code>HEAD</code> and <code>RETURN</code>, and seen examples of the first. Understanding Injection Points is vital when defining all types of Injectors, since the type of Injection Point you choose will depend on what you want the injection to achieve.</p>
+<p>The <code>HEAD</code> and <code>RETURN</code> injection points are special because they are the only injection points which are <em>guaranteed to succeed</em>, this is because there will <em>always</em> be at least one RETURN opcode in a method, and naturally there will always be a method "head".</p>
+<h4>
+<a aria-hidden="true" class="anchor" href="#41-finding-an-opcode-in-a-haystack" id="user-content-41-finding-an-opcode-in-a-haystack"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>4.1 Finding an Opcode in a Haystack</h4>
+<p>The first thing it's important to know about Injection Points is that they are essentially <em>queries</em> which are run against the method bytecode which will return one <em>or more</em> opcodes which match their criteria. That's right: a single injection point can match more than once.</p>
+<p>For an example of this, let's consider the semantics of the <code>RETURN</code> injection point. The <code>RETURN</code> injection point is defined as follows:</p>
+<ul>
+<li>
+<code>RETURN</code> matches <em>all RETURN opcodes</em> in the target method.</li>
+</ul>
+<p>The mixin processor will always inject the callback <em>immediately prior to</em> the matched opcode, and thus using <code>RETURN</code> will always inject a callback immediately prior to the method returning.</p>
+<p>Let's take a look at an example:</p>
+<p><img alt="" src="https://raw.githubusercontent.com/SpongePowered/Mixin/master/docs/images/flard_08.png"/></p>
+<p>In this example we have modified the <code>setPos</code> method and added some extra logic with an explicit return in the middle of the method. In addition to the <em>implicit</em> return at the end of the method this means there are now <em>two</em> RETURN opcodes in the method body. When we tag the injection points in the method we see that this is reflected in the injection points identified by <code>RETURN</code>:</p>
+<p><img alt="" src="https://raw.githubusercontent.com/SpongePowered/Mixin/master/docs/images/flard_09.png"/></p>
+<p>In order to differentiate the identified opcodes, each opcode identified by the injection point is tagged with a number starting at zero, this opcode index is known as the <strong>ordinal</strong> and is a zero-based index.</p>
+<p>Let's assume we want to write an injector which only places a callback at the first RETURN opcode:</p>
+<div class="highlight highlight-source-java"><pre><span class="pl-k">@Inject</span>(<span class="pl-c1">method</span> <span class="pl-k">=</span> <span class="pl-s"><span class="pl-pds">"</span>setPos<span class="pl-pds">"</span></span>, <span class="pl-c1">at</span> <span class="pl-k">=</span> <span class="pl-k">@At</span>(<span class="pl-c1">value</span> <span class="pl-k">=</span> <span class="pl-s"><span class="pl-pds">"</span>RETURN<span class="pl-pds">"</span></span>, <span class="pl-c1">ordinal</span> <span class="pl-k">=</span> <span class="pl-c1">0</span>))
+<span class="pl-k">protected</span> <span class="pl-k">void</span> onResetPos(<span class="pl-k">int</span> x, <span class="pl-k">int</span> y, <span class="pl-smi">CallbackInfo</span> ci) {
+    <span class="pl-c"><span class="pl-c">//</span> handler logic</span>
+}</pre></div>
+<p>Specifying the <code>ordinal</code> value inside the <code>@At</code> means we only inject before the <em>first</em> RETURN opcode.</p>
+<blockquote>
+<p><strong>NOTE:</strong> You might be asking yourself: <em>What's the difference between this example injection, and for example just injecting into the <code>reset()</code> method? It would be called at the same point, right?</em></p>
+<p>Choosing the right injector target can be pretty subjective, and many times will depend both on what you're trying to achieve with a specific injection, and other factors such as subclassing of the object in question, and what variables are available in scope.</p>
+<p>For example, in the method above, injecting into <code>reset()</code> would raise the callback at the same point, but what if <code>reset()</code> is over-ridden by a subclass? The <code>reset()</code> method also doesn't receive a copy of the arguments <code>x</code> and <code>y</code>, which we may need. Also, what if the <code>reset()</code> method is called from some other point in the code? All of these things should be considered.</p>
+<p>Choosing the appropriate place to inject will depend heavily on the structure (and hierarchy) of the class in question and precisely what your injection is intended to do. You should consider all aspects of the usage and nature of your injection targets when identifying your injection points.</p>
+</blockquote>
+<h4>
+<a aria-hidden="true" class="anchor" href="#42-the-nature-of-injection-points" id="user-content-42-the-nature-of-injection-points"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>4.2 The Nature of Injection Points</h4>
+<p>Before we go any further, there are some key things which should be understood about Injection Points:</p>
+<ul>
+<li>
+<p>With very few exceptions, an Injector will place its injected code <strong>before the opcode identified by the Injection Point</strong>. This should be intuitive, some examples:</p>
+</li>
+<li>
+<p><code>RETURN</code> identifies the <code>RETURN</code> opcodes in a method, the injection happens immediately before the method returns</p>
+</li>
+<li>
+<p><code>HEAD</code> identifies the <em>first</em> opcode in a method, the injection happens at the very start of a method</p>
+</li>
+<li>
+<p><code>INVOKE</code> (see below) identifies a method call, the injection happens immediately before the method is called</p>
+</li>
+<li>
+<p>Since they are effectively queries, Injection Points <strong>may return no results</strong>. For example, imagine that in the example above we had specified <code>RETURN</code> as our query with an <code>ordinal</code> value of <code>2</code>. Since there are only two RETURN opcodes in the method, the Injection Point will match no opcodes. You can specify acceptable upper and lower limits for injections using constraints.</p>
+</li>
+<li>
+<p>Whilst Injection Points are <strong>deterministic for a given method</strong>, this does not remove the maintenance burden when injecting into <strong>a changing codebase</strong>. With the exception of <code>HEAD</code> (which always matches the same point), all injection points - especially those using <code>ordinal</code> offsets or with other parameterised settings - should be checked when the target codebase changes in order to ensure that they remain correct.</p>
+</li>
+<li>
+<p>Defining more complex injection points (more on this below) is one of the few places in Mixin where you will have to <em>get your hands dirty</em> and take a look at the bytecode of a <strong>target method</strong> itself. This is often necessary so you can pick the most suitable opcode for your injection, a good disassembler will help you immensely here.</p>
+</li>
+</ul>
+<h4>
+<a aria-hidden="true" class="anchor" href="#43-other-types-of-injection-point" id="user-content-43-other-types-of-injection-point"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>4.3 Other Types of Injection Point</h4>
+<p>As well as the trusty <code>HEAD</code> and <code>RETURN</code> which are the hammer and screwdriver in your Injection Point toolbox, there are a selection of other pre-defined injection points you can use:</p>
+<table width="100%">
+    <tbody><tr>
+        <th>Injection Point</th>
+        <th>Code Identified</th>
+    </tr>
+    <tr>
+        <td><tt>INVOKE</tt></td>
+        <td>Finds a method call and injects before it</td>
+    </tr>
+    <tr>
+        <td><tt>FIELD</tt></td>
+        <td>Finds a field read or write and injects before it</td>
+    </tr>
+    <tr>
+        <td><tt>NEW</tt></td>
+        <td>Finds a <tt>NEW</tt> opcode (object creation) and injects before it</td>
+    </tr>
+    <tr>
+        <td><tt>JUMP</tt></td>
+        <td>Finds a jump opcode (of any type) and injects before it</td>
+    </tr>
+    <tr>
+        <td><tt>INVOKE_STRING</tt></td>
+        <td>Finds a call to a method which takes a single <tt>String</tt> and returns <tt>void</tt> which accepts a constant string as an argument. This can be used primarily to find calls to <tt>Profiler.startSection( nameOfSection )</tt>
+</td>
+    </tr>
+    <tr>
+        <td><tt>INVOKE_ASSIGN</tt></td>
+        <td>Finds a method call which returns a value and injects immediately after the value is assigned to a local variable. <b>Note this is the only Injection Point which injects <em>after</em> its target</b>
+</td>
+    </tr>
+</tbody></table>
+<p>For more details see the <a href="https://github.com/SpongePowered/Mixin/wiki/Injection-Point-Reference">Injection Point Reference</a></p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#5-targets-with-non-void-return-types" id="user-content-5-targets-with-non-void-return-types"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>5. Targets with non-Void Return Types</h3>
+<p>So far, we have only considered injecting into a target method which returns <code>void</code>. When injecting into a method with a non-<code>void</code> return type, injector <strong>handler methods</strong> will instead need to receive a <code>CallbackInfoReturnable</code>. The <code>CallbackInfoReturnable</code> differs from its parent <code>CallbackInfo</code> in that:</p>
+<ul>
+<li>
+<code>CallbackInfoReturnable</code> is generic, with the return type of the method as its type argument</li>
+<li>When <em>cancelling</em> a <code>cancellable</code> callback with a return type, the value to return from the method can be specified by calling <code>setReturnValue</code> instead of <code>cancel</code>
+</li>
+</ul>
+<p>As you can imagine, this is incredibly useful when injecting into getters or when <strong>Short Circuiting</strong> a method with an inject at <code>HEAD</code>. Let's take a look at an example method which returns a value:</p>
+<p><img alt="" src="https://raw.githubusercontent.com/SpongePowered/Mixin/master/docs/images/flard_10.png"/></p>
+<p>The <code>getPos</code> method is a typical <em>getter</em> method in that its method body simply returns the value of a protected field. Let's add a mixin which injects at <code>HEAD</code> and returns a defaulted value if the field is <code>null</code>:</p>
+<p><img alt="" src="https://raw.githubusercontent.com/SpongePowered/Mixin/master/docs/images/flard_11.png"/></p>
+<p>The injector first merges our <strong>handler method</strong> into the target class, next it injects code into the <strong>target method</strong> to handle the cancellation.</p>
+<p><img alt="" src="https://raw.githubusercontent.com/SpongePowered/Mixin/master/docs/images/flard_12.png"/></p>
+<p>Note how the injected code differs from the <code>void</code>-type short-circuit code shown above. This time the injector returns the value we set in the <code>CallbackInfoReturnable</code> if the callback is cancelled. Our mixin code looks like this</p>
+<div class="highlight highlight-source-java"><pre><span class="pl-k">@Inject</span>(<span class="pl-c1">method</span> <span class="pl-k">=</span> <span class="pl-s"><span class="pl-pds">"</span>getPos<span class="pl-pds">"</span></span>, <span class="pl-c1">at</span> <span class="pl-k">=</span> <span class="pl-k">@At</span>(<span class="pl-s"><span class="pl-pds">"</span>HEAD<span class="pl-pds">"</span></span>), <span class="pl-c1">cancellable</span> <span class="pl-k">=</span> <span class="pl-c1">true</span>)
+<span class="pl-k">protected</span> <span class="pl-k">void</span> onGetPos(<span class="pl-k">CallbackInfoReturnable&lt;<span class="pl-smi">Point</span>&gt;</span> cir) {
+    <span class="pl-k">if</span> (<span class="pl-c1">this</span><span class="pl-k">.</span>position <span class="pl-k">==</span> <span class="pl-c1">null</span>) {
+        <span class="pl-c"><span class="pl-c">//</span> setReturnValue implicitly cancel()s the callback</span>
+        cir<span class="pl-k">.</span>setReturnValue(<span class="pl-smi">Point</span><span class="pl-c1"><span class="pl-k">.</span>ORIGIN</span>);
+    }
+    
+    <span class="pl-c"><span class="pl-c">//</span> Note that if the handler returns normally then the method</span>
+    <span class="pl-c"><span class="pl-c">//</span> continues as normal, just like a normal cancellable</span>
+    <span class="pl-c"><span class="pl-c">//</span>  injection does if cancel() is not called.</span>
+}</pre></div>
+<p>As you can imagine, this type of injector is extremely powerful, and is not restricted to <code>HEAD</code> injections, you can use any Injection Point that you wish. Something special happens when using cancellable returnable injections on <code>RETURN</code> however:</p>
+<p>You may be thinking <em>"but surely in this very simple method, the <code>HEAD</code> and <code>RETURN</code> basically mean the same thing, right?"</em></p>
+<p>You would be forgiven for thinking that, since it seems like the logical deduction, however in practice the single statement <code>return this.position</code> actually consists of two operations:</p>
+<ol>
+<li>Fetch the value of the field <code>position</code>
+</li>
+<li>Return the value</li>
+</ol>
+<p>The value is temporarily stored in the method's <em>argument stack</em>, you can think of these as temporary, invisible variables which store values as the JVM manipulates them. What this means from a practical perspective is that <code>HEAD</code> and <code>RETURN</code> are actually separate places in the method!</p>
+<p><img alt="" src="https://raw.githubusercontent.com/SpongePowered/Mixin/master/docs/images/flard_13.png"/></p>
+<p>Since we know that a <code>RETURN</code> opcode must return a value, we know that the value is available for us to access whenever we inject at <code>RETURN</code>. The injection processor handles this situation and "captures" the return value into the CallbackInfo passed to our handler:</p>
+<p><img alt="" src="https://raw.githubusercontent.com/SpongePowered/Mixin/master/docs/images/flard_14.png"/></p>
+<p>This approach has a number of benefits:</p>
+<ul>
+<li>The contract of our injector can now be more loosely coupled to the implementation of the <strong>target</strong> method. In other words, if the <strong>target</strong> method changes, our handler doesn't need to know about the change, since it only cares about the value being returned.</li>
+<li>If a <strong>target</strong> method has multiple <code>RETURN</code> opcodes, the value returned can still be processed without needing additional context</li>
+<li>It allows us to make "observer" injections which only <em>inspect</em> the value being returned without actually altering it or needing to worry about the method's implementation.</li>
+</ul>
+<p>For example, let's say we alter our example injector above to use <code>RETURN</code> instead of <code>HEAD</code>. All we care about is having the method not return <code>null</code>, so our code becomes:</p>
+<div class="highlight highlight-source-java"><pre><span class="pl-k">@Inject</span>(<span class="pl-c1">method</span> <span class="pl-k">=</span> <span class="pl-s"><span class="pl-pds">"</span>getPos<span class="pl-pds">"</span></span>, <span class="pl-c1">at</span> <span class="pl-k">=</span> <span class="pl-k">@At</span>(<span class="pl-s"><span class="pl-pds">"</span>RETURN<span class="pl-pds">"</span></span>), <span class="pl-c1">cancellable</span> <span class="pl-k">=</span> <span class="pl-c1">true</span>)
+<span class="pl-k">protected</span> <span class="pl-k">void</span> onGetPos(<span class="pl-k">CallbackInfoReturnable&lt;<span class="pl-smi">Point</span>&gt;</span> cir) {
+    <span class="pl-c"><span class="pl-c">//</span> Check the captured return value</span>
+    <span class="pl-k">if</span> (cir<span class="pl-k">.</span>getReturnValue() <span class="pl-k">==</span> <span class="pl-c1">null</span>) {
+        <span class="pl-c"><span class="pl-c">//</span> if it's null, set our fallback value as the return</span>
+        cir<span class="pl-k">.</span>setReturnValue(<span class="pl-smi">Point</span><span class="pl-c1"><span class="pl-k">.</span>ORIGIN</span>);
+    }
+}</pre></div>
+<h3>
+<a aria-hidden="true" class="anchor" href="#6-callback-injector-features" id="user-content-6-callback-injector-features"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>6. Callback Injector features</h3>
+<h4>
+<a aria-hidden="true" class="anchor" href="#61-multiple-injection-points" id="user-content-61-multiple-injection-points"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>6.1 Multiple Injection Points</h4>
+<p>It should be noted that the <code>at</code> parameter of an <code>@Inject</code> annotation is actually an array type. This means that it is quite possible to specify multiple Injection Points for a single injector <strong>handler</strong> method.</p>
+<h4>
+<a aria-hidden="true" class="anchor" href="#62-wildcard-targets" id="user-content-62-wildcard-targets"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>6.2 Wildcard Targets</h4>
+<p>When specifying the target <code>method</code> for an injector, appending an asterisk (<code>*</code>) the method name directs the mixin processor to match all methods with the specified name, regardless of their signature. This allows a single injector to target multiple methods.</p>
+<p>Using this syntax makes it impossible to capture method arguments, since the method arguments will vary from method to method. However it makes observer-type injections trivial. For example, consider the following injection:</p>
+<div class="highlight highlight-source-java"><pre><span class="pl-k">@Inject</span>(<span class="pl-c1">method</span> <span class="pl-k">=</span> <span class="pl-s"><span class="pl-pds">"</span>&lt;init&gt;*<span class="pl-pds">"</span></span>, <span class="pl-c1">at</span> <span class="pl-k">=</span> <span class="pl-k">@At</span>(<span class="pl-s"><span class="pl-pds">"</span>RETURN<span class="pl-pds">"</span></span>))
+<span class="pl-k">private</span> <span class="pl-k">void</span> onConstructed(<span class="pl-smi">CallbackInfo</span> ci) {
+    <span class="pl-c"><span class="pl-c">//</span> do initialisation stuff</span>
+}</pre></div>
+<p>This injector injects a callback into all constructors in the class. This is useful if a target class has multiple overloaded constructors and you simply wish to inject into all of them.</p>
+<p>Wildcard targets can be used with any method name, however if a wildcard matches methods with both <code>void</code> return types and non-<code>void</code> return types, then the injection will fail with an error because a <code>CallbackInfoReturnable</code> is required for the non-void targets.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#7-considerations-and-limitations-for-callback-injectors" id="user-content-7-considerations-and-limitations-for-callback-injectors"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>7. Considerations and Limitations for Callback Injectors</h3>
+<h4>
+<a aria-hidden="true" class="anchor" href="#71-injecting-into-constructors" id="user-content-71-injecting-into-constructors"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>7.1 Injecting into constructors</h4>
+<p>Now constructors in java code are fairly straightforward and impose three simple restrictions:</p>
+<ol>
+<li>you must call <code>super</code> before any other code</li>
+<li>you must initialise any <code>final</code> fields.</li>
+<li>as a corollary to point 1, you cannot invoke an instance method inline in the <code>super</code> call, any calls made here must be static</li>
+</ol>
+<p>However at the <em>bytecode</em> level constructors are much more delicate. Since a compiled <code>&lt;init&gt;</code> method represents a mish-mash of the original constructor code, any field initialisers for the class (duplicated in all constructors), and in some cases synthetic (compiler-generated) code as well (for example in <code>Enum</code> constructors). Because of their nature, they represent a minefield for bytecode-level transformations.</p>
+<p>Mixin thus imposes the following restriction on injecting into constructors:</p>
+<ul>
+<li>
+<strong>The only Injection Point supported for constructors is the <code>RETURN</code> injector</strong>
+This restriction is imposed because there is no other sensible way to be sure that the class is fully initialised before calling your handler code.</li>
+</ul>
+<p>If you want to inject into a constructor, you <strong>must</strong> specify <code>RETURN</code> as your injection point.</p>
+<h4>
+<a aria-hidden="true" class="anchor" href="#72-failure-states" id="user-content-72-failure-states"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>7.2 Failure States</h4>
+<p>Like other Mixin capabilities, Callback Injectors are designed to be <em>fail-fast</em> and <em>fail-safe</em>. This generally means that if an injector fails it will generally do one of two things:</p>
+<ol>
+<li>Fail "silently" (unless mixin debugging is enabled) and leave the <strong>target</strong> method untouched (however the <strong>handler</strong> method will still be merged into the target class)</li>
+<li>Fail with a deterministic error message: for example when an injector finds its target opcode but the <strong>handler</strong> method has an incorrect signature.</li>
+</ol>
+<p>Injectors are designed so that any failure will <strong>not</strong> corrupt the method bytecode, it will either succeed or deterministically fail.</p>
+<p>Silent failure is usually reserved for Injectors whose Injection Points match no opcodes. This can happen when the target method is altered or replaced and can be extremely useful since "overloaded" injectors can be created to cater for different situations.</p>
+<p>However sometimes it may be important that a certain injector succeeds. Perhaps the stability of your application depends on it, or failure is not an anticipated state and the application should be shut down. Either way, it is sometimes necessary to be able to <em>insist</em> that an injector succeeds (and raise a failure state if it does not). This is possible using the <code>expect</code> and <code>require</code> arguments.</p>
+<h5>
+<a aria-hidden="true" class="anchor" href="#721-require" id="user-content-721-require"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>7.2.1 Require</h5>
+<p>The <code>require</code> argument is simple, specifying a value for <code>require</code> declares that the injector must succeed <em>at least this many times</em>.</p>
+<div class="highlight highlight-source-java"><pre><span class="pl-k">@Inject</span>(<span class="pl-c1">method</span> <span class="pl-k">=</span> <span class="pl-s"><span class="pl-pds">"</span>foo<span class="pl-pds">"</span></span>, <span class="pl-c1">at</span> <span class="pl-k">=</span> <span class="pl-k">@At</span>(<span class="pl-c1">value</span> <span class="pl-k">=</span> <span class="pl-s"><span class="pl-pds">"</span>INVOKE<span class="pl-pds">"</span></span>, <span class="pl-c1">target</span> <span class="pl-k">=</span> <span class="pl-s"><span class="pl-pds">"</span>someMethod<span class="pl-pds">"</span></span>), <span class="pl-c1">require</span> <span class="pl-k">=</span> <span class="pl-c1">2</span>)
+<span class="pl-k">private</span> <span class="pl-k">void</span> onInvokeSomeMethodInFoo(<span class="pl-smi">CallbackInfo</span> ci) {
+    <span class="pl-c1">...</span></pre></div>
+<p>In this example, we expect our Injection Point to match 2 invocations in the <strong>target</strong> method. Specifying <code>require</code> means that if fewer than 2 injections result, then an error will be raised.</p>
+<p>It is also possible to specify a config-wide value for <code>require</code> in your mixin config file.</p>
+<h5>
+<a aria-hidden="true" class="anchor" href="#722-expect" id="user-content-722-expect"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>7.2.2 Expect</h5>
+<p>Sometimes failing at runtime is okay, but when developing your mixins you want to be able to use the <code>require</code> functionality (error when an injection fails) without having to sprinkle <code>require</code> everywhere and then remember to remove it before your code goes into production!</p>
+<p>The <code>expect</code> argument allows you to do exactly that. <code>expect</code> works exactly like <code>require</code>, apart from the fact that it is only processed whenever the <code>mixin.debug.countInjections</code> system property is set to <code>true</code>. This allows you to check your injectors are working at dev time, but allow them to fail-fast in production.</p>
+<h5>
+<a aria-hidden="true" class="anchor" href="#723-global-injector-settings" id="user-content-723-global-injector-settings"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>7.2.3 Global Injector Settings</h5>
+<p>You can specify a configuration-wide default value for <code>require</code> in your mixin config file, by including an <code>injectors</code> block, you can override the default value for <code>require</code> for all mixins in your config:</p>
+<div class="highlight highlight-source-json"><pre>{
+   <span class="pl-s"><span class="pl-pds">"</span>injectors<span class="pl-pds">"</span></span>: {
+        <span class="pl-s"><span class="pl-pds">"</span>defaultRequire<span class="pl-pds">"</span></span>: <span class="pl-c1">1</span>
+    }
+}</pre></div>
+<h5>
+<a aria-hidden="true" class="anchor" href="#724-injector-groups" id="user-content-724-injector-groups"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>7.2.4 Injector Groups</h5>
+<p>Whilst the semantics of <code>require</code> allow you to stipulate behaviour for a single injector, you may encounter a situation where you wish to provide multiple, alternative injectors for a single case. This is useful if your Mixin targets multiple environments, or if another transformer is known to alter a particular target method in a well-defined way.</p>
+<p>In these circumstances you may provide two or more injectors in which only one is expected to succeed for a given environment. This of course presents a problem with how you might leverage the <code>require</code> value for those injectors, since if at least one is <em>expected</em> to fail in a given scenario this makes the use of <code>require</code> impossible.</p>
+<p>To tackle this situation, declaration of injector <em>groups</em> is supported. Using injector groups allows a <code>min</code> and <code>max</code> number of injections to be specified <em>for the group</em>, thus ensuring that the injections can still be verified as working but only the specified number of injections should occur.</p>
+<p>To leverage injector groups, simply decorate each injector <strong>handler method</strong> with an <code>@Group</code> annotation. The first annotation should also specify <code>min</code> and (optionally) <code>max</code>. If multiple injector groups are used in a single mixin, then a unique <code>name</code> for the group should be specified on all of the <code>@Group</code> annotations in the mixin.</p>
+<h4>
+<a aria-hidden="true" class="anchor" href="#73-override-behaviour-for-handler-methods" id="user-content-73-override-behaviour-for-handler-methods"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>7.3 Override Behaviour for Handler Methods</h4>
+<p>When you define a Callback Injector <strong>handler</strong> method, your method is merged into the <strong>target class</strong> using normal mixin behaviour. However this has implications for sub-classing, in particular injectors defined in derived types.</p>
+<ul>
+<li>
+<p><strong>Handler methods are renamed before merging</strong> - all <strong>handler</strong> methods are <em>decorated</em> before being merged into the target class. This ensures that if another mixin to the <em>same</em> class defines an <em>identical</em> injector, the two handler methods will not conflict.</p>
+</li>
+<li>
+<p><strong>Handler methods are called using the opcode matching their access level</strong> - if your <strong>handler</strong> method is <code>private</code> then it will be called using <code>INVOKESPECIAL</code> (static binding), if your <strong>handler</strong> method is non-private it will be called using <code>INVOKEVIRTUAL</code>, this will allow you to <code>@Override</code> the handler in a derived mixin.</p>
+</li>
+<li>
+<p><strong>If you <code>@Override</code> a handler method in a derived mixin, it will be renamed to match the decoration of its supermixin counterpart</strong> - this is done so that a method in a derived class can never "accidentally" override your <strong>handler</strong> method.</p>
+</li>
+</ul>
+<p>In general, unless explicitly planning to use override semantics for a particular handler, it is recommended that <strong>handler</strong> methods be <code>private</code>.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#8-summary" id="user-content-8-summary"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>8. Summary</h3>
+<p>This might seem like a lot to take in, Callback Injectors are powerful and quite nuanced, and as such that's not an unreasonable way to feel! Let's recap the key points to put this all in perspective:</p>
+<ul>
+<li>
+<p>Callback Injectors are just regular mixin methods which have the special behaviour of <em>injecting</em> a callback to themselves somewhere else in the target class</p>
+</li>
+<li>
+<p>They always consist of a <strong>handler method</strong>, a <strong>target method</strong> and some <em>Injection Points</em> inside the target</p>
+</li>
+<li>
+<p>Callback Injector methods always take a <code>CallbackInfo</code>, and can take other arguments, such as the arguments of the <strong>target</strong> method, as well</p>
+</li>
+<li>
+<p>Callbacks can be <em>cancellable</em>, allowing a premature return from the target method</p>
+</li>
+<li>
+<p>Different ways of handling failure exist for injectors, <code>require</code> is the most useful setting and you should use it often</p>
+</li>
+</ul>
+<p>It's also worth mentioning things that callback injectors cannot, or do not, do:</p>
+<ul>
+<li>
+<p>Callback Injectors <strong>do not inject the handler code into the target</strong>, they only ever inject a <em>callback</em>. If you want to <em>return</em>, use a <em>cancellable injection</em>.</p>
+</li>
+<li>
+<p>Callback Injectors <strong>cannot inject arbitrarily into constructors</strong>, only <code>RETURN</code> is valid for constructor injectors</p>
+</li>
+</ul>
+<h3>
+<a aria-hidden="true" class="anchor" href="#9-what-comes-next" id="user-content-9-what-comes-next"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>9. What Comes Next?</h3>
+<p>Callback Injectors are the most basic form of injector provided by Mixin. In the following tutorial articles, we will introduce the other, more specialised, injectors:</p>
+<ul>
+<li>
+<p><strong><a href="https://github.com/SpongePowered/Mixin/wiki/Advanced-Mixin-Usage---Capture-Locals">Capturing local variables with Callback Injectors</a></strong><br/>
+A secondary feature of regular Callback Injectors, not covered in this introduction, is the ability to capture the local variables at the target location. In this article I introduce the concept of local capture, and the use of surrogates and argument coercion.</p>
+</li>
+<li>
+<p><strong><a href="https://github.com/SpongePowered/Mixin/wiki/Advanced-Mixin-Usage---Redirect-Injectors">Introduction to Redirect Injectors</a></strong><br/>
+Probably the most powerful injector type. Redirect injectors allow a target method call or field access to be "redirected" to a custom callback. This type of injector can be leveraged extremely effectively to "wrap around" a method call, change the return value of a method call, or inhibit a method call altogether.</p>
+</li>
+<li>
+<p><strong><a href="https://github.com/SpongePowered/Mixin/wiki/Advanced-Mixin-Usage---ModifyArg-Injectors">Using ModifyArg Injectors to modify method invocation arguments</a></strong><br/>
+<strong>Redirect</strong>'s baby brother, this type of injector allows a single argument to a method to be altered on-the-fly using a callback method.</p>
+</li>
+<li>
+<p><strong><a href="https://github.com/SpongePowered/Mixin/wiki/Advanced-Mixin-Usage---ModifyVariable-Injectors">Tweaking local variables in a method using ModifyVariable Injectors</a></strong><br/>
+Whilst delicate and one of the more tricky injectors to use, <strong>ModifyVariable</strong> injectors are the only injector type which can directly edit the value of a local variable within a method.</p>
+</li>
+<li>
+<p><strong><a href="https://github.com/SpongePowered/Mixin/wiki/Advanced-Mixin-Usage---ModifyConstant-Injectors">Hooking and modifying literal values using ModifyConstant Injectors</a></strong><br/>
+This type of injector can be used to turn a constant value used in a method into a method call to a callback. Extremely useful for hooking into loop logic, conditionals, or other "hard coded" parts of a target method that you wish to alter.</p>
+</li>
+</ul>
+
+        </div>
+
+    </div>]

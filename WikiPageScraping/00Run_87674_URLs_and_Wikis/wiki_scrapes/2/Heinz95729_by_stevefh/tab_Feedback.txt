@@ -1,0 +1,151 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>Overall, very nice job! <img align="absmiddle" alt=":+1:" class="emoji" data-canonical-src="https://assets-cdn.github.com/images/icons/emoji/unicode/1f44d.png" height="20" src="https://camo.githubusercontent.com/a2840914d539225aaf8d395397d8dbc488a0740d/68747470733a2f2f6173736574732d63646e2e6769746875622e636f6d2f696d616765732f69636f6e732f656d6f6a692f756e69636f64652f31663434642e706e67" title=":+1:" width="20"/></p>
+<h1>
+<a aria-hidden="true" class="anchor" href="#server-controllers" id="user-content-server-controllers"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Server Controllers</h1>
+<p>In the <code>OrderModule.cs</code>, <code>CartModule.cs</code>, and <code>stripeModule.cs</code> controllers, you have a lot of business logic, which belongs in the domain classes. <em>Why?</em> Your controllers have multiple responsibilities (SRP). If you want to update or change your web framework, you may have to refactor your controllers (OCP).</p>
+<p>Think of the controllers as simple accessors. They should take traffic, get it to the features that it needs, and then convert the results of those features into something the client can understand (i.e. JSON).</p>
+<p>For instance, the following examples show how you can better distribute the responsibilities that the "/api/order" route owns.</p>
+<pre><code>// in OrderModule.cs
+this.Get["/api/order"] = args =&gt;
+{
+    this.RequiresAuthentication();
+
+    List&lt;ISingleOrder&gt; result = orders.GetByUserGuid(AmbientContext.CurrentPrincipleGuid);
+
+    return helper.ToJson(result);
+};
+</code></pre>
+<pre><code>// in AmbientContext.cs
+public static string CurrentPrincipleGuid 
+{
+    get 
+    {
+        return CurrentClaimsPrinciple
+                    .ClaimsIdentity
+                    .GetAttribute(UserPrincipalGuidAttributeKey)
+                    .ToString();
+    }
+}
+</code></pre>
+<pre><code>// in OrderDomain.cs
+public IEnumerable&lt;ISingleOrder&gt; GetByUserGuid(string guid) 
+{
+    var order = this.Repo.Get(guid);
+
+    foreach (var orderID in order.Orders)
+    {
+        yield return this.Repo.GetOrderByID(orderID);
+    }        
+}
+</code></pre>
+<p>Also. The <code>stripeModule.cs</code> is in camelCase. In C#, we use PascalCase. It doesn't break anything, but it's important to follow convention, as it helps teams work on each others code more easily. The <code>stripeModule.cs</code> also breaks DIP by invoking the RestSharp classes. These dependencies should be provided via Constructor Injection.</p>
+<p><strong>You checked in your private stripe key (<code>mykey</code>)! You should go and change that in your stripe account RIGHT NOW</strong></p>
+<h1>
+<a aria-hidden="true" class="anchor" href="#shoppingcartcs" id="user-content-shoppingcartcs"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>ShoppingCart.cs</h1>
+<p>I like that you are using guard clauses in the ShoppingCart methods. You could reduce the amount of code in your guards, using LINQ:</p>
+<pre><code>public bool Add(ProductInfo productInfo)
+{
+    if (this.Products.Any(prd =&gt; prd.Uid.Equals(productInfo.Uid))) 
+    {
+        return false;
+    }
+
+    Products.Add(productInfo);
+    return true;
+}
+</code></pre>
+<h1>
+<a aria-hidden="true" class="anchor" href="#cartcontrollerjs" id="user-content-cartcontrollerjs"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>cartController.js</h1>
+<p>I like the way you separated the route definition from the business logic. This bit is also pretty clever: <code>if (data.charAt(0) != '&lt;') {</code>. However, to make authentication checks more robust, the server should be returning a consistent response that indicates the user needs to log in. For instance, the server could return an HTTP Status Code of 403 (Forbidden).</p>
+<p>Then, in your ajax promise, you could:</p>
+<pre><code>// check if all inventories are available
+            return $.ajax({
+                url: '/api/cart',
+                method: 'GET'
+            }).done(function (data) {
+                    JSON.parse(data);
+                    var results = new Cart(JSON.parse(data));
+
+                    // check if there's any unavailable items
+                    if (results.message() == "") {
+                        viewEngine.setView({
+                            template: 't-payment-info',
+                            data: results
+                        });
+                    } else {
+                        viewEngine.setView({
+                            template: 't-cart-grid',
+                            data: results
+                        });
+                    }
+                    viewEngine.headerVw.cartCount(results.cart().length);
+                }
+            }).fail(function() {
+                    viewEngine.setView({
+                        template: 't-login'
+                    });
+            });
+</code></pre>
+<p>The <code>onPayment</code> function could be divided into smaller parts though - it's a bit overwhelming.</p>
+<pre><code>// This could be its own function
+
+// check if no items in the cart
+var total = $("#cartTotal").val();
+if (total == 0) {
+    alert("Please add items to pay!");
+    routes.navigate("/cart");
+    return true;
+};
+</code></pre>
+<p>#paymentController.js
+Stripe is a global, so technically, it is accessible anywhere. However, that doesn't mean we should use it that way. If you pass Stripe in to the paymentController as a dependency, then you can test the client behavior without going out to Stripe servers. Also, it might be a good idea to wrap the stripe behavior in a Component Wrapper, so we could swap the service out for another one in the future, or depending on tenants. In that case, we would just pass an interface into the paymentController instead.</p>
+<p>Also, any globals that are used in our modules should be registered at the top of the JS file: <code>/*global define, JSON, Stripe*/</code>. This should be reserved for native JavaScript functionality like <code>JSON</code>, as using DIP removes the global dependency for Stripe. <code>define</code> is an exception to the rule, since we can't pass it in as a dependency.</p>
+<p>The <code>onTokenCreate</code> function should be divided into smaller functions:</p>
+<pre><code>// send request to back end after token is created
+onTokenCreate = function (token) {
+    console.log("token:" + token);
+
+    return $.ajax({
+        url: '/api/Payment/?t=' + token + '&amp;a=' + $('#order-total').val(),
+        method: 'POST'
+    }).done(function (data) {
+        var resp = JSON.parse(data);
+        if (resp.statusCode == 200) {
+            onTokenCreateSuccess();
+        }
+        else {
+            alert("Payment Declined");
+            routes.navigate("/cart");
+        }
+    });
+};
+
+onTokenCreateSuccess = function () {
+    var orderData = $("#orderData").val();
+
+    $.ajax({
+        url: '/api/order/add/?q=' + orderData,
+        method: 'GET'
+    }).done(function (data) {
+        var results = new Orders(JSON.parse(data));
+
+        viewEngine.setView({
+            template: 't-order-grid',
+            data: results
+        });
+
+        viewEngine.headerVw.cartCount(1);
+        viewEngine.headerVw.subtractFromCart();
+    }).fail(function () {
+        viewEngine.setView({
+            template: 't-login'
+        });
+    });
+}
+</code></pre>
+<p>I'd also like to see <code>var orderData = $("#orderData").val();</code> done differently. Getting the order data sounds like another module's responsibility to me (SRP).</p>
+
+        </div>
+
+    </div>]

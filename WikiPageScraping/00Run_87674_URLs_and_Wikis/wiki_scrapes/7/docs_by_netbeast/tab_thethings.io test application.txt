@@ -1,0 +1,193 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <h1>
+<a aria-hidden="true" class="anchor" href="#cloud-integration-with-thethingsio" id="user-content-cloud-integration-with-thethingsio"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Cloud integration with thethings.io</h1>
+<p>In this small guide, we will explain how to manage smart things (in this case a belkin wemo switch) using thethings.io cloud service.</p>
+<p>We will create a simple application that can turn on/off the WeMo switch and send its status to the cloud. We will also be able to read the WeMo switch's status using thethings.io's cloud services.</p>
+<ul>
+<li><a href="#setup">Set up</a></li>
+<li><a href="#cloud">thethings.io cloud</a></li>
+<li><a href="#env">Development environment</a></li>
+<li><a href="#coding">Coding</a></li>
+<li><a href="#config">config.json</a></li>
+<li><a href="#server">server.js</a></li>
+<li><a href="#server2">server2.js</a></li>
+<li><a href="#testing">Testing</a></li>
+</ul>
+<a name="user-content-setup">
+## Set up
+</a>
+<p>We will need to set up thethings.io cloud and the development environment.</p>
+<a name="user-content-cloud">
+### thethings.io cloud
+</a>
+<p>First of all, we need to create an account on thethings.io. You can do that here : <a href="https://panel.thethings.io/#/register" rel="nofollow">Create an account </a></p>
+<p>Once you have created your account log in and follow this useful <a href="https://developers.thethings.io" rel="nofollow">Guide</a></p>
+<p>We will need to get an activation code in order to obtain a <em>thing token code</em>. This is necessary to communicate our application with the cloud. This process is pretty straightforward, you can't miss it if you follow the guide.</p>
+<p>As soon as you get your thing token code, you'll be ready for the next step.</p>
+<hr/>
+<a name="user-content-env">
+### Development environment. 
+</a>
+<p>Once we have the thing token code, we have to configure the development environment.</p>
+<p>As a basic setup for the development of the application, you need <a href="http://npmjs.com" rel="nofollow">npm</a> and <a href="https://nodejs.org/en/" rel="nofollow">node.js</a>.</p>
+<p>You also need to install the netbeast package manager through npm. Check this <a href="https://www.npmjs.com/package/xway" rel="nofollow">guide</a> to get it.</p>
+<p>We will create an app called <em>wemoswitch</em></p>
+<p><code>netbeast new wemoswitch</code></p>
+<p>Now, we need to add some node node modules.</p>
+<pre lang="cd"><code>npm install thethingsio-api --save
+npm install wemo-client --save```
+
+* --save option is recommended to update package.json file. 
+
+We are now ready to start coding. 
+
+***
+
+&lt;a name="coding"&gt;
+## Coding
+&lt;/a&gt;
+
+A server.js file will have been created once you have created an app, . It is our main backend file where we will put all the code. 
+
+We also need to create a second server file. Name it with a different name, for instance, server2.js.
+
+We also need a config.json file. On it we will type our thing token previously obtained from thethings.io. This is how:
+
+***
+
+&lt;a name="config"&gt;
+### config.json
+&lt;/a&gt;
+
+</code></pre>
+<p>{
+"thingToken" : "yourthingtokencodehere"
+}</p>
+<pre><code>
+***
+
+&lt;a name="server"&gt;
+### server.js 
+&lt;/a&gt;
+
+In this file, we will write an application that is able to turn on/off the WeMo switch and also we will write that value (on/off) on thethings.io cloud service.
+
+</code></pre>
+<p>var theThingsAPI = require('thethingsio-api');</p>
+<p>//create Client
+var client = theThingsAPI.createClient()
+var Wemo = require('wemo-client')
+var wemo = new Wemo()</p>
+<p>//Object for thethingio code.
+var option = {
+"values": [
+{
+"key": 'status',
+"value": "off"
+}
+]
+}</p>
+<p>// Wemo code to activate or deactivate wemo switch.</p>
+<p>wemo.discover(function(deviceInfo) {
+// Get the client for the found device
+var client = wemo.client(deviceInfo);
+if (option.values[0].value === 'on')
+// Turn the switch on
+client.setBinaryState(1)
+else if (option.values[0].value === 'off')
+client.setBinaryState(0)
+else {
+client.setBinaryState(0)
+console.log('Option On/Off')
+}</p>
+<p>});</p>
+<p>// The things IO CODE</p>
+<p>//This is usually fired when there are problems with the activation code
+client.on('error', function (error) {
+console.log('Error:', error)
+})</p>
+<p>//Write option value each 1000ms.
+client.on('ready', function () {
+//write the object
+setInterval(function () {
+client.thingWrite(option, function (error, data) {
+console.log(error ? error : data)
+})
+console.log("send", option)
+}, 1000)
+})</p>
+<pre><code>
+This app will write Wemo switch status each second on thethings.io cloud.
+
+***
+
+&lt;a name="server2"&gt;
+### server2.js 
+&lt;/a&gt;
+
+In this file, we will create an application which is able to read the object value with key 'status' from thethings.io cloud service.
+
+</code></pre>
+<p>var theThingsAPI = require('thethingsio-api');</p>
+<p>//create Client
+var client = theThingsAPI.createClient()</p>
+<p>//The thing IO CODE</p>
+<p>//This is usually fired when there are problems with the activation code
+client.on('error', function (error) {
+console.log('Error:', error)
+})</p>
+<p>//Read information from an object with key status each 1000ms.
+client.on('ready', function () {
+setInterval(function () {
+client.thingRead('status', function (error, data) {
+console.log(error ? error : data)
+})},1000)
+});</p>
+<pre><code>
+This app will read Wemo switch status each second from thethings.io cloud.
+
+***
+
+&lt;a name="testing"&gt;
+## Testing
+&lt;/a&gt;
+
+Open a terminal in your project folder and type 
+
+`node server.js`
+
+You will see a message with a key and status value.
+
+That means that you are writing the value on thethings.io cloud.
+
+Also, the WeMo switch will turn on/off depending on the value you are sending.
+
+Now, open a second terminal and type 
+
+`node server2.js`
+
+You will receive the data from thethings.io cloud.
+</code></pre>
+
+        </div>
+
+        <div class="wiki-footer gollum-markdown-content boxed-group" id="wiki-footer">
+          <div class="boxed-group-inner wiki-auxiliary-content markdown-body">
+            <p># <code>warning</code>: now our docs are being published in our gitbook and available on our website. Visit <a href="http://docs.netbeast.co/" rel="nofollow">http://docs.netbeast.co/</a></p>
+<h1>
+<a aria-hidden="true" class="anchor" href="#contact" id="user-content-contact"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Contact</h1>
+<ul>
+<li>Visit our site <a href="https://netbeast.co" rel="nofollow">https://netbeast.co</a>
+</li>
+<li>Mail us: staff [at] netbeast.co</li>
+<li>Report a bug or enter discussion at <a href="https://github.com/netbeast-co/docs/issues">issues</a>
+</li>
+<li>Other resources: <a href="https://github.com/netbeast-co/dashboard">Dashboard</a>, Netbeast <a href="https://github.com/netbeast-co/API">API</a>
+</li>
+</ul>
+<p><a href="https://gitter.im/netbeast-co/xway?utm_source=badge&amp;utm_medium=badge&amp;utm_campaign=pr-badge" rel="nofollow"><img alt="Gitter" data-canonical-src="https://badges.gitter.im/Join%20Chat.svg" src="https://camo.githubusercontent.com/da2edb525cde1455a622c58c0effc3a90b9a181c/68747470733a2f2f6261646765732e6769747465722e696d2f4a6f696e253230436861742e737667"/></a></p>
+
+          </div>
+        </div>
+    </div>]

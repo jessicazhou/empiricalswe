@@ -1,0 +1,700 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>Information about new features and bugfixes in each PircBotX release</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#22---in-development" id="user-content-22---in-development"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>2.2 - In Development</h2>
+<p>Want to upgrade early? Head over to <a href="DevVersion">DevVersion</a> for information on how.</p>
+<p>Note until release this section might be out of date. <a href="https://github.com/TheLQ/pircbotx/commits/master">For the most recent changes see the repository commit log</a></p>
+<p>TODO</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#21---january-24-2016" id="user-content-21---january-24-2016"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>2.1 - January 24, 2016</h2>
+<p>Many new features, API cleanup, and bugfixes. Includes better support for Twitch.tv</p>
+<ol>
+<li><strong>FEATURE Issue #148: Split User class into User and UserHostmask classes</strong></li>
+<li>UserHostmask represents any potential hostmask or source of an event which replaces the many instances of Strings representing hostmasks</li>
+<li>User represents an active user PircBotX is tracking</li>
+<li>UserChannelDao now only contains actual users PircBotX discovers instead of everything that potentially had a name (eg "irc.yourserver.net" was considered a user since it sent messages)</li>
+<li>All relevant events now have an additional immutable @NonNull getUserHostmask or getRecipientHostmask methods.</li>
+<li>Issue #211: Also supports Extban prefixes, eg extban:nick or extban:nick!login@hostmask</li>
+<li>CHANGE: Event.getUser() or getRecipient() is NOT guaranteed to be Non-Null since the user may not be tracked by UserChannelDao</li>
+<li>CHANGE: UserChannelDao.getUser() and getChannel() now THROW a detailed exception if the user or channel does not exist. This is much better alternative to NullPointerExceptions which lack relevant detail. To check validity use UserChannelDao.containsUser() and .containsChannel()</li>
+<li>CHANGE: UserChannelDao methods will not accept null parameters</li>
+<li><strong>IMPROVEMENT Issue #212: <code>&lt;PircBotX&gt;</code> Generics Reform</strong></li>
+<li>All <code>&lt;B extends PircBotX&gt;</code> generic class parameters have been REMOVED from Events, Listeners, Configuration, ConfigurationBuilder, DCC FileTransfers, etc</li>
+<li>Using an extended PircBotX class is still supported with the better <code>"MyCustomBot bot = event.getBot();"</code> or <code>"event.&lt;MyCustomBot&gt;getBot().doStuff();"</code> equivalents. This applies to any method that returns PircBotX</li>
+<li>This was a rarely used feature with a huge cost in API code complexity. Casting internally works just as well and is significantly cleaner</li>
+<li>BUGFIX: If you did not explicitly extend the <code>&lt;PircBotX&gt;</code> version of ListenerAdapter, events that returned collections, eg <code>List&lt;User&gt;</code> or <code>Set&lt;Channel&gt;</code>, only returned <code>List&lt;Object&gt;</code> or <code>Set&lt;Object&gt;</code> due to type erasure. Now with generics removed, collections are properly returned with their type</li>
+<li><strong>IMPROVEMENT: Better Connecting/Reconnecting Handling</strong></li>
+<li>FEATURE Issue #157: Configuration.setServer(), .setServerHostmask(), and .setServerPort() have been removed in favor of addServer() and .getServers(), a list of hostnames and ports to try to connect to. For example, you could try irc.freenode.net:6667, irc.freenode.net:8000, card.freenode.net:6667 in case the port is blocked on the end-users firewall or the server is down. This also helps with smaller networks that might not have all servers on one global subdomain</li>
+<li>FEATURE: New configuration option .setAutoReconnectDelay() and .setAutoReconnectAttempts()</li>
+<li>FEATURE Issue #171 #207 ConnectAttemptFailedEvent: Dispatched when the whole attempt fails. Contains a map of exceptions encountered when connecting and the number of remaining attempts</li>
+<li>A connection attempt means for each server hostname and port, look up the IP addresses and try to connect to each of them until exausted. If still not connected dispatch a ConnectAttemptFailedEvent and if <code>autoReconnect</code> is disabled, throw an IOException</li>
+<li>If <code>autoReconnect</code> is enabled wait <code>autoReconnectDelay</code> ms and repeat the above process again. If still not connected after <code>autoReconnectAttempts</code>, then throw an IOException</li>
+<li>FEATURE Issue #213: Nickserv detection</li>
+<li>New method PircBotX.isNickservIdentified() to check if identified with nickserv.</li>
+<li>New methods .setNickservOnSuccess() and ConfigBuilder.setNickservNick() since nickserv implementations aren't standardized detecting exactly when what nickserv says when identified. However the defaults should work on most networks</li>
+<li>Optionally delay joining channels until identified with new method ConfigBuilder.setNickservDelayJoin(). Useful if a channel requires you to be identified before getting operator status or the channel doesn't allow non-identified users to join</li>
+<li>ListenerManager upgrades</li>
+<li>FEATURE: New interface ManagerExceptionHandler to handle exceptions generated by Listeners. Defaults to LogManagerExceptionHandler</li>
+<li>IMPROVEMENT: ListenerManager is now an abstract class that handles incrementing the eventId and defaulting to LogManagerExceptionHandler which simply writes Exceptions to the log</li>
+<li>IMPROVEMENT: ListenerManager.addListener() returns void since it should never fail to add a listener</li>
+<li>FEATURE: The following new methods were added:</li>
+<li>
+<strong>Utils.parseCommand</strong> to easily parse messages as commands</li>
+<li>OutputUser and OutputIRC .whois() and .whoisDetail()</li>
+<li>IdentServer startBot(encoding, localInetAddress) and (encoding, localInetAddress, port) to configure IdentServer's bind address</li>
+<li>OutputChannel.invite(string) and .invite(user)</li>
+<li>WhoisEvent.isExists() to handle users that do not exist</li>
+<li>Issue #155: ActionEvent, MessageEvent, and NoticeEvent .respondChannel() and .respondPrivateMessage()</li>
+<li>Protected callback method MultiBotManager.executeBot()</li>
+<li>Issue #280: New utility method MultiBotManager.stop(quitMessage)</li>
+<li>Send/RecieveFileTransfer.getFileSize()</li>
+<li>ConfigurationBuilder.replaceCoreHooksListener() to easily replace the built in CoreHooks implementation</li>
+<li>Issue #214: WhoisEvent.getAwayMessage()</li>
+<li>Issue #205: ActionEvent, MessageEvent, and NoticeEvent .channelSource() to support channel mode messages, eg "PRIVMSG +#channel :only voiced users will see this". The default supported prefixes can be changed with ConfigurationBuilder.setChannelModeMessagePrefixes()</li>
+<li>Colors.ITALICS for italicized text</li>
+<li>Issue #168: New maps Colors.LOOKUP_TABLE, Colors.FORMATTING_TABLE, Colors.COLORS_TABLE, and Colors.lookup() to lookup colors by String instead of compile-time field</li>
+<li>Issue #232: Configuration.snapshotsEnabled to optionally disable creating snapshots</li>
+<li>Issue #184: ServerInfo.getExtBanPrefix() and .getExtBanList() for EXTBAN in the servers 005 info</li>
+<li>UserChannelDao.channelExists() and .userExists() have been deprecated in favor of the more standard .containsChannel() and .containsUser() matching the Java Collections API</li>
+<li>IncomingFileTransferEvent.acceptAndTransfer() and OutputUser.dccFileAndTransfer() for accepting the request and transfering the file in one call</li>
+<li>GenericMessageEvent.respondPrivateMessage() to PM the user directly. This interface is implemented in MessageEvent, ActionEvent, and NoticeEvent</li>
+<li>All <code>ConfigurationBuilder.add*</code> methods have an additional overload that takes an Iterable, similar to Guava. This allows e.g. directly passing in a Collection of auto join channels instead of having to make a loop</li>
+<li>PircBotX.send() as an alias for .sendIRC(), matching format of Channel.send() and User.send()</li>
+<li>UserChannelDao.getUserBot() to get the user object that represents the bot itself</li>
+<li>Channel.containsMode(char) helper util</li>
+<li>UserLevel.getSymbol() for the 1 character symbol that represents a mode, eg @=op, +=voice, etc</li>
+<li>Issue #253: WhoisEvent.exists() to handle 402 "No such user" errors</li>
+<li>ServerInfo.getISupportValue() helper util</li>
+<li>Issue #155: GenericMessageEvent.respondWith(fullLine) which is implemented by ActionEvent, MessageEvent, NoticeEvent, and PrivateMessageEvent</li>
+<li>Internal method PircBotX.processNextLine() to help with testing</li>
+<li>Issue #260: UserHostmask.getIdent() as an alias to getLogin()</li>
+<li>Issue #248: Configuration.setOnJoinWhoEnabled() for servers that don't support the WHO command (twitch.tv)</li>
+<li>Deprecated GenericSnapshotEvent.getDaoSnapshot() in favor of .getUserChannelDaoSnapshot(). This affects DisconnectEvent, PartEvent, and QuitEvent.</li>
+<li>Deprecated SetChannelBanEvent.getHostmask() in favor of clearer .getBanHostmask()</li>
+<li>BUGFIX Issue #273, #268: Configuration.setDccPublicAddress() to manually set the advertised DCC address</li>
+<li>Issue #261: All getBot() methods in all classes return <code>&lt;B extends PircBotX&gt;</code> allowing the cleaner <code>someObj.&lt;MyCustomBot&gt;getBot()</code> casting syntax</li>
+<li>FEATURE: The following new Events and Classes were added:</li>
+<li>OutputEvent: Dispatched for every line sent to the server</li>
+<li>Issue #178 BanListEvent: List of banned users from "MODE #channel b"</li>
+<li>ExceptionEvent: Dispatched if an exception is thrown during parsing</li>
+<li>ListenerExceptionEvent: Dispatched if an exception is thrown from a listener</li>
+<li>GenericChannelModeRecipientEvent: Generic interface for Channel Op, Voice, Half Op, Super Op, and Owner Events</li>
+<li>GenericChannelUserOutput: Interface for action(String), message(String), and notice(String) for OutputUser and OutputChannel (thanks to amshaegar for the patch)</li>
+<li>SequentialListenerManager: New experimental listener manager that provides all 3 types of running listeners (sequentially in the bot thread, sequentially in its own thread, or in a threadpool) under one consistent interface</li>
+<li>FEATURE: New configuration option configBuilder.setUserLevelPrefixes()</li>
+<li>FEATURE Issue #230: Due to some servers not supporting WHO (twitch.tv) NAMES support was re-added to PircBotX</li>
+<li>FEATURE: User.registeredAs and User.isVerified now support 307 and 330 with no name responses in WHOIS</li>
+<li>FEATURE: Javadocs have been added for significantly more methods</li>
+<li>FEATURE: Adjusted WaitForQueue.waitFor() method signatures to allow for more use cases to compile, allow use of GenericEvents</li>
+<li>FEATURE: Added PircBotX.getBotId() and connection string to slf4j MDC</li>
+<li>FEATURE: PircBotX implements Closable for special situations where the bot needs to be shut down immedately instead of gracefully with bot.send().quitServer()</li>
+<li>FEATURE Issue #225: Line autoSplit now will attempt to split at closest space</li>
+<li>FEATURE Pull Request #241: Added support for IRCv3 message tags (thanks keving91)</li>
+<li>FEATURE Pull Request #272: Added OSGi metadata (thanks mbooth101)</li>
+<li>FEATURE (internal): New test class PircTestRunner to fully test dispatched events</li>
+<li>IMPROVEMENT Issue #206: IPv6 DCC will now send full IPv6 addresses instead of a converted BigInteger. At least one other client sends the full IPv6 address and it makes significantly more sense</li>
+<li>IMPROVEMENT: Cleaned up  stack traces so they are clearer and say what line caused the problem</li>
+<li>IMPROVMENET: Exceptions inside InputParser have the raw line causing the issue appended to the message to aid in debugging</li>
+<li>IMPROVEMENT Issue #200: Validate autoJoin channels in Configuration before they throw NPEs during connect</li>
+<li>IMPROVEMENT: Optimized creating User/ChannelSnapshots by not creating duplicate snapshots of Users and Channels</li>
+<li>IMPROVEMENT: More liberal use of nullchecks @lombok.NonNull and String isBlank() checks to prevent potential bugs</li>
+<li>IMPROVEMENT: PircBotX now compiles with -Xlint:all</li>
+<li>IMPROVEMENT: The bots own user object from PircBotX.getUserBot() now will be updated with correct login and hostname information once the server tells us what it is</li>
+<li>IMPROVEMENT: Configuration/ConfigurationBuilder.getListenerManager() returns the ListenerManager as a generic parameter, allowing easy inline casting</li>
+<li>IMPROVEMENT: Cleaned up IdentServer implementation and added tests</li>
+<li>IMPROVEMENT: Added more javadocs of events</li>
+<li>IMPROVEMENT: PircBotX.getName() defaults to configuration.getName() instead of an empty string before the server confirms our nick</li>
+<li>IMPROVEMENT: Snapshots now have git sha appended to VERSION</li>
+<li>CHANGE: Removed constructor UtilSSLSocketFactory(SSLSocketFactory) in favor of method disableDiffieHellman(SSLSocketFactory) since to trust all certificates the wrapped factory has to be changed. An exception will be thrown if .disableDiffieHellman(SSLSocketFactory) is combined with .trustAllCertificates()</li>
+<li>CHANGE: ConfigBuilder.setCapEnabled() is enabled by default</li>
+<li>CHANGE: Removed "a fork of PircBot" from the default CTCP VERSION response</li>
+<li>CHANGE: Events generate their ID with an internal counter instead of getting it from the listener manager, which is much simpler and matches other id's in other classes</li>
+<li>CHANGE: Removed server password from PircBotX.toString()</li>
+<li>BUGFIX: Fixed UserChannelDao Snapshots which lost all relationship information</li>
+<li>BUGFIX: Removed old channel parameters to methods in OutputChannel (thanks to albul for the report)</li>
+<li>BUGFIX: PircBotX cleans up its entry in IdentServer when disconnecting</li>
+<li>BUGFIX Issue #165: Fixed OutputChannel.setMode not adding spaces after channel name</li>
+<li>BUGFIX Issue #159: Fixed DCC file transfers always requiring a transfer token</li>
+<li>BUGFIX Issue #256: Fixed handleACK returning false even if supported in SASLCapHandler</li>
+<li>BUGFIX Issue #167: Configuration.buildForServer now uses correct parameters</li>
+<li>BUGFIX Issue #172: Empty AWAY messages no longer throw IndexOutofBoundsException</li>
+<li>BUGFIX: Closing an IdentServer no longer throws socket closed exceptions</li>
+<li>BUGFIX Issue #173: IdentServer now responds to requests with correct lines</li>
+<li>BUGFIX: IdentServer now sends NO-USER responses in the correct format</li>
+<li>BUGFIX: Fix ConcurrentModificationException in GenericListenerManager when listeners removed themselves</li>
+<li>BUGFIX: Improved handling of servers that don't support CAP LS (twitch.tv, others)</li>
+<li>BUGFIX: Fixed handling of malformed 004 info lines (thanks to Hitakashi for the report)</li>
+<li>BUGFIX: Fixed isVerified returning false when registeredAs was empty (thanks to  giovannimoonen1 for the report)</li>
+<li>BUGFIX Issue #182: WHOIS responses are now case-insenstive</li>
+<li>BUGFIX: Fixed OutputChannel.invite(channel) reversing the order in the response</li>
+<li>BUGFIX Issue #198: NickAlreadyInUseEvent can be dispatched anywhere instead of just while connecting</li>
+<li>BUGFIX Issue #202: Fixed deadlock in ThreadedListenerManager during shutdown</li>
+<li>BUGFIX: Unused option IrcException.Reason.ReconnectBeforeConnect removed</li>
+<li>BUGFIX Issue #191: Failed WHOIS replies no longer throw a NullPointerException</li>
+<li>BUGFIX: Only add info to slf4j's MDC for Listeners when there's actually a bot</li>
+<li>BUGFIX Issue #204: Fixed WaitForQueue not returning null after timeout was exceeded</li>
+<li>BUGFIX Issue #196: Fixed NullPointerException on non-standard DCC RESUME requests</li>
+<li>BUGFIX Issue #209: Fixed user renaming bug causing internal DAO maps to fall out of sync</li>
+<li>BUGFIX: WhoisEvent.getChannels() will now return an empty list by default instead of null</li>
+<li>BUGFIX Issue #229: Fixed instances of parseInt being used for long values</li>
+<li>BUGFIX Issue #227: Fixed high number of "Channel mode is stale" warnings</li>
+<li>BUGFIX Issue #232: Channel and User Snapshots now copy UUID from existing object</li>
+<li>BUGFIX Issue #231: Get internal nick from server</li>
+<li>BUGFIX Issue #256: Use backwards compatible commons-codec method in SASLCapHandler as Android uses version 1.3</li>
+<li>BUGFIX Issue #257: Log if ServerInfo fails to parse ISUPPORT lines instead of throwing an Exception</li>
+<li>BUGFIX Issue #269: Fixed nick auto change running after connect</li>
+<li>BUGFIX Issue #268: Do not try to connect to an IPv6 client with an IPv4 address or vise-versa</li>
+<li>BUGFIX Issue #280: Send quits immediately instead of using message delay</li>
+</ol>
+<h2>
+<a aria-hidden="true" class="anchor" href="#201---december-3rd-2013" id="user-content-201---december-3rd-2013"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>2.0.1 - December 3rd, 2013</h2>
+<p>This is intended to be a pure bugfix and improvement release to stabilize 2.0.</p>
+<ol>
+<li>BUGFIX Issue #150: Correctly handle and parse 324 RPL_CHANNELMODEIS mode parameters</li>
+<li>BUGFIX Issue #151: Correctly handle cases where full name is missing from WHO replies (thanks to danny.vanheumen for the patch)</li>
+<li>BUGFIX Issue #154: Mark reconnectStopped volatile to prevent Hotspot from optimizing the check away</li>
+<li>BUGFIX: Some unknown lines were not sent to CAP handlers (thanks to cotay for the bug report)</li>
+<li>BUGFIX: WEBIRC parameters are now verified upon building the configuration</li>
+<li>BUGFIX: Removed lingering channel parameter on OutputChannel.unBan (thanks to zack8649 for the report)</li>
+<li>BUGFIX: Fixed multiple generics warnings</li>
+<li>IMPROVEMENT: All above BUGFIX's have unit tests</li>
+<li>IMPROVEMENT: Added toString() implementations to all CAP handlers</li>
+<li>IMPROVEMENT: Switched precedence of Op and Voice in UserLevel to be consistent with mode precedence (voice &lt; op &lt; halfop &lt; superop &lt; owner)</li>
+<li>IMPROVEMENT: Changed input and output SLF4J markers public</li>
+</ol>
+<h2>
+<a aria-hidden="true" class="anchor" href="#20---october-29th-2013" id="user-content-20---october-29th-2013"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>2.0 - October 29th, 2013</h2>
+<p>Please read <a href="MigrationGuide2.md">Migration to 2.0</a> for explanations on why things changed and how it will affect your code. This changelog is only meant to detail what changes.</p>
+<p>PircBotX turns 2.0! The goal is to change PircBotX's direction from "PircBot with some improvements" to <strong>"A better IRC Library."</strong> The major version bump is matched by major changes to make PircBotX more modular, pluggable, easier to use, and generally better.</p>
+<p>Most of these changes are a result of finally splitting up the monstrous PircBotX god class. The API is now significantly cleaner and clearer on exactly what you can do and where you can do it</p>
+<ol>
+<li>Configuration - New class to manage the configuration of a bot</li>
+<li>FEATURE: To build a Configuration, use Configuration.Builder.</li>
+<li>FEATURE: Configuration.Builder can copy an existing Builder or Configuration . This allows you to have a template configuration with global settings that you copy to all the bots that you create</li>
+<li>FEATURE: Auto-join channels with addAutoJoinChannel</li>
+<li>FEATURE: Auto-identify to nickserv with <code>setNickservPassword</code>
+</li>
+<li>FEATURE: Classes created by PircBotX are created with Configuration.BotFactory. This centralizes providing alternative implementations of various classes like User, DccHandler, InputParser, etc</li>
+<li>IMPROVEMENT: WebIRC is now enabled or disabled with setWebIrcEnabled instead of being based on webIrcPassword</li>
+<li>IMPROVEMENT: inetAddress renamed to localAddress for clarity</li>
+<li>IMPROVEMENT: useShutdownHook renamed to shutdownHookEnabled in Configuration for clarity and JavaBean style</li>
+<li>CHANGE: You must pass a completed Configuration to the PircBotX constructor</li>
+<li>CHANGE: PircBotX.connect() is now the only connect method</li>
+<li>CHANGE: setEncoding(String) removed to simplify API and for clarity</li>
+<li>Rewrote IdentServer as an better, standalone server</li>
+<li>FEATURE: Now supports multiple bots from 1 instance</li>
+<li>FEATURE: Significantly more validation and logging of lines added</li>
+<li>CHANGE: As IdentServer is now standalone, you must manage starting and stopping the IdentServer with <code>IdentServer.startServer()</code> and <code>IdentServer.stopServer()</code>
+</li>
+<li>All original PircBotX.send<code>*</code> methods have been moved and renamed into Output specific classes: OutputIRC, OutputCAP, OutputUser, OutputChannel, etc. The goal is to narrow and simplify sending messages to the specific destination instead of showing every single possible option at once</li>
+<li>FEATURE: New cleaner syntax for sending:</li>
+<li><code>channel.send().message("Hello!")</code></li>
+<li><code>user.send().action("Me too!")</code></li>
+<li><code>user.send().dccChat()</code></li>
+<li><code>bot.sendIRC().listChannels()</code></li>
+<li><code>bot.sendCAP().request("multi-prefix")</code></li>
+<li>FEATURE: New methods in OutputChannel</li>
+<li>
+<code>channel.send().who()</code> - Ask for WHO list of channel</li>
+<li>
+<code>channel.send().getMode()</code> - Ask for channel mode</li>
+<li>FEATURE: OutputCAP has significantly more methods than before to cover the entire CAP negotiation protocol</li>
+<li>OutputRaw - Handles actual sending of a raw line to a server</li>
+<li>FEATURE: OutputThread and its outgoing queue has been replaced by a lock that blocks until the message is actually sent. This significantly improves Exception handling and wondering if the line you sent actually made it to the server</li>
+<li>FEATURE: rawLineNow now has an optional parameter resetDelay to reset the message delay of the next pending message.</li>
+<li>CHANGE: The redundant(synchronized!) PircBotX.disconnect() method was removed. Users should use quitServer()</li>
+<li>UserChannelDao</li>
+<li>Users who send invites are now in private map</li>
+<li>DCC completely overhauled</li>
+<li>FEATURE: Added support for reverse/passive DCC</li>
+<li>FEATURE: Added support for filenames that are sent in quotes</li>
+<li>FEATURE: Now very configurable via Configuration</li>
+<li>dccFilenameQuotes - If filename has spaces and is enabled, send the filename in a request in quotes. If disabled, replace spaces with underscores (default: disabled)</li>
+<li>dccLocalAddress - Address to use to accept incoming dcc requests on. If null, defaults to localAddress. If that is still null, defaults to the localAddress the bot used to connect to the server</li>
+<li>dccAcceptTimeout - How long a user has to accept an dcc request. Defaults to socketTimeout</li>
+<li>dccResumeAcceptTimeout - How long a user has to accept a dcc resume. Defaults to dccAcceptTimeout</li>
+<li>dccTransferBufferSize - How big of a buffer to use when transferring a file</li>
+<li>dccPassiveRequest - Default option to use when sending DCC requests. Note that this still configurable on a per-request basis in the accept methods (see below)</li>
+<li>IMPROVEMENT: Methods have been written to wait for an accept or throw an Exception instead of awkwardly dispatching an event with possible exceptions</li>
+<li>File transfers</li>
+<li>IMPROVEMENT: DccFileTransfer replaced by SendFileTransfer and ReceiveFileTransfer which represent an active file transfer that has already been accepted by the receiving user</li>
+<li>IMPROVEMENT: IncommingFileTransferEvent now stores all information about the request in the event itself</li>
+<li>FEATURE: Easier way to accept a file transfer: <code>transferEvent.accept(destinationFile)</code> .</li>
+<li>FEATURE: Can now easily resume accepting a file with: <code>transferEvent.acceptResume(destinationFile, startPosition)</code> . This blocks until the user has acknowledged the resume and is ready for the file transfer</li>
+<li>FEATURE: Both accept methods above return a ReceiveFileTransfer that contains lots of status information about the current transfer. To actually start the transfer, use <code>fileTransfer.transfer()</code>
+</li>
+<li>FEATURE: Easier way to send a file: <code>user.send().dccFile(file)</code> . This blocks until the user accepts the file request and returns a SendFileTransfer or the dccAcceptTimeout is reached and throws a DccException</li>
+<li>Chat</li>
+<li>IMPROVEMENT: DccChat replaced by SendChat and ReceiveChat which represent an active chat that has been accepted by the receiving user</li>
+<li>IMPROVEMENT: IncommingChatRequestEvent now stores all information about the request in the event itself</li>
+<li>FEATURE: Easier way to accept a chat request: <code>chatEvent.accept()</code>
+</li>
+<li>FEATURE: Since chat objects represent an active connection, there is no longer a risk of sending a message to an unaccepted Chat only to get Exceptions</li>
+<li>FEATURE: All lines sent or received in a chat are now logged</li>
+<li>FEATURE: Easier way to send a chat request: <code>user.send().dccChat()</code>
+</li>
+<li>FEATURE: Shutdown of a bot will now wait for all running Listeners in ListenerManager to finish executing</li>
+<li>FEATURE: A 324 mode response now generates a ModeEvent</li>
+<li>FEATURE: New method in TopicEvent: getOldTopic()</li>
+<li>FEATURE: ServerResponseEvent now only contains raw line from server and the parsed response</li>
+<li>FEATURE: ServerInfo MAXLIST is now parsed into a map</li>
+<li>FEATURE: STARTTLS support added with TLSCapHandler</li>
+<li>FEATURE: New method PircBotX.getBotId() to get the unique bot number, useful for managing bots</li>
+<li>FEATURE: New method sendRawLineNow(message, resetDelay). If there is a pending message with resetDelay it waits the full message delay again</li>
+<li>FEATURE: Classes PircBotX, Channel, User, and Event implement Comparable to allow easy sorting</li>
+<li>FEATURE: Can now easily determine a User's level in the channel with new UserLevel enum and User.getUserLevels()</li>
+<li>FEATURE: User and Channel plus the new UserChannelDao and UserChannelMap can create snapshots of themselves. These are passed to PartEvent, QuitEvent, and DisconnectEvent</li>
+<li>FEATURE: New generic classes GenericUserEvent, GenericChannelEvent, and GenericChannelUserEvent</li>
+<li>FEATURE: Issue #136 Added support for specifying realname</li>
+<li>FEATURE: Issue #140 New event NickAlreadyInUseEvent</li>
+<li>FEATURE: Exceptions encountered during disconnect are reported in DisconnectEvent</li>
+<li>FEATURE: Lookup of users and channels by name is now case-insensitive.</li>
+<li>FEATURE: Issue #143 New dedicated expandable mode handler system</li>
+<li>FEATURE: Store away messages in User with getUser()</li>
+<li>FEATURE: Added support for CAP away-notify</li>
+<li>FEATURE: Issue #145 Added callback method for DCC File transfers for users who want to customize output throttling</li>
+<li>IMPROVEMENT: <strong>Massive performance increases</strong>
+</li>
+<li>Server line processing now significantly faster</li>
+<li>ListenerAdapter no longer uses reflection to call event methods. Users who extended ListenerAdapter to add support for custom events need to make the same change</li>
+<li>IMPROVEMENT: Cleaned up PircBotX generics</li>
+<li>IMPROVEMENT: PircBotX now has dependencies to take advantage of modern libraries to reduce code, reduce bugs, increase integration, and increase usefulness</li>
+<li>slf4j - Modern logging framework to replace odd log() method. Users can now easily integrate PircBotX into their own logging system. Helpful debugging statements were also added since were no longer afraid to clutter the main log.</li>
+<li>Note: As slf4j only provides an abstract logging api, you still need to provide an actual logging implementation. If you do not have one already, we recommend logback due to its native integration with slf4j</li>
+<li>Apache Commons Lang - Extremely useful Java utility library to replace many redundant utility methods as well as access much more</li>
+<li>Google Guava - Another useful utility library to provide features like better collections and easier method argument checking</li>
+<li>Apache Commons Codec - Provides a tested and proven Base64 implementation. Technically this library is not needed if you do not use SASL CAP authentication</li>
+<li>IMPROVEMENT: PircBotX shutdown now is guarded from being called twice. This should further fix any weird shutdown issues</li>
+<li>IMPROVEMENT: InputThread has been replaced by InputParser. No longer extending Thread, all input parsing has been moved there.</li>
+<li>IMPROVEMENT: Event now implements GenericEvent</li>
+<li>IMPROVEMENT: sendRawLine methods now throw a RuntimeException if the bot is not connected instead of silently failing</li>
+<li>IMPROVEMENT: isConnected now reports the status of the socket instead of inputThread</li>
+<li>IMPROVEMENT: All "Unmodifiable" views of various collections (eg Users in a channel) have been replaced by "Immutable copies" using either ImmutableSortedSet (when applicable) or ImmutableSet</li>
+<li>IMPROVEMENT: Do not use BufferedOutputStream for output since all lines need to be sent immediately.</li>
+<li>IMPROVEMENT: The Event abstract class now has an additional constructor that can take a ListenerManager directly. This allows users to use the ListenerManager system for outside events that aren't tied to a bot (eg bot managers with a global ListenerManager) without throwing NullPointerExceptions.</li>
+<li>IMPROVEMENT: No methods are synchronized in the PircBotX class</li>
+<li>IMPROVEMENT: Implemented Comparable in several more classes</li>
+<li>PircBotX sorts by botId</li>
+<li>Channel sorts by name (case insensitive)</li>
+<li>Event sorts by timestamp, then by id, then by bot id (if there is one)</li>
+<li>IMPROVEMENT: Most methods now verify parameters for non-null, not blank, etc to prevent strange exceptions and undesired behavior</li>
+<li>IMPROVEMENT: Event's getSource() methods have been replaced by standard getUser()</li>
+<li>CHANGE: OutputThread has been completely removed. All send<code>*</code> methods block until the message is sent instead of being added to a queue.</li>
+<li>CHANGE: HookUtils with its single method getAllEvents() was removed since it had almost no use cases and didn't take into account custom events.</li>
+<li>CHANGE: The waitFor method in PircBotX class was removed after being deprecated in 1.9 due to bad thread racing issues. As in 1.9, WaitForQueue should be used instead</li>
+<li>CHANGE: Added several methods to WaitForQueue to wait for a list of Events and to wait with a timeout</li>
+<li>CHANGE: The identify() method (now in OutputIRC) will now throw an Exception instead of creating a temporary listener if the bot is not connected to the server to limit complexity and possible bugs. Users are recommended to use <code>setNickservPassword</code> in the Configuration class for automatic handling.</li>
+<li>CHANGE: All handle methods in CapHandler's now take an ImmutableList instead of a List. This is to prevent accidental bugs from trying to change capabilities by modifying that list</li>
+<li>CHANGE: Removed TrustingSSLSocketFactory after being deprecated for a long time by UtilSSLSocketFactory</li>
+<li>CHANGE: Renamed GenericCTCPCommand to GenericCTCPEvent to conform to event naming convention</li>
+<li>CHANGE: SendRaw.rawLineSplit no longer accepts a null suffix</li>
+<li>CHANGE: Renamed <code>User.uuid</code> to <code>userId</code> for clarity and added a getter</li>
+<li>CHANGE: Removed Utils.getUser() (obsoleted by StringUtils.join) and Utils.getUser() (obsoleted by GenericUserEvent)</li>
+<li>CHANGE: Marked shutdown() protected since it is not meant to be called by others.</li>
+<li>CHANGE/BUGFIX: The <code>done()</code> method in <code>CapHandler</code> was replaced by all methods returning true or false if they have finished, because <code>done()</code> only works once. If the bot reconnects or there are multiple bots they would either ignore the cap handler or worse, deadlock and never finish reconnecting since most servers disconnect users who time out sending CAP END.</li>
+<li>BUGFIX: Connecting to all servers in DNS didn't actually work</li>
+<li>BUGFIX: SSLSockets couldn't be closed correctly due to relying on shutdownInput</li>
+<li>BUGFIX: NickAlreadyInUseException in connect() now won't close the socket</li>
+<li>BUGFIX: UserSnapshot.getChannelsOwnerIn() now actually returns channels the user is an owner in (used to be always empty)</li>
+<li>BUGFIX: UserSnapshot.generateSnapshot() now throws an UnsupportedOperationException since that doesn't make any sense and throws unhelpful exceptions anyway</li>
+<li>BUGFIX: Keep generics in tact with getDao() in User and Channel</li>
+<li>BUGFIX: User.compareTo() now compares in correct order (the current user, then the compared user)</li>
+<li>BUGFIX: Fixed potential Channel getMode() deadlock</li>
+<li>BUGFIX: Fixed potential race with the server in cycle()</li>
+<li>BUGFIX: Fixed NullPointerException when responding to NoticeEvents (and ActionEvents in 2.0-SNAPSHOT) sent as private messages. (Thanks to tilal6991 for discovering this)</li>
+<li>BUGFIX: Reversed Users's compareTo so that it sorts in correct order</li>
+<li>BUGFIX: Fixed race with the server in OutputChannel.cycle() by only parting the channel after the listener is added</li>
+<li>BUGFIX: Changed visibility of shutdown() to protected to prevent confusion (thanks to Stoever for discovering this)</li>
+<li>BUGFIX: Prevent shutdown from being called multiple times. Also fixed System.exit() deadlocking (thanks to Stoever for discovering this)</li>
+</ol>
+<h2>
+<a aria-hidden="true" class="anchor" href="#19---april-7th-2013" id="user-content-19---april-7th-2013"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>1.9 - April 7th, 2013</h2>
+<p>This version adds support for <a href="http://ircv3.atheme.org/" rel="nofollow">IRCv3</a> <a href="Features#*_NEW_*_CAP_Support.md">this Features section CAP Negotiation</a>, allowing you to use <a href="Documentation#sasl-authentication">Documentation</a> or the many other CAP features.</p>
+<p>Other changes include better support for proxies, a better WaitForQueue class, and several bugfixes.</p>
+<ol>
+<li>FEATURE: Proxy support added with a new socket factory ProxySocketFactory</li>
+<li>FEATURE: Deprecated PircBotX.waitFor() in favor of new WaitForQueue class due to racing conditions. Instead of hoping to readd the temporary PircBotX.waitFor() listener before the relevant event is dispatched, WaitForQueue stores queues all dispatched events from creation to close</li>
+<li>FEATURE: <strong>CAP Negotiation</strong>. See <a href="Features#*_NEW_*_CAP_Support.md">this Features section</a> for more information</li>
+<li>New interface CapHandler so other classes can process CAP responses</li>
+<li>New class SASLCapHandler to support SASL authentication</li>
+<li>New class EnableCapHandler to enable most other CAP capabilities</li>
+<li>By default PircBotX will attempt to enable multi-prefix due to its usefulness</li>
+<li>FEATURE: New method ListenerAdapter.updateEventMethodMapping() so custom events in a subclass can be dispatched with ListenerAdapter</li>
+<li>ENHANCEMENT: Shutdown improvements</li>
+<li>Shutdown hook will now run shutdown() regardless if disconnect() fails due to socket already being closed</li>
+<li>Exceptions during closing the connection with the server should now only appear in extraordinary circumstances (IE internet going out)</li>
+<li>Fixed bug where shutdown() might be run twice</li>
+<li>PircBotX will now shutdown the bot if any exception occurs during connect() except for IrcException's and NickAlreadyInUseException's</li>
+<li>BUGFIX: Some IRC clients send filenames in quotes in DCC SEND, which broke anything relying on DccFileTransfer.getFilename(). These are now removed</li>
+<li>BUGFIX: Channel.getMode() always asked the server for the current mode, regardless if it had a known good mode locally</li>
+<li>BUGFIX: Issue #91: Reverted channel owner detection to ~ prefix</li>
+<li>BUGFIX: Issue #111: ListenerAdapter no long throws an NPE when dispatching a custom event</li>
+<li>ENHANCEMENT: Small code cleanup, marking several protected classes static and several fields that should never change final</li>
+<li>ENHANCEMENT: Javadoc updates</li>
+<li>ENHANCEMENT: Bumped all dependency and plugin versions in POM</li>
+<li>ENHANCEMENT: Switched to cleaner changelog format that obviously shows what new things have been added and old things that have changed</li>
+</ol>
+<h2>
+<a aria-hidden="true" class="anchor" href="#18---january-11th-2013" id="user-content-18---january-11th-2013"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>1.8 - January 11th, 2013</h2>
+<p>Lots of new features and bugfixes added. We also have a new developer, entityreborn! With a second developer expect many improvements to come in future versions.</p>
+<p>Other changes:</p>
+<ul>
+<li>There is now 2 24/7 bots in the #pircbotx channel on irc.freenode.net that show what Pircbotx can do: TheLQ-Jenkins, a bot that posts when builds are happening (This is the <a href="https://wiki.jenkins-ci.org/display/JENKINS/IRC+Plugin" rel="nofollow">Jenkins IRC plugin</a> that uses PircBotX as its IRC library) and TheLQ-Pircbotx, my own example bot</li>
+<li>PircBotX is now being managed by a private Jenkins server
+<ul>
+<li>Snapshots should now be deployed a maximum of 10 minutes after a commit has been pushed into the repo. This should now be much more reliable than saying "I'll push out a snapshot tonight" and it maybe not happening</li>
+<li>Its now built with JDK5 so any incompatibilities that might of snuck through because they are JDK6 or 7 only are now detected</li>
+</ul>
+</li>
+<li>The project lombok plugin now should run a lot less when building since its the plugin has been changed from hacky maven-exec-plugin to -lombok-maven-plugin and the attached phase has been changed to process-sources</li>
+</ul>
+<p>Changelog:</p>
+<ol>
+<li>Issue #106: Fixed bug where internal nick wasn't always set correctly, mainly when using bouncers</li>
+<li>New class <a href="http://thelq.github.io/pircbotx/1.8/apidocs/org/pircbotx/impl/ReplayServer.html" rel="nofollow">ReplayServer</a> which can replay raw logs to a bot. Will be very useful for debugging</li>
+<li>Fixed bug where the temporary Listener created in <a href="http://thelq.github.io/pircbotx/1.8/apidocs/org/pircbotx/PircBotX.html#identify%28java.lang.String%29" rel="nofollow">PircBotX.identify()</a> could prematurely delete itself if another bot using the same ListenerManager received a nickserv response</li>
+<li>Issue #99: Any ERROR line received causes the bot to shutdown immediately</li>
+<li>New method <a href="http://thelq.github.io/pircbotx/1.8/apidocs/org/pircbotx/PircBotX.html#setWebIrcUsername%28java.lang.String%29" rel="nofollow">PircBotX.setWebIrcUsername()</a>, used to always be cgiirc</li>
+<li>
+<a href="http://thelq.github.io/pircbotx/1.8/apidocs/org/pircbotx/PircBotX.html#VERSION" rel="nofollow">PircBotX.VERSION</a> is now updated as part of the build process making it significantly more accurate</li>
+<li>Updated Thread naming for <a href="http://thelq.github.io/pircbotx/1.8/apidocs/org/pircbotx/hooks/managers/BackgroundListenerManager.html" rel="nofollow">BackgroundListnerManager's</a> pool</li>
+<li>Issue #96: Updated handling of ListenerManagers</li>
+<li>Allow core pool threads to time out</li>
+<li>New method <a href="http://thelq.github.io/pircbotx/1.8/apidocs/org/pircbotx/hooks/managers/ThreadedListenerManager.html#shutdown%28%29" rel="nofollow">ThreadedListenerManager.shutdown()</a> for users that need to manually shutdown its internal Thread pool</li>
+<li>ListenerManager is now lazy loaded so a <a href="http://thelq.github.io/pircbotx/1.8/apidocs/org/pircbotx/hooks/managers/ThreadedListenerManager.html" rel="nofollow">ThreadedListenerManager</a> isn't created by default when a custom ListenerManager is going to be used anyway</li>
+<li>Issue #97: New event <a href="http://thelq.github.io/pircbotx/1.8/apidocs/org/pircbotx/hooks/events/SocketConnectEvent.html" rel="nofollow">SocketConnectEvent</a>, allows for Listeners to run much earlier in the connect process</li>
+<li>Issue #95: Fixed bug where <a href="http://thelq.github.io/pircbotx/1.8/apidocs/org/pircbotx/hooks/events/PartEvent.html" rel="nofollow">PartEvent</a> wasn't dispatched when it was the bot that parted the channel</li>
+<li>
+<a href="http://thelq.github.io/pircbotx/1.8/apidocs/org/pircbotx/MultiBotManager.html" rel="nofollow">MultiBotManager</a> updates:</li>
+<li>MultiBotManager.createBot() methods now return a BotBuilder to automatically do things like join channels. In future versions more builder methods will probably be added</li>
+<li>Fixed bug where name set in constructor wasn't actually set in bots</li>
+<li>Issue #91: Fixed <a href="http://thelq.github.io/pircbotx/1.8/apidocs/org/pircbotx/Channel.html#getOwners%28%29" rel="nofollow">Channel.getOwners()</a> to use the correct flag to determine if a user is an owner</li>
+<li>Issue #92 and Issue #94: <a href="http://thelq.github.io/pircbotx/1.8/apidocs/org/pircbotx/User.html#isVerified%28%29" rel="nofollow">User.isVerified()</a> tried to use wrong information to guess if the user is verified. Unfortunately the only way to get this information is to query the user with WHOIS. isVerified() is now a utility method that does this, with warnings that it is expensive</li>
+<li>Issue #93: Added new method <a href="http://thelq.github.io/pircbotx/1.8/apidocs/org/pircbotx/PircBotX.html#getUsers%28%29" rel="nofollow">PircBotX.getUsers()</a> to get all users the bot is aware of</li>
+<li>Issue #88: New method <a href="http://thelq.github.io/pircbotx/1.8/apidocs/org/pircbotx/hooks/events/WhoisEvent.html#getRegisteredAs%28%29" rel="nofollow">WhoisEvent.getRegisteredAs()</a> for "Registered As" response (330) in WHOIS replies</li>
+<li>Issue #86: Exceptions encountered during reconnect are dispatched with the ReconnectEvent instead of just logged to console</li>
+<li>Fixed issue where noReconnect option in <a href="http://thelq.github.io/pircbotx/1.8/apidocs/org/pircbotx/PircBotX.html#shutdown%28boolean%29" rel="nofollow">PircBotX.shutdown()</a> was mis-interpreted</li>
+<li>Fixed issue where <a href="http://thelq.github.io/pircbotx/1.8/apidocs/org/pircbotx/hooks/events/DisconnectEvent.html" rel="nofollow">DisconnectEvent</a> wasn't always dispatched</li>
+<li>Fixed regression where JVM wouldn't exit after quitting a server because OutputThread was still running</li>
+<li>Issue #87: New method sendMessage() in Channel and User classes (thanks the.md5encryption)</li>
+<li>Max line length is now a configurable option with <a href="http://thelq.github.io/pircbotx/1.8/apidocs/org/pircbotx/PircBotX.html#setMaxLineLength%28int%29" rel="nofollow">PircBotX.setMaxLineLength()</a>. Useful if sendRawLineSplit sends messages that still get truncated</li>
+<li>Made <a href="http://thelq.github.io/pircbotx/1.8/apidocs/org/pircbotx/PircBotX.html#sendRawLineSplit%28java.lang.String,%20java.lang.String%29" rel="nofollow">PircBotX.sendRawLineSplit()</a> public instead of protected</li>
+<li>Fixed test that used InetAddress.getLoopbackAddress(), which is JDK7 only</li>
+<li>Issue #77: Finally implemented a large batch of 004 and 005 server info parsing for the <a href="http://thelq.github.io/pircbotx/1.8/apidocs/org/pircbotx/ServerInfo.html" rel="nofollow">ServerInfo</a> class. Note that its still a work in progress as there are other options and optimizations that would be nice to implement</li>
+<li>Issue #79: On connect PircBotX now tries all the IP addresses in DNS, moving through the list if any IP address fails (Thanks jeffgemail and TTF!)</li>
+<li>Issue #78 and Issue #83: New event <a href="http://thelq.github.io/pircbotx/1.8/apidocs/org/pircbotx/hooks/events/WhoisEvent.html" rel="nofollow">WhoisEvent</a>. Makes whois lookups much easier</li>
+<li>Fixed <a href="http://thelq.github.io/pircbotx/1.8/apidocs/org/pircbotx/PircBotX.html#cycle%28org.pircbotx.Channel%29" rel="nofollow">PircBotX.cycle()</a> so that the temporary Listener it creates doesn't prematurely self-destruct before it actually rejoin's the channel</li>
+<li>Issue #75: Better support for reconnecting</li>
+</ol>
+<ul>
+<li>Reconnecting is now configurable with <a href="http://thelq.github.io/pircbotx/1.8/apidocs/org/pircbotx/PircBotX.html#setAutoReconnect%28boolean%29" rel="nofollow">PircBotX.setAutoReconnect()</a>
+</li>
+<li>On Reconnect, re-joining all previous channels can be done automatically with <a href="http://thelq.github.io/pircbotx/1.8/apidocs/org/pircbotx/PircBotX.html#setAutoReconnectChannels%28boolean%29" rel="nofollow">PircBotX.setAutoReconnectChannels()</a>
+</li>
+<li>A <a href="http://thelq.github.io/pircbotx/1.8/apidocs/org/pircbotx/hooks/events/ReconnectEvent.html" rel="nofollow">ReconnectEvent</a> is dispatched when a reconnect is attempted. Includes any exception encountered so that a Listener has more information to attempt a more successful reconnect</li>
+</ul>
+<ol>
+<li>Javadoc updates</li>
+<li>Bumped all dependency and plugin versions in POM</li>
+</ol>
+<h2>
+<a aria-hidden="true" class="anchor" href="#17---may-23rd-2012" id="user-content-17---may-23rd-2012"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>1.7 - May 23rd, 2012</h2>
+<p>After a long wait, PircBotX 1.7 has been released. The goal of this release was more bug fixing. Making a release took longer than expected though.</p>
+<p>Note that activity is going down simply because PircBotX has plateaued due to stability. This does not mean that the project is stagnet or dead, it simply means there are no other changes needed</p>
+<ol>
+<li>Note that if you extend the PircBotX class, all the variables have the underscore prefix removed</li>
+<li>Various DCC updates</li>
+</ol>
+<ul>
+<li>Properly close DccFileTransfer file streams</li>
+<li>DccManager, DccFileTransfer, DccChat implement closeable interface, close() methods also updated to be more comprehensive</li>
+<li>DccFileTransfer.getNumericalAddress() renamed to getAddress()</li>
+<li>DccManager now actually tracks all open DccFileTransfer's and DccChat's</li>
+<li>DccManager can now be fetched from PircBotX with getDccManager()</li>
+</ul>
+<ol>
+<li>Issue #71: Several updates to the shutdown code</li>
+</ol>
+<ul>
+<li>Condensed all shutdown code into a single method: shutdown(). Also moved things around so normal shutdown is more stable</li>
+<li>Exception handling in Input and Output threads now makes more sense</li>
+<li>Fix a potential race condition</li>
+</ul>
+<ol>
+<li>Issue #72: Updated shutdown hook so that it can be removed (useShutdownHook()), can be checked if one is in use (hasShutdownHook), and now has a meaningful thread name to aid in debugging</li>
+<li>Issue #70: UtilSSLSocketFactory now can wrap a provided SSLSocketFactory. Really only useful for disableDiffieHellman();</li>
+<li>Issue #66: ListenerAdapter now no longer throws a ArrayIndexOutOfBoundsException when compiled with predecessors that add unexpected methods</li>
+<li>Issue #67: Added null checks to all send methods and several others. Attempting to pass null to these methods will result in a IllegalArgumentException</li>
+<li>Issue #69: Fixed spelling mistake in QuitEvent</li>
+<li>Input, Output, and ThreadedListenerManager threads now have meaningful names</li>
+<li>Changed default channel in PircBotXExample from #quackbot to #pircbotx</li>
+<li>Issue #52: Added support for WEBIRC</li>
+<li>Issue #53: When connecting check for significantly more codes to say the bot is actually connected for non-compliant servers that don't return a 004</li>
+<li>Issue #54: Added support for auto splitting long messages. Use <a href="http://thelq.github.io/pircbotx/1.7/apidocs/org/pircbotx/PircBotX.html#setAutoSplitMessage%28boolean%29" rel="nofollow">PircBotX.setAutoSplitMessages()</a>
+</li>
+<li>Issue #49: Can now bind the created socket to a specific IP with <a href="http://thelq.github.io/pircbotx/1.7/apidocs/org/pircbotx/PircBotX.html#setInetAddress%28java.net.InetAddress%29" rel="nofollow">PircBotX.setInetAddress()</a>, useful for multi-homed servers</li>
+<li>Minor Javadoc fixes</li>
+<li>Bumped all maven plugins and dependencies to their newest versions</li>
+</ol>
+<h2>
+<a aria-hidden="true" class="anchor" href="#16---october-22nd-2011" id="user-content-16---october-22nd-2011"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>1.6 - October 22nd, 2011</h2>
+<p>The goals of this release is for bug fixing, new features, and internal upgrades. This includes things like updating the DCC code that hasn't been touched since inherited from PircBot, adding DCC IPv6 support, removing all cases were exceptions were silently ignored causing headaches when debugging,  event id's, various updates and new features on connecting and disconnecting, and many bug fixes and updates.</p>
+<p>This release took longer than planned because due to some things going on recently IPv6 became a lot more difficult to test and I've had less and less time to work on the project</p>
+<p>NOTE: Some large but important changes were made in this release, so be sure to read the changelog in detail.</p>
+<ol>
+<li>Issue #34: New class <a href="http://thelq.github.io/pircbotx/1.6/apidocs/org/pircbotx/UtilSSLSocketFactory.html" rel="nofollow">UtilSSLSocketFactory</a> to replace <a href="http://thelq.github.io/pircbotx/1.6/apidocs/org/pircbotx/TrustingSSLSocketFactory.html" rel="nofollow">TrustingSSLSocketFactory</a> (which is now Deprecated but will be kept). Provides options for trusting all certificates and disabling Diffie Hellman due to <a href="http://bugs.java.com/bugdatabase/view_bug.do?bug_id=6521495" rel="nofollow">JDK bug #6521495</a>.</li>
+<li>Issue #35: ListenerManager wasn't passed correctly to bots in <a href="http://thelq.github.io/pircbotx/1.6/apidocs/org/pircbotx/MultiBotManager.html" rel="nofollow">MultiBotManager</a>, causing NullPointerExceptions (thanks to Vincent Behar for the patch)</li>
+<li>Overhauled how Charset/Encoding is handled: Now it is stored as a Charset object instead of a String. The <a href="http://thelq.github.io/pircbotx/1.6/apidocs/org/pircbotx/PircBotX.html#setEncoding%28java.lang.String%29" rel="nofollow">PircBotX.setEncoding(String)</a> method was kept but now there's <a href="http://thelq.github.io/pircbotx/1.6/apidocs/org/pircbotx/PircBotX.html#setEncoding%28java.nio.charset.Charset%29" rel="nofollow">PircBotX.setEncoding(Charset)</a>. <a href="http://thelq.github.io/pircbotx/1.6/apidocs/org/pircbotx/PircBotX.html#getEncoding%28%29" rel="nofollow">PircBotX.getEncoding()</a> now returns a Charset object as well. setEncoding methods now do NOT allow null values and getEncoding methods never return null. The default JVM encoding is whats used if setEncoding is never called</li>
+<li>The setEncoding methods were updated in <a href="http://thelq.github.io/pircbotx/1.6/apidocs/org/pircbotx/MultiBotManager.html" rel="nofollow">MultiBotManager</a> to match the Bot setEncoding methods</li>
+<li>
+<a href="http://thelq.github.io/pircbotx/1.6/apidocs/org/pircbotx/MultiBotManager.html#getBots%28%29" rel="nofollow">MultiBotManager.getBots()</a> now returns an Unmodifiable set since adding bots there doesn't make any sense</li>
+<li>Issue #37: New method <a href="http://thelq.github.io/pircbotx/1.6/apidocs/org/pircbotx/MultiBotManager.html#disconnectAll%28%29" rel="nofollow">MultiBotManager.disconnectAll()</a> (thanks to Vincent Behar for the patch)</li>
+<li>Issue #38: Now can have <a href="http://thelq.github.io/pircbotx/1.6/apidocs/org/pircbotx/MultiBotManager.html" rel="nofollow">MultiBotManager</a> clone all the supported settings from a passed <a href="http://thelq.github.io/pircbotx/1.6/apidocs/org/pircbotx/PircBotX.html" rel="nofollow">PircBotX</a> object. Could be useful in some situations.</li>
+<li>Issue #39  - Fixed a few issues and allowed some previously prevented ways of reconnecting</li>
+</ol>
+<ul>
+<li>
+<a href="http://thelq.github.io/pircbotx/1.6/apidocs/org/pircbotx/PircBotX.html#reconnect%28%29" rel="nofollow">reconnect()</a> now actually works since values it was relying on are no longer reset when disconnecting from a server</li>
+<li>The connect() methods can now be used instead of reconnect(). This for example allows a bot to have alternative servers and ports if the first one tried does not work.</li>
+<li>Don't reuse the same <a href="http://thelq.github.io/pircbotx/1.6/apidocs/org/pircbotx/OutputThread.html" rel="nofollow">OutputThread</a> when reconnecting to a server which caused an IllegalThreadStateException</li>
+<li>
+<a href="http://thelq.github.io/pircbotx/1.6/apidocs/org/pircbotx/PircBotX.html#quitServer%28%29" rel="nofollow">PircBotX.quitServer()</a> (and <a href="http://thelq.github.io/pircbotx/1.6/apidocs/org/pircbotx/PircBotX.html#disconnect%28%29" rel="nofollow">PircBotX.disconnect()</a> which relies on it) throws a RuntimeException when trying to disconnect from an already disconnected server</li>
+</ul>
+<ol>
+<li>New Listener <a href="http://thelq.github.io/pircbotx/1.6/apidocs/index.html" rel="nofollow">TemporaryListener</a>. Useful for situations where a Listener is needed only once</li>
+<li>Attempting to send any line when the bot isn't connected to the server will throw an Exception immediately then instead of waiting for the <a href="http://thelq.github.io/pircbotx/1.6/apidocs/org/pircbotx/OutputThread.html" rel="nofollow">OutputThread</a> to fail when processing the queue.</li>
+<li>Issue #31: Events now have individual ID's which you can get with <a href="http://thelq.github.io/pircbotx/1.6/apidocs/org/pircbotx/hooks/Event.html#getId%28%29" rel="nofollow">Event.getId()</a>. The ID is tied to the Listener Manager in use by the bots, so bots that share the same Listener Manager share the same list of ID's. This is configurable with <a href="http://thelq.github.io/pircbotx/1.6/apidocs/index.html" rel="nofollow">listenerManager.setCurrentId()</a>.</li>
+<li>Issue #43: Fixed Motd where it would give Arrays as strings instead of the actual Motd lines.</li>
+<li>Issue #44: Updated <a href="http://thelq.github.io/pircbotx/1.6/apidocs/org/pircbotx/Colors.html" rel="nofollow">Colors</a> class to use StringBuilder instead of StringBuffer and made the class final since its a static utility class (thanks to aleksei for the patch)</li>
+<li>
+<strong>Overhauled all DCC classes and methods</strong> - Almost all of it was still the original PircBot code with the same inefficient and wrong ways of doing things. The public API is mostly the same but some methods behave differently</li>
+</ol>
+<ul>
+<li><strong>Issue #25: <em>Experimental</em> support for DCC IPv6 added.</strong></li>
+<li>IP address handling in general was overhauled to use InetAddresses instead of longs and byte arrays</li>
+<li>In all Dcc classes, changed all package-private and private modifiers to protected, bringing in line with the rest of the project</li>
+<li>New exception <a href="http://thelq.github.io/pircbotx/1.6/apidocs/org/pircbotx/exception/DccException.html" rel="nofollow">DccExcception</a> for various error conditions in the Dcc classes</li>
+<li>
+<a href="http://thelq.github.io/pircbotx/1.6/apidocs/org/pircbotx/PircBotX.html#dccSendChatRequest%28org.pircbotx.User,%20int%29" rel="nofollow">PircBotX.dccSendChatRequest()</a> actually throws any exceptions it encounters instead of silently failing</li>
+<li>
+<a href="http://thelq.github.io/pircbotx/1.6/apidocs/org/pircbotx/DccManager.html" rel="nofollow">DccManager</a>
+<ul>
+<li>The IP address utility methods (PircBotX.longToIp() and PircBotX.ipToLong()) were moved here then heavily changed to <a href="http://thelq.github.io/pircbotx/1.6/apidocs/org/pircbotx/DccManager.html#addressToInteger%28java.net.InetAddress%29" rel="nofollow">DccManager.addressToInteger()</a> and <a href="http://thelq.github.io/pircbotx/1.6/apidocs/org/pircbotx/DccManager.html#integerToAddress%28java.lang.String%29" rel="nofollow">DccManager.integerToAddress()</a>. Both deal with Strings and InetAddresses directly instead of longs and byte arrays.</li>
+<li>Internally replaced inefficient Vector of pending <a href="http://thelq.github.io/pircbotx/1.6/apidocs/org/pircbotx/DccFileTransfer.html" rel="nofollow">DccFileTransfer</a>s to an ArrayList</li>
+<li>Throws a  <a href="http://thelq.github.io/pircbotx/1.6/apidocs/org/pircbotx/exception/DccException.html" rel="nofollow">DccExcception</a> when a user tries to resume sending or receiving a file that doesn't exist</li>
+</ul>
+</li>
+<li>
+<a href="http://thelq.github.io/pircbotx/1.6/apidocs/org/pircbotx/DccChat.html" rel="nofollow">DccChat</a>
+<ul>
+<li>
+<a href="http://thelq.github.io/pircbotx/1.6/apidocs/org/pircbotx/DccChat.html#accept%28%29" rel="nofollow">accept()</a> now throws an IOException if trying to accept a connection again instead of just failing silently</li>
+</ul>
+</li>
+<li>
+<a href="http://thelq.github.io/pircbotx/1.6/apidocs/org/pircbotx/DccFileTransfer.html" rel="nofollow">DccFileTransfer</a>
+<ul>
+<li>Sending and receiving files no longer create new threads and execute all of their code in them. This was done because since Listeners are now multi-threaded, there isn't any risk of blocking the whole bot by receiving or sending a large file</li>
+<li>
+<a href="http://thelq.github.io/pircbotx/1.6/apidocs/org/pircbotx/DccFileTransfer.html#receive%28java.io.File,%20boolean%29" rel="nofollow">receive()</a> now throws a  <a href="http://thelq.github.io/pircbotx/1.6/apidocs/org/pircbotx/exception/DccException.html" rel="nofollow">DccExcception</a> when trying to receive a file twice instead of silently failing</li>
+<li>The delay between sending packets now throws a  <a href="http://thelq.github.io/pircbotx/1.6/apidocs/org/pircbotx/exception/DccException.html" rel="nofollow">DccExcception</a> (wrapping an InterruptedException) instead of just ignoring it as interrupting a thread doesn't occur without a (usually important) reason.</li>
+<li>If an exception is encountered when closing the file streams or sockets and there isn't already an exception, send it in the <a href="http://thelq.github.io/pircbotx/1.6/apidocs/index.html" rel="nofollow">FileTransferFinishedEvent</a>
+</li>
+<li>When sending a file the filename is trimmed for extra characters (eg newline, space, null, etc) just in case</li>
+</ul>
+</li>
+</ul>
+<ol>
+<li>Various Javadoc updates and lots of new tests</li>
+</ol>
+<h2>
+<a aria-hidden="true" class="anchor" href="#15---july-29th-2011" id="user-content-15---july-29th-2011"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>1.5 - July 29th, 2011</h2>
+<p>The goals of this release is more bug fixing and any new features.</p>
+<ol>
+<li>Issue #30: PrivateMessageEvent.respond() would send the message the user sent instead of the given response</li>
+<li>Fixed issue where in situations where when a message was missing from a line the event's message would be heavily malformed instead of empty</li>
+<li>New method PartEvent.getReason() for getting the reason a user parted (empty if there is none)</li>
+<li>Internally moved creating the InputThread and OutputThread to a seperate factory method. This allows you to extend and update the threads without having to resort to strange reflection. This also allowed a half-working test to be 100% reliable</li>
+<li>Minor Javadoc updates</li>
+<li>Several updates to PircBotXJMeter class</li>
+</ol>
+<h2>
+<a aria-hidden="true" class="anchor" href="#14---july-22nd-2011-aka-13-beta-3" id="user-content-14---july-22nd-2011-aka-13-beta-3"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>1.4 - July 22nd, 2011 (AKA 1.3 Beta 3)</h2>
+<p>The goal of this release is any last minute bug fixing and minimal feature changes.</p>
+<p>Note that due to a mistake the minor version number was accidentally bumped to 1.4 instead of 1.3-Final. Because once something is put in the Maven Central Repository it can never be taken out, were stuck with a version of 1.4</p>
+<ol>
+<li>Removed the "perHook" option from ThreadedListenerManager. It goes against the threading model of PircBotX (on hook that blocks will block all hooks that execute after it). If absolutely necessary the same result can be simulated by passing <code>Executors.newSingleThreadScheduledExecutor()</code> to ThreadedListenerManager</li>
+<li>Fixed Issue #29 and other issues where password was sent incorrectly</li>
+<li>Removed buggy and misleading Utils.isBlank() method. Simple enough logic that a dedicated utility method isn't needed</li>
+<li>Any received WHO reply updates all information regardless if its already been updated</li>
+<li>Fixed issue where removing the channel key mode without specifying the key caused an ArrayOutOfBoundsException</li>
+<li>Deprecated VoiceEvent.isVoice() and replaced with hasVoice to fit naming convention. Will be removed in future versions</li>
+<li>Deprecated OwnerEvent.isFounder() and replaced with isOwner (lingering method from when Owner was Founder)</li>
+<li>Removed gathering any any information from a NAMES response. Now relies 100% on WHO response which gives much more reliable information.</li>
+<li>
+<strong>Removed <code>PircBotX.sendRawLineViaQueue()</code>.</strong> The Queue should always be used unless the message must be sent NOW. <code>PircBotX.sendRawLine()</code> now sends via queue and a new method <code>PircBotX.sendRawLineNow()</code> bypasses the queue. Also internally fixed calls that didn't use these methods and instead jumped straight to the OutputThread.</li>
+<li>Log an exception when trying to send a message when the bot isn't connected anymore.</li>
+<li>Updated ancient version number in PircBotX class</li>
+</ol>
+<p>Lastly at no particular time (happened everywhere)</p>
+<ol>
+<li>Lots more tests added. This includes</li>
+</ol>
+<ul>
+<li>Most of the events</li>
+<li>All of the PircBotX.send<code>*</code> methods</li>
+<li>Most connect methods</li>
+<li>And other classes/methods</li>
+</ul>
+<ol>
+<li>Major test cleanup</li>
+</ol>
+<h2>
+<a aria-hidden="true" class="anchor" href="#13-beta2---june-21st-2011" id="user-content-13-beta2---june-21st-2011"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>1.3 Beta2 - June 21st, 2011</h2>
+<p>The goal of this release was more bug fixing, implementing feature requests, and cleaning up the API. As this beta period was quite long, the change log is large.</p>
+<p><strong>WARNING:</strong> If you are directly upgrading from Beta1 to Beta2 the API has significantly changed. If your bot suddenly won't compile, try other ways to accomplish what your wanting to do (Eg opping with the Channel object instead of the User object) or consult the change log.</p>
+<ol>
+<li>Fixed Issue #5 and Issue #4 where output thread wouldn't even start or throw an exception</li>
+<li>Fixed potential issues where various commands or messages would create <code>Channel</code>s.</li>
+<li>Fixed issue where <code>User</code> and <code>Channel</code>'s hashcode and equals implementation would mess up storage in ManyToManyMap which is backed by HashMaps and HashSets</li>
+<li>Removed duplicate concept of "Removing" from ManyToManyMap as there is already Delete methods</li>
+<li>Fixed issues of memory leaks with better cleanup of User to Channel ManyToManyMap</li>
+<li>Cleaned up, updated, and better documented PircBotXExample. Now highlights important features in PircBotX. More to come</li>
+<li>Fixed Issue #3 and others where Channels would be created from commands, messages, and other non-channel text.</li>
+<li>Fixed Issue #8 where Channel creation handling was wrong again</li>
+<li>
+<strong>Finished renaming event.getSource() methods to getUser() to follow naming convention.</strong> Only events that have a source and recipient still have a getSource() method</li>
+<li>
+<strong>Finished renaming event.getTarget() methods to getChannel() to follow naming convention</strong>.</li>
+<li>Changed InviteEvent to receive the string version of the user instead of a user object since the user might not be in one of our channels</li>
+<li>Fixed issue where user's hostmask and login wouldn't be set on JOIN</li>
+<li>New method channelExists(String)</li>
+<li>Fixed issue where users wouldn't be associated with the channel they just joined</li>
+<li>Fixed issue where possible exceptions could be thrown from a user leaving the channel or server</li>
+<li>Fixed Issue #9 where InviteEvent would provide very wrong information. Reported upstream as well</li>
+<li>Cleaned and overhauled channel mode parsing and getting channel mode. Now channel mode is mostly guaranteed to be accurate.</li>
+<li>
+<strong>Deprecated GenericListenerManager.</strong> With various internal functionality depending on a threaded bot and the simpleness of the listener manager it should not be used anymore.</li>
+<li>Can now get ops and users in channel with getOps() and getVoices()</li>
+<li>Removed PircBotX.channelExists(Channel chan) since it has a very small usage scenario</li>
+<li>Fixed Issue #10 where the person who set the voice or op would be labeled as the voice or op instead of the person that received it</li>
+<li>Fixed issue of disassociating the wrong user from the channel</li>
+<li>Added package level Javadocs to all packages</li>
+<li>Added feature request in Issue #14 where you can authenticate to Nickserv without having to do it in a ConnectEvent listener</li>
+<li>Massively overhauled all Event object Javadocs. This includes removing all references to the "PircBot abstract class", updating example code, and fixing links.</li>
+<li>
+<strong>Merged OpEvent and DeOpEvent, and VoiceEvent and DeVoice event into a single event: OpEvent and VoiceEvent.</strong> To see if the mode was given or taken call isOp() or isVoice()</li>
+<li>Fixed broken NAMES command parsing</li>
+<li>Added support for HalfOps, SuperOps, and Founders per feature request in Issue #11.</li>
+<li>
+<strong>Removed send methods that took Event as the first parameter.</strong> There was way too many assumptions going on there and most likely didn't work as expected as implemented</li>
+<li>New method PircBotX.sendCTCPCommand(Channel target, String command) to send a CTCP command to a channel</li>
+<li><strong>Renamed getSource() to getUser() in DCC classes to follow naming convention.</strong></li>
+<li>Renamed Utils.getSource() to getUser() to follow naming convention</li>
+<li>
+<strong>New method respond() in <em>all</em> event classes.</strong> Allows one to respond very easily to all events. Documentation and Wiki page to follow.</li>
+<li>Fixed Issue #15 and possibly other issues where no quit message or other message messed up processing and threw a StringIndexOutOfBoundsException</li>
+<li>
+<strong>New method getUserBot() to get the bots user object.</strong> Simply a shortcut to the uglier <code>bot.getUser(bot.getNick())</code>
+</li>
+<li>Internally map names to user objects for faster lookup (old method simply looped over all the users and compared names)</li>
+<li>
+<strong>Full support for alternative PircBotX subclasses in Event and Listener system.</strong> There was some support for PircBotX subclasses but not much and it never really worked. Now however all events and listeners have generic parameters that can make them work with other bots</li>
+<li>User and Channel classes now have package private constructors. This prevents others from creating useless Channel and User objects</li>
+<li>Support for Channel Founder dropped in favor of Channel Owner. Channel Founders just aren't on as many servers and are very difficult to separate from owners. This means that FounderEvent was removed while OwnerEvent was added</li>
+<li>
+<strong>New methods added to set and remove founder, superop, and halfop status:</strong> halfOp(), deHalfOp(), superOp(), deSuperOp(), owner(), and deOwner() - More info at <a href="Features#Support_for_Halffops,_Superops_and_Owners.md">Features#Support_for_Halffops,_Superops_and_Owners</a>
+</li>
+<li>Removed useless utility method HookUtils.getListeners()</li>
+<li>Changed HookUtils.getEvents() to get events from ListenerAdapter instead of the (out of date) event list. Now 100% guaranteed to get <em>all</em> the events PircBotX supports</li>
+<li>Fixed bug where a person was still considered identified even if they had a tilde in their login.</li>
+<li>Fixed major bug where existing channel users weren't added to the list of users in the channel.</li>
+<li>
+<strong>New method Channel.getNormalUsers() to get all non-special users in the channel.</strong> This will return all users that aren't ops, have voice, superops, halops, or owners in the channel</li>
+<li>Fixed issue where bot thought that its nick was PircBotX (default name set)</li>
+<li>Added Hello World example to PircBotX example</li>
+<li>Updated MultiBotManager with a more useful getBots() method, working and updated listener manager support, and another overload of the connectAll method.</li>
+<li><strong>ThreadListenerManager now by default runs all listeners in separate threads instead of each batch of listeners in a separate thread</strong></li>
+<li>Fixed issue where getting an unknown key from ManyToManyMap caused an NPE. This caused havoc in some Channel methods</li>
+<li>When a User quits remove their references from internal HalfOp, SuperOp, and Owner lists in Channel</li>
+<li>
+<strong>Removed voice, deVoice, op, and deOp methods from User</strong> since they duplicate functionality. Using the user object's operator methods wasn't all that useful anyway since there wasn't methods for HalfOp, SuperOp, and Owner statuses. Instead of add those methods, all user channel status methods were removed</li>
+<li>Added new methods to Channel for user status (HalfOp, SuperOp, and Owner) management: Checking if a user has the status, giving a user the status, and removing a status from a user.</li>
+<li>Added new methods to User to get channels that the user has special status in: getChannelsOpIn(), getChannelsVoiceIn(), getChannelsOwnerIn(), getChannelsHalfOpIn(), getChannelsSuperOpIn()</li>
+<li>Support for extending User and Channel objects was added. This includes</li>
+<li>The important custom ManyToManyMap that holds all user to channel mappings has moved from an anonymous field to a subclass in PircBotX called UserChannelMap. It has generics to allow subsituting subclassed User and Channel objects</li>
+<li>Channel and User's constructors now have protected instead of package-private access, allowing subclassing.</li>
+<li>To take advantage of this, override getUser() and getChannel() in the PircBotX class so that they create your custom User instead of the provided User.</li>
+<li>Added new overload for setMode that takes vararg parameters of modes per feature request in Issue #21. This makes mode setting cleaner (and faster) than basic string concatenation.</li>
+<li>Added new methods to set supported modes per feature requests in Issue #21 and Issue #26: setChannelLimit, removeChannelLimit(), setChannelKey(), removeChannelKey(), setInviteOnly(), removeInviteOnly(), setModerated(), removeModerated(), setNoExternalMessages(), removeNoExternalMessages(), setSecret(), removeSecret(), setTopicProtection(), removeTopicProtection(). See Javadoc for more information</li>
+<li>User.getChannels() returns a Set instead of a Collection just like most user and channel methods in PircBotX</li>
+<li>Per Issue #20 a new object was created called UserSnapshot that shows a user's status in a moment of time. This is used by QuitEvent which returns a UserSnapshot instead of a plain User in getUser(). Before this all methods about channels a User has been in would be blank.</li>
+<li>
+<strong>ListenerAdapter updated to support Generic event interfaces.</strong> This allows you to for example capture ALL user messages (channel message, channel action, channel notice, private message) in a single method. See Javadoc and the methods prefixed with onGeneric</li>
+<li>Generic event interfaces cleaned of old or unused interfaces, updated to support Generics like the rest of the event system, added new Generic event interfaces, updated again with the useful generic Event methods (getBot(), getTimestamp(), respond())</li>
+<li>ListenerAdapter will now through all caught exceptions instead of printing to the console in certain edge cases (wraps exceptions that are higher than Exception or that don't have a bot in a RuntimeException and throws that instead)</li>
+<li>Updated InputThread.isConnected() to report the actual connected status instead of always true. Fixed ugly SocketExceptions that would be generated in certain edge cases in Issue #24</li>
+<li>Return correct responses in Channel.getHalfOps, getOwners, and getSuperOps that caused havoc in Issue #23</li>
+<li>
+<strong>New method PircBotX.cycle()</strong> per Feature Request in Issue #22. Parts and Joins the given channel, useful for obtaining auto-privileges in Channels. A version that takes a channel key is also provided.</li>
+<li>Fixed ActionEvent's respond method to send a response to the User that sent the action if there is no channel instead of sending an invalid line to the server</li>
+<li><strong>Updated partChannel(), ban(), and unBan()'s method signatures to take Channel objects instead of String channels.</strong></li>
+<li>Moved project to the Sonatype and Maven Central repository. To accomplish this the project was moved in maven from the org group to the org.pircbotx group</li>
+<li>Added JMeter test class for load testing</li>
+</ol>
+<p>And lastly at no particular point in time (happened everywhere)</p>
+<ol>
+<li>
+<strong>Tons of unit testing added.</strong> One of the primary goals of this beta was to write more unit tests in order to ensure stability. While there are still large gaps, most of the main functionality has unit tests with more on the way.</li>
+<li>Documentation added to various undocumented methods and classes. Existing documentation was also fixed and updated in multiple places.</li>
+</ol>
+<h2>
+<a aria-hidden="true" class="anchor" href="#13-beta1---march-3rd-2011" id="user-content-13-beta1---march-3rd-2011"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>1.3 Beta1 - March 3rd, 2011</h2>
+<ol>
+<li>Renamed a few event methods from <code>getSource()</code> to <code>getUser()</code>
+</li>
+<li>
+<code>ListenerManager.addListener()</code> returns true if adding Listener was successful</li>
+<li>New method <code>ListenerManager.listenerExists()</code> for checking if a Listener exists</li>
+<li>New method <code>PircBotX.isVerbose()</code> for getting current verbose value</li>
+<li>New method <code>PircBotX.isAutoNickChange()</code> for seeing if automatic nick changing due to the name already being taken is turned on</li>
+<li><strong>New class <code>MultiBotManager</code> for easily creating multiple bots</strong></li>
+<li>Deploy maven site and Javadoc to <a href="http://site.pircbotx.googlecode.com/hg/index.html" rel="nofollow">http://site.pircbotx.googlecode.com/hg/index.html</a>
+</li>
+<li>
+<code>PircBotx.startIdentServer()</code> returns the started Ident server in case something needs it</li>
+<li><strong>New feature <code>waitFor()</code> - Can wait for an event inside of a listener. Example: Have a conversation with a user (sending a message, waiting for a response, responding to the response) in a single call.</strong></li>
+<li>Moved ListenerManager's to <code>org.pircbotx.hooks.managers</code>
+</li>
+<li><strong>New <code>ListenerManager</code>: <code>ThreadedListenerManager</code>. Executes hooks in separate threads from the Input Thread. Now the default ListenerManager</strong></li>
+<li>Fixed bug in the initial WHO and MODE commands sent when a channel was joined which sent NULL instead of the channel name</li>
+<li><strong>When the JVM shuts down, calls <code>PircBotX.disconnect()</code> and <code>PircBotX.dispose()</code> to properly shut down the bot</strong></li>
+<li><strong>Input log lines are now prefixed with &lt;&lt;&lt; to signal that they are coming in</strong></li>
+<li>New field in TopicEvent: date - Says when the topic was created</li>
+<li>
+<strong>Moved Maven project to org groupId vs PircBotX. All projects using the old groupId need to update</strong> - This should be the last major change to the maven location or version number</li>
+<li>Various Javadoc additions and updates</li>
+<li>MultiBotManager requires a name in constructor.</li>
+<li>PircBotX's logException and log methods now synchronize on the same object to prevent them from stepping on each other</li>
+<li>ThreadFactory has been removed as it has questionable usefulness. Any project wishing to mark the Input or Output thread just needs to see if the Thread is an instance of InputThread or OutputThread</li>
+<li><strong>ListenerManager is now fully Generic allowing any ListenerManager and Listener use any PircBotX subclass they want</strong></li>
+<li>Renamed the last fields that were prefixed with <code>_</code>. Projects who have extended core PircBotX classes need to update their code to new variable names</li>
+<li><strong>Removed many old String based methods of sending messages, opping, voicing, etc since all require being in the channel. This is done simply to clean up the method list</strong></li>
+<li>Can now send messages to a user in a channel easily with a sendMessage(Channel,User,Message) method. Sends to specified channel in format "User: message"</li>
+</ol>
+<h2>
+<a aria-hidden="true" class="anchor" href="#11---12" id="user-content-11---12"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>1.1 - 1.2</h2>
+<ol>
+<li>Multiple rewrites and updates. Version tracking wasn't followed yet, so its difficult to come up with an exact changelist.</li>
+</ol>
+<h2>
+<a aria-hidden="true" class="anchor" href="#10---first-release" id="user-content-10---first-release"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>1.0 - First Release</h2>
+<p><strong>Note:</strong> Early versions called this PircBotX-<em>3.0</em>. However later this was changed to 1.0. While its been changed in as many places as possible, there are certain places where it can't be changed.</p>
+<ol>
+<li>Finish rewrite with new event system, as well as various other changes</li>
+</ol>
+
+        </div>
+
+    </div>]

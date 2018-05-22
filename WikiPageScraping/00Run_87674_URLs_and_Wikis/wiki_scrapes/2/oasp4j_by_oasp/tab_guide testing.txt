@@ -1,0 +1,845 @@
+[<div class="wiki-body gollum-asciidoc-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <div>
+<div>Table of Contents</div>
+<ul>
+<li>
+<a href="#testing">Testing</a>
+<ul>
+<li><a href="#general-best-practices">General best practices</a></li>
+<li><a href="#test-automation-technology-stack">Test Automation Technology Stack</a></li>
+<li>
+<a href="#test-doubles">Test Doubles</a>
+<ul>
+<li><a href="#stubs">Stubs</a></li>
+<li><a href="#mocks">Mocks</a></li>
+<li><a href="#wiremock">Wiremock</a></li>
+</ul>
+</li>
+<li>
+<a href="#integration-levels">Integration Levels</a>
+<ul>
+<li><a href="#level-1-module-test">Level 1 Module Test</a></li>
+<li><a href="#level-2-component-test">Level 2 Component Test</a></li>
+<li><a href="#level-3-subsystem-test">Level 3 Subsystem Test</a></li>
+<li><a href="#level-4-system-test">Level 4 System Test</a></li>
+<li><a href="#classifying-integration-levels">Classifying Integration-Levels</a></li>
+</ul>
+</li>
+<li>
+<a href="#implementation">Implementation</a>
+<ul>
+<li><a href="#module-test">Module Test</a></li>
+<li><a href="#component-test">Component Test</a></li>
+<li><a href="#subsystem-test">Subsystem Test</a></li>
+<li><a href="#system-test">System Test</a></li>
+<li><a href="#how-to-run-test-levels">How to run test levels</a></li>
+</ul>
+</li>
+<li><a href="#deployment-pipeline">Deployment Pipeline</a></li>
+<li><a href="#test-coverage">Test Coverage</a></li>
+<li>
+<a href="#test-configuration">Test Configuration</a>
+<ul>
+<li><a href="#configure-test-specific-beans">Configure Test Specific Beans</a></li>
+<li><a href="#test-data">Test Data</a></li>
+</ul>
+</li>
+<li>
+<a href="#debugging-tests">Debugging Tests</a>
+<ul>
+<li><a href="#debugging-with-the-ide">Debugging with the IDE</a></li>
+<li><a href="#debugging-with-maven">Debugging with Maven</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</div>
+<h1 id="user-content-testing">
+<a aria-hidden="true" class="anchor" href="#testing" id="user-content-testing"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Testing</h1>
+<div>
+<h2 id="user-content-general-best-practices">
+<a aria-hidden="true" class="anchor" href="#general-best-practices" id="user-content-general-best-practices"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>General best practices</h2>
+<div>
+<div>
+<p>For testing please follow our general best practices:</p>
+</div>
+<div>
+<ul>
+<li>
+<p>Tests should have a clear goal that should also be documented.</p>
+</li>
+<li>
+<p>Tests have to be classified into different <a href="#integration-levels">integration levels</a>.</p>
+</li>
+<li>
+<p>Tests should follow a clear naming convention.</p>
+</li>
+<li>
+<p>Automated tests need to properly assert the result of the tested operation(s) in a reliable way. E.g. avoid stuff like assertEquals(42, service.getAllEntities()) or even worse tests that have no assertion at all (might still be reasonable to test that an entire configuration setup such as spring config of application is intact).</p>
+</li>
+<li>
+<p>Tests need to be independent of each other. Never write test-cases or tests (in Java @Test methods) that depend on another test to be executed before.</p>
+</li>
+<li>
+<p><strong>Use assert frameworks</strong> like <a href="http://joel-costigliola.github.io/assertj/" rel="nofollow">AssertJ</a> to write good readable and maintainable tests that also provide out-of-the-box good failure reports in case a test fails.</p>
+</li>
+<li>
+<p>For easy understanding divide your test in three sections. Comment then with //given, //when and //then</p>
+</li>
+<li>
+<p>Plan your tests and test data management properly before implementing.</p>
+</li>
+<li>
+<p>Instead of having a too strong focus on test coverage better ensure you have covered your critical core functionality properly and review the code including tests.</p>
+</li>
+<li>
+<p>Test code shall NOT be seen as second class code. You shall consider design, architecture and code-style also for your test code but do not over-engineer it.</p>
+</li>
+<li>
+<p>Test automation is good but should be considered in relation to cost per use. Creating full coverage via <em>automated system tests</em> can cause a massive amount of test-code that can turn out as a huge maintenance hell. Always consider all aspects including product life-cycle, criticality of use-cases to test, and variability of the aspect to test (e.g. UI, test-data).</p>
+</li>
+<li>
+<p>Use continuous integration and establish that the entire team wants to have clean builds and running tests.</p>
+</li>
+<li>
+<p><strong>Do not use inheritance for cross-cutting testing functionality</strong>: Sometimes cross-cutting functionality like opening/closing a database connection or code to fill a database with test data is put in a common parent class like AbstractTestCase that all test classes need to inherit from. Starting with some functions this classes tend to grow up to the point where they become real maintenance nightmares. Good places to put this needed kind of code can be realized using JUnit @Rule mechanism. In general favor delegation over inheritance. There are reasons why frameworks like JEE or JUnit do not use inheritance for technical features - and for the same reasons also project test frameworks should not do it.</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div>
+<h2 id="user-content-test-automation-technology-stack">
+<a aria-hidden="true" class="anchor" href="#test-automation-technology-stack" id="user-content-test-automation-technology-stack"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Test Automation Technology Stack</h2>
+<div>
+<div>
+<p>For test automation we use <a href="http://junit.org/" rel="nofollow">JUnit</a>. However, we are strictly doing all assertions with <a href="http://joel-costigliola.github.io/assertj/" rel="nofollow">AssertJ</a>. For <a href="#test-doubles">mocking</a> we use <a href="http://mockito.org/" rel="nofollow">mockito</a>.
+In order to mock remote connections we use <a href="#wiremock">wiremock</a>.
+For testing entire components or integrations we recommend to use <a href="https://docs.spring.io/spring-boot/docs/current/reference/html/boot-features-testing.html" rel="nofollow">spring-boot-starter-test</a>.</p>
+</div>
+</div>
+</div>
+<div>
+<h2 id="user-content-test-doubles">
+<a aria-hidden="true" class="anchor" href="#test-doubles" id="user-content-test-doubles"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Test Doubles</h2>
+<div>
+<div>
+<p>Due to the non-consistent use and understanding of mocks/stubs/fakes/dummies for any kind of interface for testing purposes, we shortly want to give a common understanding about the different types of test doubles. Therefore we mainly stick on Gerard Meszaros’s definitions, who also introduced the term <a href="http://xunitpatterns.com/Using%20Test%20Doubles.html" rel="nofollow">test doubles</a> as generic term for mocks/stubs/fakes/dummies/spys. Another interesting discussion about <a href="http://martinfowler.com/articles/mocksArentStubs.html" rel="nofollow">stubs VS mocks</a> has been published by Martin Fowler, which focuses more on the differences between stubs and mocks. A short summary (by Martin Fowler):</p>
+</div>
+<div>
+<ul>
+<li>
+<p><strong>Dummy</strong> objects are passed around but never actually used. Usually they are just used to fill parameter lists.</p>
+</li>
+<li>
+<p><strong>Fake</strong> objects actually have working implementations, but usually take some shortcut which makes them not suitable for production (an in memory database is a good example).</p>
+</li>
+<li>
+<p><strong>Stubs</strong> provide canned answers to calls made during the test, usually not responding at all to anything outside what’s programmed in for the test. Stubs may also record information about calls, such as an email gateway stub that remembers the messages it 'sent', or maybe only how many messages it 'sent'.</p>
+</li>
+<li>
+<p><strong>Mocks</strong> are objects pre-programmed with expectations, which form a specification of the calls they are expected to receive.</p>
+</li>
+</ul>
+</div>
+<div>
+<p>What both authors do not cover is the applicability of the different concepts. We try to give some examples, which should make it somehow clearer:</p>
+</div>
+<div>
+<h3 id="user-content-stubs">
+<a aria-hidden="true" class="anchor" href="#stubs" id="user-content-stubs"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Stubs</h3>
+<div>
+<p>Best Practices for applications:</p>
+</div>
+<div>
+<ul>
+<li>
+<p>A good way to replace small to medium large boundary systems, whose impact (e.g. latency) should be ignored during performing load and performance tests of the application under development.</p>
+</li>
+<li>
+<p>As stub implementation will rely on state-based verification, there is the threat, that test developers will partially reimplement the state transitions based on the replaced code. This will immediately lead to a black maintenance whole, so better use mocks to assure the certain behavior on interface level.</p>
+</li>
+<li>
+<p>Do NOT use stubs as basis of a large amount of test cases as due to state-based verification of stubs, test developers will enrich the stub implementation to become a large monster with its own hunger after maintenance efforts.</p>
+</li>
+</ul>
+</div>
+</div>
+<div>
+<h3 id="user-content-mocks">
+<a aria-hidden="true" class="anchor" href="#mocks" id="user-content-mocks"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Mocks</h3>
+<div>
+<p>Best Practices for applications:</p>
+</div>
+<div>
+<ul>
+<li>
+<p>Replace not-needed dependencies of your system-under-test (SUT) to minimize the application context to start of your component framework.</p>
+</li>
+<li>
+<p>Replace dependencies of your SUT to impact the control flow under test without establishing all the context parameters needed to match the control flow.</p>
+</li>
+<li>
+<p>Remember: Not everything has to be mocked! Especially on lower levels of tests like isolated module tests you can be betrayed into a mocking delusion, where you end up in a hundred lines of code mocking the whole context and five lines executing the test and verifying the mocks behavior. Always keep in mind the benefit-cost ratio, when implementing tests using mocks.</p>
+</li>
+</ul>
+</div>
+</div>
+<div>
+<h3 id="user-content-wiremock">
+<a aria-hidden="true" class="anchor" href="#wiremock" id="user-content-wiremock"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Wiremock</h3>
+<div>
+<p>If you need to mock remote connections such as HTTP-Servers, wiremock offers easy to use functionality. For a full description see the <a href="http://wiremock.org/" rel="nofollow">homepage</a> or the <a href="https://github.com/tomakehurst/wiremock">github repository</a>. Wiremock can be used either as a JUnit Rule, in Java outside of JUnit or as a standalone process. The mocked server can be configured to respond to specific requests in a given way via a fluent Java API, JSON files and JSON over HTTP. An example as an integration to JUnit can look as follows.</p>
+</div>
+<div>
+<div>
+<div class="highlight highlight-source-java"><pre><span class="pl-k">import static</span> <span class="pl-smi">com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig</span>;
+<span class="pl-k">import</span> <span class="pl-smi">com.github.tomakehurst.wiremock.junit.WireMockRule</span>;
+
+<span class="pl-k">public</span> <span class="pl-k">class</span> <span class="pl-en">WireMockOfferImport</span>{
+
+  <span class="pl-k">@Rule</span>
+  <span class="pl-k">public</span> <span class="pl-smi">WireMockRule</span> mockServer <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-smi">WireMockRule</span>(wireMockConfig()<span class="pl-k">.</span>dynamicPort());
+
+  <span class="pl-k">@Test</span>
+  <span class="pl-k">public</span> <span class="pl-k">void</span> <span class="pl-en">requestDataTest</span>() <span class="pl-k">throws</span> <span class="pl-smi">Exception</span> {
+  <span class="pl-k">int</span> port <span class="pl-k">=</span> <span class="pl-c1">this</span><span class="pl-k">.</span>mockServer<span class="pl-k">.</span>port();
+  <span class="pl-c1">...</span>}</pre></div>
+</div>
+</div>
+<div>
+<p>This creates a server on a randomly chosen free port on the running machine. You can also specify the port to be used if wanted. Other than that there are several options to further configure the server. This includes HTTPs, proxy settings, file locations, logging and extensions.</p>
+</div>
+<div>
+<div>
+<div class="highlight highlight-source-java"><pre>  <span class="pl-k">@Test</span>
+  <span class="pl-k">public</span> <span class="pl-k">void</span> requestDataTest() throws <span class="pl-smi">Exception</span> {
+      <span class="pl-c1">this</span><span class="pl-k">.</span>mockServer<span class="pl-k">.</span>stubFor(get(urlEqualTo(<span class="pl-s"><span class="pl-pds">"</span>/new/offers<span class="pl-pds">"</span></span>))<span class="pl-k">.</span>withHeader(<span class="pl-s"><span class="pl-pds">"</span>Accept<span class="pl-pds">"</span></span>, equalTo(<span class="pl-s"><span class="pl-pds">"</span>application/json<span class="pl-pds">"</span></span>))
+      .withHeader(<span class="pl-s"><span class="pl-pds">"</span>Authorization<span class="pl-pds">"</span></span>, containing(<span class="pl-s"><span class="pl-pds">"</span>Basic<span class="pl-pds">"</span></span>))<span class="pl-k">.</span>willReturn(aResponse()<span class="pl-k">.</span>withStatus(<span class="pl-c1">200</span>)<span class="pl-k">.</span>withFixedDelay(<span class="pl-c1">1000</span>)
+      .withHeader(<span class="pl-s"><span class="pl-pds">"</span>Content-Type<span class="pl-pds">"</span></span>, <span class="pl-s"><span class="pl-pds">"</span>application/json<span class="pl-pds">"</span></span>)<span class="pl-k">.</span>withBodyFile(<span class="pl-s"><span class="pl-pds">"</span>/wireMockTest/jsonBodyFile.json<span class="pl-pds">"</span></span>)));
+  }</pre></div>
+</div>
+</div>
+<div>
+<p>This will stub the URL <code>localhost:port/new/offers</code> to respond with a status 200 message containing a header (<code>Content-Type: application/json</code>) and a body with content given in <code>jsonBodyFile.json</code> if the request matches several conditions.
+It has to be a GET request to <code>../new/offers</code> with the two given header properties.</p>
+</div>
+<div>
+<p>Note that by default files are located in <code>src/test/resources/__files/</code>. When using only one WireMock server one can omit the <code>this.mockServer</code> in before the <code>stubFor</code> call (static method).
+You can also add a fixed delay to the response or processing delay with <code>WireMock.addRequestProcessingDelay(time)</code> in order to test for timeouts.</p>
+</div>
+<div>
+<p>WireMock can also respond with different corrupted messages to simulate faulty behaviour.</p>
+</div>
+<div>
+<div>
+<div class="highlight highlight-source-java"><pre><span class="pl-k">@Test</span>(<span class="pl-c1">expected</span> <span class="pl-k">=</span> <span class="pl-smi">ResourceAccessException</span><span class="pl-k">.</span>class)
+<span class="pl-k">public</span> <span class="pl-k">void</span> faultTest() {
+
+    <span class="pl-c1">this</span><span class="pl-k">.</span>mockServer<span class="pl-k">.</span>stubFor(get(urlEqualTo(<span class="pl-s"><span class="pl-pds">"</span>/fault<span class="pl-pds">"</span></span>))<span class="pl-k">.</span>willReturn(aResponse()
+    .withFault(<span class="pl-smi">Fault</span><span class="pl-c1"><span class="pl-k">.</span>MALFORMED_RESPONSE_CHUNK</span>)));
+<span class="pl-c1">...</span>}</pre></div>
+</div>
+</div>
+<div>
+<p>A GET request to <code>../fault</code> returns an OK status header, then garbage, and then closes the connection.</p>
+</div>
+</div>
+</div>
+</div>
+<div>
+<h2 id="user-content-integration-levels">
+<a aria-hidden="true" class="anchor" href="#integration-levels" id="user-content-integration-levels"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Integration Levels</h2>
+<div>
+<div>
+<p>There are many discussions about the right level of integration for test automation. Sometimes it is better to focus on small, isolated modules of the system - whatever a "module" may be. In other cases it makes more sense to test integrated groups of modules. Because there is no universal answer to this question, OASP only defines a common terminology for what could be tested. Each project must make its own decision where to put the focus of test automation. There is no worldwide accepted terminology for the integration levels of testing. In general we
+we consider <a href="http://istqbexamcertification.com/what-are-software-testing-levels/" rel="nofollow">ISTQB</a>. However, with a technical focus on test automation we want to get more precise.</p>
+</div>
+<div>
+<p>The following picture shows a simplified view of an application based on the <a href="https://github.com/oasp/oasp4j/wiki/architecture#technical-architecture">OASP reference architecture</a>. We define four integration levels that are explained in detail below.
+The boxes in the picture contain parenthesized numbers. These numbers depict the lowest integration level, a box belongs to. Higher integration levels also contain all boxes of lower integration levels. When writing tests for a given integration level, related boxes with a lower integration level must be replaced by test <a href="#test-doubles">doubles</a> or drivers.</p>
+</div>
+<div>
+<div>
+<img alt="Integration Levels" src="images/integration-levels.png" width="450"/>
+</div>
+</div>
+<div>
+<p>The main difference between the integration levels is the amount of infrastructure needed to test them. The more infrastructure you need, the more bugs you will find, but the more instable and the slower your tests will be. So each project has to make a trade-off between pros and contras of including much infrastructure in tests and has to select the integration levels that fit best to the project.</p>
+</div>
+<div>
+<p>Consider, that more infrastructure does not automatically lead to a better bug-detection. There may be bugs in your software that are masked by bugs in the infrastructure. The best way to find those bugs is to test with very few infrastructure.</p>
+</div>
+<div>
+<p>External systems do not belong to any of the integration levels defined here. OASP does not recommend involving real external systems in test automation. This means, they have to be replaced by test <a href="#test-doubles">doubles</a> in automated tests. An exception may be external systems that are fully under control of the own development team.</p>
+</div>
+<div>
+<p>The following chapters describe the four integration levels.</p>
+</div>
+<div>
+<h3 id="user-content-level-1-module-test">
+<a aria-hidden="true" class="anchor" href="#level-1-module-test" id="user-content-level-1-module-test"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Level 1 Module Test</h3>
+<div>
+<p>The goal of a <em>isolated module test</em> is to provide fast feedback to the developer. Consequently, isolated module tests must not have any interaction with the client, the database, the file system, the network, etc.</p>
+</div>
+<div>
+<p>An isolated module test is testing a single classes or at least a small set of classes in isolation. If such classes depend on other components or external resources, etc. these shall be replaced with a <a href="#test-doubles">test double</a>.</p>
+</div>
+<div>
+<p>For an example see <a href="https://github.com/oasp/oasp4j/blob/master/modules/rest/src/test/java/io/oasp/module/rest/service/impl/RestServiceExceptionFacadeTest.java">here</a>.</p>
+</div>
+</div>
+<div>
+<h3 id="user-content-level-2-component-test">
+<a aria-hidden="true" class="anchor" href="#level-2-component-test" id="user-content-level-2-component-test"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Level 2 Component Test</h3>
+<div>
+<p>A <a href="http://istqbexamcertification.com/what-is-component-testing/" rel="nofollow"><em>component test</em></a> aims to test components or component parts as a unit.
+These tests typically run with a (light-weight) infrastructure such as spring-boot-starter-test and can access resources such as a database (e.g. for DAO tests).
+Further, no remote communication is intended here. Access to external systems shall be replaced by a <a href="#test-doubles">test double</a>.</p>
+</div>
+</div>
+<div>
+<h3 id="user-content-level-3-subsystem-test">
+<a aria-hidden="true" class="anchor" href="#level-3-subsystem-test" id="user-content-level-3-subsystem-test"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Level 3 Subsystem Test</h3>
+<div>
+<p>A <em>subsystem test</em> runs against the external interfaces (e.g. HTTP service) of the integrated subsystem. In OASP4J the server (JEE application) is the subsystem under test. The tests act as a client (e.g. service consumer) and the server has to be integrated and started in a container.</p>
+</div>
+<div>
+<p>Subsystem tests of the client subsystem are described in the <a href="https://github.com/oasp/oasp4js/wiki/testing">OASP4JS-Wiki</a>.</p>
+</div>
+<div>
+<p>If you are using spring-boot, you should use <code>spring-boot-starter-test</code> as lightweight and fast testing infrastructure that is already shipped with <code>oasp4j-test</code>. In case you have to use a full blown JEE application server, we recommend to use <a href="http://arquillian.org/" rel="nofollow">arquillian</a>.
+To get started look <a href="http://arquillian.org/guides/getting_started/index.html#add_the_arquillian_apis" rel="nofollow">here</a>.</p>
+</div>
+<div>
+<p>Do not confuse a <em>subsystem test</em> with a <a href="http://istqbexamcertification.com/what-is-system-integration-testing/" rel="nofollow">system integration test</a>. A system integration test validates the interaction of several systems where we do not recommend test automation.</p>
+</div>
+</div>
+<div>
+<h3 id="user-content-level-4-system-test">
+<a aria-hidden="true" class="anchor" href="#level-4-system-test" id="user-content-level-4-system-test"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Level 4 System Test</h3>
+<div>
+<p>A <a href="http://istqbexamcertification.com/what-is-system-testing/" rel="nofollow"><em>system test</em></a> has the goal to test the system as a whole against its official interfaces such as its UI or batches. The system itself runs as a separate process in a way close to a regular deployment. Only external systems are simulated by <a href="#test-doubles">test doubles</a>.</p>
+</div>
+<div>
+<p>The OASP does only give advices for automated system test. In nearly every project there must be manual system tests, too. This manual system tests are out of scope here.</p>
+</div>
+</div>
+<div>
+<h3 id="user-content-classifying-integration-levels">
+<a aria-hidden="true" class="anchor" href="#classifying-integration-levels" id="user-content-classifying-integration-levels"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Classifying Integration-Levels</h3>
+<div>
+<p>OASP4J defines <a href="https://github.com/oasp/oasp4j/tree/master/modules/test/src/main/java/io/oasp/module/test/common/api/category">Category-Interfaces</a> that shall be used as <a href="https://github.com/junit-team/junit/wiki/Categories">JUnit Categories</a>.
+Also OSAP4J provides <a href="https://github.com/oasp/oasp4j/tree/master/modules/test/src/main/java/io/oasp/module/test/common/base">abstract base classes</a> that you may extend in your test-cases if you like.</p>
+</div>
+<div>
+<p>OASP4J further pre-configures the maven build to only run integration levels 1-2 by default (e.g. for fast feedback in continuous integration). It offers the profiles subsystemtest (1-3) and systemtest (1-4). In your nightly build you can simply add -Psystemtest to run all tests.</p>
+</div>
+</div>
+</div>
+</div>
+<div>
+<h2 id="user-content-implementation">
+<a aria-hidden="true" class="anchor" href="#implementation" id="user-content-implementation"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Implementation</h2>
+<div>
+<div>
+<p>This section introduces how to implement tests on the different levels with the given OASP infrastructure and the proposed frameworks.</p>
+</div>
+<div>
+<h3 id="user-content-module-test">
+<a aria-hidden="true" class="anchor" href="#module-test" id="user-content-module-test"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Module Test</h3>
+<div>
+<p>In OASP4J you can extend the abstract class <a href="https://github.com/oasp/oasp4j/blob/master/modules/test/src/main/java/io/oasp/module/test/common/base/ModuleTest.java">ModuleTest</a> to basically get access to assertions. In order to test classes embedded in dependencies  and external services one needs to provide mocks for that. As the <a href="#test-automation-technology-stack">technology stack</a> recommends we use the Mockito framework to offer this functionality. The following example shows how to implement Mockito into a JUnit test.</p>
+</div>
+<div>
+<div>
+<div class="highlight highlight-source-java"><pre><span class="pl-k">import static</span> <span class="pl-smi">org.mockito.Mockito.when</span>;
+<span class="pl-k">import static</span> <span class="pl-smi">org.mockito.Mockito.mock</span>;
+<span class="pl-c1">...</span>
+
+<span class="pl-k">public</span> <span class="pl-k">class</span> <span class="pl-en">StaffmanagementImplTest</span> <span class="pl-k">extends</span> <span class="pl-e">ModuleTest</span> {
+  <span class="pl-k">@Rule</span>
+  <span class="pl-k">public</span> <span class="pl-smi">MockitoRule</span> rule <span class="pl-k">=</span> <span class="pl-smi">MockitoJUnit</span><span class="pl-k">.</span>rule();
+
+  <span class="pl-k">@Test</span>
+  <span class="pl-k">public</span> <span class="pl-k">void</span> <span class="pl-en">testFindStaffMember</span>() {
+  <span class="pl-c1">...</span>}
+}</pre></div>
+</div>
+</div>
+<div>
+<p>Note that the test class does not use the <code>@SpringApplicationConfiguration</code> annotation. In a module test one does not use the whole application.
+The JUnit rule is the best solution to use in order to get all needed functionality of Mockito. Static imports are a convenient option to enhance readability within Mockito tests.
+You can define mocks with the <code>@Mock</code> annotation or the <code>mock(*.class)</code> call. To inject the mocked objects into your class under test you can use the <code>@InjectMocks</code> annotation. This automatically uses the setters of <code>StaffmanagementImpl</code> to inject the defined mocks into the <em>class under test (CUT)</em> when there is a setter available. In this case the <code>beanMapper</code> and the <code>staffMemberDao</code> are injected. Of course it is possible to do this manually if you need more control.</p>
+</div>
+<div>
+<div>
+<div class="highlight highlight-source-java"><pre>  <span class="pl-k">@Mock</span>
+  <span class="pl-k">private</span> <span class="pl-smi">BeanMapper</span> beanMapper;
+  <span class="pl-k">@Mock</span>
+  <span class="pl-k">private</span> <span class="pl-smi">StaffMemberEntity</span> staffMemberEntity;
+  <span class="pl-k">@Mock</span>
+  <span class="pl-k">private</span> <span class="pl-smi">StaffMemberEto</span> staffMemberEto;
+  <span class="pl-k">@Mock</span>
+  <span class="pl-k">private</span> <span class="pl-smi">StaffMemberDao</span> staffMemberDao;
+  <span class="pl-k">@InjectMocks</span>
+  <span class="pl-smi">StaffmanagementImpl</span> staffmanagementImpl <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-smi">StaffmanagementImpl</span>();</pre></div>
+</div>
+</div>
+<div>
+<p>The mocked objects do not provide any functionality at the time being. To define what happens on a method call on a mocked dependency in the CUT one can use <code>when(<em>condition</em>).thenReturn(<em>result</em>)</code>. In this case we want to test <code>findStaffMember(Long id)</code> in the <a href="https://github.com/oasp/oasp4j/blob/master/samples/core/src/main/java/io/oasp/gastronomy/restaurant/staffmanagement/logic/impl/StaffmanagementImpl.java">StaffmanagementImpl</a>.</p>
+</div>
+<div>
+<div>
+<div class="highlight highlight-source-java"><pre><span class="pl-k">public</span> <span class="pl-smi">StaffMemberEto</span> findStaffMember(<span class="pl-smi">Long</span> id) {
+  <span class="pl-k">return</span> getBeanMapper()<span class="pl-k">.</span>map(getStaffMemberDao()<span class="pl-k">.</span>find(id), <span class="pl-smi">StaffMemberEto</span><span class="pl-k">.</span>class);
+}</pre></div>
+</div>
+</div>
+<div>
+<p>In this simple example one has to stub two calls on the CUT as you can see below. For example the method call of the CUT <code>staffMemberDao.find(id)</code> is stubbed for returning a mock object <code>staffMemberEntity</code> that is also defined as mock.</p>
+</div>
+<div>
+<div>
+<div class="highlight highlight-source-java"><pre><span class="pl-c"><span class="pl-c">//</span>given</span>
+<span class="pl-k">long</span> id <span class="pl-k">=</span> <span class="pl-c1">1L</span>;
+<span class="pl-k">Class&lt;<span class="pl-smi">StaffMemberEto</span>&gt;</span> targetClass <span class="pl-k">=</span> <span class="pl-smi">StaffMemberEto</span><span class="pl-k">.</span>class;
+when(<span class="pl-c1">this</span><span class="pl-k">.</span>staffMemberDao<span class="pl-k">.</span>find(id))<span class="pl-k">.</span>thenReturn(<span class="pl-c1">this</span><span class="pl-k">.</span>staffMemberEntity);
+when(<span class="pl-c1">this</span><span class="pl-k">.</span>beanMapper<span class="pl-k">.</span>map(<span class="pl-c1">this</span><span class="pl-k">.</span>staffMemberEntity, targetClass))<span class="pl-k">.</span>thenReturn(<span class="pl-c1">this</span><span class="pl-k">.</span>staffMemberEto);
+
+<span class="pl-c"><span class="pl-c">//</span>when</span>
+<span class="pl-smi">StaffMemberEto</span> resultEto <span class="pl-k">=</span> <span class="pl-c1">this</span><span class="pl-k">.</span>staffmanagementImpl<span class="pl-k">.</span>findStaffMember(id);
+
+<span class="pl-c"><span class="pl-c">//</span>then</span>
+assertThat(resultEto)<span class="pl-k">.</span>isNotNull();
+assertThat(resultEto)<span class="pl-k">.</span>isEqualTo(<span class="pl-c1">this</span><span class="pl-k">.</span>staffMemberEto);</pre></div>
+</div>
+</div>
+<div>
+<p>After the test method call one can verify the expected results. Mockito can check whether a mocked method call was indeed called. This can be done using Mockito <code>verify</code>. Note that it does not generate any value if you check for method calls that are needed to reach the asserted result anyway. Call verification can be useful e.g. when you want to assure that statistics are written out without actually testing them.</p>
+</div>
+</div>
+<div>
+<h3 id="user-content-component-test">
+<a aria-hidden="true" class="anchor" href="#component-test" id="user-content-component-test"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Component Test</h3>
+<div>
+<p>In order to implement a component test one can extend the <a href="https://github.com/oasp/oasp4j/blob/master/modules/test/src/main/java/io/oasp/module/test/common/base/ComponentTest.java">ComponentTest</a> class</p>
+</div>
+<div>
+<div>
+<div class="highlight highlight-source-java"><pre><span class="pl-k">@SpringBootTest</span>(<span class="pl-c1">classes</span> <span class="pl-k">=</span> { <span class="pl-smi">SpringBootApp</span><span class="pl-k">.</span>class })
+<span class="pl-k">@WebAppConfiguration</span>
+<span class="pl-k">public</span> <span class="pl-k">class</span> <span class="pl-en">TablemanagementTest</span> <span class="pl-k">extends</span> <span class="pl-e">ComponentTest</span> { <span class="pl-c1">...</span> }</pre></div>
+</div>
+</div>
+<div>
+<p>Note that a component test uses parts of the infrastructure given by the application. In this case the <code>SpringBootApp</code> is started by annotation. The <code>@WebAppConfiguration</code> may be necessary if a <code>WebApplicationContext</code> is needed.
+In the restaurant example one needs login credentials in order to execute actions. A <a href="https://github.com/oasp/oasp4j/blob/master/samples/core/src/test/java/io/oasp/gastronomy/restaurant/general/common/TestUtil.java">TestUtil</a> helper class is available to provide this functionality. If you for example need permission to save a table and find an offer one would use the following procedure in the test.</p>
+</div>
+<div>
+<div>
+<div class="highlight highlight-source-java"><pre>  <span class="pl-k">@Inject</span>
+  <span class="pl-k">private</span> <span class="pl-smi">DbTestHelper</span> dbTestHelper;
+
+  <span class="pl-k">@Before</span>
+  <span class="pl-k">public</span> <span class="pl-k">void</span> setUp() {
+
+    <span class="pl-smi">TestUtil</span><span class="pl-k">.</span>login(<span class="pl-s"><span class="pl-pds">"</span>waiter<span class="pl-pds">"</span></span>, <span class="pl-smi">PermissionConstants</span><span class="pl-c1"><span class="pl-k">.</span>SAVE_ORDER_POSITION</span>, <span class="pl-smi">PermissionConstants</span><span class="pl-c1"><span class="pl-k">.</span>SAVE_ORDER</span>,
+        <span class="pl-smi">PermissionConstants</span><span class="pl-c1"><span class="pl-k">.</span>FIND_TABLE</span>, <span class="pl-smi">PermissionConstants</span><span class="pl-c1"><span class="pl-k">.</span>FIND_ORDER</span>, <span class="pl-smi">PermissionConstants</span><span class="pl-c1"><span class="pl-k">.</span>SAVE_TABLE</span>,
+        <span class="pl-smi">PermissionConstants</span><span class="pl-c1"><span class="pl-k">.</span>FIND_OFFER</span>);
+    <span class="pl-c1">this</span><span class="pl-k">.</span>dbTestHelper<span class="pl-k">.</span>setMigrationVersion(<span class="pl-s"><span class="pl-pds">"</span>0002<span class="pl-pds">"</span></span>);
+    <span class="pl-c1">this</span><span class="pl-k">.</span>dbTestHelper<span class="pl-k">.</span>resetDatabase();
+  }</pre></div>
+</div>
+</div>
+<div>
+<p>Of course one can add more permissions if needed. The "waiter" string does not mean the login includes all permissions a waiter has. This is simply a textual representation for further handling. Only the explicitly given permissions following this string are granted.
+In the <code>@Before</code> method the database is reset and migrated to a specific database version using <em>Flyway</em> in order to provide a well-regulated and reproducible test data environment.
+To provide a controlled surrounding for other tests one logs out the user in the <code>@After</code> method by <code>TestUtil.logout()</code>.</p>
+</div>
+<div>
+<p>As an example let us go to the class <a href="https://github.com/oasp/oasp4j/blob/master/samples/core/src/main/java/io/oasp/gastronomy/restaurant/tablemanagement/logic/api/Tablemanagement.java">Tablemanagement</a>. When testing the method <em>deleteTable()</em> there are several scenarios that can happen and thus should be covered by tests.</p>
+</div>
+<div>
+<p>First let us see the valid conditions to delete a table:</p>
+</div>
+<div>
+<ul>
+<li>
+<p>One needs permission to delete a table <a href="https://github.com/oasp/oasp4j/blob/master/samples/core/src/main/java/io/oasp/gastronomy/restaurant/general/common/api/constants/PermissionConstants.java">PermissionConstants.DELETE_TABLE</a></p>
+</li>
+<li>
+<p>The table to delete needs to exist (the table with the given id has to be in the database) and</p>
+</li>
+<li>
+<p>The table to delete is required to be <a href="https://github.com/oasp/oasp4j/blob/master/samples/core/src/main/java/io/oasp/gastronomy/restaurant/tablemanagement/common/api/datatype/TableState.java">TableState.FREE</a></p>
+</li>
+</ul>
+</div>
+<div>
+<p>Invalid conditions are: No credentials, table does not exist or table is not free.
+If you combine one invalid condition with valid conditions this yields the following test cases. Note that not working actions yield exceptions that can be expected in a test method.</p>
+</div>
+<div>
+<ul>
+<li>
+<p>The caller of the method does not have the required credentials</p>
+</li>
+</ul>
+</div>
+<div>
+<div>
+<pre>@Test(expected = AccessDeniedException.class)
+public void testDeleteTableWithoutCredentials() {...}</pre>
+</div>
+</div>
+<div>
+<ul>
+<li>
+<p>The caller has the required credentials but the table to be deleted is occupied</p>
+</li>
+</ul>
+</div>
+<div>
+<div>
+<pre>@Test(expected = IllegalEntityStateException.class)
+public void testDeleteTableWithCredentialsButNotDeletable() {...}</pre>
+</div>
+</div>
+<div>
+<ul>
+<li>
+<p>The caller has the required credentials but the table to be deleted does not exist</p>
+</li>
+</ul>
+</div>
+<div>
+<div>
+<pre>@Test(expected = ObjectNotFoundUserException.class)
+public void testDeleteTableWithCredentialsNotExisting() {...}</pre>
+</div>
+</div>
+<div>
+<ul>
+<li>
+<p>The caller has the required credentials and the table to be deleted exists and is free</p>
+</li>
+</ul>
+</div>
+<div>
+<div>
+<pre>@Test
+public void testDeleteTableWithCredentials() {...}</pre>
+</div>
+</div>
+<div>
+<p>This type of testing is known as <a href="http://epf.eclipse.org/wikis/xp/xp/guidances/guidelines/equivalence_class_analysis_E178943D.html" rel="nofollow">equivalence class analysis</a>. Note that this is a general practice and can be applied to every level of tests.</p>
+</div>
+</div>
+<div>
+<h3 id="user-content-subsystem-test">
+<a aria-hidden="true" class="anchor" href="#subsystem-test" id="user-content-subsystem-test"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Subsystem Test</h3>
+<div>
+<p>OASP4J provides a simple test infrastructure to aid with the implementation of subsystem tests. It becomes available by simply subclassing <a href="https://github.com/oasp/oasp4j/blob/master/samples/core/src/test/java/io/oasp/gastronomy/restaurant/general/common/base/AbstractRestServiceTest.java">AbstractRestServiceTest.java</a>.</p>
+</div>
+<div>
+<div>
+<div class="highlight highlight-source-java"><pre><span class="pl-c"><span class="pl-c">/*</span></span>
+<span class="pl-c"> * Basic configuration of a *RestServiceTest</span>
+<span class="pl-c"> <span class="pl-c">*/</span></span>
+<span class="pl-k">@RunWith</span>(<span class="pl-smi">SpringRunner</span><span class="pl-k">.</span>class)
+<span class="pl-k">@TestPropertySource</span>(<span class="pl-c1">properties</span> <span class="pl-k">=</span> { <span class="pl-s"><span class="pl-pds">"</span>flyway.locations=filesystem:src/test/resources/db/tablemanagement<span class="pl-pds">"</span></span> })
+<span class="pl-k">public</span> <span class="pl-k">class</span> <span class="pl-en">TablemanagementRestServiceTest</span> <span class="pl-k">extends</span> <span class="pl-e">AbstractRestServiceTest</span> { <span class="pl-c1">...</span> }</pre></div>
+</div>
+</div>
+<div>
+<p>The base class provides simple helper and configuration classes for different tasks via getters. Currently the following are supported:</p>
+</div>
+<div>
+<ul>
+<li>
+<p>Resetting the in-memory database based on <em>Flyway</em> (see <a href="https://github.com/oasp/oasp4j/blob/master/samples/core/src/test/java/io/oasp/gastronomy/restaurant/general/common/RestTestClientBuilder.java">RestTestClientBuilder.java</a>)</p>
+</li>
+<li>
+<p>Login and logout functionality (see <a href="https://github.com/oasp/oasp4j/blob/master/samples/core/src/test/java/io/oasp/gastronomy/restaurant/general/common/SecurityTestHelper.java">SecurityTestHelper.java</a>)</p>
+</li>
+</ul>
+</div>
+<div>
+<p>Additionally, a central point for Java-based bean configuration is available.</p>
+</div>
+<div>
+<ul>
+<li>
+<p>Provision of beans in the test context only (see <a href="https://github.com/oasp/oasp4j/blob/master/samples/core/src/test/java/io/oasp/gastronomy/restaurant/general/service/impl/config/RestaurantTestConfig.java">RestaurantTestConfig.java</a>)</p>
+</li>
+</ul>
+</div>
+<div>
+<p>Java-based bean configuration can be turned on for a test by adding the <code>@SpringBootTest</code> annotation as shown in the following listing:</p>
+</div>
+<div>
+<div>
+<div class="highlight highlight-source-java"><pre><span class="pl-k">@SpringBootTest</span>(<span class="pl-c1">classes</span> <span class="pl-k">=</span> { <span class="pl-smi">RestaurantTestConfig</span><span class="pl-k">.</span>class,
+<span class="pl-smi">SpringBootApp</span><span class="pl-k">.</span>class }, <span class="pl-c1">webEnvironment</span> <span class="pl-k">=</span> <span class="pl-smi">WebEnvironment</span><span class="pl-c1"><span class="pl-k">.</span>RANDOM_PORT</span>)
+<span class="pl-k">public</span> <span class="pl-k">abstract</span> <span class="pl-k">class</span> <span class="pl-en">AbstractRestServiceTest</span> <span class="pl-k">extends</span> <span class="pl-e">SubsystemTest</span> { <span class="pl-c1">...</span> }</pre></div>
+</div>
+</div>
+<div>
+<p>It is important to notice that the config class does not necessarily need an <code>@Configuration</code> annotation. In fact, by omitting this annotation the beans specified in the config class will be solely available to the subclasses of  <code>AbstractRestServiceTest</code> .</p>
+</div>
+<div>
+<p>In the <a href="https://github.com/oasp/oasp4j/blob/master/samples/core/src/test/java/io/oasp/gastronomy/restaurant/tablemanagement/service/impl/rest/TablemanagementRestServiceTest.java">TablemanagementRestServiceTest</a> example the default login credentials are name="waiter" and password="waiter" as given in the <code>application.properties</code> file. If one needs other permissions such as those of a "chief" it is possible to overwrite this login in the specific test.</p>
+</div>
+<div>
+<div>
+<div class="highlight highlight-source-java"><pre><span class="pl-k">@Test</span>
+<span class="pl-k">public</span> <span class="pl-k">void</span> testDeleteTable() {
+    getRestTestClientBuilder()<span class="pl-k">.</span>setUser(<span class="pl-s"><span class="pl-pds">"</span>chief<span class="pl-pds">"</span></span>);
+    getRestTestClientBuilder()<span class="pl-k">.</span>setPassword(<span class="pl-s"><span class="pl-pds">"</span>chief<span class="pl-pds">"</span></span>);
+    <span class="pl-c1">this</span><span class="pl-k">.</span>service <span class="pl-k">=</span> getRestTestClientBuilder()<span class="pl-k">.</span>build(<span class="pl-smi">TablemanagementRestService</span><span class="pl-k">.</span>class);
+<span class="pl-c1">...</span>}</pre></div>
+</div>
+</div>
+</div>
+<div>
+<h3 id="user-content-system-test">
+<a aria-hidden="true" class="anchor" href="#system-test" id="user-content-system-test"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>System Test</h3>
+<div>
+<p>OASP4J does not provide guidance on automated system testing.</p>
+</div>
+</div>
+<div>
+<h3 id="user-content-how-to-run-test-levels">
+<a aria-hidden="true" class="anchor" href="#how-to-run-test-levels" id="user-content-how-to-run-test-levels"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>How to run test levels</h3>
+<div>
+<p>The base classes of the four test levels (SystemTest, SubsystemTest, ComponentTest, ModuleTest) are defined in the <code>oasp4j-test</code> project under the following fully qualified names:</p>
+</div>
+<div>
+<div>
+<div class="highlight highlight-source-java"><pre><span class="pl-smi">io.oasp.module.test.common.base<span class="pl-k">.</span>SystemTest</span>
+<span class="pl-smi">io.oasp.module.test.common.base<span class="pl-k">.</span>SubsystemTest</span>
+<span class="pl-smi">io.oasp.module.test.common.base<span class="pl-k">.</span>ComponentTest</span>
+<span class="pl-smi">io.oasp.module.test.common.base<span class="pl-k">.</span>ModuleTest</span></pre></div>
+</div>
+</div>
+<div>
+<p>These classes are annotated with JUnit’s <code>@Category</code> annotation. There exists an according category for each test level. These categories are aswell located in the <code>oasp4j-test</code> project under the following fully qualified names:</p>
+</div>
+<div>
+<div>
+<div class="highlight highlight-source-java"><pre><span class="pl-smi">io.oasp.module.test.common.api.category<span class="pl-k">.</span>CategorySystemTest</span>
+<span class="pl-smi">io.oasp.module.test.common.api.category<span class="pl-k">.</span>CategorySubsystemTest</span>
+<span class="pl-smi">io.oasp.module.test.common.api.category<span class="pl-k">.</span>CategoryComponentTest</span>
+<span class="pl-smi">io.oasp.module.test.common.api.category<span class="pl-k">.</span>CategoryModuleTest</span></pre></div>
+</div>
+</div>
+<div>
+<p>We have assigned categories to the base classes by adding <code>@Category</code> in the following way:</p>
+</div>
+<div>
+<div>
+<div class="highlight highlight-source-java"><pre><span class="pl-k">@Category</span>(<span class="pl-smi">CategorySystemTest</span><span class="pl-k">.</span>class)
+<span class="pl-k">public</span> <span class="pl-k">abstract</span> <span class="pl-k">class</span> <span class="pl-en">SystemTest</span> <span class="pl-k">extends</span> <span class="pl-e">BaseTest</span> { <span class="pl-c1">...</span> }
+
+<span class="pl-k">@Category</span>(<span class="pl-smi">CategorySubsystemTest</span><span class="pl-k">.</span>class)
+<span class="pl-k">public</span> <span class="pl-k">abstract</span> <span class="pl-k">class</span> <span class="pl-en">SubsystemTest</span> <span class="pl-k">extends</span> <span class="pl-e">BaseTest</span> { <span class="pl-c1">...</span> }
+
+<span class="pl-k">@Category</span>(<span class="pl-smi">CategoryComponentTest</span><span class="pl-k">.</span>class)
+<span class="pl-k">public</span> <span class="pl-k">abstract</span> <span class="pl-k">class</span> <span class="pl-en">ComponentTest</span> <span class="pl-k">extends</span> <span class="pl-e">BaseTest</span> { <span class="pl-c1">...</span> }
+
+<span class="pl-k">@Category</span>(<span class="pl-smi">CategoryModuleTest</span><span class="pl-k">.</span>class)
+<span class="pl-k">public</span> <span class="pl-k">abstract</span> <span class="pl-k">class</span> <span class="pl-en">ModuleTest</span> <span class="pl-k">extends</span> <span class="pl-e">BaseTest</span> { <span class="pl-c1">...</span> }</pre></div>
+</div>
+</div>
+<div>
+<p>Now, how can we control the execution of different test levels and categories respectively?
+In the <code>pom.xml</code> of the restaurant sample application you can define the following property:</p>
+</div>
+<div>
+<div>
+<div class="highlight highlight-text-xml"><pre>  &lt;<span class="pl-ent">properties</span>&gt;
+    ...
+    &lt;<span class="pl-ent">oasp</span>.test.excluded.groups&gt;io.oasp.module.test.common.api.category.CategorySystemTest&lt;/<span class="pl-ent">oasp</span>.test.excluded.groups&gt;
+    ...
+  &lt;/<span class="pl-ent">properties</span>&gt;</pre></div>
+</div>
+</div>
+<div>
+<p>Here, you can exclude any test level(s) by adding the fully qualified name of the according category of one or more levels separated by comma.
+E.g., to exclude <code>CategorySubsystemTest</code> and  <code>CategoryComponentTest</code> write the following:</p>
+</div>
+<div>
+<div>
+<div class="highlight highlight-text-xml"><pre>  &lt;<span class="pl-ent">properties</span>&gt;
+    ...
+    &lt;<span class="pl-ent">oasp</span>.test.excluded.groups&gt;io.oasp.module.test.common.api.category.CategorySubsystemTest,io.oasp.module.test.common.api.category.CategoryComponentTest&lt;/<span class="pl-ent">oasp</span>.test.excluded.groups&gt;
+    ...
+  &lt;/<span class="pl-ent">properties</span>&gt;</pre></div>
+</div>
+</div>
+<div>
+<p>So, if you now want to run tests using Maven (<code>mvn test</code>), any tests of the excluded categories are <strong>not</strong> executed.</p>
+</div>
+</div>
+</div>
+</div>
+<div>
+<h2 id="user-content-deployment-pipeline">
+<a aria-hidden="true" class="anchor" href="#deployment-pipeline" id="user-content-deployment-pipeline"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Deployment Pipeline</h2>
+<div>
+<div>
+<p>A deployment pipeline is a semi-automated process that gets software-changes from version control into production. It contains several validation steps, e.g. automated tests of all integration levels.
+Because OASP4J should fit to different project types - from agile to waterfall - it does not define a standard deployment pipeline. But we recommend to define such a deployment pipeline explicitly for each project and to find the right place in it for each type of test.</p>
+</div>
+<div>
+<p>For that purpose, it is advisable to have fast running test suite that gives as much confidence as possible without needing too much time and too much infrastructure. This test suite should run in an early stage of your deployment pipeline. Maybe the developer should run it even before he/she checked in the code. Usually lower integration levels are more suitable for this test suite than higher integration levels.</p>
+</div>
+<div>
+<p>Note, that the deployment pipeline always should contain manual validation steps, at least manual acceptance testing. There also may be manual validation steps that have to be executed for special changes only, e.g. usability testing. Management and execution processes of those manual validation steps are currently not in the scope of OASP.</p>
+</div>
+</div>
+</div>
+<div>
+<h2 id="user-content-test-coverage">
+<a aria-hidden="true" class="anchor" href="#test-coverage" id="user-content-test-coverage"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Test Coverage</h2>
+<div>
+<div>
+<p>We are using tools (SonarQube/Jacoco) to measure the coverage of the tests. Please always keep in mind that the only reliable message of a code coverage of X% is that (100-X)% of the code is entirely untested. It does not say anything about the quality of the tests or the software though it often relates to it.</p>
+</div>
+</div>
+</div>
+<div>
+<h2 id="user-content-test-configuration">
+<a aria-hidden="true" class="anchor" href="#test-configuration" id="user-content-test-configuration"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Test Configuration</h2>
+<div>
+<div>
+<p>This section covers test configuration in general without focusing on integration levels as in the first chapter.</p>
+</div>
+<div>
+<h3 id="user-content-configure-test-specific-beans">
+<a aria-hidden="true" class="anchor" href="#configure-test-specific-beans" id="user-content-configure-test-specific-beans"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Configure Test Specific Beans</h3>
+<div>
+<p>Sometimes it can become handy to provide other or differently configured bean implementations via CDI than those available in production. For example, when creating beans using <code>@Bean</code>-annotated methods they are usually configured within those methods. <a href="https://github.com/oasp/oasp4j/blob/master/samples/core/src/main/java/io/oasp/gastronomy/restaurant/general/service/impl/config/WebSecurityBeansConfig.java">WebSecurityBeansConfig</a> shows an example of such methods.</p>
+</div>
+<div>
+<div>
+<div class="highlight highlight-source-java"><pre><span class="pl-k">@Configuration</span>
+<span class="pl-k">public</span> <span class="pl-k">class</span> <span class="pl-en">WebSecurityBeansConfig</span> {
+  <span class="pl-c"><span class="pl-c">//</span>...</span>
+  <span class="pl-k">@Bean</span>
+  <span class="pl-k">public</span> <span class="pl-smi">AccessControlSchemaProvider</span> <span class="pl-en">accessControlSchemaProvider</span>() {
+    <span class="pl-c"><span class="pl-c">//</span> actually no additional configuration is shown here</span>
+    <span class="pl-k">return</span> <span class="pl-k">new</span> <span class="pl-smi">AccessControlSchemaProviderImpl</span>();
+  }
+  <span class="pl-c"><span class="pl-c">//</span>...</span>
+}</pre></div>
+</div>
+</div>
+<div>
+<p><code>AccessControlSchemaProvider</code> allows to programmatically access data defined in some XML file, e.g. <code>access-control-schema.xml</code>. Now, one can imagine that it would be helpful if <code>AccessControlSchemaProvider</code> would point to some other file than the default within a test class. That file could provide content that differs from the default.
+The question is: how can I change resource path of <code>AccessControlSchemaProviderImpl</code> wihtin a test?</p>
+</div>
+<div>
+<p>One very helpful solution is to use <strong>static inner classes</strong>.
+Static inner classes can contain <code>@Bean</code> -annotated methods, and by placing them in the <code>classes</code> parameter in <code>@SpringBootTest(classes = { /* place class here*/ })</code> annotation the beans returned by these methods are placed in the application context during test execution. Combining this feature with inheritance allows to override methods defined in other configuration classes as shown in the following listing where <code>TempWebSecurityConfig</code> extends <code>WebSecurityBeansConfig</code>. This relationship allows to override <code>public AccessControlSchemaProvider accessControlSchemaProvider()</code>. Here we are able to configure the instance of type <code>AccessControlSchemaProviderImpl</code> before returning it (and, of course, we could also have used a completely different implementation of the <code>AccessControlSchemaProvider</code> interface). By overriding the method the implementation of the super class is ignored, hence, only the new implementation is called at runtime. Other methods defined in <code>WebSecurityBeansConfig</code> which are not overridden by the subclass are still dispatched to <code>WebSecurityBeansConfig</code>.</p>
+</div>
+<div>
+<div>
+<div class="highlight highlight-source-java"><pre><span class="pl-c"><span class="pl-c">//</span>... Other testing related annotations</span>
+<span class="pl-k">@SpringBootTest</span>(<span class="pl-c1">classes</span> <span class="pl-k">=</span> { <span class="pl-smi">TempWebSecurityConfig</span><span class="pl-k">.</span>class })
+<span class="pl-k">public</span> <span class="pl-k">class</span> <span class="pl-en">SomeTestClass</span> {
+
+  <span class="pl-k">public</span> <span class="pl-k">static</span> <span class="pl-k">class</span> <span class="pl-en">TempWebSecurityConfig</span> <span class="pl-k">extends</span> <span class="pl-e">WebSecurityBeansConfig</span> {
+
+    <span class="pl-k">@Override</span>
+    <span class="pl-k">@Bean</span>
+    <span class="pl-k">public</span> <span class="pl-smi">AccessControlSchemaProvider</span> <span class="pl-en">accessControlSchemaProvider</span>() {
+
+      <span class="pl-smi">ClassPathResource</span> resource <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-smi">ClassPathResource</span>(locationPrefix <span class="pl-k">+</span> <span class="pl-s"><span class="pl-pds">"</span>access-control-schema3.xml<span class="pl-pds">"</span></span>);
+      <span class="pl-smi">AccessControlSchemaProviderImpl</span> accessControlSchemaProvider <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-smi">AccessControlSchemaProviderImpl</span>();
+      accessControlSchemaProvider<span class="pl-k">.</span>setAccessControlSchema(resource);
+      <span class="pl-k">return</span> accessControlSchemaProvider;
+    }
+  }
+}</pre></div>
+</div>
+</div>
+<div>
+<p>The following <a href="http://docs.spring.io/spring/docs/current/spring-framework-reference/htmlsingle/#testcontext-ctx-management-javaconfig" rel="nofollow">chapter of the Spring framework documentation</a> explains issue, but uses a slightly different way to obtain the configuration.</p>
+</div>
+</div>
+<div>
+<h3 id="user-content-test-data">
+<a aria-hidden="true" class="anchor" href="#test-data" id="user-content-test-data"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Test Data</h3>
+<div>
+<p>It is possible to obtain test data in two different ways depending on your test’s integration level.</p>
+</div>
+</div>
+</div>
+</div>
+<div>
+<h2 id="user-content-debugging-tests">
+<a aria-hidden="true" class="anchor" href="#debugging-tests" id="user-content-debugging-tests"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Debugging Tests</h2>
+<div>
+<div>
+<p>The following two sections describe two debugging approaches for tests. Tests are either run from within the IDE or from the command line using Maven.</p>
+</div>
+<div>
+<h3 id="user-content-debugging-with-the-ide">
+<a aria-hidden="true" class="anchor" href="#debugging-with-the-ide" id="user-content-debugging-with-the-ide"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Debugging with the IDE</h3>
+<div>
+<p>Debugging with the IDE is as easy as always. Even if you want to execute a <code>SubsystemTest</code> which needs a Spring context and a server infrastructure to run properly, you just set your breakpoints and click on Debug As → JUnit Test. The test infrastructure will take care of initializing the necessary infrastructure - if everything is configured properly.</p>
+</div>
+</div>
+<div>
+<h3 id="user-content-debugging-with-maven">
+<a aria-hidden="true" class="anchor" href="#debugging-with-maven" id="user-content-debugging-with-maven"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Debugging with Maven</h3>
+<div>
+<p>Please refer to the following two links to find a guide for debugging tests when running them from Maven.</p>
+</div>
+<div>
+<ul>
+<li>
+<p><a href="http://maven.apache.org/surefire/maven-surefire-plugin/examples/debugging.html" rel="nofollow">http://maven.apache.org/surefire/maven-surefire-plugin/examples/debugging.html</a></p>
+</li>
+<li>
+<p><a href="https://www.eclipse.org/jetty/documentation/9.3.x/debugging-with-eclipse.html" rel="nofollow">https://www.eclipse.org/jetty/documentation/9.3.x/debugging-with-eclipse.html</a></p>
+</li>
+</ul>
+</div>
+<div>
+<p>In essence, you first have to start execute a test using the command line. Maven will halt just before the test execution and wait for your IDE to connect to the process. When receiving a connection the test will start and then pause at any breakpoint set in advance.
+The first link states that tests are started through the following command:</p>
+</div>
+<div>
+<div>
+<pre><code>mvn -Dmaven.surefire.debug test</code></pre>
+</div>
+</div>
+<div>
+<p>Although this is correct, it will run <em>every</em> test class in your project and - which is time consuming and mostly unnecessary - halt before each of these tests.
+To counter this problem you can simply execute a single test class through the following command (here we execute the <code>TablemanagementRestServiceTest</code> from the restaurant sample application):</p>
+</div>
+<div>
+<div>
+<pre><code>mvn test -Dmaven.surefire.debug test -Dtest=TablemanagementRestServiceTest</code></pre>
+</div>
+</div>
+<div>
+<p>It is important to notice that you first have to execute the Maven command in the according submodule, e.g. to execute the <code>TablemanagementRestServiceTest</code> you have first to navigate to the core module’s directory.</p>
+</div>
+</div>
+</div>
+</div>
+        </div>
+
+        <div class="wiki-footer gollum-markdown-content boxed-group" id="wiki-footer">
+          <div class="boxed-group-inner wiki-auxiliary-content markdown-body">
+            <p><a href="http://creativecommons.org/licenses/by-nd/4.0/" rel="nofollow"><img alt="Creative Commons License Agreement" data-canonical-src="http://i.creativecommons.org/l/by-nd/4.0/88x31.png" src="https://camo.githubusercontent.com/171d004f9ccb9199e35ac8ec3d99ede916037a9f/687474703a2f2f692e6372656174697665636f6d6d6f6e732e6f72672f6c2f62792d6e642f342e302f38387833312e706e67"/></a><br/><span>This documentation</span> is licensed under the <a href="http://creativecommons.org/licenses/by-nd/4.0/" rel="nofollow">Creative Commons License (Attribution-NoDerivatives 4.0 International)</a>.</p>
+
+          </div>
+        </div>
+    </div>]

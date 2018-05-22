@@ -1,0 +1,121 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p><strong>Update</strong>: current script in use is kept on GitHub <a href="https://github.com/lmmx/dotfiles/blob/master/bashrc/bashrc_functions_gif">here</a></p>
+<hr/>
+<blockquote>
+<p>Old way to cut out every other frame (requires you manually find frame count):</p>
+</blockquote>
+<blockquote>
+<pre><code>gifsicle input_file.gif `seq -f "#%g" 0 2 273` --unoptimize -O2 -o output_file.gif
+</code></pre>
+</blockquote>
+<p>Alternative, easier to put in bashrc (<a href="http://unix.stackexchange.com/questions/89242/remove-nth-frames-of-a-gif-remove-a-frame-every-n-frames" rel="nofollow">via</a>), e.g. to halve frames (not necessarily half filesize):</p>
+<pre><code>gif_framecount_reducer input.gif 2
+</code></pre>
+<p>appends <code>_reduced_x2</code> to filename</p>
+<div class="highlight highlight-source-shell"><pre><span class="pl-k">function</span> <span class="pl-en">gifopt()</span> {
+	<span class="pl-c"><span class="pl-c">#</span> args: $input_file ($loss_level)</span>
+	<span class="pl-k">if</span> [ <span class="pl-k">-z</span> <span class="pl-s"><span class="pl-pds">"</span><span class="pl-smi">$2</span><span class="pl-pds">"</span></span> ]
+	<span class="pl-k">then</span>
+		<span class="pl-c"><span class="pl-c">#</span> use default of 30</span>
+		<span class="pl-k">local</span> loss_level=30
+	<span class="pl-k">elif</span> [[ <span class="pl-s"><span class="pl-pds">"</span><span class="pl-smi">$2</span><span class="pl-pds">"</span></span> <span class="pl-k">=~</span> ^[0-9]+$ ]] <span class="pl-k">&amp;&amp;</span> [ <span class="pl-s"><span class="pl-pds">"</span><span class="pl-smi">$2</span><span class="pl-pds">"</span></span> <span class="pl-k">-ge</span> 30 <span class="pl-k">-a</span> <span class="pl-s"><span class="pl-pds">"</span><span class="pl-smi">$2</span><span class="pl-pds">"</span></span> <span class="pl-k">-le</span> 200 ]
+	<span class="pl-k">then</span>
+		<span class="pl-k">local</span> loss_level=<span class="pl-smi">$2</span>
+	<span class="pl-k">else</span>
+		<span class="pl-c1">echo</span> <span class="pl-s"><span class="pl-pds">"</span><span class="pl-smi">${2<span class="pl-k">:-</span><span class="pl-s"><span class="pl-pds">"</span>Loss level parameter must be an integer from 30-200<span class="pl-pds">"</span></span>}</span><span class="pl-pds">"</span></span> <span class="pl-k">1&gt;&amp;2</span>
+		<span class="pl-c1">exit</span> 1
+	<span class="pl-k">fi</span>
+	<span class="pl-k">local</span> inputgif=<span class="pl-s"><span class="pl-pds">"</span><span class="pl-smi">${1?<span class="pl-s"><span class="pl-pds">'</span>Missing input file parameter<span class="pl-pds">'</span></span>}</span><span class="pl-pds">"</span></span>
+	<span class="pl-k">local</span> gifname=<span class="pl-s"><span class="pl-pds">"</span><span class="pl-s"><span class="pl-pds">$(</span>basename <span class="pl-smi">$inputgif</span> .gif<span class="pl-pds">)</span></span><span class="pl-pds">"</span></span>
+	<span class="pl-k">local</span> basegifname=<span class="pl-s"><span class="pl-pds">$(</span>echo <span class="pl-s"><span class="pl-pds">"</span><span class="pl-smi">$gifname</span><span class="pl-pds">"</span></span> <span class="pl-k">|</span> sed <span class="pl-s"><span class="pl-pds">'</span>s/_reduced_x[0-9]//g<span class="pl-pds">'</span></span><span class="pl-pds">)</span></span>
+	<span class="pl-k">local</span> outputgif=<span class="pl-s"><span class="pl-pds">"</span><span class="pl-smi">$basegifname</span>-opt.gif<span class="pl-pds">"</span></span>
+	gifsicle -O3 --lossy=<span class="pl-s"><span class="pl-pds">"</span><span class="pl-smi">$loss_level</span><span class="pl-pds">"</span></span> -o <span class="pl-s"><span class="pl-pds">"</span><span class="pl-smi">$outputgif</span><span class="pl-pds">"</span></span> <span class="pl-s"><span class="pl-pds">"</span><span class="pl-smi">$inputgif</span><span class="pl-pds">"</span></span><span class="pl-k">;</span>
+	<span class="pl-k">local</span> oldfilesize=<span class="pl-s"><span class="pl-pds">$(</span>du -h <span class="pl-smi">$inputgif</span> <span class="pl-k">|</span> cut -f1<span class="pl-pds">)</span></span>
+	<span class="pl-k">local</span> newfilesize=<span class="pl-s"><span class="pl-pds">$(</span>du -h <span class="pl-smi">$outputgif</span> <span class="pl-k">|</span> cut -f1<span class="pl-pds">)</span></span>
+	<span class="pl-c1">echo</span> <span class="pl-s"><span class="pl-pds">"</span>File reduced from <span class="pl-smi">$oldfilesize</span> to <span class="pl-smi">$newfilesize</span> as <span class="pl-smi">$outputgif</span><span class="pl-pds">"</span></span>
+}</pre></div>
+<p>Replace <code>/usr/bin/gifsicle</code> with new release (static binary) <a href="https://pornel.net/lossygif" rel="nofollow">via</a> current GitHub release: <a href="https://github.com/pornel/giflossy/releases/tag/lossy%2F1.82.1">1.82.1</a></p>
+<div class="highlight highlight-source-shell"><pre>gifsicle -O3 --lossy=30 -o output.gif input_reduced_x2.gif</pre></div>
+<p>Unlike the hosted service at <a href="http://ezgif.com/optimize" rel="nofollow">ezgif.com/optimize</a> (which is great!), can use any value for the <code>--lossy</code> flag.</p>
+<div class="highlight highlight-source-shell"><pre><span class="pl-k">function</span> <span class="pl-en">gifopt()</span> {
+	<span class="pl-c"><span class="pl-c">#</span> args: $input_file ($loss_level)</span>
+	<span class="pl-k">if</span> [ <span class="pl-k">-z</span> <span class="pl-s"><span class="pl-pds">"</span><span class="pl-smi">$2</span><span class="pl-pds">"</span></span> ]
+	<span class="pl-k">then</span>
+		<span class="pl-c"><span class="pl-c">#</span> use default of 30</span>
+		loss_level=30
+	<span class="pl-k">elif</span> [[ <span class="pl-s"><span class="pl-pds">"</span><span class="pl-smi">$2</span><span class="pl-pds">"</span></span> <span class="pl-k">=~</span> ^[0-9]+$ ]] <span class="pl-k">&amp;&amp;</span> [ <span class="pl-s"><span class="pl-pds">"</span><span class="pl-smi">$2</span><span class="pl-pds">"</span></span> <span class="pl-k">-ge</span> 30 <span class="pl-k">-a</span> <span class="pl-s"><span class="pl-pds">"</span><span class="pl-smi">$2</span><span class="pl-pds">"</span></span> <span class="pl-k">-le</span> 200 ]
+	<span class="pl-k">then</span>
+		loss_level=<span class="pl-smi">$2</span>
+	<span class="pl-k">else</span>
+		<span class="pl-c1">echo</span> <span class="pl-s"><span class="pl-pds">"</span><span class="pl-smi">${2<span class="pl-k">:-</span><span class="pl-s"><span class="pl-pds">"</span>Loss level parameter must be an integer from 30-200<span class="pl-pds">"</span></span>}</span><span class="pl-pds">"</span></span> <span class="pl-k">1&gt;&amp;2</span>
+		<span class="pl-c1">exit</span> 1
+	<span class="pl-k">fi</span>
+	<span class="pl-k">local</span> inputgif=<span class="pl-s"><span class="pl-pds">"</span><span class="pl-smi">${1?<span class="pl-s"><span class="pl-pds">'</span>Missing input file parameter<span class="pl-pds">'</span></span>}</span><span class="pl-pds">"</span></span>
+	<span class="pl-k">local</span> gifname=<span class="pl-s"><span class="pl-pds">"</span><span class="pl-s"><span class="pl-pds">$(</span>basename <span class="pl-smi">$inputgif</span> .gif<span class="pl-pds">)</span></span><span class="pl-pds">"</span></span>
+	<span class="pl-k">local</span> basegifname=<span class="pl-s"><span class="pl-pds">$(</span>echo <span class="pl-s"><span class="pl-pds">"</span><span class="pl-smi">$gifname</span><span class="pl-pds">"</span></span> <span class="pl-k">|</span> sed <span class="pl-s"><span class="pl-pds">'</span>s/_reduced_x[0-9]//g<span class="pl-pds">'</span></span><span class="pl-pds">)</span></span>
+	<span class="pl-k">local</span> outputgif=<span class="pl-s"><span class="pl-pds">"</span><span class="pl-smi">$basegifname</span>-opt.gif<span class="pl-pds">"</span></span>
+	gifsicle -O3 --lossy=<span class="pl-s"><span class="pl-pds">"</span><span class="pl-smi">$loss_level</span><span class="pl-pds">"</span></span> -o <span class="pl-s"><span class="pl-pds">"</span><span class="pl-smi">$outputgif</span><span class="pl-pds">"</span></span> <span class="pl-s"><span class="pl-pds">"</span><span class="pl-smi">$inputgif</span><span class="pl-pds">"</span></span><span class="pl-k">;</span>
+	<span class="pl-k">local</span> oldfilesize=<span class="pl-s"><span class="pl-pds">$(</span>du -h <span class="pl-smi">$inputgif</span> <span class="pl-k">|</span> cut -f1<span class="pl-pds">)</span></span>
+	<span class="pl-k">local</span> newfilesize=<span class="pl-s"><span class="pl-pds">$(</span>du -h <span class="pl-smi">$outputgif</span> <span class="pl-k">|</span> cut -f1<span class="pl-pds">)</span></span>
+	<span class="pl-c1">echo</span> <span class="pl-s"><span class="pl-pds">"</span>File reduced from <span class="pl-smi">$oldfilesize</span> to <span class="pl-smi">$newfilesize</span> as <span class="pl-smi">$outputgif</span><span class="pl-pds">"</span></span>
+}</pre></div>
+<p>You can then chain them together, first making a suitable frame reduction towards file size (roughly half frames gives half file size), followed by as heavy a lossy setting as needed to get to whatever max. file size you're aiming at.</p>
+<p>I've added one more function to quickly modify the output gif (in-place) if its speed isn't quite right after going through the frame reduction.</p>
+<div class="highlight highlight-source-shell"><pre><span class="pl-k">function</span> <span class="pl-en">gifspeedchange()</span> {
+  <span class="pl-c"><span class="pl-c">#</span> args: $gif_path $frame_delay (1 = 0.1s)</span>
+  <span class="pl-k">local</span> orig_gif=<span class="pl-s"><span class="pl-pds">"</span><span class="pl-smi">${1?<span class="pl-s"><span class="pl-pds">'</span>Missing GIF filename parameter<span class="pl-pds">'</span></span>}</span><span class="pl-pds">"</span></span>
+  <span class="pl-k">local</span> frame_delay=<span class="pl-smi">${2?<span class="pl-s"><span class="pl-pds">'</span>Missing frame delay parameter<span class="pl-pds">'</span></span>}</span>
+  gifsicle --batch --delay <span class="pl-smi">$frame_delay</span> <span class="pl-smi">$orig_gif</span>
+  <span class="pl-k">local</span> newframerate=<span class="pl-s"><span class="pl-pds">$(</span>echo <span class="pl-s"><span class="pl-pds">"</span><span class="pl-smi">$frame_delay</span>*10<span class="pl-pds">"</span></span> <span class="pl-k">|</span> bc<span class="pl-pds">)</span></span>
+  <span class="pl-c1">echo</span> <span class="pl-s"><span class="pl-pds">"</span>new GIF frame rate: <span class="pl-smi">$newframerate</span> ms<span class="pl-pds">"</span></span>
+}</pre></div>
+<h2>
+<a aria-hidden="true" class="anchor" href="#the-workflow" id="user-content-the-workflow"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>The workflow</h2>
+<blockquote>
+<p>Tip: the optimisation will work best on animations with consistently unchanging regions - i.e. it seeks to make these transparent across frames.</p>
+</blockquote>
+<p>An example workflow then might look like this:</p>
+<ul>
+<li>run <a href="https://github.com/lmmx/devnotes/wiki/Bash-script:-screencast-GIF-(via-temp-.avi)"><code>gifcast</code></a>, selecting a video playing on the screen</li>
+<li>manually modify the output gif (crop, cut off surplus end frames, "merge down" starting frames appropriately) in Photoshop/GIMP etc.</li>
+<li>quickly check the filesizes (I use the alias below to get a neat <code>head</code> of recently modified files with their sizes), get an idea of frame rate
+<ul>
+<li>roughly aim for a frame reduction equivalent to <code>current file size</code> / <code>2 x final file size</code>
+</li>
+<li>if you have a 30MB GIF to start with, aiming for 3 MB (e.g. for Twitter), reduce maybe 4x, towards ~7MB. Optimisation at a light (<code>--lossy=30</code>) default setting will likely reach 3MB - the output will let you know the file size it reaches.</li>
+</ul>
+</li>
+</ul>
+<div class="highlight highlight-source-shell"><pre><span class="pl-c1">alias</span> recentsizes=<span class="pl-s"><span class="pl-pds">'</span>du -h $(recent)<span class="pl-pds">'</span></span>
+<span class="pl-c1">alias</span> recent=<span class="pl-s"><span class="pl-pds">'</span>ls -ht | head<span class="pl-pds">'</span></span></pre></div>
+<ul>
+<li>
+<p><code>gif_framecount_reducer flashy.gif 4; gifopt flashy_r*4.gif 60</code> - run at a setting of 60 on the result of a framecount reduction step (on the output <code>flashy_reduced_x4.gif</code>), the <code>_reduced_x{number}</code> gets stripped off to give <code>flashy-opt.gif</code></p>
+</li>
+<li>
+<p>In the upload preview (or open directly in a browser) if the speed isn't right, change it (almost instant) with e.g <code>gifspeedchange flashy-opt.gif 4</code> to use 40ms frame delay for all frames</p>
+</li>
+<li>
+<p>related: <a href="https://github.com/lmmx/devnotes/wiki/Bash-script:-screencast-GIF-(via-temp-.avi)"><code>ffcast</code>/<code>xrectsel</code> GIF screencast function</a></p>
+</li>
+<li>
+<p>video to frames: <code>ffmpeg -i Video.mpg frame_%d.png</code></p>
+</li>
+</ul>
+<h2>
+<a aria-hidden="true" class="anchor" href="#see-also" id="user-content-see-also"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>See also</h2>
+<ul>
+<li>"<a href="https://zulko.github.io/blog/2015/02/01/extracting-perfectly-looping-gifs-from-videos-with-python-and-moviepy/" rel="nofollow">An Algorithm to Extract Looping GIFs From Videos</a>", from the developer of <a href="https://zulko.github.io/moviepy/" rel="nofollow"><em>MoviePy</em></a>
+</li>
+</ul>
+
+        </div>
+
+        <div class="wiki-footer gollum-markdown-content boxed-group" id="wiki-footer">
+          <div class="boxed-group-inner wiki-auxiliary-content markdown-body">
+            <p><a href="https://github.com/lmmx/devnotes/wiki">Main page</a></p>
+
+          </div>
+        </div>
+    </div>]

@@ -1,0 +1,275 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <h1>
+<a aria-hidden="true" class="anchor" href="#how-to-develop-a-metric-provider" id="user-content-how-to-develop-a-metric-provider"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>How to Develop a Metric Provider</h1>
+<p>In this tutorial we will implement two metric providers related to the commits that occur in a version control system. The first, a <em>transient</em> metric provider, will keep track of the dates, times, and messages of all commits in the repositories. The second, a <em>historical</em> metric provider, will count the total number of commits over time.</p>
+<p>We'll go through the steps above for each metric provider.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#pre-requisites" id="user-content-pre-requisites"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Pre-requisites</h3>
+<ul>
+<li>Eclipse</li>
+<li>The <a href="https://www.eclipse.org/emfatic/" rel="nofollow">Emfatic</a> plug-in should be installed in your Eclipse</li>
+<li>The <a href="https://code.google.com/p/pongo/" rel="nofollow">Pongo</a> plug-in should be installed in your Eclipse</li>
+<li>The OSSMETER source code should be in your workspace</li>
+</ul>
+<h2>
+<a aria-hidden="true" class="anchor" href="#the-transient-metric-provider" id="user-content-the-transient-metric-provider"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>The Transient Metric Provider</h2>
+<p>This metric provider will store a complete history of the commits in the version control system(s) used by a project.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#0-setup" id="user-content-0-setup"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>0. Setup</h3>
+<p>Create a new Plugin project in Eclipse.</p>
+<ul>
+<li>Go to File &gt; New &gt; Project... and select 'Plug-in project'</li>
+<li>Give the project an appropriate name. The OSSMETER naming convention is:
+<ul>
+<li>Transient metrics: org.ossmeter.metricprovider.trans.(metric name)</li>
+<li>Historical metrics: org.ossmeter.metricprovider.historical.(metric name)</li>
+</ul>
+</li>
+<li>Click Next</li>
+<li>If the "This plug-in will make contributions to the UI" checkbox is ticked, uncheck it</li>
+<li>Click Finish</li>
+<li>Open up the plugin.xml file in your new project. Open the 'Dependencies' tab and add 'com.googlecode.pongo.runtime', 'org.ossmeter.platform', and 'org.ossmeter.repository.model' to the dependency list.</li>
+</ul>
+<h3>
+<a aria-hidden="true" class="anchor" href="#1-the-data-model" id="user-content-1-the-data-model"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>1. The data model</h3>
+<p>We define the data model using the Emfatic language. In your newly created plug-in, create a package called <code>org.ossmeter.metricprovider.trans.commits.model</code>. In that package create an empty file called <code>commits.emf</code>. In this file, we will define our data model.</p>
+<p>First of all, we need to state the name of the package.</p>
+<div class="highlight highlight-source-java"><pre><span class="pl-k">package</span> <span class="pl-smi">org.ossmeter.metricprovider.trans.commits.model</span>;</pre></div>
+<p>This is used by the Pongo code generator - the generated classes will be put in this package.</p>
+<p>We then define the database for our model:</p>
+<div class="highlight highlight-source-java"><pre><span class="pl-k">@db</span>(<span class="pl-c1">qualifiedCollectionNames</span><span class="pl-k">=</span><span class="pl-s"><span class="pl-pds">"</span>true<span class="pl-pds">"</span></span>)
+<span class="pl-k">class</span> <span class="pl-en">Commits</span> {
+	val <span class="pl-k">Repository</span>[<span class="pl-k">*</span>] repositories;
+	val <span class="pl-k">Commit</span>[<span class="pl-k">*</span>] commits;
+}</pre></div>
+<p>The <code>@db</code> annotation tells Pongo that this will be the container database for the data. Adding the <code>qualifiedCollectionNames=true</code> property will prepend the database name to all Mongo collections.</p>
+<p>The <code>Commits</code> class above says that we want a database with two collections, name <code>repositories</code> and <code>commits</code>. If <code>qualifiedCollectionNames</code> is set to <code>true</code>, the collections will be named <code>Commits.repositories</code> and <code>Commits.commits</code>.</p>
+<p>We now define the schema of the <code>Commits.repositories</code> collection:</p>
+<div class="highlight highlight-source-java"><pre><span class="pl-k">class</span> <span class="pl-en">Repository</span> {
+	<span class="pl-k">@searchable</span>
+	attr <span class="pl-smi">String</span> url;
+	attr <span class="pl-smi">String</span> repoType;
+	attr <span class="pl-smi">String</span> revision;
+	attr <span class="pl-k">int</span> totalNumberOfCommits;
+	ref <span class="pl-k">CommitData</span>[<span class="pl-k">*</span>] commits;
+}</pre></div>
+<p>This class is used to store information related to the commits in the project's VCS repositories. The collection will contain one entry per VCS repository. Repositories are identified by a <code>url</code>, and also have a <code>repoType</code> (e.g. Git or SVN), the latest <code>revision</code>, the <code>totalNumberOfCommits</code>, and a reference to all of the <code>commits</code> in the repository, which are stored in the <code>Commits.commits</code> collection.</p>
+<p>The <code>@searchable</code> annotation will make Pongo generate two utility search methods on the collection: <code>findByUrl(String url) : Iterable&lt;Repository&gt;</code> and <code>findOneByUrl(String url) : Repository</code>. An index will also be create on this field to improve look up time.</p>
+<p>Each commit is represented in the <code>Commits.commits</code> collection by the following model:</p>
+<div class="highlight highlight-source-java"><pre><span class="pl-k">class</span> <span class="pl-en">Commit</span> {
+	<span class="pl-k">@searchable</span>
+	attr <span class="pl-smi">Date</span> date;
+	attr <span class="pl-smi">String</span> identifier;
+	attr <span class="pl-smi">String</span> message;
+	attr <span class="pl-smi">String</span> author;
+}</pre></div>
+<p>For each commit, we store its <code>date</code>, <code>identifier</code> (revision ID), the commit <code>message</code>, and the <code>author</code>. We also create an index on the <code>date</code> to allow us to quickly discover the set of commits that occurred on a given date (using the autogenerated <code>findByDate(String date)</code> or <code>findOneByDate(String date)</code> methods).</p>
+<p>Now we need to use Pongo to generate code from this model. Right-click on the <code>commits.emf</code> file and select <code>Pongo &gt; Generate Pongos and plugin.xml</code>. You should see some Java classes appear in your package.</p>
+<p>Now that we have our data model, we can implement the metric provider.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#2-the-metric-provider" id="user-content-2-the-metric-provider"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>2. The metric provider</h3>
+<p>Create a Java class called <code>org.ossmeter.metricprovider.trans.commits.CommitsTransientMetricProvider</code></p>
+<p>This class should extend <code>AbstractTransientMetricProvider</code> and specify <code>Commits</code> for the generic argument:</p>
+<div class="highlight highlight-source-java"><pre><span class="pl-k">public</span> <span class="pl-k">class</span> <span class="pl-en">org</span>.ossmeter.metricprovider.trans.commits.CommitsTransientMetricProvider <span class="pl-k">extends</span> <span class="pl-e">AbstractTransientMetricProvider&lt;<span class="pl-smi">Commits</span>&gt;</span></pre></div>
+<p>The generic argument states that the metric provider stores objects conforming to the <code>Commits</code> data model. Note: You do not need to extend <code>AbstractTransientMetricProvider</code> and can implement <code>ITransientMetricProvider</code> instead should you wish to.</p>
+<p>There are a number of methods that need implementing. We will discuss each in turn.</p>
+<h4>
+<a aria-hidden="true" class="anchor" href="#adaptdb-db" id="user-content-adaptdb-db"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>adapt(DB db)</h4>
+<p>This method returns the Pongo database that the metric provider will use to store its data. This is boilerplate, unfortunately, we can't auto-generate it. Implement as follows:</p>
+<div class="highlight highlight-source-java"><pre>	<span class="pl-k">@Override</span>
+	<span class="pl-k">public</span> <span class="pl-smi">Commits</span> adapt(<span class="pl-c1">DB</span> db) {
+		<span class="pl-k">return</span> <span class="pl-k">new</span> <span class="pl-smi">Commits</span>(db);
+	}
+</pre></div>
+<p>The next thing we want to do is fill in useful information that helps users understand the purpose of the metric provider:</p>
+<div class="highlight highlight-source-java"><pre>	<span class="pl-k">@Override</span>
+	<span class="pl-k">public</span> <span class="pl-smi">String</span> getShortIdentifier() { <span class="pl-c"><span class="pl-c">//</span> This may be deprecated very soon</span>
+		<span class="pl-k">return</span> <span class="pl-s"><span class="pl-pds">"</span>transient-commits<span class="pl-pds">"</span></span>; 
+	}
+
+	<span class="pl-k">@Override</span>
+	<span class="pl-k">public</span> <span class="pl-smi">String</span> getFriendlyName() {
+		<span class="pl-k">return</span> <span class="pl-s"><span class="pl-pds">"</span>Commit History<span class="pl-pds">"</span></span>;
+	}
+
+	<span class="pl-k">@Override</span>
+	<span class="pl-k">public</span> <span class="pl-smi">String</span> getSummaryInformation() {
+		<span class="pl-k">return</span> <span class="pl-s"><span class="pl-pds">"</span>The commit history of the project.<span class="pl-pds">"</span></span>;
+	}</pre></div>
+<p>The next method allows you to declare whether the metric provider is applicable to a given project:</p>
+<div class="highlight highlight-source-java"><pre><span class="pl-k">@Override</span>
+	<span class="pl-k">public</span> <span class="pl-k">boolean</span> appliesTo(<span class="pl-smi">Project</span> project) {
+		<span class="pl-k">return</span> project<span class="pl-k">.</span>getVcsRepositories()<span class="pl-k">.</span>size() <span class="pl-k">&gt;</span> <span class="pl-c1">0</span>;
+	}</pre></div>
+<p>Our metric applies to any project that has at least one VCS repository.</p>
+<p>Finally, we have the <code>measure(...)</code> method that performs the actual metric calculation:</p>
+<div class="highlight highlight-source-java"><pre>	<span class="pl-k">@Override</span>
+	<span class="pl-k">public</span> <span class="pl-k">void</span> measure(<span class="pl-smi">Project</span> project, <span class="pl-smi">ProjectDelta</span> delta, <span class="pl-smi">Commits</span> db) {
+
+		<span class="pl-k">for</span> (<span class="pl-smi">VcsRepositoryDelta</span> repoDelta <span class="pl-k">:</span> delta<span class="pl-k">.</span>getVcsDelta()<span class="pl-k">.</span>getRepoDeltas()) {
+			<span class="pl-smi">Repository</span> repo <span class="pl-k">=</span> db<span class="pl-k">.</span>getRepositories()<span class="pl-k">.</span>findOneByUrl(repoDelta<span class="pl-k">.</span>getRepository()<span class="pl-k">.</span>getUrl());
+			
+			<span class="pl-k">if</span> (repo <span class="pl-k">==</span> <span class="pl-c1">null</span>) {
+				repo <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-smi">Repository</span>();
+				repo<span class="pl-k">.</span>setUrl(repoDelta<span class="pl-k">.</span>getRepository()<span class="pl-k">.</span>getUrl());
+				db<span class="pl-k">.</span>getRepositories()<span class="pl-k">.</span>add(repo);
+			}
+			
+			<span class="pl-k">for</span> (<span class="pl-smi">VcsCommit</span> commit <span class="pl-k">:</span> repoDelta<span class="pl-k">.</span>getCommits()) {
+				<span class="pl-smi">Commit</span> c <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-smi">Commit</span>();
+				c<span class="pl-k">.</span>setDate(commit<span class="pl-k">.</span>getJavaDate());
+				c<span class="pl-k">.</span>setMessage(commit<span class="pl-k">.</span>getMessage());
+				c<span class="pl-k">.</span>setAuthor(commit<span class="pl-k">.</span>getAuthor());
+				c<span class="pl-k">.</span>setIdentifier(commit<span class="pl-k">.</span>getRevision());
+				
+				repo<span class="pl-k">.</span>getCommits()<span class="pl-k">.</span>add(c);
+				db<span class="pl-k">.</span>getCommits()<span class="pl-k">.</span>add(c);
+			}
+		}
+		db<span class="pl-k">.</span>getCommits()<span class="pl-k">.</span>sync();
+		db<span class="pl-k">.</span>getRepositories()<span class="pl-k">.</span>sync();
+	}</pre></div>
+<p>The above method iterates through the delta computed by the platform. The delta consists of the commits that occurred in each of the project's VCS repositories for the date being analysed. A new <code>Commit</code> object is created for each commit in the delta.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#3-make-the-metric-provider-discoverable" id="user-content-3-make-the-metric-provider-discoverable"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>3. Make the metric provider discoverable</h3>
+<p>Metric providers are registered with the OSSMETER platform using <em>extension points</em>:</p>
+<ul>
+<li>Open up the plugin.xml file and select the 'Extensions' tab</li>
+<li>Click the Add button and from the list select <code>org.ossmeter.platform.metricprovider</code>
+</li>
+<li>On the right hand side of the editor, you will now see a text box with the label 'provider' and a 'Browse...' button.</li>
+<li>Click the 'Browse...' button and select the 'CommitsTransientMetricProvider' class</li>
+</ul>
+<p>Now everything is ready for the metric to be executed :)</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#the-historic-metric-provider" id="user-content-the-historic-metric-provider"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>The Historic Metric Provider</h2>
+<p>This metric provider will keep track of the total number of commits of the project over time. For each date of the project, the metric counts how many commits have been made and stores the value.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#0-setup-1" id="user-content-0-setup-1"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>0. Setup</h3>
+<p>Create a new Plugin project in Eclipse.</p>
+<ul>
+<li>Go to File &gt; New &gt; Project... and select 'Plug-in project'</li>
+<li>Give the project an appropriate name. The OSSMETER naming convention is:
+<ul>
+<li>Transient metrics: org.ossmeter.metricprovider.trans.(metric name)</li>
+<li>Historical metrics: org.ossmeter.metricprovider.historical.(metric name)</li>
+</ul>
+</li>
+<li>Click Next</li>
+<li>If the "This plug-in will make contributions to the UI" checkbox is ticked, uncheck it</li>
+<li>Click Finish</li>
+<li>Open up the plugin.xml file in your new project. Open the 'Dependencies' tab and add 'com.googlecode.pongo.runtime', 'org.ossmeter.platform', and 'org.ossmeter.repository.model' to the dependency list.</li>
+</ul>
+<h3>
+<a aria-hidden="true" class="anchor" href="#1-the-data-model-1" id="user-content-1-the-data-model-1"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>1. The data model</h3>
+<p>In your newly created plug-in, create a package called org.ossmeter.metricprovider.historic.commits.model. In that package create an empty file called historiccommits.emf. In this file, we will define our data model:</p>
+<div class="highlight highlight-source-java"><pre><span class="pl-k">package</span> <span class="pl-smi">org.ossmeter.metricprovider.historic.commits.model</span>;
+
+<span class="pl-k">class</span> <span class="pl-en">HistoricCommits</span> {
+	attr <span class="pl-k">int</span> numberOfCommits;
+}</pre></div>
+<p>The data model for the historic metric is much simpler. No Pongo annotations are used because, unlike transient metrics, the platform is responsible for storing the historic data. The data model defined here will be stored against the date that the analysis is performed.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#2-the-metric-provider-1" id="user-content-2-the-metric-provider-1"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>2. The metric provider</h3>
+<p>Create a Java class called org.ossmeter.metricprovider.historical.commits.CommitsHistoricalMetricProvider</p>
+<p>This class should extend AbstractHistoricalMetricProvider (there are no generic arguments (yet!)):</p>
+<p>public class org.ossmeter.metricprovider.trans.commits.CommitsTransientMetricProvider extends AbstractTransientMetricProvider
+The generic argument states that the metric provider stores objects conforming to the Commits data model. Note: You do not need to extend AbstractTransientMetricProvider and can implement ITransientMetricProvider instead should you wish to.</p>
+<p>There are a number of methods that need implementing. We will discuss each in turn.</p>
+<p>First of all, complete the typical information-related methods:</p>
+<div class="highlight highlight-source-java"><pre>	<span class="pl-k">@Override</span>
+	<span class="pl-k">public</span> <span class="pl-smi">String</span> getShortIdentifier() {
+		<span class="pl-k">return</span> <span class="pl-s"><span class="pl-pds">"</span>historicalcommits<span class="pl-pds">"</span></span>;
+	}
+
+	<span class="pl-k">@Override</span>
+	<span class="pl-k">public</span> <span class="pl-smi">String</span> getFriendlyName() {
+		<span class="pl-k">return</span> <span class="pl-s"><span class="pl-pds">"</span>Historical commits<span class="pl-pds">"</span></span>;
+	}
+
+	<span class="pl-k">@Override</span>
+	<span class="pl-k">public</span> <span class="pl-smi">String</span> getSummaryInformation() {
+		<span class="pl-k">return</span> <span class="pl-s"><span class="pl-pds">"</span>...<span class="pl-pds">"</span></span>;
+	}</pre></div>
+<p>Now complete the standard <code>appliesTo</code> method:</p>
+<div class="highlight highlight-source-java"><pre>	<span class="pl-k">@Override</span>
+	<span class="pl-k">public</span> <span class="pl-k">boolean</span> appliesTo(<span class="pl-smi">Project</span> project) {
+		<span class="pl-k">return</span> project<span class="pl-k">.</span>getVcsRepositories()<span class="pl-k">.</span>size() <span class="pl-k">&gt;</span> <span class="pl-c1">0</span>;
+	}</pre></div>
+<p>We now need to specify a dependency on the transient metric provider that we just implemented.</p>
+<div class="highlight highlight-source-java"><pre>	<span class="pl-k">@Override</span>
+	<span class="pl-k">public</span> <span class="pl-k">List&lt;<span class="pl-smi">String</span>&gt;</span> getIdentifiersOfUses() {
+		<span class="pl-k">return</span> <span class="pl-smi">Arrays</span><span class="pl-k">.</span>asList(<span class="pl-smi">CommitsTransientMetricProvider</span><span class="pl-k">.</span>class<span class="pl-k">.</span>getCanonicalName());
+	}	</pre></div>
+<p>This tells the platform that we need access to the <code>CommitsTransientMetricProvider</code> database. The platform will assign this to the <code>uses</code> field that is available to the historical metric provider, as you'll see in the <code>measure</code> method:</p>
+<div class="highlight highlight-source-java"><pre>	<span class="pl-k">@Override</span>
+	<span class="pl-k">public</span> <span class="pl-smi">Pongo</span> measure(<span class="pl-smi">Project</span> project) {
+		<span class="pl-smi">Commits</span> transDb <span class="pl-k">=</span> (<span class="pl-smi">Commits</span>) getDbOfMetricProvider(project, (<span class="pl-smi">ITransientMetricProvider</span>) uses<span class="pl-k">.</span>get(<span class="pl-c1">0</span>));
+		
+		<span class="pl-k">int</span> commits <span class="pl-k">=</span> (<span class="pl-k">int</span>) transDb<span class="pl-k">.</span>getCommits()<span class="pl-k">.</span>size();
+		
+		<span class="pl-smi">HistoricCommits</span> hist <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-smi">HistoricCommits</span>();
+		hist<span class="pl-k">.</span>setNumberOfCommits(commits);
+		
+		<span class="pl-k">return</span> hist;
+	}</pre></div>
+<p>First of all, we get hold of the database of the transient commits metric provider, and simply count the size of the <code>commits</code> collection. We save this in an instance of the <code>HistoricCommits</code> Pongo defined above. This object is returned by the method and the platform stores it in the database along with the date that is currently being analysed for the project.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#3-make-the-metric-provider-discoverable-1" id="user-content-3-make-the-metric-provider-discoverable-1"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>3. Make the metric provider discoverable</h3>
+<p>This process is the same as the transient metric provider:</p>
+<ul>
+<li>Open up the plugin.xml file and select the 'Extensions' tab</li>
+<li>Click the Add button and from the list select <code>org.ossmeter.platform.metricprovider</code>
+</li>
+<li>On the right hand side of the editor, you will now see a text box with the label 'provider' and a 'Browse...' button.</li>
+<li>Click the 'Browse...' button and select the 'CommitsHistoricalMetricProvider' class</li>
+</ul>
+<p>Now everything is ready for both metrics to be executed :)</p>
+<p>But first. Let's specify how we want this historical metric to be visualised.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#4-define-a-metvis-visualisation-specification" id="user-content-4-define-a-metvis-visualisation-specification"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>4. Define a MetVis visualisation specification</h3>
+<p><a href="https://github.com/ossmeter/metvis">MetVis</a> is a JSON-based specification language and visualisation engine for metrics. You specify how the Pongo data model should be transformed into something that can be plotted on a chart. The MetVis <a href="http://jamesrobertwilliams.co.uk/ossmeter/metvis/help.html" rel="nofollow">web page</a> has numerous examples of this.</p>
+<p>Create a folder in your historical metric project called 'vis'. In the 'vis' folder create a file called 'historicalcommits.json'. Here is the MetVis specification for the historical commits metric provider:</p>
+<div class="highlight highlight-source-java"><pre>{
+	<span class="pl-s"><span class="pl-pds">"</span>metricid<span class="pl-pds">"</span></span> <span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">"</span>org.ossmeter.metricprovider.historic.commits.CommitsHistoricalMetricProvider<span class="pl-pds">"</span></span>,
+	<span class="pl-s"><span class="pl-pds">"</span>vis<span class="pl-pds">"</span></span> <span class="pl-k">:</span> [
+		{
+			<span class="pl-s"><span class="pl-pds">"</span>id<span class="pl-pds">"</span></span> <span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">"</span>historicalcommits<span class="pl-pds">"</span></span>,
+			<span class="pl-s"><span class="pl-pds">"</span>name<span class="pl-pds">"</span></span> <span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">"</span>Commits over time<span class="pl-pds">"</span></span>,
+			<span class="pl-s"><span class="pl-pds">"</span>description<span class="pl-pds">"</span></span> <span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">"</span>This metric shows when the projects commits occurred<span class="pl-pds">"</span></span>,
+			<span class="pl-s"><span class="pl-pds">"</span>type<span class="pl-pds">"</span></span> <span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">"</span>LineChart<span class="pl-pds">"</span></span>,
+			<span class="pl-s"><span class="pl-pds">"</span>datatable<span class="pl-pds">"</span></span> <span class="pl-k">:</span> {
+				<span class="pl-s"><span class="pl-pds">"</span>cols<span class="pl-pds">"</span></span> <span class="pl-k">:</span> [
+					{ <span class="pl-s"><span class="pl-pds">"</span>name<span class="pl-pds">"</span></span> <span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">"</span>Date<span class="pl-pds">"</span></span>, <span class="pl-s"><span class="pl-pds">"</span>field<span class="pl-pds">"</span></span> <span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">"</span>$__date<span class="pl-pds">"</span></span> },
+					{ <span class="pl-s"><span class="pl-pds">"</span>name<span class="pl-pds">"</span></span> <span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">"</span>Commits<span class="pl-pds">"</span></span>, <span class="pl-s"><span class="pl-pds">"</span>field<span class="pl-pds">"</span></span> <span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">"</span>$numberOfCommits<span class="pl-pds">"</span></span> }
+				]
+			},
+			<span class="pl-s"><span class="pl-pds">"</span>x<span class="pl-pds">"</span></span> <span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">"</span>Date<span class="pl-pds">"</span></span>,
+			<span class="pl-s"><span class="pl-pds">"</span>y<span class="pl-pds">"</span></span> <span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">"</span>Commits<span class="pl-pds">"</span></span>
+		}
+	]
+}</pre></div>
+<p>The <code>metricId</code> field tells the platform which metric provider the specification visualises. A metric provider can have multiple visualisations. In this case, we just define one, which plots the date on the X-axis and the number of commits on the Y-axis. Fields in the Pongo data model are references using the $-sign. To access the date field of a historical metric, use <code>$__date</code>. The final two fields (<code>x</code> and <code>y</code>) are references to column names in the datatable specification. The <code>type</code> states that the data should be plotted as a line chart. You can test your MetVis specifications on the <a href="http://jamesrobertwilliams.co.uk/ossmeter/metvis/" rel="nofollow">MetVis playpen</a>.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#5-make-the-visualisation-specification-discoverable" id="user-content-5-make-the-visualisation-specification-discoverable"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>5. Make the visualisation specification discoverable</h3>
+<p>As with metric providers, visualisation specifications are registered using extension points.</p>
+<ul>
+<li>Add the 'org.ossmeter.platform.visualisation' plugin as a dependency on your project</li>
+<li>Open up the plugin.xml file and select the 'Extensions' tab</li>
+<li>Click the Add button and from the list select <code>org.ossmeter.platform.visualisation.metric</code>
+</li>
+<li>On the right hand side of the editor, you will now see a text box with the label 'provider' and a 'Browse...' button.</li>
+<li>Click the 'Browse...' button and select the 'historicalcommits.json' file</li>
+</ul>
+<p>Good job.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#running-the-metric-providers" id="user-content-running-the-metric-providers"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Running the metric providers</h2>
+<p>See <a class="internal present" href="/ossmeter/ossmeter/wiki/Running-from-source">Running from Source</a></p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#homework" id="user-content-homework"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Homework</h2>
+<p>Adapt the historical commits metric provider so that it stores the commits for each repository separately (in the above, it sums them all up). Write the MetVis specification - each series should be the commits for separate repositories.</p>
+
+        </div>
+
+    </div>]

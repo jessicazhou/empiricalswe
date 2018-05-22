@@ -1,0 +1,69 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <h1>
+<a aria-hidden="true" class="anchor" href="#setting-up-the-project" id="user-content-setting-up-the-project"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Setting up the project</h1>
+<p>Setting up a Development Environment for SolRDF is quite easy. The instructions here are specific for Eclipse but they can be easily translated to other IDEs.</p>
+<p>I assume you have installed</p>
+<ul>
+<li>JDK 8</li>
+<li>a recent version of Eclipse, which comes with everything you need for working with SolRDF codebase</li>
+<li>in case you have an old version of <em>Eclipse</em>, you need <em>m2e</em> and <em>eGit</em> or similar plugins</li>
+</ul>
+<p>First, if you want or plan to contribute, you should fork this project as a local repository in your GitHub account, otherwise you can simply clone this repository (using command line or eGit perspective facilities)</p>
+<p>Once you have the project / repository locally, go to the Java perspective, right click in the project / package explorer and choose</p>
+<p><em>Import &gt;&gt; Maven &gt;&gt; Existing Maven Projects</em></p>
+<p>At the end (probably the very first time there's a bit to wait, Maven will download the required dependencies) you will see three projects in the workspace:</p>
+<ul>
+<li>
+<strong>solrdf</strong>: the top level project, which acts as a container for the others</li>
+<li>
+<strong>solrdf-core</strong>: this is SolRDF</li>
+<li>
+<strong>solrdf-client</strong>: the SolRDF (Java) client library</li>
+<li>
+<strong>solrdf-integration-tests</strong>: as the name suggests, this project contains integration tests.</li>
+</ul>
+<p>Under the folder</p>
+<p><em>solrdf/src/dev/eclipse</em></p>
+<p>you can find some useful Eclipse launcher configurations:</p>
+<ul>
+<li>build-test-and-install.launch</li>
+<li>install-without-tests.launch</li>
+</ul>
+<p>Just right click on one of them and choose</p>
+<p><em>Run as &gt;&gt; ...</em></p>
+<p>The test suite (or a test case) can be also run using</p>
+<p><em>Run / Debug as &gt;&gt; JUnit test</em></p>
+<h1>
+<a aria-hidden="true" class="anchor" href="#how-to-debug-solrdf" id="user-content-how-to-debug-solrdf"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>How to debug SolRDF</h1>
+<p>Starting version 5.x (the current version used by SolRDF) Solr is no longer distributed as a .war file. That means it's not possible to run it using things like Cargo. A quick way to work with SolRDF is</p>
+<ul>
+<li>Create a class which extends org.gazzax.labs.solrdf.integration.IntegrationTestSupertypeLayer</li>
+<li>Create a test method</li>
+<li>Put some breakpoints within that method or using a dummy Thread.sleep(10000000L)</li>
+</ul>
+<div class="highlight highlight-source-java"><pre><span class="pl-k">public</span> <span class="pl-k">class</span> <span class="pl-en">MyIntegrationTest</span> <span class="pl-k">extends</span> <span class="pl-e">IntegrationTestSupertypeLayer</span> {
+    <span class="pl-k">@Test</span>
+    <span class="pl-k">public</span> <span class="pl-k">void</span> <span class="pl-en">foo</span>() <span class="pl-k">throws</span> <span class="pl-smi">Exception</span> {
+         <span class="pl-smi">Thread</span><span class="pl-k">.</span>sleep(<span class="pl-c1">10000000000L</span>);
+    } 
+}   </pre></div>
+<p>Then, right click on that class and select</p>
+<p><em>Debug as &gt;&gt; JUnit Test</em></p>
+<p>As part of the test execution Solr will be (downloaded and) started. You should see something like this in the console:</p>
+<pre><code>13:37 INFO  Looking for old index directories to cleanup for core store in /tmp/.../store/data/
+13:37 INFO  no updateRequestProcessorChain defined as default, creating implicit default
+13:37 INFO  Using default statsCache cache: org.apache.solr.search.stats.LocalStatsCache
+13:37 INFO  Hard AutoCommit: if uncommited for 15000ms;
+...
+13:37 INFO  newest commit generation = 1
+13:37 INFO  [store] Registered new searcher Searcher@4b6c3178[store] 
+</code></pre>
+<p>At this point SolRDF is running in debug mode, so that means you can index, search and put some breakpoints somewhere (in SolRDF or in Solr classes)</p>
+<h1>
+<a aria-hidden="true" class="anchor" href="#how-to-contribute" id="user-content-how-to-contribute"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>How to contribute</h1>
+<p>Follow the procedure described in this page on top of a forked repository; then, once your changes are ready, create a PullRequest and follow the procedure.</p>
+
+        </div>
+
+    </div>]

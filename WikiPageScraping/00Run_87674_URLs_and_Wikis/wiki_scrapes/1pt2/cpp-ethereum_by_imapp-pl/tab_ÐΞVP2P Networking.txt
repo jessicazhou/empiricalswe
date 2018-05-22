@@ -1,0 +1,77 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <h3>
+<a aria-hidden="true" class="anchor" href="#goals" id="user-content-goals"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Goals</h3>
+<ul>
+<li>Allow multiple protocols to leverage the same peer network &amp; messaging system.</li>
+<li>Maximise code reuse between protocols.</li>
+</ul>
+<h3>
+<a aria-hidden="true" class="anchor" href="#basic-overview" id="user-content-basic-overview"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Basic Overview</h3>
+<p>Rather than having multiple peer networks for each of the different P2P protocols (currently Ethereum, Whisper and Swarm but with the potential for there to be several others), we have a single P2P mother protocol forming the spine of the network. This is then able to support multiple mutually-independent sub-protocols within its framework.</p>
+<p>Thus we split off the basic P2P networking portion of the protocol from the Ethereum-specific portion. For now we manually reserve chunks of message-ID space. In a later revision of this protocol, we will have a dynamically negotiating message-ID scheme. For now, message IDs <code>0x00</code> to <code>0x0f</code> are reserved for specifically P2P stuff. Message IDs <code>0x10</code> to <code>0x1f</code> will be used by the <code>eth</code> protocol (Ethereum). Message IDs <code>0x20</code> to <code>0x2f</code> will be used by the <code>shh</code> protocol (Whisper).</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#required-changes" id="user-content-required-changes"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Required Changes</h3>
+<ul>
+<li>
+<code>0x00</code> <code>Hello</code>: <code>[0x00: P, protocolVersion: P, clientVersion: B, [cap0: B, cap1: B, ...], listenPort: P, id: B_64]</code>
+<ul>
+<li>
+<code>protocolVersion</code>: The underlying network protocol. <code>0</code>
+</li>
+<li>
+<code>clientVersion</code>: The underlying client. A user-readable string.</li>
+<li>
+<code>capN</code>: A peer-network capability code, readable ASCII and 3 letters. Currently only <code>"eth"</code> and <code>"shh"</code> are known.</li>
+<li>
+<code>listenPort</code>: The port on which the peer is listening for an incoming connection.</li>
+<li>
+<code>id</code>: The identity and public key of the peer.</li>
+</ul>
+</li>
+<li>
+<code>0x01</code> <code>Disconnect</code>: Unchanged.</li>
+<li>
+<code>0x02</code> <code>Ping</code>: Unchanged.</li>
+<li>
+<code>0x03</code> <code>Pong</code>: Unchanged.</li>
+<li>
+<code>0x04</code> <code>GetPeers</code>: Unchanged.</li>
+<li>
+<code>0x05</code> <code>Peers</code>: Unchanged.</li>
+</ul>
+<p>Clients that are able and willing (i.e. not simply peer-servers) to take part in the Ethereum network should include the <code>"eth"</code> capability and recognise the following packets:</p>
+<ul>
+<li>
+<code>0x10</code> <code>Status</code>: <code>[0x10: P, protocolVersion: P, networkID: P, totalDifficulty: P, latestHash: B_32, genesisHash: B_32]</code>
+<ul>
+<li>
+<code>protocolVersion</code>: The version of the Ethereum protocol this peer implements. <code>32</code> at present.</li>
+<li>
+<code>networkID</code>: The network version of Ethereum for this peer. <code>0</code> for the official testnet.</li>
+<li>
+<code>totalDifficulty</code>: Total Difficulty of the best chain. Integer, as found in block header.</li>
+<li>
+<code>latestHash</code>: The hash of the latest block in our canonical chain, or alternatively put, the block with the highest validated total difficulty.</li>
+<li>
+<code>GenesisHash</code>: The hash of the Genesis block.</li>
+</ul>
+</li>
+<li>
+<code>0x11</code> <code>GetTransactions</code>: Unchanged.</li>
+<li>
+<code>0x12</code> <code>Transactions</code>: Unchanged.</li>
+<li>
+<code>0x13</code> <code>GetBlockHashes</code>: Unchanged.</li>
+<li>
+<code>0x14</code> <code>BlockHashes</code>: Unchanged.</li>
+<li>
+<code>0x15</code> <code>GetBlocks</code>: Unchanged.</li>
+<li>
+<code>0x16</code> <code>Blocks</code>: Unchanged.</li>
+</ul>
+<p><code>Status</code> should be sent immediately after the <code>Hello</code> message exchange has demonstrated both peers have the <code>eth</code> capability.</p>
+
+        </div>
+
+    </div>]

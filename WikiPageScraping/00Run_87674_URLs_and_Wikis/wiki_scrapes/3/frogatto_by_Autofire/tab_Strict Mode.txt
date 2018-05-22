@@ -1,0 +1,321 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>I (Sirp) recently had a discussion with Krista, that went something like this:</p>
+<ul>
+<li>me: So, let me ask you something, let's say you -- you, yourself -- had to develop a new game, and your family's livelihood development depended on it ... what language would you use to program all the game logic, all the object behavior in? If the game had to be right, and work reliably, and you develop it as quickly and conveniently as possible.</li>
+<li>her: Well, there are some choices, FFL, or Python, or C++, or Lua...</li>
+<li>me: Yes. And remember, you don't want the "cleanest" or most "elegant". You want the language that is going to get a game delivered that will put food on your table.</li>
+<li>her: I'd use C++</li>
+<li>me: Yeah. I'd use C++ too.</li>
+<li>me: But why? There are these higher level, more elegant languages that are meant to be better for rapid development. Why would we use C++?</li>
+</ul>
+<p>We spent some time discussing things, and our basic conclusion was that FFL is roughly in the same 'bucket' as Python and Lua, and similar for productivity. For us though -- and do remember that Krista and I are seasoned developers -- C++ is just more efficient. Why? Largely because it's type safe, mature, and has well-established best practices.</p>
+<p>It's a little ... disconcerting ... to say the least, to spend lots of time developing a custom language that we ourselves find less productive than alternatives.</p>
+<p>Now, a big advantage of FFL is that its learning curve is much lower than C++. So people who are not me or Krista can be much more productive in it than they would be in C++. But, it would be satisfying if FFL was actually as productive for its intended uses as C++ is, for me and Krista, and ideally <em>more</em> productive.</p>
+<p>Thus, I want to use this thread to outline, analyze, and introspect on what makes C++ such a usable language for us, and what we can integrate into FFL to make it more usable, enjoyable, and productive -- certainly for seasoned developers, and hopefully for everyone.</p>
+<p>There are a number of features of C++ that we felt make it the most productive language for us. But the most important was <em>static type checking</em>. That is, in C++, we are very strict about putting in as much type information as possible, and then the compiler telling us about obvious mistakes.</p>
+<p>It is also much easier to reason about types, to be able to tell what a function does on first glance, if it is explicit about what types it receives and returns. As such, I've started to introduce some optional type features to FFL.</p>
+<p>Before you had something like,</p>
+<p><code>set_light_size: "def(lsize) [set(vars.lightSize, lsize), fire_event(self, 'light_size')]",</code></p>
+<p>Now you can add type information like this:</p>
+<p><code>set_light_size: "def(int lsize) -&gt; commands [set(vars.lightSize, lsize), fire_event(self, 'light_size')]",</code></p>
+<p>This makes it explicit that the function accepts an int as a parameter, and returns a stream of commands for the game engine as a result.</p>
+<p>The legal types we have are,</p>
+<ul>
+<li>int</li>
+<li>decimal</li>
+<li>string</li>
+<li>null</li>
+<li>list</li>
+<li>map</li>
+<li>object</li>
+<li>commands -- a special type which represents a stream of commands such as events return to the game engine.</li>
+<li>any -- can be anything at all. The default if you don't specify anything.</li>
+</ul>
+<p>If you pass a function something that it's not expecting, it'll die, on the spot. Likewise, if a function returns something other than promised, it'll also die.</p>
+<p>This is good, but we are working toward better. Now that we pass along the types of parameters, our FFL parser tries to analyze code paths and work out at compile time, what type an expression is.</p>
+<p>Just having vague types like 'list' doesn't tell you much though. How do you know what kinds of elements the list contains? I've developed a syntax to allow for that. Here are some examples:</p>
+<ul>
+<li>[int] -- a list of integers</li>
+<li>
+<a class="internal absent" href="/Autofire/frogatto/wiki/int">int</a> -- a list of lists of integers</li>
+<li>{int -&gt; string } -- a map of ints to strings</li>
+<li>{ [int] -&gt; {string -&gt; string} } -- a map of lists of integers to a map of strings to strings.</li>
+</ul>
+<p>Thus, 'list' is really just a shorthand for [any] and 'map' for {any -&gt; any}. It's better to give more details where possible!</p>
+<p>So, you can do things like,</p>
+<p><code>def([int] mylist, {string -&gt; string} mymap) -&gt; int</code></p>
+<p>to give exact details about what's going in and what's coming out.</p>
+<p>We also support <em>type unions</em>. A type union is simply a value that may be one of multiple types. Type unions use a very simple syntax:</p>
+<p><code>def(object|null obj) -&gt; int|decimal</code></p>
+<p>This defines a function taking an object <em>or</em> null and returns an integer or decimal.</p>
+<p>Note that if a function accepts null it must explicitly say so. This is very intentional. If a function just says it takes an 'object' and you pass it null, you'll get very loud complaints!</p>
+<p>One other nicety is the addition of function <em>overloads</em>. Suppose you had a function that made objects talk:</p>
+<p><code>talk: "def(object obj) ((some code here))</code></p>
+<p>But suppose you often found yourself calling this on lists of objects. You want the function to be able to take a list of objects, and when invoked this way, do it for every object in the list. So, you do this:</p>
+<p><code>talk: "def(object|[object] obj) if(is_list(obj), map(obj, talk(value)), ((some code here)))"</code></p>
+<p>This works, but is somewhat cumbersome, in the type signature as well as the if logic. So, instead we can now create an overloaded function like this:</p>
+<p><code>talk: "overload( def([object] obj) map(obj, talk(value)), def(object obj) ((some code here)) )"</code></p>
+<p>When called, this function checks each function signature and uses the first function that matches the types of the arguments.</p>
+<p>This is a starting point toward making FFL nicer to work with, and more robust. When working in C++, I can carefully bang out a program that works nice and reliably. I'll make mistakes, of course, but I'll fix them quickly and efficiently. With FFL it's easier for mistakes to linger, for an occasional bizarre unexpected case to occur. We want to move toward eliminating this.</p>
+<p>The next step -- which I am working on next -- is to make it so all the built-in objects that Anura has -- things like custom objects, shader objects, variable storage objects, and so forth all have <em>named types</em> that are known to FFL.</p>
+<p>For instance, we want to be able to make a function that looks like this:</p>
+<p><code>def(frogatto_playable frogatto) -&gt; commands frogatto.talk("hello")</code></p>
+<p>A function like this should be able to be analyzed as soon as it's parsed, and without executing it once, the engine should do all the following checks:</p>
+<ul>
+<li>Is there a type that has been registered with FFL called 'frogatto_playable'?</li>
+<li>Does frogatto_playable have a property, 'talk'?</li>
+<li>Is this property, 'talk', a function which can be invoked with a single string as its argument?</li>
+<li>Does this frogatto_playable.talk function, when invoked, return commands?</li>
+</ul>
+<p>If the answer to any of these is 'no', then the engine will immediately complain. You won't have to wait until the game gets into a situation where it is called.</p>
+<p>Achieving this is still a little ways off, but I think once we get there i'll greatly improve FFL's productivity. I intend to add more posts as I go, adding more and more features to make FFL what I would consider an "industrial strength" language.</p>
+<hr/>
+<p>Sneak preview of what I'm working on now:</p>
+<p><code>[card.card_type.draw_id | card &lt;- level.chars, card is obj card, card.in_hand, card.marked_as_keep]</code></p>
+<p>What is special about this code? I'm working on making it so when the formula is <em>parsed</em> the engine works out that 'card' must be a <em>card</em> object. Thus, all the lookups such as card.in_hand and card.marked_as_keep are checked to make sure those members exist in card, and if any of them do not, it will throw an error complaining.</p>
+<p>Note that this happens at <em>formula parse time</em> -- the formula doesn't have to actually be executed, so if it's some obscure formula that hardly ever happens it'll still complain about the error.</p>
+<p>In addition, it'll look up card.card_type.draw_id, see that it's an integer, and realize that this expression must evaluate to type [int].</p>
+<hr/>
+<h2>
+<a aria-hidden="true" class="anchor" href="#a-few-goals" id="user-content-a-few-goals"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><strong>A few goals</strong>
+</h2>
+<p>Let's talk about what we want to achieve in some overhauls to FFL. When FFL runs, there three kinds of problems it can encounter:</p>
+<ul>
+<li>Compile-time errors also known as static errors. These occur when the FFL is parsed. This is typically when an object type is loaded into memory, generally the first time you enter a level that uses one of those objects.</li>
+<li>Run-time errors also known as dynamic errors. These occur when FFL is executed and does something illegal.</li>
+<li>Incorrect behavior. This occurs when FFL is running, but the FFL runs without anything the engine considers an error, so execution of the game continues. However, it executes the <em>wrong</em> behavior. Maybe Frogatto starts flashing and doesn't stop flashing when he's meant to. Maybe an object disappears off the screen. In any case, it's not what we expect.</li>
+</ul>
+<p>Right now we have plenty of errors of each type. For instance, if you don't have the right number of parentheses in your formula, you will get a compile-time error. If you try to set a variable to an invalid type, you will get a run-time error. And there are plenty of ways to get incorrect behavior.</p>
+<p>The biggest premise of our improvements are that <em>compile-time errors are better than run-time errors and incorrect behavior</em>. Why is this? Compile-time errors are consistent and reproducible. They will happen right up-front and you can fix them. It's even easy to make a special flag in Anura that will load <em>all</em> objects up-front to ensure that you get every single compile-time error.</p>
+<p>You can argue whether a certain situation should result in a <em>run-time error</em> (halting the game) or if the engine should make a best effort to continue and likely cause <em>incorrect behavior</em>. However, a compile-time error is strictly better than either. A run-time error always has risk of showing up for customers, while a compile-time error will be weeded out immediately and fixed.</p>
+<p>The system I'm working on aims to give some basic strong guarantees that an FFL developer can rely on. As a coder it's so relieving when I can think "I'm not sure if I'm doing the exact right thing here, but I know if I'm not I will get a compile error, and then will just fix it." I do this <em>all the time</em> in C++ and it's a big reason I can be so productive in C++. When programming in a language like Python -- or FFL in its current form -- I feel so much more stress to remember "can I really do this? If I'm wrong I'll end up with some runtime error that will show up who knows when?"</p>
+<p><strong>Fixing the dot operator</strong></p>
+<p>In C++, when I see <code>level.character.hitpoints</code> I know that I am safe. When I see <code>level-&gt;character-&gt;hitpoints</code> I think "uh-oh, potential problems. Am I sure this is safe?" Why is this? Because anything you can use "." on in C++ can't possibly be NULL, and the symbols will be checked, so I know level.character.hitpoints will work fine. lThe -&gt; operator works on pointers, though, and they might be NULL. So <code>level-&gt;character-&gt;hitpoints</code> has two possible points of runtime failure.</p>
+<p>In FFL, right now if you go <code>level.character.hitpoints</code> what will happen? You might get a valid value (presumably an integer) but you might get null, if hitpoints isn't a symbol in level.character. Or you might get a run time error, if level or level.character aren't valid. That's two more possible outcomes than I'd really like. So, the biggest single improvement I want to make to FFL is that so once it's passed compile-time validation, you can be absolutely sure that <code>level.character.hitpoints</code> will successfully return the number of hitpoints -- and if this expression isn't valid for some reason, you'll get a sensible error message.</p>
+<p>I want this to occur for every possible expression. As a programmer, worrying about symbol lookups like this being safe should not have to occupy your thoughts while coding.</p>
+<p>The second biggest improvement is compile-time checking of function arguments. If you call filter(level.characters, value.hitpoints &gt; 5) you should get a compile-time error if you aren't passing the correct types of objects to the filter() function.  The arguments you provide to a function will be checked when FFL is compiled, and this will give you strong assurance that function will behave as you expect.</p>
+<p><strong>What we need to do</strong></p>
+<p>Why is this all hard? It's hard because now every single FFL object has to expose information about the types it presents for use. FFL has to know, at compile time, that 'level' will evaluate to something that contains a 'character' and 'level.character' will evaluate to something that contains 'hitpoints'. It means we have to change the way we define objects and declare functions to accommodate.</p>
+<p>The biggest change involves changes to how objects will store their state. Previously we've used tmp and vars as containers for variables, while we've used <em>properties</em> to implement dynamic behavior and give objects member functions.</p>
+<p>Our current tmp and vars have several problems:</p>
+<ul>
+<li>Distinct containers called 'tmp' and 'vars' based on the persistence pattern of the variables within seems like bad design.</li>
+<li>These variables are accessible from other objects and so provide no support for data hiding and encapsulation</li>
+<li>tmp and vars do not embed any type information</li>
+<li>It's hard to customize the behavior of variables later if we decide we don't like their behavior -- we have to go through and change every call site that accesses them.</li>
+</ul>
+<p><strong>New Style Properties</strong></p>
+<p>I'm simply going to deprecate tmp and vars and have implemented a bunch of new features in properties which allow properties to serve a wide range of data storage and functionality needs.</p>
+<p>Properties have been fundamentally overhauled to allow for any and all cases where you want to store a symbol in an object. I'll follow up on how new properties work in my next post.</p>
+<hr/>
+<h2>
+<a aria-hidden="true" class="anchor" href="#properties" id="user-content-properties"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><strong>Properties</strong>
+</h2>
+<p>To begin with, let's talk a little about what you could do with properties under the existing system. The biggest use of properties was to define complex calculations and especially functions. e.g.</p>
+<p><code>calculate_xpos: "(x + img_w/2) * scaling", move_obj: "def(num_iterations) map(range(num_iterations), do_movement(n))"</code></p>
+<p>This all works wonderfully well, and the only change is that now we decorate the properties with types:</p>
+<p><code>calculate_xpos: "int :: (x + img_w/2) * scaling", move_obj: "def(int num_iterations) -&gt;commands map(range(num_iterations), do_movement(n))"</code></p>
+<p>I will explain what the "::" in calculate_xpos means in a later post. Also, for non-function properties you may be able to not define a type and Anura will try to infer the type of the property. All function properties will require full type definitions in strict mode and fail without them.</p>
+<p>Now, I introduced the concept of 'setting' a property. You could have properties that would let you calculate something, so why not allow setting them? For instance, if you had,</p>
+<p><code>my_xpos: "x + 5"</code></p>
+<p>Why not let people set my_xpos directly as well?</p>
+<p><code>my_xpos: { get: "x + 5", set: "set(x, value-5)" }</code></p>
+<p>This works reasonably nicely. Now, to an external user, my_xpos appears just like another object property.</p>
+<p>However, developing an object we now might desire to create a property that has actual storage backing. We don't want a mere vars or tmp, because we might want custom, dynamic behavior. We would create something like this:</p>
+<p>`
+vars: {
+energy: 100
+},</p>
+<p>properties: {
+energy: { get: "vars.energy", set: "set(vars.energy, value)" }
+}
+`</p>
+<p>Now that we've done this, we can expect everyone to access through the energy property. Then we have our energy concept nicely encapsulated. Later we could change behavior, like clamp energy to a range, or fire an event every time energy is changed, and so forth.</p>
+<p>`
+vars: {
+energy: 100
+},</p>
+<p>properties: {
+energy: { get: "vars.energy", set: "[set(vars.energy, max(0, value)), fire_event('energy_changed')]" }
+`</p>
+<p>Properties like this are very nice for their flexibility. Unfortunately, they have several shortcomings. They are annoying to define, since you have to define the vars and property separately. Also someone might access vars.energy directly, not through the property, which would circumvent the encapsulation.</p>
+<p>Instead, you can now define such a property like this:</p>
+<p><code>energy: { variable: true, default: 100, get: "_data", set: "[set(_data, max(0, value)), fire_event('energy_changed')]" }</code></p>
+<p>What is this <code>_data</code> symbol? Any property that has variable: true gets its own special _data symbol. The _data symbol is private to that property -- so each property's _data is distinct. It's what it can use to store the data related to the property.</p>
+<p>Also, we like convenient defaults. Most of the time once you have your property defined in a {} you probably want it to be a variable, so variable is true by default. Also, get defaults to <code>_data</code> and set to <code>set(_data, value)</code> so you might not have to define them. In fact, you can just define it like this:</p>
+<p><code>energy: { default: 100 }</code></p>
+<p>Except now with this new strict typing, we do want to have a <strong>type</strong> to tell us what energy is. So we do this:</p>
+<p><code>energy: { default: 100, type: "int" }</code></p>
+<p>You can, however go real simple:</p>
+<p><code>energy: 100</code></p>
+<p>The engine will assume that since 100 is an int, you want energy to be an int, with default value 100, and you want it to be a variable with appropriate get/set. It'll do this for other primitives, such as booleans, decimals, etc. It won't work for strings, since if you provide a string, it's assumed to be a formula defining the property, not a string variable.</p>
+<p>Something to note here -- we've exposed what is effectively a variable publicly for anyone to modify. Does this mean our object is poorly encapsulated? No! The encapsulation is actually very good, because though other objects can modify our energy, they don't have to know how energy is implemented. They don't know if it's just a simple variable, or if it has special behavior when modified, or is implemented in some other way. We can change the implementation of energy without any objects that access energy changing at all.</p>
+<p>We can, however, make energy private:</p>
+<p><code>energy: { default: 100, type: "int", access: "private" }</code></p>
+<p>This way it can't be accessed outside our object. It's nice to have a naming convention where private data members are named differently though, so by default symbols beginning with an underscore are private by default. e.g.</p>
+<p><code>_energy: { default: 100, type: "int" } //this is now private</code></p>
+<p>What about tmp? We want objects that don't get saved when the object does. This is simple enough:</p>
+<p><code>energy: { default: 100, type: "int", persistent: false }</code></p>
+<p>The [i]default[/i] setting is a "hard-coded" FSON value. What if we want something a little more dynamic to initialize a property with? You can use init to do this:</p>
+<p><code>energy: { init: "level.player.energy_count", type: "int" }</code></p>
+<p>This formula will be run whenever the object is constructed as the initial value for this property.</p>
+<p>What if we wanted to be a little more generous about how somebody could set the energy property. For instance, we wanted to allow some string values:</p>
+<p><code>set(energy, "full") //set it to 100 set(energy, "half") //set it to 50 set(energy, "empty") //set it to 0</code></p>
+<p>We'll never return string values, just accept them. We can do this:</p>
+<p><code>energy: { set_type: "string|int", type: "int", set: "set(_data, switch(value, 'full', 100, 'half', 50, 'empty', 0, value asserting value is int))" }</code></p>
+<p>This lets us define a distinct type when setting the property vs getting it. By default, set_type is equal to type, but may explicitly be set differently. Note that both _data and the value returned from get must be of the type given by <code>type</code>.</p>
+<p>Sometimes it is desirable for an object to have some data that must be provided by the code calling the object. For instance, suppose you were creating a lever object and you want the lever object to have a gate object attached to it that will be opened when the lever is pressed. You might define your property like this:</p>
+<p><code>gate: { type: "null|obj gate" }</code></p>
+<p>Note that the type being set to <code>null|obj gate</code> means the gate can be null. <code>obj gate</code> is the type of a custom_object of type gate. 'default' is null by default, so the gate will start life as null. If we want it to never be null, we might do this:</p>
+<p><code>gate: { type: "obj gate" }</code></p>
+<p>This will <strong>guarantee</strong> (when running in strict mode) that gate always actually points to a gate object. Now, when you create a lever object:</p>
+<p><code>object('lever', x, y, facing, { gate: mygate })</code></p>
+<p>That gate: mygate part MUST be included. and it must be of type obj gate. If it's not you'll get an error. (which will most likely be at compile time, though it may be at run time when constructing the gate because of reasons). The lever object will never come into existence unless it's given a gate.</p>
+<p>Likewise, I've changed the spawn() function to accommodate:</p>
+<p><code>spawn('lever', x, y, {facing: facing, gate: mygate})</code></p>
+<p>Note that the fourth argument used to be for 'facing'. Now it takes a map of properties, which can include facing. The fifth optional argument for spawn() can still take a list of commands like before. We don't want to initialize gate there though because by the time those commands start executing the object has already been created. What if one of the commands accessed gate before the command to set the gate? That's why we use a map to do it -- it allows FFL to inspect and verify that all needed properties are being initialized and that this is done before access of them might be needed.</p>
+<p>Sometimes it's possible you might not be able to initialize properties like this. What if you also wanted your gate to have a reference to the lever that accesses it? You'd have to create one of the objects first. So, if using the map to initialize a property doesn't work out, but we still want a property which can't be defaulted to something, we can use an override flag:</p>
+<p><code>gate: { type: "obj gate", dynamic_initialization: true }</code></p>
+<p>This tells the engine "I want to initialize this property myself. I promise I will initialize it so a valid <code>obj gate</code> as soon as it's created (i.e. in on_create, on_spawned, the spawn initializer list or in FFL after object() returns but before calling add_object()).</p>
+<p>The engine will check when the object is added that you did initialize the property and throw a runtime error otherwise. It'll also throw a runtime error if the property is read at any time before being initialized.</p>
+<p>This covers most of the new features of properties. In my next post I'll cover the details of how FFL's new type system actually works.</p>
+<hr/>
+<h2>
+<a aria-hidden="true" class="anchor" href="#types" id="user-content-types"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><strong>Types</strong>
+</h2>
+<p>The primary goal of FFL's type system is to ensure that every FFL expression has a definite type, that is known when the formula is parsed. By knowing the type of an expression, we know if the way it is being used is legal, and can report appropriate error messages.</p>
+<p>To allow this to occur, symbols in FFL must have types associated with them. For instance, if we have this expression:</p>
+<p><code>a + b</code></p>
+<p>What is its type? It depends on the types of 'a' and 'b'. If a and b are strings, the expression will be a string, if a and b are ints, the expression will be an int.</p>
+<p>This is why, in strict mode, you have to specify a type for properties. So when properties are used, the compiler will know what type they are.</p>
+<p>Types are organized into an indefinite hierarchy, with the type <code>any</code> at the top of the hierarchy. If FFL can't determine what type something is, it will be deemed to be type any. Primitive types -- ints, strings, decimals, and so forth, are all distinct types.</p>
+<p>But I said an <em>indefinite</em> hierarchy, didn't I? What do I mean by that? We define a type, Numeric, to be all ints and all decimals. So really, <code>int &lt; Numeric &lt; any</code>.</p>
+<p>(I use '&lt;' in this post between types to mean 'subset of')</p>
+<p>Numeric is not specially defined by the engine, it's just a user-defined type. We define it in types.cfg like this:</p>
+<p><code>Numeric: "int|decimal"</code></p>
+<p>This is called a <em>type union</em>. A type that might be an int or a decimal. You don't need to use types.cfg to use type unions, though, it's just a convenience, you could write a function like this:</p>
+<p><code>square: "def(decimal|int num) -&gt; decimal|int num*num"</code></p>
+<p>Note that FFL is smart enough to infer the result type of any expression. For instance, if you instead wrote,</p>
+<p><code>square: "def(decimal|int num) -&gt; decimal num*num"</code></p>
+<p>You'd get a compile time error in strict mode telling you that you claimed your function evaluates to decimal, but after parsing it, FFL discovered it might actually be an int, so <code>decimal|int</code> is the correct result type.</p>
+<p>An important thing to remember when dealing with types is the more specific a type is, the more useful it is. <code>any</code> can be used to describe any expression, but it's not very useful. If you have a value of type any, you'll be allowed to do very little with it, because there's very little you can safely do with it.</p>
+<p><strong>More on types.cfg and types: {}</strong></p>
+<p>You can define types in two places. In a module's data/types.cfg and a custom_object can define types to be used within its definition in a types: {} block. As an example (will make more sense as you read on in this..)</p>
+<p><code>types: { Numeric: "int|decimal", Loc: "[int,int]", DamageMessage: "{source: string, damage: int, target: string}" }</code></p>
+<p>Note that types defined like this <em>must</em> being with a capital letter to be recognized.</p>
+<p><strong>Custom objects</strong></p>
+<p>So what type is a custom object, such as Frogatto's object? <strong>All</strong> "Objects", that is, complex C++ objects with an FFL interface are considered to be of type "object". However, custom objects are of type "custom_obj" which is a child of object. Then, Frogatto's object is of type <code>obj frogatto_playable</code>. frogatto_playable is based on the playable prototype, though, so it's also of type "obj playable".</p>
+<p>So there's a big long hierarchy going on: <code>obj frogatto_playable &lt; obj playable &lt; custom_obj &lt; object &lt; any</code></p>
+<p>Now, remember, in strict mode you will only be allowed to do things that FFL knows will definitely be successful. Let's say you have a reference to Frogatto's object. What can you legally do with it based on the type of the reference?</p>
+<ul>
+<li>If you have an 'any' you can only pass it to functions that accept an any, or use type discoverability to try to work out a more specific type (see more on that later).</li>
+<li>If you have an 'object' you can look up symbols inside the object, e.g. frog.hitpoints, but the symbol will be looked up at runtime and the type of frog.hitpoints will be 'any'. (Since the engine has no idea what type it actually is). Note that generic 'object' types are a little unsafe even in strict mode, in that you can look up arbitrary symbols and if you look something up that's not present you'll get a run time error. I'm considering forbidding symbol lookups on generics objects.</li>
+<li>If you have a 'custom_obj' you can look up symbols that are common to all custom objects, such as hitpoints or x and y and they will have full type information.</li>
+<li>If you have a obj playable you can look up symbols defined in the playable type.</li>
+<li>If you have a obj frogatto_playable you can look up symbols defined in frogatto_playable.</li>
+</ul>
+<p><strong>The null type</strong></p>
+<p>In most languages, references (or pointers) to objects can also have the value [i]null[/i]. In FFL, we do things a little differently. <code>null</code> is a type of its own, and values of type <code>null</code> can have only one possible value -- <code>null</code>. So 'null' is the name both of a value and the type that value is. Have you ever seen Frogatto spew the error "Expected type string but found null null"? Know why there is the redundancy of nulls there? Because the engine outputs the type and then the value. It might say "Expected type string but found int 5". But when the value is null it'll output the type -- <code>null</code> -- and the value -- <code>null</code>.</p>
+<p>This means that if you have a symbol of e.g. type 'obj frogatto_playable' you know that this will NOT be null. It will definitely have a frogatto_playable object. Thus a function such as <code>def(obj frogatto_playable frog)</code> must be passed a frogatto_playable as an argument. null is not a valid argument.</p>
+<p>If it's possible for a symbol to be null, use a union with the null type. e.g. <code>def(null|obj frogatto_playable frog)</code> allows <code>frog</code> to be passed as null.</p>
+<p>However, in strict mode, FFL will <strong>not</strong>allow you to lookup symbols in a reference that may be null. Using <code>frog.hitpoints</code> inside this function will cause an error, since <code>frog</code> might be null.</p>
+<p>To lookup symbols in frog, you must convince FFL that frog is not null. You do this with type discoverability.</p>
+<p><strong>Type discoverability</strong></p>
+<p>Inside a formula, types of symbols are not necessarily static. FFL analyzes the structure of a formula and infers as much information as it can about the type of symbols within different branches of the formula. Let's take a simple example of some bad code:</p>
+<p><code>get_life: "def(null|obj frogatto_playable frog) -&gt; int frog.hitpoints"</code></p>
+<p>Strict mode will give you an error here. "frog might be null". It'll refuse to go on. How do we placate it? Like this:</p>
+<p><code>get_life: "def(null|obj frogatto_playable frog) -&gt; int if(frog != null, frog.hitpoints, 0)"</code></p>
+<p>That's sensible coding, even without the type system. If frog might be null, protect the symbol lookup with an if statement. What's nice is that FFL <em>sees what you did there</em> and while it has frog's type down as 'null|obj frogatto_playable' in the 'then' branch of the if statement it automatically modifies the type of <code>frog</code>, making it a <code>obj frogatto_playable</code>.</p>
+<p>It's smart enough to know about things like and and or and so will parse this legally:</p>
+<p><code>get_life: "def(null|obj frogatto_playable frog) -&gt; int if(frog != null and frog.hitpoints &gt; 0, frog.hitpoints, 0)"</code></p>
+<p>Since the <code>frog.hitpoints &gt; 0</code> lookup came after and 'and' where we checked frog isn't null, FFL will recognize that this is legal and frog.hitpoints is guaranteed to work.</p>
+<p>As well as guarding things with if statements, it also recognizes asserts:</p>
+<p><code>get_life: "def(null|obj frogatto_playable frog) -&gt; int frog.hitpoints asserting frog"</code></p>
+<p>It recognizes that if frog is null, it'll die in the assert, so frog must not be null and thus it infers frog's type as <code>obj frogatto_playable</code>, without the null.</p>
+<p>These mechanisms allow you to fairly easily prove to FFL that something isn't null, and is generally good code that you should be writing anyhow.</p>
+<p>Of course, sometimes you want to discover types in more sophisticated ways -- not just null vs not null. So, FFL provides the <code>is</code> operator. The <code>is</code> operator tells you if an expression is of a given type:</p>
+<p><code>if(message is string, set(dialog.text, message))</code></p>
+<p>Again, FFL is smart enough to infer, within the 'then' branch of the if statement, that message must be of type string.</p>
+<p>Use of the <em>is</em> operator is powerful, but it should be used judiciously, overuse can result in complex and unmaintainable code.</p>
+<p>Here are some examples of common idioms which you'll find useful in dealing with the type system:</p>
+<p><code>map(filter(level.chars, value is obj mywidget), value.do_operation())</code></p>
+<p>Note that the filter() is smart enough to realize that its result is a [obj mywidget]. Thus even if do_operation() is only available in 'mywidget's definition, FFL will realize this is a legal expression.</p>
+<p>Alternatively this can be written as a list comprehension:</p>
+<p><code>[mywidget.do_operation() | mywidget &lt;- level.chars, mywidget is obj mywidget]</code></p>
+<p>Note that list comprehensions are particularly powerful at this, because of the way they infer types. Let's suppose you wanted to do some operation on all 'mywidgets' that passed some certain criteria.</p>
+<p><code>[mywidget.do_operation() | mywidget &lt;- level.chars, mywidget is obj mywidget, mywidget.is_good()]</code></p>
+<p>Note that in the <code>mywidget.is_good()</code> expression, FFL has already worked out that mywidget is of type 'obj mywidget' and so can successfully resolve the is_good symbol lookup.</p>
+<p>We also have a new find_or_die() function which is nice if you just know you should find something:</p>
+<p><code>find_or_die(level.chars, value is obj frogatto_playable).spit()</code></p>
+<p>find_or_die() will know, in this case, that it's returning an obj frogatto_playable. Regular find() would return type null|obj frogatto_playable.</p>
+<p><strong>The :: and &lt;- operators</strong></p>
+<p>FFL provides two operators for forcing conversions. These are the :: and &lt;- operators. The :: operator is very useful for working out formula errors, for defining properties, and in general is always safe. It only affects the compile process and has no effect at run time. The &lt;- operator is a run-time operation and can result in a run-time error. It should be used judiciously.</p>
+<p>How do they work then? The :: operator is really simple. It just says "This expression is of type T" the FFL compiler will compile it and if it disagrees, will raise an error. Examples:</p>
+<p><code>level_width: "int :: level.dimensions[2]" //define a level_width property of type int decimal :: (5 + 4.0)/2 //I think this will result in a decimal -- right?</code></p>
+<p>This is useful sometimes when you're getting a compile error you don't understand. Add it to expressions to ensure the compiler agrees they are the type you think they are. Also, this is the way to explicitly state the type of an object property. Often it's required to do this for an object property since the compiler might not be able to infer the type when it's first required.</p>
+<p>The &lt;- operator is used when you <em>just know</em> that an expression evaluates to a certain type, but FFL really can't figure it out. For instance,</p>
+<p><code>5 + (int &lt;- a)</code></p>
+<p>This basically says "look I know you have a down as type <code>any</code> but it's actually going to be an <code>int</code>. For sure. I'm the coder. Trust me."</p>
+<p>FFL will take your word for it, compile the expression as an int. Then if it turns out to be something different at run time you will get a run time error saying so.</p>
+<p>Sometimes using &lt;- is necessary -- and will be especially so while our support for types is still maturing -- but should eventually become more and more obscure. If you're using it too often there's a sign something is wrong. Using :: is much nicer and safer!</p>
+<p>An example of when &lt;- is definitely necessary is if you receive a FSON tree from an unknown source. For instance, loading it from the user's preferences directory with get_document(). You'd want to use &lt;- to tell the code to load and validate it into some kind of type you provide. If it's not in the correct format you'll get a run time error -- which is the exact reasonable behavior you'd expect when loading a file at runtime that is corrupt.</p>
+<p><strong>Lists</strong></p>
+<p>FFL's type system supports two kinds of sequences: the more general <em>lists</em>, and the more specific <em>tuples</em>. A list is simply a sequence of a certain type and can be any size. Examples of lists:</p>
+<p><code>list //a list of any type and size [any] //same as above [int] //a list of integers [int|string] //a list of integers or strings [custom_obj] //a list of custom objects [obj ant_black] // a list of ant_black custom objects [null|obj ant_black] //a list of values that can be ant_black custom objects or null [[int]] //a list of list of ints</code></p>
+<p>A <em>tuple</em> is a list of a certain size, with well-defined types for each element. For instance,</p>
+<p><code>[int,int] //a tuple of 2 elements, both ints [string,int,int] //a tuple of 3 elements -- a string, then int, then another int. [int,] //a tuple of exactly one integer. Note the ',' disambiguates it from [int] which would be a list. [int|string,int|string] //a tuple of two elements, each of which can be an int or a string.</code></p>
+<p>The thing to understand about tuples is that they are considered a <em>subset of lists</em>. That is to say, if you have a <code>[int,int]</code> it will be happily accepted anywhere an <code>[int]</code> is required. If you have a <code>[int,int,decimal]</code> it will be accepted anywhere an <code>[int|decimal]</code> is required.</p>
+<p>The big rationale for this is to allow you to continue to write list constants the way you always have. For instance, if you write,</p>
+<p><code>[4, 8, 17]</code></p>
+<p>What <em>is</em> that exactly? Maybe it's just a list that could be any length, or maybe it's specifically three items because it's meant to be in 3D co-ordinate space and is going to be used as a tuple that <em>must</em> be three elements. We don't really know. We could force writing of list literals differently, so that you have to identify more about them, but I think that would be more burden on the coder.</p>
+<p>So instead, that expression is treated by FFL as a <code>[int,int,int]</code>. But FFL will happily degrade it to a <code>[int]</code> implicitly.</p>
+<p>Tuples do allow things like this, which we use in Citadel:</p>
+<p><code>//in types.cfg Loc: "[int,int]"</code></p>
+<p>And then we have functions which take these Loc types. They will be validated so they <strong>must</strong> be tuples exactly as given. Note that the conversion does not go the other way -- a <code>[int]</code> can only be converted to a <code>[int,int]</code> with the &lt;- operator.</p>
+<p><strong>Maps</strong></p>
+<p>We have something similar going on with maps. Except I don't have a good name for the 'tuple version' of maps, so I call them 'specific maps'. They could be called structs, I suppose.</p>
+<p><code>//Examples of maps {int -&gt; string} {string -&gt; int|null} {string -&gt; {string -&gt; [int]}}</code></p>
+<p>Maps are designed for cases where you might want lots of different keys and you <em>don't know how many keys you will have or what they will be called when you're writing the code</em>.</p>
+<p>However, there are many cases where you use maps differently. You want to write a map like <code>{ name: "Frogatto", damage: 17, speed: 24 }</code> -- and you know that these keys, name, damage, and speed will always be present.</p>
+<p>Such a map is a 'specific map'. This is how we'd write the definition:</p>
+<p><code>{name: string, damage: int, speed: int}</code></p>
+<p>Note the use of ':' instead of '-&gt;'. This is what differentiates a specific map from a map.</p>
+<p>You can actually provide for some keys to be omitted, to do so make it so that the value can be null. For instance, if you want to make speed optional, do this,</p>
+<p><code>{name: string, damage: int, speed: int|null}</code></p>
+<p>As with tuples, map literals are inferred as specific maps, but will happily degrade into maps implicitly.</p>
+<p>Note that get_document() will try to resolve [i]at compile time[/i] if you give it a constant string filename that's not in a user directory, giving you full access to the document structure and automatically reading the type as a specific map.</p>
+<p>Specific maps allow you to very easily create your own little types that you can put in types.cfg or an object's types section.</p>
+<hr/>
+<h2>
+<a aria-hidden="true" class="anchor" href="#interfaces" id="user-content-interfaces"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><strong>Interfaces</strong>
+</h2>
+<p>FFL supports a special type called an <em>interface</em>. An interface is used to implement [url=http://en.wikipedia.org/wiki/Duck_typing]Duck Typing[/url] in a type safe way.</p>
+<p>Let's suppose you wanted to write a generic function to find the <em>manhattan distance</em> between two points. But what can be passed in as a 'point'? Interfaces allow you to say "you can pass in anything you want, as long as it has members x and y, both numeric". So, you define your function like this:</p>
+<p><code>manhattan_distance: "def(interface {x: numeric, y: numeric} a, interface {x: numeric, y: numeric} b) -&gt; numeric abs(a.x-b.x) + abs(a.y-b.y)"</code></p>
+<p>Of course, this is very verbose. So it's likely that you'd want to define something in types.cfg or the types: { .. } section of the object you're editing:</p>
+<p>`
+// in types.cfg
+PointInterface: "interface { x: numeric, y: numeric }"</p>
+<p>// function definition
+manhattan_distance: "def(PointInterface a, PointInterface b) -&gt; numeric abs(a.x-b.x) + abs(a.y-b.y)"
+`</p>
+<p>Now, anything that provides x and y as numeric types can be passed to our manhattan distance function. We could pass a map, a custom_object (since they have x and y attributes) or any other object that happens to have x and y.</p>
+<p>Note that it <em>must be known that the interface matches the passed in type at compile time</em>. This means that interfaces are unlikely to be usable in non-strict mode. They are designed for strict mode when we know all the types.</p>
+<p>The <em>only places</em> you can use interfaces are as parameters to functions or with the :: operator. You can, for instance, write this:</p>
+<p><code>where mypoint = PointInterface :: { x: 5, y: 8} //Nice safe use of an interface</code></p>
+<p>This will verify, at compile time, that the expression to the right of the :: matches the interface, and will convert it to this interface. Note that conversions to interfaces always take place at compile-time, never at run-time. If you write this:</p>
+<p><code>where mypoint = PointInterface &lt;- some_expression //This is generally NOT a good idea.</code></p>
+<p>Then some_expression must evaluate to something that <strong>is</strong> a PointInterface. An object that is convertible to a PointInterface isn't good enough. In general it's unlikely you want to do this. Only use interfaces as function arguments and with ::.</p>
+<p>If you don't understand the differences between :: and &lt;- read about them above. Remember, :: is good and safe, while &lt;- is high in fat, high in calories, and generally bad for you.</p>
+<p>Interfaces are designed to be an important part of FFL's support for type-safe generics. Unlike most of the rest of the type system presented so far, I haven't had much of a chance to use them in practice yet, so I hope they prove to be useful!</p>
+
+        </div>
+
+        <div class="wiki-footer gollum-markdown-content boxed-group" id="wiki-footer">
+          <div class="boxed-group-inner wiki-auxiliary-content markdown-body">
+            <p>More help can be found via IRC, <a href="irc://irc.freenode.net/#frogatto" rel="nofollow">#Frogatto</a> on freenode.net. This wiki is not a complete reference.</p>
+
+          </div>
+        </div>
+    </div>]

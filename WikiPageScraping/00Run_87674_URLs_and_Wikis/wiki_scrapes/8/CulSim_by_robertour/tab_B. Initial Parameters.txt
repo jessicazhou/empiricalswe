@@ -1,0 +1,196 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>In order to change the initial configuration of the simulation, go to <code>Simulation -&gt; Parameters</code>. The following dialog will appear:</p>
+<p><img alt="Initial Parameters" src="./img/Initial-Parameters.png"/></p>
+<p>First, you need to decide which model you would like to use, and then adjust the parameters. At the end of the section, a table will give you a starting point of parameters that you can use with each model. Below you can find the explanation of models and parameters and references that point you to related literature (Flache &amp; Macy (2011) and Ulloa (2016) are key readings to understand in detail the implementation details of the models):</p>
+<ul>
+<li>
+<p><strong>Model:</strong> This drop-down menu gives you multiple options for basic model implementation for the simulation. Four models are available in this version. Identifiers of the models (internally, the name of the class), are the initial letters of the descriptions:</p>
+<ul>
+<li>
+<p><strong>M1</strong> - <em>Homophily (Axelrod, 1997) including mutation and selection error - Experiment 1, Flache &amp; Macy (2011)</em>: This implementation is based on Axelrod (1997). Homophily, the principle that "like attracts like", is used to decide whether an agent can influence another agent. This model also includes two noise sources: mutation, where individual traits can change randomly (Klemm et al., 2003a, 2003b), and selection error, where individuals make a judgment error regarding the homophily of their neighbors (Flache &amp; Macy, 2011). This model is equivalent to the model used in Experiment 1 of Flache &amp; Macy (2011).</p>
+</li>
+<li>
+<p><strong>M2</strong> - <em>Multilateral social influence without homophily - Experiment 2, Flache &amp; Macy (2011)</em>: This implementation includes multilateral social influence, such that interactions can occur between multiple agents at the same time instead of in dyadic formation where only two agents can interact with each other at one time (Flache &amp; Macy, 2011). The mechanism is also known as frequency bias (Parisi et. al, 2003; Boyd &amp; Richerson, 1985). This implementation does not consider homophily. <strong>Mutation</strong> and <strong>selection error</strong> are included as in M1.</p>
+</li>
+<li>
+<p><strong>M3</strong> - <em>Multilateral social influence with homophily - Experiment 3, Flache &amp; Macy (2011)</em>: This implementation is an extension of M2, by including homophily as presented in M1.</p>
+</li>
+<li>
+<p><strong>M4</strong> - <em>Institutions including homophily Axelrod (1997) - Ulloa et al. (2016)</em>: This implementation is based on M1, and thus includes <strong>homophily</strong>, <strong>mutation</strong> and <strong>selection error</strong>. It additionally introduces <strong>institutions</strong> as described by Ulloa (2016). An institution can influence agents that belong to it by making them adopt or keep traits that are equivalent to the institution's traits. The table below (taken from the <a href="http://journals.plos.org/plosone/article?id=10.1371/journal.pone.0153334#pone-0153334-t002" rel="nofollow">original publication</a>) presents all rules inherent in the (institutional) model.</p>
+</li>
+</ul>
+</li>
+</ul>
+<p><img alt="Initial Parameters" src="./img/Initial-Table.png"/></p>
+<p>The parameters of the simulation are organized in four sections in the interface:</p>
+<ul>
+<li>
+<p><strong>Controls:</strong></p>
+</li>
+<li>
+<p><strong>Random initialization</strong>: When selected, the initial traits of the agents' cultural vectors (i.e. the list of cultural traits of each agent) are initialized randomly with a uniform distribution. When not selected, the initial state of the simulation has all agents belonging to one (the same) institution, and all cultural vectors contain exactly the same traits (i.e. agents all belong to the same culture). This provides an interesting baseline to compare effects of events between diverse and not-diverse scenarios.</p>
+</li>
+<li>
+<p><strong>Iterations</strong>: Sets number of iterations after which the simulation stops. One iteration is defined as the time span after which all agents have had on average one <em>opportunity of interaction</em>. Notice that it is on average, so not necessarily all agents will participate each turn as the initiator agents of interactions are picked randomly. Also notice that the interaction might not actually occur (that it is why is called <em>opportunity of interaction</em>), for example when the homophily rule prevents an interaction, or due to selection errors). A recommended value of number of iterations is 100000, however certain parameters might cause the convergence to be slower; you can check if the simulation is converging to a value in the interface (See (Response Variables)[https://github.com/robertour/CulSim/wiki/F.-Response-variables]) or in the progressions folder (See <a href="https://github.com/robertour/CulSim/wiki/H.-Output-Files">Output Values</a>)</p>
+</li>
+<li>
+<p><strong>Speed</strong>: Sets the number of iterations that occur between <strong>checkpoints</strong>. Several important things happens during <strong>checkpoints</strong>: (1) Results are calculated from the current state of the simulation, (2) Current <a href="./F.-Response-variables">response variables</a> are sent to the <a href="./H.-Output-Files">result output files</a>, (3) Interface is updated with current results, and (4) Simulation checks for current queued events and executes them, if any. (It is called <strong>speed</strong> because it affects how fast the simulation will run, as calculations of responses variables and output of results is costly. Events are always implemented at checkpoints to make sure they are visualized properly on the interface). Speed should be a multiple of iterations, and, in batch mode, you should be careful with very small values as it could produce big files and slow down the simulation.</p>
+</li>
+<li>
+<p><strong>Buffer Size</strong>: Controls the size of the file buffer sizes. A larger buffer size makes the simulation more efficient, but waiting times to check intermediate results in <a href="./H.-Output-Files">output files</a> are produced at a slower rate. (Buffer size can be important when <a href="./I.-Batch-Mode">Batch Mode</a> is executed.)</p>
+</li>
+<li>
+<p><strong>World</strong>: Sets informational space (vector sizes) of the model. These traits cannot be modified after initialization (See <a href="./D.-Events">Events</a>.)</p>
+</li>
+<li>
+<p><strong>Rows</strong>: Number of rows of the world grid.</p>
+</li>
+<li>
+<p><strong>Cols</strong>: Number of columns of the world grid. So far, studies seems to have limited the grid sizes to less than 100 rows and column (100x100) because of computational costs. In terms of results, M1 produces fewer cultures the bigger the grid (Axelrod, 1997), M2 and M3 produce more cultures with bigger grids (Flache &amp; Macy, 2011), and M4 produces a number of cultures that is more or less proportional to the size of the grid (Ulloa et al., 2016), meaning that the culture sizes are more or less equivalent regardless of the grid size.</p>
+</li>
+<li>
+<p><strong>Radius</strong>: The radius of the <a href="https://en.wikipedia.org/wiki/Von_Neumann_neighborhood" rel="nofollow">Von Neumann neighborhood</a> is also known as the Manhattan distance. A Von Neumann nrighborhood of radius 6 can be seen here:</p>
+</li>
+</ul>
+<p><img alt="Von Neumann neighborhood" data-canonical-src="http://journals.plos.org/plosone/article/figure/image?size=large&amp;id=info:doi/10.1371/journal.pone.0153334.g001" src="https://camo.githubusercontent.com/a2f95bc48f942ccf5318780e977f8b21c6548d7b/687474703a2f2f6a6f75726e616c732e706c6f732e6f72672f706c6f736f6e652f61727469636c652f6669677572652f696d6167653f73697a653d6c617267652669643d696e666f3a646f692f31302e313337312f6a6f75726e616c2e706f6e652e303135333333342e67303031"/></p>
+<p>In terms of results, M1 produces fewer cultures as the interaction radius increases (Greig, 2012) and a value of 1 is recommended. Flache &amp; Macy (2011) used a radius of 6 for M2 and M3. Ulloa et al. also used also a radius of 6. Preliminary results on M4 also indicate that, when democracy and propaganda (see below) are not activated, a smaller radius produces fewer cultures, but when (democracy and propaganda) are activated this effect is reduced substantially (don't hesitate to drop me a line if you are interested in a collaboration to publish this result).</p>
+<ul>
+<li>
+<p><strong>Features</strong>: Size of the cultural vector. Each feature represents a possible dimension of the culture, e.g. music. In M1, the more features the less cultures are obtained (Axelrod, 1997). No studies exist for the other models.</p>
+</li>
+<li>
+<p><strong>Traits</strong>: Number of possible values that a feature can adopt. Each trait represent a possible cultural item for the feature, for example if the feature is music, one possible trait can be rock music, another jazz. In M1, the more features the more cultures are obtained (Axelrod, 1997). No studies exist for the other models, though preliminary results suggest the same effects in M4.</p>
+</li>
+<li>
+<p><strong>Noise</strong>: Sources of perturbation inside the simulation.</p>
+</li>
+<li>
+<p><strong>Mutation</strong>: Probability of a random trait change in the agent's cultural vector after an interaction. M1 is very sensitive to mutation (Klemm, 2003a, 2003b). M2-M4 present different degrees of resistance to mutation (Flache &amp; Macy, 2011; Ulloa, 2016). Values below 0.1 have been studied in the literature.</p>
+</li>
+<li>
+<p><strong>Selection Error</strong>: Probability of making a judgement mistake in the selection of the agent with which the interaction will happen.  M3 and M4 are the more stable models against selection error (Flache &amp; Macy, 2011; Ulloa, 2016). Values below 0.1 have been studied in the literature.</p>
+</li>
+<li>
+<p><strong>Institutions</strong>: Set the levels at which institutions can affect agents. <strong>These parameters only apply to M4</strong>.</p>
+</li>
+<li>
+<p><strong>Influence</strong>:  A value between 0 and 1 that determines the level of importance that is given to institutional influence (alpha value in the rule table above). Alpha is multiplied by the similarity with the institution, and a beta value (1 - alpha) is multiplied by the similarity with the agent (homophily). The resulting probability determines whether the interaction (an agent accepting the other agent's trait) will be successful. High values (&gt;0.6) are necessary to generate diversity, and it is fairly stable across grid sizes (Ulloa et al., 2016). Preliminary results suggest that small values of influence can be used if democracy and propaganda are activated; e.g. grid size=100x100, radius=3, influence=0.35, democracy=10, propaganda=5 produces ~20-30 cultures (also, replacing radius=6, and influence=0.55). Please don't hesitate to contact me if you are interested and willing to collaborate to explore this result.</p>
+</li>
+<li>
+<p><strong>Loyalty</strong>: A value between 0 and 1 that determines the likehood of an agent staying or changing their institution after a successful interaction between agents (alpha prime value in the rule table above). Alpha prime is multiplied by a value that depends on the similarity with the institution, and a beta (1 - alpha) to the similarity with the neighbor's institution. The resulting probability determines whether an agent changes its institution to adopt the institution of its neighbor. The effect of loyalty is rather small compared to the influence (Ulloa et al., 2016); this is likely because there is a confounding effect (loyalty depends on the influence).</p>
+</li>
+<li>
+<p><strong>Democracy:</strong> Inverse frequency (<a href="https://en.wikipedia.org/wiki/Frequency" rel="nofollow">called period</a>) of a democratic process, <strong>use 0 to turn it off</strong>. A democratic process is a bottom-up process which consists of an institution changing its trait as a result of a referendum in which multiple agents vote to change a trait, increasing similarity with their institution. The most voted trait is changed in the institution. Democracy by itself has a small effect in cultural diversity but creates more institutions; but it prevents (or has a moderator effect) the explosion of diversity when propaganda is present (Ulloa et al., 2016).</p>
+</li>
+<li>
+<p><strong>Propaganda:</strong> Inverse frequency (<a href="https://en.wikipedia.org/wiki/Frequency" rel="nofollow">called period</a>) of a propagandist process, <strong>use 0 to turn it off</strong>. A propagandist process is a top-down process which consists of an institution propagating one of its traits on the agents that belong to it. The trait (and corresponding feature) is chosen based on the most <em>conflicting</em> trait, i.e. the one that produces most dissimilarity between the institution and its agents. Propaganda increases the number of cultures, though it can be partially reduced by the presence of democracy (Ulloa et al., 2016) .</p>
+</li>
+</ul>
+<p>The following table provides a guideline for parameter setting. It is possible that many other values will provide interesting results (that is the idea of the software), this is just a set of values that, according to the literature, will very likely produce diversity.</p>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>M1</th>
+<th>M2</th>
+<th>M3</th>
+<th>M4</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Rows</td>
+<td>10</td>
+<td>32</td>
+<td>32</td>
+<td>32</td>
+</tr>
+<tr>
+<td>Columns</td>
+<td>10</td>
+<td>32</td>
+<td>32</td>
+<td>32</td>
+</tr>
+<tr>
+<td>Radius</td>
+<td>1</td>
+<td>&lt; 6</td>
+<td>&lt;= 6</td>
+<td>&lt;= 6</td>
+</tr>
+<tr>
+<td>Features</td>
+<td>5</td>
+<td>6</td>
+<td>6</td>
+<td>6</td>
+</tr>
+<tr>
+<td>Traits</td>
+<td>15</td>
+<td>14</td>
+<td>14</td>
+<td>14</td>
+</tr>
+<tr>
+<td>Mutation</td>
+<td>0</td>
+<td>&lt; 0.001</td>
+<td>&lt; 0.01</td>
+<td>&lt; 0.01</td>
+</tr>
+<tr>
+<td>Selection Error</td>
+<td>0</td>
+<td>&lt; 0.001</td>
+<td>&lt; 0.01</td>
+<td>&lt; 0.01</td>
+</tr>
+<tr>
+<td>Influence</td>
+<td>n/a</td>
+<td>n/a</td>
+<td>n/a</td>
+<td>0.8-0.82</td>
+</tr>
+<tr>
+<td>Loyalty</td>
+<td>n/a</td>
+<td>n/a</td>
+<td>n/a</td>
+<td>0.05-0.95</td>
+</tr>
+<tr>
+<td>Democracy</td>
+<td>n/a</td>
+<td>n/a</td>
+<td>n/a</td>
+<td>1-100</td>
+</tr>
+<tr>
+<td>Propaganda</td>
+<td>n/a</td>
+<td>n/a</td>
+<td>n/a</td>
+<td>1-100</td>
+</tr>
+</tbody>
+</table>
+<p>Finally, there are controls to load and save configuration. Indeed, you will find a preset configuration that fits inside the values of the table for each of the models M1-M4 in the package.</p>
+<ul>
+<li>
+<p><strong>Load and save configurations</strong>: This section at the bottom of the dialog helps to load pre-set configurations, for example those which are similar to experiments previously executed in literature, and others that the users can set up and save themselves.</p>
+</li>
+<li>
+<p><strong>Save</strong>: The user can save their own configurations. Saving configuration is important in order to run simulations in batch mode (see <a href="./I.-Batch-Mode">Batch Mode</a>).</p>
+</li>
+<li>
+<p><strong>Load</strong>: A user can load a previously saved configuration.</p>
+</li>
+</ul>
+
+        </div>
+
+    </div>]

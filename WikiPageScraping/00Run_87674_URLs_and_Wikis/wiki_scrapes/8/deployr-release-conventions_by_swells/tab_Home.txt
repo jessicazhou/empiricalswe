@@ -1,0 +1,349 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <h1>
+<a aria-hidden="true" class="anchor" href="#deployr-release-conventions" id="user-content-deployr-release-conventions"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>DeployR Release Conventions</h1>
+<p><strong>@@ Work in Progress @@</strong></p>
+<p>The goal of this document is to layout git conventions and best practices that will assist DeployR maintainers with creating a new product release through Github.  Through convention and process this document aims to give our user-base the confidence we are releasing code with high quality and structure.</p>
+<ul>
+<li><a href="#user-content-release-checklist">Release checklist</a></li>
+<li>
+<a href="#user-content-release-steps">Release steps</a>
+<ul>
+<li><a href="#user-content-semantic-versioning">Semantic versioning</a></li>
+<li><a href="#user-content-tagging">Tagging</a></li>
+<li>
+<a href="#user-content-changelog">Changelog</a>
+<ul>
+<li><a href="#user-content-generating-changelogmd">Generating CHANGELOG.md</a></li>
+</ul>
+</li>
+<li>
+<a href="#user-content-repository-wiki">Repository wiki</a>
+<ul>
+<li><a href="#user-content-template">Template</a></li>
+</ul>
+</li>
+<li><a href="#user-content-marking-release">Marking release</a></li>
+</ul>
+</li>
+<li>
+<a href="#user-content-format-of-the-commit-message">Format of the commit message</a>
+<ul>
+<li><a href="#user-content-subject-line">Subject line</a></li>
+<li><a href="#user-content-message-body">Message body</a></li>
+<li>
+<a href="#user-content-breaking-changes">Message footer</a>
+<ul>
+<li><a href="#user-content-breaking-changes">Breaking changes</a></li>
+<li><a href="#user-content-referencing-issues">Referencing issues</a></li>
+</ul>
+</li>
+<li><a href="#user-content-examples">Examples</a></li>
+</ul>
+</li>
+</ul>
+<h1>
+<a aria-hidden="true" class="anchor" href="#release-checklist" id="user-content-release-checklist"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Release checklist</h1>
+<p>These instructions are to assist the DeployR maintainers with creating a new product release through git/Github:</p>
+<ol>
+<li>Create the next milestone</li>
+<li>Move any open issues from the current release to the next milestone</li>
+<li>Close the current milestone</li>
+<li>Commit and push the deployr/{REPOSITORY} release and <a href="#user-content-tagging">tag</a> it</li>
+</ol>
+<pre><code>$ git commit -a -m 'bump to vX.Y.Z'
+$ git push origin master
+$ git tag -a vX.Y.Z -m 'Version vX.Y.Z'
+$ git push --tags origin vX.Y.Z
+</code></pre>
+<ol start="5">
+<li>Update version fields in packages/npm/Maven to next version</li>
+<li>Build <a href="#user-content-generating-changelogmd">CHANGELOG.md</a>
+</li>
+<li>Update the <a href="#user-content-repository-wiki">Repository wiki</a> with a link to the release's <code>CHANGELOG.md</code>
+</li>
+<li>Publish the tagged <a href="#user-content-marking-release">release</a> as official</li>
+</ol>
+<h1>
+<a aria-hidden="true" class="anchor" href="#release-steps" id="user-content-release-steps"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Release steps</h1>
+<p>There are <strong>five</strong> steps for releasing:  versioning, tagging, creating a changelog, updating the repository wiki, and marking a release.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#semantic-versioning" id="user-content-semantic-versioning"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Semantic Versioning</h2>
+<p>For the official Semantic Version documentation head to <a href="http://semver.org/" rel="nofollow">semver.org</a>. This is a brief introduction and does not cover all parts of semantic versioning.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#format" id="user-content-format"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Format</h3>
+<p>A Semantic Version will be in the format {major}.{minor}.{patch}-{tag}</p>
+<p>Example:</p>
+<p><code>v7.3.5</code></p>
+<p><code>v7.3.5-beta-0</code></p>
+<p><code>v7.3.5-beta-2</code></p>
+<p><code>v7.3.5-beta-3</code></p>
+<h4>
+<a aria-hidden="true" class="anchor" href="#prerelease-identifiers" id="user-content-prerelease-identifiers"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Prerelease Identifiers</h4>
+<p>An additional (optional) string will be append to the value of the version string as a prerelease identifier.</p>
+<p>A possible prerelease identifier for <em>v7.3.5</em> could be:</p>
+<p><code>v7.3.5-alpha-0</code></p>
+<p><code>v7.3.5-beta-2</code></p>
+<p><code>v7.3.5-rc-1</code></p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#tagging" id="user-content-tagging"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Tagging</h2>
+<p>When the state of the release branch is ready to become a real release, some actions need to be carried out.</p>
+<ul>
+<li>The release branch is merged into master (since every commit on master is a new release by definition).</li>
+<li>The commit on master must be tagged for easy future reference to this historical version.</li>
+</ul>
+<p>To <em>tag</em> master:</p>
+<ol>
+<li>
+<p>Use tags to mark commits with version numbers:</p>
+<pre><code>$ git tag -a v7.3.0 -m 'Version 7.3.0'
+</code></pre>
+</li>
+<li>
+<p>We have to then <em>push tags upstream</em> because this is not done by default:</p>
+<pre><code>$ git push --tags
+</code></pre>
+</li>
+</ol>
+<p>This produces a version string of the following format:</p>
+<pre><code>v7.3.0-0-123456789123456789dsdfsfsf
+^      ^  ^
+|      |  |
+|      |  SHA of HEAD
+|      |
+|      number of commits since last tag
+|
+last tag
+</code></pre>
+<h2>
+<a aria-hidden="true" class="anchor" href="#changelog" id="user-content-changelog"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Changelog</h2>
+<p>Changelogs are important in order to understand how previous versions are different from the current release. All changelogs will be generated by a script at the end of a release. At the very least, a skeleton changelog will be emitted. Editing a changelog before the actual release is permitted.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#generating-changelogmd" id="user-content-generating-changelogmd"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Generating CHANGELOG.md</h3>
+<p>The generated <code>CHANGELOG.md</code> will contain three sections:</p>
+<ul>
+<li>
+<p>New features</p>
+<p>New features in this release:</p>
+<pre><code>$ git log &lt;last release&gt; HEAD --grep feat
+</code></pre>
+</li>
+<li>
+<p>Bug fixes</p>
+<pre><code>$ git log &lt;last release&gt; HEAD --grep fix
+</code></pre>
+</li>
+<li>
+<p>Breaking changes</p>
+<pre><code>$ git log &lt;last release&gt; HEAD --grep BREAKING
+</code></pre>
+</li>
+</ul>
+<h2>
+<a aria-hidden="true" class="anchor" href="#repository-wiki" id="user-content-repository-wiki"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Repository wiki</h2>
+<p>Each repository should have a <a href="https://help.github.com/articles/adding-wiki-pages-via-the-online-interface/">Github wiki</a> that follows the <a href="#template">template</a> below. The repository's wiki is where you can maintain a living document that is relevant to the people who are interested in contributing code or feedback. To avoid duplication, each wiki should offload any documentation to the official user guides and API docs that are hosted on <a href="http://deployr.revolutionanalytics.com" rel="nofollow">deployr.revolutionanalytics.com</a>.</p>
+<p>Each repository should take full advantage of Github wikis and include the following pages linked to from the <em>wiki home</em>  page:</p>
+<ul>
+<li>
+<p><code>Development-Schedule.md</code></p>
+<p>This page provides details on DeployR's development schedule, including code freeze dates and target dates for preview and stable releases. These dates are subject to change.</p>
+</li>
+<li>
+<p><code>Ongoing-Development-Discussions.md</code></p>
+<p>This page is for tracking current design proposals and code reviews. Usually, design proposals take the form of  gists, and code reviews pull requests, though that's not always the case.</p>
+</li>
+<li>
+<p><code>Sprint {SPRINT_NUMBER} Tickets</code></p>
+<p>This page is generated by Github using the following URL in your markdown:</p>
+<div class="highlight highlight-text-html-basic"><pre> &lt;<span class="pl-ent">a</span> <span class="pl-e">https:</span>//<span class="pl-e">github</span>.<span class="pl-e">com</span>/<span class="pl-e">deployr</span>/{<span class="pl-e">YOUR</span>_REPOSITORY}/<span class="pl-e">issues</span>?
+  <span class="pl-e">direction</span>=<span class="pl-s">desc&amp;amp;</span>
+  <span class="pl-e">labels</span>=<span class="pl-s">&amp;amp;</span>
+  <span class="pl-e">milestone</span>=<span class="pl-s">{SPRINT_NUMBER}&amp;amp;</span>
+  <span class="pl-e">page</span>=<span class="pl-s">1&amp;amp;</span>
+  <span class="pl-e">sort</span>=<span class="pl-s">created&amp;amp;</span>
+  <span class="pl-e">state</span>=<span class="pl-s">open</span><span class="pl-s"><span class="pl-pds">"</span>&gt;Sprint {SPRINT_NUMBER} Tickets</span>
+<span class="pl-s">  &lt;/a&gt;</span></pre></div>
+</li>
+</ul>
+<h3>
+<a aria-hidden="true" class="anchor" href="#template" id="user-content-template"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Template</h3>
+<pre><code># Welcome to the {YOUR_REPOSITORY} development wiki!
+
+{YOUR_REPOSITORY}'s official user guides and API docs are hosted on 
+http://deployr.revolutionanalytics.com. This wiki is where we maintain 
+a living document that is relevant to the people who are interested in 
+contributing code or feedback.
+
+# Active Development on {YOUR_REPOSITORY}
+
+- Link (Development-Schedule.md) --&gt; Development Schedule - Code freeze dates and important milestones.
+- Link (Ongoing-Development-Discussions.md) --&gt; Ongoing Development Discussions
+- Link (Github query) --&gt; Sprint {SPRINT_NUMBER} Tickets - Active issues earmarked for the next release.
+
+# Current Release
+
+## {YOUR_REPOSITORY} {SEMANTIC_VERSION}
+
+- Link --&gt; GitHub release notes page
+- Link --&gt; {YOUR_REPOSITORY} {SEMANTIC_VERSION} Change History Rollup
+- Link --&gt; Zip dist file
+- Link --&gt; Maven Central repository 'ArtifactId' (when appropriate)
+- Link --&gt; npm module (when appropriate)
+
+## Past Releases
+
+- Link --&gt; {YOUR_REPOSITORY} {SEMANTIC_VERSION} Change History Rollup
+- Link --&gt; {YOUR_REPOSITORY} {SEMANTIC_VERSION} Change History Rollup
+- Link --&gt; {YOUR_REPOSITORY} {SEMANTIC_VERSION} Change History Rollup
+...
+
+# Future
+
+TDB
+
+# Get Involved (optional)
+
+- Link --&gt; Deprecation Policy (TBD)
+- Link --&gt; Contribution Standards (TBD)
+
+</code></pre>
+<h2>
+<a aria-hidden="true" class="anchor" href="#marking-release" id="user-content-marking-release"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Marking Release</h2>
+<p>Once the master branch has been <a href="#tagging">tagged</a> with the appropriate <a href="#semantic-versioning">release points</a>, we can begin to prepare that tag for a release. Marking the tagged historical version as a <em>release</em> is done from Github using their <a href="https://github.com/blog/1547-release-your-software">Releases</a> workflow.</p>
+<p>In Github:</p>
+<ol>
+<li>Click the <em>releases</em> link at the top of the repository.</li>
+<li>Click the <em>Create a new release</em> button.</li>
+<li>Choose the <em>Tag version</em> from the drop-down list (or input field if this is the first release).</li>
+<li>Give the release a title based on the <a href="#semantic-versioning">semantic version</a>. <em>Release titles</em> should adhere to the <a href="#release-title-convention">release title conventions</a>.</li>
+<li>Add release notes. <em>Release notes</em> should adhere to the <a href="#release-notes-convention">release notes conventions</a>.</li>
+<li>If appropriate, attached the release <em>binaries</em> by dragging and dropping them to the page or via the file chooser.</li>
+<li>Finally, publish the tagged release by clicking the <em>Publish release</em> button.</li>
+</ol>
+<h3>
+<a aria-hidden="true" class="anchor" href="#release-title-convention" id="user-content-release-title-convention"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Release Title Convention</h3>
+<p>The title of a release should only contain its corresponding [semantic version](Semantic Versioning) minus the <strong>v</strong> from the version string. In addition, if the semantic version contains a <a href="#prerelease-identifiers">prerelease identifier</a> replace the delimited <strong>-</strong> character with a space.</p>
+<p>For example, the <em>release title</em> for version:</p>
+<ul>
+<li>
+<em>v7.3.3</em>  ----&gt; <code>7.3.3</code>
+</li>
+<li>
+<em>v7.3.3-beta-1</em>  ----&gt; <code>7.3.3 beta 1</code>
+</li>
+</ul>
+<h3>
+<a aria-hidden="true" class="anchor" href="#release-notes-convention" id="user-content-release-notes-convention"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Release Notes Convention</h3>
+<p>Release notes should be brief and contain the following:</p>
+<ol>
+<li>A <em>Release Announcement</em> link. This link will point to the official marketing announcement.</li>
+<li>A <em>Change History Rollup</em> link. See the <a href="#changelog">change log</a> section for more information on how to create it.</li>
+<li>A note on how to get a hold of the release via git:
+<code>Github: git checkout v7.3.3-beta-1</code>
+</li>
+<li>The attached binary zip of the release build (download this for local deployments)</li>
+</ol>
+<h2>
+<a aria-hidden="true" class="anchor" href="#format-of-the-commit-message" id="user-content-format-of-the-commit-message"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Format of the Commit Message</h2>
+<pre><code>{type}({scope}): {subject}
+&lt;BLANK LINE&gt;
+{body}
+&lt;BLANK LINE&gt;
+{footer}
+</code></pre>
+<p>Any line of the commit message cannot be longer than 90 characters, with the subject line limited to 70 characters. This allows the message to be easier to read on github as well as in various git tools.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#subject-line" id="user-content-subject-line"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Subject Line</h3>
+<p>The subject line contains a succinct description of the change to the logic.</p>
+<p>The allowed {types} are as follows:</p>
+<ul>
+<li>feat (feature)</li>
+<li>fix (bug fix)</li>
+<li>docs (documentation)</li>
+<li>style (formatting)</li>
+<li>refactor (refactoring)</li>
+<li>test (adding missing tests)</li>
+<li>chore (maintenance)</li>
+</ul>
+<p>The {scope} can be anything specifying the location of the commit change e.g. the controller, the client, the logger, ect.</p>
+<p>The {subject} needs to use imperative, present tense: “change”, not “changed” nor “changes”. The first letter should not be capitalized, and there is no dot (.) at the end.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#message-body" id="user-content-message-body"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Message Body</h3>
+<p>Just like the {subject}, the message {body} needs to be in the present tense, and includes the motivation for the change, as well as a contrast with the previous behavior.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#message-footer" id="user-content-message-footer"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Message Footer</h3>
+<p>This section is where we annotate any breaking changes or closing defects.</p>
+<h4>
+<a aria-hidden="true" class="anchor" href="#breaking-changes" id="user-content-breaking-changes"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Breaking Changes</h4>
+<p>All breaking changes need to be mentioned in the footer with the description of the change, the justification behind the change and any migration notes required. For example:</p>
+<blockquote>
+<p>BREAKING CHANGE: The API interface <code>pipeline()</code> has been changed to <code>batch()</code>.</p>
+</blockquote>
+<h4>
+<a aria-hidden="true" class="anchor" href="#referencing-issues" id="user-content-referencing-issues"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Referencing issues</h4>
+<p>Closed bugs should be listed on a separate line in the footer prefixed with the <code>closes</code> keyword, for example:</p>
+<p><code>closes #54321</code></p>
+<p>Or in the case of multiple issues:</p>
+<p><code>closes #54321, #9876, #12345</code></p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#examples" id="user-content-examples"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Examples</h2>
+<ul>
+<li>
+<p><strong>feat (feature)</strong></p>
+<p>feat($browser): onUrlChange event (popstate/hashchange/polling)</p>
+<p>Added new event to $browser:</p>
+<ul>
+<li>forward popstate event if available</li>
+<li>forward hashchange event if popstate not available</li>
+<li>do polling when neither popstate nor hashchange available</li>
+</ul>
+<p>BREAKING CHANGE: $browser.onHashChange, which was removed (use onUrlChange instead)</p>
+</li>
+<li>
+<p><strong>fix (bug fix)</strong></p>
+<p>fix($compile): couple of unit tests for IE9</p>
+<p>Older IEs serialize html uppercased, but IE9 does not...
+Would be better to expect case insensitive, unfortunately jasmine does
+not allow to user regexps for throw expectations.</p>
+<p>Closes #392</p>
+<p>BREAKING CHANGE: foo.bar api, foo.baz should be used instead</p>
+</li>
+<li>
+<p><strong>docs (documentation)</strong></p>
+<p>docs(guide): updated docs</p>
+<p>Couple of typos fixed:</p>
+<ul>
+<li>indentation</li>
+<li>missing brace</li>
+</ul>
+</li>
+<li>
+<p><strong>style (formatting)</strong></p>
+<p>style(controller): Whitespace cleanup.</p>
+</li>
+<li>
+<p><strong>refactor (refactoring)</strong></p>
+<p>refactor(controller): Broke public function foo() up into smaller private functions.</p>
+<p>public function foo() internally calls:</p>
+<ul>
+<li>bar()</li>
+<li>baz()</li>
+</ul>
+</li>
+<li>
+<p><strong>test (adding missing tests)</strong></p>
+<p>test(controller): Added new test spec for authentication and cookies.</p>
+<p>Cookie check:</p>
+<ul>
+<li>before</li>
+<li>after</li>
+</ul>
+</li>
+<li>
+<p><strong>chore (maintenance)</strong></p>
+</li>
+</ul>
+
+        </div>
+
+    </div>]

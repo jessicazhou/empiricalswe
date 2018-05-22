@@ -1,0 +1,67 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>RESTful defines a bunch of routes by default for each resource. For example, it provides GET and POST at your resource URL i.e.</p>
+<pre><code>GET http://drupalsite.com/api/v1.0/myresource
+POST http://drupalsite.com/api/v1.0/myresource
+</code></pre>
+<p>as well as routes for when there's one or more ID's on the end i.e.</p>
+<pre><code>GET http://drupalsite.com/api/v1.0/myresource/5,34
+</code></pre>
+<p>These default routes are defined in <code>controllersInfo()</code> in the <code>RestfulBase</code> class in 1.x, and the <code>Resource</code> class in 2.x, and can be overridden in your own resource class if needed.</p>
+<p>The method definition in 1.x:</p>
+<div class="highlight highlight-text-html-php"><pre><span class="pl-s1">  <span class="pl-c"><span class="pl-c">/**</span></span></span>
+<span class="pl-s1"><span class="pl-c">   * Returns the default controllers for the entity.</span></span>
+<span class="pl-s1"><span class="pl-c">   *</span></span>
+<span class="pl-s1"><span class="pl-c">   * <span class="pl-k">@return</span> array</span></span>
+<span class="pl-s1"><span class="pl-c">   *   Nested array that provides information about what method to call for each</span></span>
+<span class="pl-s1"><span class="pl-c">   *   route pattern.</span></span>
+<span class="pl-s1"><span class="pl-c">   <span class="pl-c">*/</span></span></span>
+<span class="pl-s1">  <span class="pl-k">public</span> <span class="pl-k">static</span> <span class="pl-k">function</span> <span class="pl-en">controllersInfo</span>() {</span>
+<span class="pl-s1">    <span class="pl-c"><span class="pl-c">//</span> Provide sensible defaults for the HTTP methods. These methods (index,</span></span>
+<span class="pl-s1">    <span class="pl-c"><span class="pl-c">//</span> create, view, update and delete) are not implemented in this layer but</span></span>
+<span class="pl-s1">    <span class="pl-c"><span class="pl-c">//</span> they are guaranteed to exist because we are enforcing that all restful</span></span>
+<span class="pl-s1">    <span class="pl-c"><span class="pl-c">//</span> resources are an instance of \RestfulDataProviderInterface.</span></span>
+<span class="pl-s1">    <span class="pl-k">return</span> <span class="pl-c1">array</span>(</span>
+<span class="pl-s1">      <span class="pl-s"><span class="pl-pds">'</span><span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-c1">array</span>(</span>
+<span class="pl-s1">        <span class="pl-c"><span class="pl-c">//</span> GET returns a list of entities.</span></span>
+<span class="pl-s1">        <span class="pl-c1">\</span><span class="pl-c1">RestfulInterface</span><span class="pl-k">::</span><span class="pl-c1">GET</span> <span class="pl-k">=&gt;</span> <span class="pl-s"><span class="pl-pds">'</span>index<span class="pl-pds">'</span></span>,</span>
+<span class="pl-s1">        <span class="pl-c1">\</span><span class="pl-c1">RestfulInterface</span><span class="pl-k">::</span><span class="pl-c1">HEAD</span> <span class="pl-k">=&gt;</span> <span class="pl-s"><span class="pl-pds">'</span>index<span class="pl-pds">'</span></span>,</span>
+<span class="pl-s1">        <span class="pl-c"><span class="pl-c">//</span> POST</span></span>
+<span class="pl-s1">        <span class="pl-c1">\</span><span class="pl-c1">RestfulInterface</span><span class="pl-k">::</span><span class="pl-c1">POST</span> <span class="pl-k">=&gt;</span> <span class="pl-s"><span class="pl-pds">'</span>create<span class="pl-pds">'</span></span>,</span>
+<span class="pl-s1">      ),</span>
+<span class="pl-s1">      <span class="pl-c"><span class="pl-c">//</span> We don't know what the ID looks like, assume that everything is the ID.</span></span>
+<span class="pl-s1">      <span class="pl-s"><span class="pl-pds">'</span>^.*$<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-c1">array</span>(</span>
+<span class="pl-s1">        <span class="pl-c1">\</span><span class="pl-c1">RestfulInterface</span><span class="pl-k">::</span><span class="pl-c1">GET</span> <span class="pl-k">=&gt;</span> <span class="pl-s"><span class="pl-pds">'</span>view<span class="pl-pds">'</span></span>,</span>
+<span class="pl-s1">        <span class="pl-c1">\</span><span class="pl-c1">RestfulInterface</span><span class="pl-k">::</span><span class="pl-c1">HEAD</span> <span class="pl-k">=&gt;</span> <span class="pl-s"><span class="pl-pds">'</span>view<span class="pl-pds">'</span></span>,</span>
+<span class="pl-s1">        <span class="pl-c1">\</span><span class="pl-c1">RestfulInterface</span><span class="pl-k">::</span><span class="pl-c1">PUT</span> <span class="pl-k">=&gt;</span> <span class="pl-s"><span class="pl-pds">'</span>replace<span class="pl-pds">'</span></span>,</span>
+<span class="pl-s1">        <span class="pl-c1">\</span><span class="pl-c1">RestfulInterface</span><span class="pl-k">::</span><span class="pl-c1">PATCH</span> <span class="pl-k">=&gt;</span> <span class="pl-s"><span class="pl-pds">'</span>update<span class="pl-pds">'</span></span>,</span>
+<span class="pl-s1">        <span class="pl-c1">\</span><span class="pl-c1">RestfulInterface</span><span class="pl-k">::</span><span class="pl-c1">DELETE</span> <span class="pl-k">=&gt;</span> <span class="pl-s"><span class="pl-pds">'</span>remove<span class="pl-pds">'</span></span>,</span>
+<span class="pl-s1">      ),</span>
+<span class="pl-s1">    );</span>
+<span class="pl-s1">  }</span></pre></div>
+<p>The method definition in 2.x:</p>
+<div class="highlight highlight-text-html-php"><pre><span class="pl-s1">  <span class="pl-k">public</span> <span class="pl-k">function</span> <span class="pl-en">controllersInfo</span>() {</span>
+<span class="pl-s1">    <span class="pl-k">return</span> <span class="pl-c1">array</span>(</span>
+<span class="pl-s1">      <span class="pl-s"><span class="pl-pds">'</span><span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-c1">array</span>(</span>
+<span class="pl-s1">        <span class="pl-c"><span class="pl-c">//</span> GET returns a list of entities.</span></span>
+<span class="pl-s1">        <span class="pl-c1">RequestInterface</span><span class="pl-k">::</span><span class="pl-c1">METHOD_GET</span> <span class="pl-k">=&gt;</span> <span class="pl-s"><span class="pl-pds">'</span>index<span class="pl-pds">'</span></span>,</span>
+<span class="pl-s1">        <span class="pl-c1">RequestInterface</span><span class="pl-k">::</span><span class="pl-c1">METHOD_HEAD</span> <span class="pl-k">=&gt;</span> <span class="pl-s"><span class="pl-pds">'</span>index<span class="pl-pds">'</span></span>,</span>
+<span class="pl-s1">        <span class="pl-c"><span class="pl-c">//</span> POST.</span></span>
+<span class="pl-s1">        <span class="pl-c1">RequestInterface</span><span class="pl-k">::</span><span class="pl-c1">METHOD_POST</span> <span class="pl-k">=&gt;</span> <span class="pl-s"><span class="pl-pds">'</span>create<span class="pl-pds">'</span></span>,</span>
+<span class="pl-s1">        <span class="pl-c1">RequestInterface</span><span class="pl-k">::</span><span class="pl-c1">METHOD_OPTIONS</span> <span class="pl-k">=&gt;</span> <span class="pl-s"><span class="pl-pds">'</span>discover<span class="pl-pds">'</span></span>,</span>
+<span class="pl-s1">      ),</span>
+<span class="pl-s1">      <span class="pl-c"><span class="pl-c">//</span> We don't know what the ID looks like, assume that everything is the ID.</span></span>
+<span class="pl-s1">      <span class="pl-s"><span class="pl-pds">'</span>^.*$<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-c1">array</span>(</span>
+<span class="pl-s1">        <span class="pl-c1">RequestInterface</span><span class="pl-k">::</span><span class="pl-c1">METHOD_GET</span> <span class="pl-k">=&gt;</span> <span class="pl-s"><span class="pl-pds">'</span>view<span class="pl-pds">'</span></span>,</span>
+<span class="pl-s1">        <span class="pl-c1">RequestInterface</span><span class="pl-k">::</span><span class="pl-c1">METHOD_HEAD</span> <span class="pl-k">=&gt;</span> <span class="pl-s"><span class="pl-pds">'</span>view<span class="pl-pds">'</span></span>,</span>
+<span class="pl-s1">        <span class="pl-c1">RequestInterface</span><span class="pl-k">::</span><span class="pl-c1">METHOD_PUT</span> <span class="pl-k">=&gt;</span> <span class="pl-s"><span class="pl-pds">'</span>replace<span class="pl-pds">'</span></span>,</span>
+<span class="pl-s1">        <span class="pl-c1">RequestInterface</span><span class="pl-k">::</span><span class="pl-c1">METHOD_PATCH</span> <span class="pl-k">=&gt;</span> <span class="pl-s"><span class="pl-pds">'</span>update<span class="pl-pds">'</span></span>,</span>
+<span class="pl-s1">        <span class="pl-c1">RequestInterface</span><span class="pl-k">::</span><span class="pl-c1">METHOD_DELETE</span> <span class="pl-k">=&gt;</span> <span class="pl-s"><span class="pl-pds">'</span>remove<span class="pl-pds">'</span></span>,</span>
+<span class="pl-s1">        <span class="pl-c1">RequestInterface</span><span class="pl-k">::</span><span class="pl-c1">METHOD_OPTIONS</span> <span class="pl-k">=&gt;</span> <span class="pl-s"><span class="pl-pds">'</span>discover<span class="pl-pds">'</span></span>,</span>
+<span class="pl-s1">      ),</span>
+<span class="pl-s1">    );</span>
+<span class="pl-s1">  }</span></pre></div>
+
+        </div>
+
+    </div>]

@@ -1,0 +1,109 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>Adapted from <a href="">FreeNAS 9.3 and 9.10 Jail Installation</a>, <a href="">FreeNAS 9.10 BSD Jail</a> and <a href="">FreeNAS 11 Installation using a Jail by Pez Cuckow</a></p>
+<ol>
+<li>
+<p>Create a jail</p>
+<ul>
+<li>Jails &gt; Add Jail</li>
+<li>Jail:
+<ul>
+<li>Jail Name: Homebridge</li>
+<li>Template: ---</li>
+<li>IPv4 address: &lt;static_ip&gt;</li>
+<li>Autostart: Yes</li>
+<li>VIMAGE: Yes</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+<p>Open a Shell to the Jail</p>
+<ul>
+<li>SSH into your FreeNas Box</li>
+</ul>
+<div class="highlight highlight-source-shell"><pre>ssh </pre></div>
+<ul>
+<li>Lookup the jail id of the HomeBridge jail</li>
+</ul>
+<div class="highlight highlight-text-shell-session"><pre>$ <span class="pl-s1">jls</span>
+<span class="pl-c1">   JID  IP Address      Hostname                      Path</span>
+<span class="pl-c1">    17  192.168.0.151   homebridge                    /mnt/Jails/homebridge</span></pre></div>
+</li>
+<li>
+<p>Login to that jail (optionally specifying a shell)</p>
+<div class="highlight highlight-text-shell-session"><pre>$ <span class="pl-s1">jexec 17 csh</span>
+<span class="pl-c1">root$ </span></pre></div>
+</li>
+<li>
+<p>Update any packages in that shell (optional, but good practice)</p>
+<div class="highlight highlight-text-shell-session"><pre><span class="pl-c1">pkg update &amp;&amp; pkg upgrade</span></pre></div>
+</li>
+<li>
+<p>Install and activate system dependencies</p>
+<div class="highlight highlight-text-shell-session"><pre><span class="pl-c1">pkg install -y node npm dbus avahi-libdns gcc</span>
+<span class="pl-c1">sysrc dbus_enable="YES"</span>
+<span class="pl-c1">sysrc avahi_daemon_enable="YES"</span>
+<span class="pl-c1">ln -s /usr/local/include/avahi-compat-libdns_sd/dns_sd.h /usr/include/dns_sd.h</span>
+<span class="pl-c1">service dbus start</span>
+<span class="pl-c1">service avahi-daemon start</span></pre></div>
+</li>
+<li>
+<p>Install required packages (node-gyp and node-pre-gyp)</p>
+<div class="highlight highlight-text-shell-session"><pre><span class="pl-c1">npm install -g node-gyp node-pre-gyp</span></pre></div>
+</li>
+<li>
+<p>Install homebridge itself</p>
+<p>Note the <code>--unsafe-perm</code>, which allows access to <code>/usr/local/lib/node_modules/homebridge/node_modules/mdns/.node-gyp</code>.
+Remember to set python executable location first</p>
+<div class="highlight highlight-text-shell-session"><pre><span class="pl-c1">setenv PYTHON /usr/local/bin/python2.7</span>
+<span class="pl-c1">npm install -g --unsafe-perm homebridge</span>
+<span class="pl-c1">mkdir ~/.homebridge</span>
+<span class="pl-c1">cp /usr/local/lib/node_modules/homebridge/config-sample.json ~/.homebridge/config.json</span></pre></div>
+</li>
+<li>
+<p>Install homebridge plugins of your choice</p>
+<p>You can explore all available plugins at the NPM website by <a href="">searching for the keyword <code>homebridge-plugin</code></a>.</p>
+<p>For example:</p>
+<div class="highlight highlight-text-shell-session"><pre><span class="pl-c1">npm install -g homebridge-nest</span></pre></div>
+</li>
+<li>
+<p>Modify the config.json with your settings.</p>
+<div class="highlight highlight-text-shell-session"><pre><span class="pl-c1">nano ~/.homebridge/config.json</span></pre></div>
+</li>
+<li>
+<p>Test it's working by running it manually</p>
+<div class="highlight highlight-text-shell-session"><pre>$ <span class="pl-s1">homebridge</span>
+<span class="pl-c1">No plugins found. See the README for information on installing plugins.</span>
+<span class="pl-c1">Loaded config.json with 1 accessories and 1 platforms.</span></pre></div>
+<p>Use <kbd>CTRL</kbd>+<kbd>C</kbd> to kill homebridge.</p>
+<p><em>As long as homebridge boots, any errors you see are likely due to your config, check the install instructions of the plugins you added!</em></p>
+</li>
+<li>
+<p>(Optional) Install a process manager to keep homebridge running (and started on jail boot)</p>
+<div class="highlight highlight-text-shell-session"><pre><span class="pl-c1">npm install -g pm2</span>
+<span class="pl-c1">pm2 startup rcd</span>
+<span class="pl-c1">sysrc pm2_enable="YES"</span></pre></div>
+</li>
+<li>
+<p>(Optional) Once homebridge is working, set it up to always run using pm2</p>
+<div class="highlight highlight-text-shell-session"><pre><span class="pl-c1">pm2 start homebridge -- -D</span>
+<span class="pl-c1">pm2 save</span></pre></div>
+</li>
+</ol>
+<h1>
+<a aria-hidden="true" class="anchor" href="#common-errors" id="user-content-common-errors"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Common Errors</h1>
+<h3>
+<a aria-hidden="true" class="anchor" href="#gyp-warn-eacces-user-root-does-not-have-permission-to-access-the-dev-dir" id="user-content-gyp-warn-eacces-user-root-does-not-have-permission-to-access-the-dev-dir"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>gyp WARN EACCES user "root" does not have permission to access the dev dir</h3>
+<p>Make sure you're using the <code>--unsafe-perm</code> flag</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#cannot-find-module-buildreleasedns_sd_bindings" id="user-content-cannot-find-module-buildreleasedns_sd_bindings"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Cannot find module '../build/Release/dns_sd_bindings'</h3>
+<p>You need to re-insall the mdns dependency:</p>
+<pre><code>$ cd /usr/local/lib/node_modules/homebridge
+$ npm install --unsafe-perm mdns
+$ npm rebuild --unsafe-perm
+</code></pre>
+
+        </div>
+
+    </div>]

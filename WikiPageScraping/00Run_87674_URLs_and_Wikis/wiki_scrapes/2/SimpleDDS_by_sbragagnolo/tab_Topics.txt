@@ -1,0 +1,166 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>#Topics</p>
+<p>The  topics are probably the most important thing in a publisher / subscriber domain.</p>
+<p>For a software as participant of a DDS network, the key objects are the topic with its type, and the related participant.</p>
+<p>A topic is a concept that represents what we can call topic in a chat room. All people interested in something be name, for talking or listenin about, should register them selves and start to share.</p>
+<p>We can say then that topics are like named channels. You can ask for them and use them</p>
+<p>In any case, for using this channels you need to choose a role you will play, this channels are note interactive, you listen OR you talk. For doing both, you should regiter as both roles, using different mechanisms.</p>
+<p>Here is where the words participant publisher and subscriber appear.</p>
+<blockquote>
+<ul>
+<li>A participant can register it self into a topic for publishing</li>
+<li>A participant can register it self into a topic for subscribing</li>
+</ul>
+</blockquote>
+<h3>
+<a aria-hidden="true" class="anchor" href="#lifecycle" id="user-content-lifecycle"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Lifecycle</h3>
+<blockquote>
+<ol>
+<li>The participant <strong>P1</strong> have the need of publishing some information under the name of <strong>Topic1</strong> typed as <strong>Type1</strong> inside the given domain: <strong>domain1</strong>.</li>
+</ol>
+</blockquote>
+<blockquote>
+<ol start="2">
+<li>
+<strong>P1</strong> register him self into the domain as a publisher of the topic <strong>Topic1</strong> with type <strong>Type1</strong>. (In this moment if the topic does not exist it will be created)</li>
+</ol>
+</blockquote>
+<blockquote>
+<ol start="3">
+<li>
+<strong>P1</strong> start its own processing tasks informing to the topic what ever news it has.</li>
+</ol>
+</blockquote>
+<blockquote>
+<ol start="4">
+<li>The participant <strong>P2</strong> needs, for processing its own tasks, the information that it will be or is being published in the topic <strong>Topic1</strong> typed as <strong>Type1</strong> inside the given domain:<strong>domain1</strong>.</li>
+</ol>
+</blockquote>
+<blockquote>
+<ol start="5">
+<li>
+<strong>P2</strong> register him self into the domain as a subscriber of the topic <strong>Topic1</strong> with type <strong>Type1</strong>. (In this moment if the topic does not exist it will be created).</li>
+</ol>
+</blockquote>
+<blockquote>
+<ol start="6">
+<li>
+<strong>P2</strong> register a callback to be executed each time that any participant shares anything into the topic.</li>
+</ol>
+</blockquote>
+<blockquote>
+<ol start="7">
+<li>
+<strong>P1</strong> ends it processing time, it unregister it self from the domain and close topic connections</li>
+<li>
+<strong>P2</strong> closes all the connections of the topic related with <strong>P1</strong>.</li>
+<li>
+<strong>P2</strong> ends it processing time, it unregister it self from the domain and close all topic connections</li>
+</ol>
+</blockquote>
+<p>Following is described how to do it:</p>
+<p>It doesn't matter the way of client domain you had choose (external, internal or mixed) - <em>for more info about domains check the domain part</em> -, all of them are polimorphic in the scope of topic access.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#complete-example" id="user-content-complete-example"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Complete example</h3>
+<p>For our examples we have several subclasses with different domains.</p>
+<blockquote>
+<p>" Publisher side "
+" Create the domain reification "
+domain := DDSExternallyDefinedDomain onSimpleDDS: '<a href="http://127.0.0.1:11311" rel="nofollow">http://127.0.0.1:11311</a>'.</p>
+</blockquote>
+<blockquote>
+<p>" Add the protocol support "
+domain addProtocol: (DDSTCPProtocol encoding: MDDSEncoder  decoding: MDDSDecoder).</p>
+</blockquote>
+<blockquote>
+<p>" Create a participant for the publisher"
+participant := MDDSDomainParticipant domain: domain name: 'publisher-participant' ip: '127.0.0.1'.</p>
+</blockquote>
+<blockquote>
+<p>" Register the type definition needed for the comunication "
+domain registerTypeDefinition: (MDDSTypeDefinition named: 'TermometerMeasure' defined: {
+MDDSFieldDefinition name: #measure type: (MDDSBasicTypeDefinition for: MDDSFloat32Type new) .
+MDDSFieldDefinition name: #position type: (MDDSTypeDefinition named: 'Position3D' defined: {
+MDDSFieldDefinition name: #x type: (MDDSBasicTypeDefinition for: MDDSFloat32Type new) .
+MDDSFieldDefinition name: #y type: (MDDSBasicTypeDefinition for: MDDSFloat32Type new) .
+MDDSFieldDefinition name: #z type: (MDDSBasicTypeDefinition for: MDDSFloat32Type new) .
+})
+}).</p>
+</blockquote>
+<blockquote>
+<p>topic := domain findOrRegisterTopicByName: 'termometer' type: 'TermometerMeasure'.</p>
+</blockquote>
+<blockquote>
+<p>publishing := topic publisher publishing: participant.</p>
+</blockquote>
+<blockquote>
+<p>1 to: 100 do: [: idx | publishing publish: [ : termometerMeasure |<br/>
+termometerMeasure measure: idx * 1.3.
+termometerMeasure position x: idx; y: idx; z: idx.
+500 milliSeconds asDuration wait.
+]<br/>
+].</p>
+</blockquote>
+<blockquote>
+<p>topic publisher stopPublishing: publishing.</p>
+</blockquote>
+<p>After, we have the subscriber example:</p>
+<blockquote>
+<p>" Subscriber side "</p>
+</blockquote>
+<blockquote>
+<p>" Create the domain reification "
+domain := DDSExternallyDefinedDomain onSimpleDDS: '<a href="http://127.0.0.1:11311" rel="nofollow">http://127.0.0.1:11311</a>'.</p>
+</blockquote>
+<blockquote>
+<p>" Add the protocol support "
+domain addProtocol: (DDSTCPProtocol encoding: MDDSEncoder  decoding: MDDSDecoder).</p>
+</blockquote>
+<blockquote>
+<p>" Create a participant for the publisher"
+participant := MDDSDomainParticipant domain: domain name: 'subscriber-participant' ip: '127.0.0.1'.</p>
+</blockquote>
+<blockquote>
+<p>" Meanwhile for the publisher to have a type is meaningful, the subscriber can avoid the specification. And there are a part of type discovery in the protocol that allows to get the definition on the fly "</p>
+</blockquote>
+<blockquote>
+<p>topic := domain findOrRegisterTopicByName: 'termometer'.</p>
+</blockquote>
+<blockquote>
+<p>" We will use transcript for showing the reading "
+Transcript open.</p>
+</blockquote>
+<blockquote>
+<p>subscription := topic forParticipant: participant onRead: [ : termometerMeasure |
+Transcript show:termometerMeasure; cr.
+termometerMeasure position x = 50 ifTrue: [
+Transcript show: ' Unsubscribing '; cr.
+topic subscriber unregister: subcription.
+]
+].</p>
+</blockquote>
+<h3>
+<a aria-hidden="true" class="anchor" href="#syntax-in-a-nutshell" id="user-content-syntax-in-a-nutshell"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Syntax in a nutshell</h3>
+<h4>
+<a aria-hidden="true" class="anchor" href="#setup" id="user-content-setup"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Setup</h4>
+<pre><code>domain := self createDomain.
+participant := self createParticipant.
+topic := domain findOrRegisterTopicByName: 'topic' type: 'typeName'.
+</code></pre>
+<h4>
+<a aria-hidden="true" class="anchor" href="#publication" id="user-content-publication"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Publication</h4>
+<pre><code>publication := topic publisher publishing: participant.
+publication publish: [ : message | " do something" ].
+topic publisher stopPublishing: publication.
+</code></pre>
+<h4>
+<a aria-hidden="true" class="anchor" href="#subscription" id="user-content-subscription"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Subscription</h4>
+<pre><code>subscription := topic forParticipant: participant onRead: [ : message |  " do something " ]
+
+topic subscriber unregister: subcription. 
+</code></pre>
+
+        </div>
+
+    </div>]

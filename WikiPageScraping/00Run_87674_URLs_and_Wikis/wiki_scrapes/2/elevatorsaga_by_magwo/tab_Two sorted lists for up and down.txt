@@ -1,0 +1,81 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>I am using two arrays to store the up and down button pressed events.</p>
+<pre><code>{
+    init: function(elevators, floors) {
+        var between = function(i, a, b) {
+            return (a &lt; i &amp;&amp; i &lt; b) || (a &gt; i &amp;&amp; i &gt; b);
+        };
+        var ups = [];
+        var downs = [];
+        for (var j in elevators) {
+            var elevator = elevators[j];
+            elevator.on("idle", function() {
+                this.goingUpIndicator(true);
+                this.goingDownIndicator(true);
+                if (ups.length)
+                    this.goToFloor(ups.shift());
+                else if (downs.length)
+                    this.goToFloor(downs.pop());
+                else
+                    this.goToFloor(0);
+            });
+            elevator.on("floor_button_pressed", function(floorNum) {
+                if (this.destinationQueue.length === 0) {
+                    this.goToFloor(floorNum);
+                } else if (this.destinationQueue.indexOf(floorNum) &lt; 0) {
+                    for (var i = 0; i &lt; this.destinationQueue.length; i++) {
+                        if (between(floorNum, this.currentFloor(), this.destinationQueue[i])) {
+                            this.destinationQueue.splice(i, 0, floorNum);
+                            this.checkDestinationQueue();
+                            return;
+                        }
+                    }
+                    this.goToFloor(floorNum);
+                }
+            });
+            elevator.on("stopped_at_floor", function(floorNum) {
+                if (this.destinationQueue.length === 0) {
+                    this.goingUpIndicator(true);
+                    this.goingDownIndicator(true);
+                } else {
+                    var destinationFloor = this.destinationQueue.slice(0, 1);
+                    var currentFloor = this.currentFloor();
+                    if (destinationFloor &gt; currentFloor) {
+                        // going up
+                        this.goingUpIndicator(true);
+                        this.goingDownIndicator(false);
+                    } else {
+                        // going down
+                        this.goingUpIndicator(false);
+                        this.goingDownIndicator(true);
+                    }
+                }
+            });
+        }
+        for (var j in floors) {
+            var floor = floors[j];
+            floor.on("up_button_pressed", function() {
+                if (ups.indexOf(this.floorNum()) &lt; 0) {
+                    ups.push(this.floorNum());
+                    ups.sort();
+                }
+            });
+            floor.on("down_button_pressed", function() {
+                if (downs.indexOf(this.floorNum()) &lt; 0) {
+                    downs.push(this.floorNum());
+                    downs.sort();
+                }
+            });
+        }
+    },
+    update: function(dt, elevators, floors) {
+        // We normally don't need to do anything here
+        //console.log('update', arguments);
+    }
+}
+</code></pre>
+
+        </div>
+
+    </div>]

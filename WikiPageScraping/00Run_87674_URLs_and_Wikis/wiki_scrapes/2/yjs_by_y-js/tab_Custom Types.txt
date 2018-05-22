@@ -1,0 +1,240 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p><em>Note: This documentation only applies to Yjs 0.5. It is hard to update these docs on a regular basis, so please feel free to contact <a href="yjs@dbis.rwth-aachen.de">me</a> if you want to implement a custom type.</em></p>
+<p>In the past, OT friends put a lot of effort in creating a library of operation types for different types of data. The <a href="https://github.com/ottypes">ottypes</a> organization holds repositories for JSON, Text, and Rich Text, that can be used by any compatible OT engine (e.g. ShareJs, or OTjs). This is a step in the right direction to make shared editing more applicable in different scenarios. But, as nearly 30 years of research show, implementing OT operations that really fit your needs is very complex and error prone.</p>
+<p>The Yjs approach is to compose your own custom types out of bits and pieces that are known to work correctly, rather than reinventing the wheel in a different manner. Currently, you can use the <strong>ListManager</strong>, and the <strong>MapManager</strong> to build custom types. I'm going to add more operations for special scenarios in the future. Still, I claim that you can create arbitrary complex data types with these two operations!</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#existing-operations" id="user-content-existing-operations"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Existing operations</h3>
+<p>I strongly try to distinguish between <em>data type</em> and <em>data structure</em>. This will really help to understand what is going on.</p>
+<h4>
+<a aria-hidden="true" class="anchor" href="#data-structure" id="user-content-data-structure"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Data Structure</h4>
+<p>The data structure denotes to the way that data is organized, in order to use it efficiently. Every data structure has advantages and disadvantages with respect to space complexity, and time complexity for specific operations that can be executed on the data.</p>
+<h4>
+<a aria-hidden="true" class="anchor" href="#data-type" id="user-content-data-type"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Data Type</h4>
+<p>A data type is a classification of properties that can be assigned to data. A data type may support specific methods on the data, whereby the representation and implementation is abstracted. A data type example is the Object in Javascript: There are several data structures that can realize an Object, and every browser may implement it differently. But in the end, every implementation has the same functionality.</p>
+<p>It is sometimes hard to distinguish between data structure, and data type. But we will say the following: A custom type is a <em>data type</em>, and it is realized with operations (Map-/ListManager) - the data structure. I won't go to much into detail on how the operations are realized. But I'll show you what functionality they provide, and how you can use them. If ever used custom types in Yjs, the operations will seem very familiar to you ;)</p>
+<h5>
+<a aria-hidden="true" class="anchor" href="#listmanager" id="user-content-listmanager"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>ListManager</h5>
+<p>Manages list structures. The Y.List is actually a ListManager with some extra functionality. You can insert any serializable Object, or custom type in the ListManager. The inserted element is hold by an <em>Insertion</em> which has a predecessor and successor. Furthermore, you can address elements also by its position in the list. Since a ListManager can contain other ListManagers (even a reference to itself), you can create trees and graphs with it as well!</p>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>.insert(position,contents)</td>
+<td>Insert a set of content at a position. This expects that contents is an array of content. NOTE: In the Y.List, <code>insert</code> expects only a <em>single</em> element!</td>
+</tr>
+<tr>
+<td>.push(content)</td>
+<td>Insert content at the end of the list</td>
+</tr>
+<tr>
+<td>.delete(position,length)</td>
+<td>Delete content. The <em>length</em> parameter is optional and defaults to 1</td>
+</tr>
+<tr>
+<td>.val()</td>
+<td>Retrieve all content as an Array Object</td>
+</tr>
+<tr>
+<td>.val(position)</td>
+<td>Retrieve content from a position</td>
+</tr>
+<tr>
+<td>.observe(f)</td>
+<td>The observer is called whenever something on this list changed. (throws insert, and delete events)</td>
+</tr>
+<tr>
+<td>.unobserve(f)</td>
+<td>Delete an observer</td>
+</tr>
+</tbody>
+</table>
+<h5>
+<a aria-hidden="true" class="anchor" href="#mapmanager" id="user-content-mapmanager"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>MapManager</h5>
+<p>A MapManager is like a Javascript Object. The Y.Object actually provides the same functionality as the MapManager. It is a key/value store on which you can put any serializable Object, or custom type. If two or more users set a value with the same key, then only one value will prevail. Therefore, the MapManager also provides some semantics for Replacement functionality.</p>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>.val()</td>
+<td>Retrieve all properties of this type as a JSON Object</td>
+</tr>
+<tr>
+<td>.val(name)</td>
+<td>Retrieve the value of a property</td>
+</tr>
+<tr>
+<td>.val(name, value)</td>
+<td>Set/update a property.</td>
+</tr>
+<tr>
+<td>.delete(name)</td>
+<td>Delete a property</td>
+</tr>
+<tr>
+<td>.observe(observer)</td>
+<td>The <code>observer</code> is called whenever something on this object changes. Throws <em>add</em>, <em>update</em>, and <em>delete</em> events</td>
+</tr>
+<tr>
+<td>.unobserve(f)</td>
+<td>Delete an observer</td>
+</tr>
+</tbody>
+</table>
+<h5>
+<a aria-hidden="true" class="anchor" href="#complexity" id="user-content-complexity"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Complexity</h5>
+<p>Every operation on the operations is executed in constant time, and will create one message that is propagated to the other users.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#create-a-custom-type" id="user-content-create-a-custom-type"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Create a Custom Type</h3>
+<p>The Javascript world came up with several approaches on how to create classes. I strongly recommend to create custom types with a function as a constructor, and methods added via the prototype. E.g. like this:</p>
+<div class="highlight highlight-source-js"><pre><span class="pl-c"><span class="pl-c">//</span> Function as a constructor</span>
+<span class="pl-k">function</span> <span class="pl-en">MyCustomType</span>(){
+}
+
+<span class="pl-c"><span class="pl-c">//</span> Methods added on the prototype</span>
+<span class="pl-smi">MyCustomType</span>.<span class="pl-c1">prototype</span>.<span class="pl-en">getBanana</span> <span class="pl-k">=</span> <span class="pl-k">function</span>(){
+  <span class="pl-k">return</span> <span class="pl-s"><span class="pl-pds">"</span>banana<span class="pl-pds">"</span></span>;
+}
+
+<span class="pl-c"><span class="pl-c">//</span> Yjs requires that custom types are created with the *new* keyword!</span>
+custom_type <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-en">MyCustomType</span>()</pre></div>
+<p>A custom type must have the following properties</p>
+<table>
+<thead>
+<tr>
+<th>Property</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>._name</td>
+<td>Defines the name of your custom type. Furthermore, Yjs expects that you save your custom type on the Y Object with this keyname. E.g. <code>Y[_name] = MyCustomType</code>
+</td>
+</tr>
+<tr>
+<td>._getModel(Y,Operations)</td>
+<td>A custom type is modelled by an operation (i.e. the Map-/ListManager). Yjs expects an instantiated, and executed operation here. The MapManager, and the ListManager are stored on the Operations object. <code>Y</code> is the currently used Y object (you don't have it on global scope if you use Yjs as a NodeJs module)</td>
+</tr>
+<tr>
+<td>._setModel(operation)</td>
+<td>Yjs sets an model here. Yjs expects that you save the model as <code>this._model</code>. You may want to initialize your type, or set your observers here.</td>
+</tr>
+</tbody>
+</table>
+<p>There are two parties who can instantiate (with the <em>new</em> keyword) a custom type: Either Yjs, when it receives a message from another collaborator, or you. You probably already read how to instantiate a custom type</p>
+<div class="highlight highlight-source-js"><pre><span class="pl-c"><span class="pl-c">//</span> create an instance</span>
+<span class="pl-k">var</span> my_type <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-en">Y.MyCustomType</span>(<span class="pl-c1">1</span>, <span class="pl-c1">2</span>, <span class="pl-c1">3</span>, <span class="pl-s"><span class="pl-pds">"</span>more parameters<span class="pl-pds">"</span></span>);
+
+<span class="pl-c"><span class="pl-c">//</span> As soon as you put it on the Y object, it will be send to the other users.</span>
+<span class="pl-c"><span class="pl-c">//</span> Internally, Yjs will call `my_type._getModel(Y, Operations)`,</span>
+<span class="pl-c"><span class="pl-c">//</span> in order to get the model here.</span>
+<span class="pl-smi">y</span>.<span class="pl-en">val</span>(<span class="pl-s"><span class="pl-pds">"</span>my_type<span class="pl-pds">"</span></span>,my_type);</pre></div>
+<p>When Yjs instantiates a custom type, it will create it with no parameters. It is important, that your custom type does not expect parameters in the constructor! But if you really need to throw an error, when a user sets no parameters, you can throw them in the <code>_setModel</code> method (this will only be called if the user create the custom type)</p>
+<div class="highlight highlight-source-js"><pre><span class="pl-k">new</span> <span class="pl-en">Y.MyCustomType</span>().<span class="pl-en">_setModel</span>(received_model)</pre></div>
+<h3>
+<a aria-hidden="true" class="anchor" href="#example" id="user-content-example"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Example</h3>
+<p>So lets create a basic Y.List type</p>
+<div class="highlight highlight-source-js"><pre><span class="pl-c"><span class="pl-c">/*</span></span>
+<span class="pl-c">  Manage list data with this shareable list type.</span>
+<span class="pl-c">  You can insert and delete arbitrary objects</span>
+<span class="pl-c">  (also custom types for Yjs) in the list type.</span>
+<span class="pl-c"></span>
+<span class="pl-c">  We give the function an explicit name, so we get more meaningful error messages.</span>
+<span class="pl-c"><span class="pl-c">*/</span></span>
+<span class="pl-c1">Y</span>.<span class="pl-en">List</span> <span class="pl-k">=</span> <span class="pl-k">function</span> <span class="pl-en">YList</span>(<span class="pl-smi">list</span>){
+  <span class="pl-c"><span class="pl-c">//</span> You can instantialize the List with an existing Array.</span>
+  <span class="pl-c"><span class="pl-c">//</span> Save it until _getModel is called!</span>
+  <span class="pl-k">if</span>(list <span class="pl-k">==</span> <span class="pl-c1">null</span>){
+    <span class="pl-c1">this</span>.<span class="pl-smi">_list</span> <span class="pl-k">=</span> [];
+  } <span class="pl-k">else</span> <span class="pl-k">if</span>(<span class="pl-smi">list</span>.<span class="pl-c1">constructor</span> <span class="pl-k">===</span> <span class="pl-c1">Array</span>){
+    <span class="pl-c1">this</span>.<span class="pl-smi">_list</span> <span class="pl-k">=</span> list;
+  } <span class="pl-k">else</span> {
+    <span class="pl-k">throw</span> <span class="pl-k">new</span> <span class="pl-en">Error</span>(<span class="pl-s"><span class="pl-pds">"</span>Y.List expects an Array as a parameter!<span class="pl-pds">"</span></span>)
+  }
+}
+
+<span class="pl-c"><span class="pl-c">/*</span></span>
+<span class="pl-c">  This is required by Yjs. @Note: Remember to change `_name`</span>
+<span class="pl-c">  if you change the name of the function</span>
+<span class="pl-c"><span class="pl-c">*/</span></span>
+<span class="pl-c1">Y</span>.<span class="pl-smi">List</span>.<span class="pl-c1">prototype</span>.<span class="pl-smi">_name</span> <span class="pl-k">=</span> <span class="pl-s"><span class="pl-pds">"</span>List<span class="pl-pds">"</span></span>
+
+<span class="pl-c"><span class="pl-c">/*</span></span>
+<span class="pl-c">  This is called by Yjs if this List is instantiated by the user/you (not Yjs)</span>
+<span class="pl-c"><span class="pl-c">*/</span></span>
+<span class="pl-c1">Y</span>.<span class="pl-smi">List</span>.<span class="pl-c1">prototype</span>.<span class="pl-en">_getModel</span> <span class="pl-k">=</span> <span class="pl-k">function</span>(<span class="pl-c1">Y</span>, <span class="pl-smi">Operation</span>){
+  <span class="pl-k">if</span>(<span class="pl-c1">this</span>.<span class="pl-smi">_model</span> <span class="pl-k">==</span> <span class="pl-c1">null</span>){
+    <span class="pl-c"><span class="pl-c">//</span> create a ListManager</span>
+    <span class="pl-c1">this</span>.<span class="pl-smi">_model</span> <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-en">Operation.ListManager</span>(<span class="pl-c1">this</span>).<span class="pl-en">execute</span>();
+    <span class="pl-c"><span class="pl-c">//</span> Note: You can create a MapManager the same way:</span>
+    <span class="pl-c"><span class="pl-c">//</span> this._model = new Operation.MapManager(this).execute()</span>
+
+    <span class="pl-c"><span class="pl-c">//</span> insert the arguments from the constructor</span>
+    <span class="pl-c1">this</span>.<span class="pl-smi">_model</span>.<span class="pl-en">insert</span>(<span class="pl-c1">0</span>, <span class="pl-c1">this</span>.<span class="pl-smi">_list</span>)
+
+    <span class="pl-c"><span class="pl-c">//</span> and delete them</span>
+    <span class="pl-k">delete</span> <span class="pl-c1">this</span>.<span class="pl-smi">_list</span>;
+  }
+  <span class="pl-k">return</span> <span class="pl-c1">this</span>.<span class="pl-smi">_model</span>;
+}
+
+
+<span class="pl-c"><span class="pl-c">/*</span></span>
+<span class="pl-c">  This is called by Yjs, if this is created by another collaborator.</span>
+<span class="pl-c"><span class="pl-c">*/</span></span>
+<span class="pl-c1">Y</span>.<span class="pl-smi">List</span>.<span class="pl-c1">prototype</span>.<span class="pl-en">_setModel</span> <span class="pl-k">=</span> <span class="pl-k">function</span>(<span class="pl-smi">model</span>){
+  <span class="pl-k">delete</span> <span class="pl-c1">this</span>.<span class="pl-smi">_list</span>; <span class="pl-c"><span class="pl-c">//</span> delete the saved argument from the constructor</span>
+  <span class="pl-c1">this</span>.<span class="pl-smi">_model</span> <span class="pl-k">=</span> model;
+}
+
+<span class="pl-c"><span class="pl-c">/*</span></span>
+<span class="pl-c">  Insert an element at a position.</span>
+<span class="pl-c">  Note: If you create your own types, you should check the parameters by yourself!</span>
+<span class="pl-c"><span class="pl-c">*/</span></span>
+<span class="pl-c1">Y</span>.<span class="pl-smi">List</span>.<span class="pl-c1">prototype</span>.<span class="pl-en">insert</span> <span class="pl-k">=</span> <span class="pl-k">function</span>(<span class="pl-smi">position</span>, <span class="pl-smi">content</span>){
+  <span class="pl-k">if</span>(<span class="pl-k">typeof</span> position <span class="pl-k">===</span> <span class="pl-s"><span class="pl-pds">"</span>number<span class="pl-pds">"</span></span>){
+    <span class="pl-c1">this</span>.<span class="pl-smi">_model</span>.<span class="pl-en">insert</span>(position, [content])
+  }
+}
+
+<span class="pl-c"><span class="pl-c">/*</span></span>
+<span class="pl-c">  Delete one element at a position.</span>
+<span class="pl-c"><span class="pl-c">*/</span></span>
+<span class="pl-c1">Y</span>.<span class="pl-smi">List</span>.<span class="pl-c1">prototype</span>.<span class="pl-en">delete</span> <span class="pl-k">=</span> <span class="pl-k">function</span>(<span class="pl-smi">position</span>){
+  <span class="pl-k">if</span>(<span class="pl-k">typeof</span> position <span class="pl-k">===</span> <span class="pl-s"><span class="pl-pds">"</span>number<span class="pl-pds">"</span></span>){
+    <span class="pl-c1">this</span>.<span class="pl-smi">_model</span>.<span class="pl-c1">delete</span>(position, <span class="pl-c1">1</span>)
+  }
+}
+
+<span class="pl-c"><span class="pl-c">/*</span></span>
+<span class="pl-c">  Delete one element at a position.</span>
+<span class="pl-c"><span class="pl-c">*/</span></span>
+<span class="pl-c1">Y</span>.<span class="pl-smi">List</span>.<span class="pl-c1">prototype</span>.<span class="pl-en">observe</span> <span class="pl-k">=</span> <span class="pl-k">function</span>(<span class="pl-smi">f</span>){
+  <span class="pl-k">if</span>(<span class="pl-smi">f</span>.<span class="pl-c1">constructor</span> <span class="pl-k">===</span> <span class="pl-c1">Function</span>){
+    <span class="pl-c"><span class="pl-c">//</span> do you want the standard events? Don't you think they suck?</span>
+    <span class="pl-c"><span class="pl-c">//</span> Proxie the events here, so that they fit your needs.</span>
+    <span class="pl-c1">this</span>.<span class="pl-smi">_model</span>.<span class="pl-c1">observe</span>(f);
+  }
+}
+</pre></div>
+
+        </div>
+
+        <div class="wiki-footer gollum-markdown-content boxed-group" id="wiki-footer">
+          <div class="boxed-group-inner wiki-auxiliary-content markdown-body">
+            <p>Everything you find here is Creative Commons (CC BY 4.0)</p>
+
+          </div>
+        </div>
+    </div>]

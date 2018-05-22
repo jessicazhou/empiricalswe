@@ -1,0 +1,245 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>xnlogic supports all four types of relations: One-to-one, one-to-many, many-to-one and many-to-many. For example:</p>
+<table>
+<thead>
+<tr>
+<th align="center">From</th>
+<th align="center">Part</th>
+<th align="center">To</th>
+<th align="center">Part</th>
+<th align="center"></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="center">One</td>
+<td align="center"><code>Student</code></td>
+<td align="center">One</td>
+<td align="center"><code>StudentAccount</code></td>
+<td align="center"><img src="img/one_to_one.png" width="100%"/></td>
+</tr>
+<tr>
+<td align="center">One</td>
+<td align="center"><code>Student</code></td>
+<td align="center">Many</td>
+<td align="center">
+<code>LibraryBookLoan</code>s</td>
+<td align="center"><img src="img/one_to_many.png" width="100%"/></td>
+</tr>
+<tr>
+<td align="center">Many</td>
+<td align="center">
+<code>Student</code>s</td>
+<td align="center">One</td>
+<td align="center"><code>Faculty</code></td>
+<td align="center"><img src="img/many_to_one.png" width="100%"/></td>
+</tr>
+<tr>
+<td align="center">Many</td>
+<td align="center">
+<code>Student</code>s</td>
+<td align="center">Many</td>
+<td align="center">
+<code>Course</code>s</td>
+<td align="center"><img src="img/many_to_many.png" width="100%"/></td>
+</tr>
+</tbody>
+</table>
+<p>Let's see how we define, and use, these relations in xnlogic.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#step-1---define-the-models" id="user-content-step-1---define-the-models"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Step 1 - Define the models</h3>
+<p>In <code>lib/$XN_APP/models.rb</code>, make sure that the <code>client_models</code> hash contains the following entries:</p>
+<div class="highlight highlight-source-ruby"><pre>    <span class="pl-c1">student:</span> [<span class="pl-c1">Student</span>],
+    <span class="pl-c1">course:</span> [<span class="pl-c1">Course</span>],
+    <span class="pl-c1">faculty:</span> [<span class="pl-c1">Faculty</span>],
+    <span class="pl-c1">student_account:</span> [<span class="pl-c1">StudentAccount</span>],
+    <span class="pl-c1">library_book_loan:</span> [<span class="pl-c1">LibraryBookLoan</span>]</pre></div>
+<h3>
+<a aria-hidden="true" class="anchor" href="#step-2---define-the-parts" id="user-content-step-2---define-the-parts"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Step 2 - Define the parts</h3>
+<p>In <code>lib/$XN_APP/parts/xn_ex1.rb</code>, define the following parts:</p>
+<div class="highlight highlight-source-ruby"><pre>  <span class="pl-k">module</span> <span class="pl-en">Student</span>
+    xn_part
+    
+    to_one <span class="pl-c1">:StudentAccount</span>   <span class="pl-c"><span class="pl-c">#</span> 1-to-1</span>
+    to_many <span class="pl-c1">:LibraryBookLoan</span> <span class="pl-c"><span class="pl-c">#</span> 1-to-many</span>
+    to_one <span class="pl-c1">:Faculty</span>          <span class="pl-c"><span class="pl-c">#</span> many-to-1</span>
+    to_many <span class="pl-c1">:Course</span>          <span class="pl-c"><span class="pl-c">#</span> many-to-many</span>
+  <span class="pl-k">end</span>
+
+  <span class="pl-k">module</span> <span class="pl-en">StudentAccount</span>
+  	xn_part
+  	from_one <span class="pl-c1">:Student</span>
+  <span class="pl-k">end</span>
+
+  <span class="pl-k">module</span> <span class="pl-en">LibraryBookLoan</span>
+  	xn_part
+  	from_one <span class="pl-c1">:Student</span>
+  <span class="pl-k">end</span>
+
+  <span class="pl-k">module</span> <span class="pl-en">Faculty</span>
+  	xn_part
+  	from_many <span class="pl-c1">:Student</span>
+  <span class="pl-k">end</span>
+
+  <span class="pl-k">module</span> <span class="pl-en">Course</span>
+    xn_part
+    from_many <span class="pl-c1">:Student</span>
+  <span class="pl-k">end</span></pre></div>
+<h3>
+<a aria-hidden="true" class="anchor" href="#step-3---create-some-data" id="user-content-step-3---create-some-data"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Step 3 - Create some data</h3>
+<p>We already have students and courses created, from the previous example.
+Let's create some more data by pasting the following code in the IRB:</p>
+<div class="highlight highlight-source-ruby"><pre>graph.transaction <span class="pl-k">do</span>
+  app.create <span class="pl-c1">M</span>::<span class="pl-c1">Faculty</span>, {<span class="pl-c1">name:</span> <span class="pl-s"><span class="pl-pds">'</span>Arts<span class="pl-pds">'</span></span>}
+  app.create <span class="pl-c1">M</span>::<span class="pl-c1">Faculty</span>, {<span class="pl-c1">name:</span> <span class="pl-s"><span class="pl-pds">'</span>Engineering<span class="pl-pds">'</span></span>}
+
+  app.create <span class="pl-c1">M</span>::<span class="pl-c1">StudentAccount</span>, {<span class="pl-c1">balance:</span> <span class="pl-c1">0</span>}
+  app.create <span class="pl-c1">M</span>::<span class="pl-c1">StudentAccount</span>, {<span class="pl-c1">balance:</span> <span class="pl-c1">0</span>}
+  app.create <span class="pl-c1">M</span>::<span class="pl-c1">StudentAccount</span>, {<span class="pl-c1">balance:</span> <span class="pl-k">-</span><span class="pl-c1">2500</span>}
+
+  app.create <span class="pl-c1">M</span>::<span class="pl-c1">LibraryBookLoan</span>, {<span class="pl-c1">title:</span> <span class="pl-s"><span class="pl-pds">'</span>Advanced Data Structures<span class="pl-pds">'</span></span>}
+  app.create <span class="pl-c1">M</span>::<span class="pl-c1">LibraryBookLoan</span>, {<span class="pl-c1">title:</span> <span class="pl-s"><span class="pl-pds">'</span>The Metamorphosis<span class="pl-pds">'</span></span>}
+  app.create <span class="pl-c1">M</span>::<span class="pl-c1">LibraryBookLoan</span>, {<span class="pl-c1">title:</span> <span class="pl-s"><span class="pl-pds">'</span>War and Peace<span class="pl-pds">'</span></span>}
+
+<span class="pl-k">end</span></pre></div>
+<h3>
+<a aria-hidden="true" class="anchor" href="#step-4---test-in-the-irb" id="user-content-step-4---test-in-the-irb"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Step 4 - Test in the IRB</h3>
+<p>Let's start with to-one relations. In this case, xnlogic generates property methods that allow you to create, read, update or delete a relation. For example, a <code>Student</code> has a relation to one <code>StudentAccount</code>. Therefore, xnlogic makes sure that every vertex, extended by the <code>Student</code> part, will have a <code>student_account</code> property.</p>
+<p>Let's try it in the IRB:</p>
+<div class="highlight highlight-source-ruby"><pre>jruby<span class="pl-k">-</span><span class="pl-c1">1.7</span>.<span class="pl-c1">16</span> :<span class="pl-c1">073</span> <span class="pl-k">&gt;</span> accounts <span class="pl-k">=</span> graph.v(<span class="pl-c1">M</span>::<span class="pl-c1">StudentAccount</span>).to_a
+ =&gt; [<span class="pl-c"><span class="pl-c">#</span>&lt;V[124] 124&gt;, #&lt;V[123] 123&gt;, #&lt;V[122] 122&gt;] </span>
+
+jruby<span class="pl-k">-</span><span class="pl-c1">1.7</span>.<span class="pl-c1">16</span> :<span class="pl-c1">074</span> <span class="pl-k">&gt;</span> sam <span class="pl-k">=</span> graph.v(<span class="pl-c1">M</span>::<span class="pl-c1">Student</span>, <span class="pl-c1">name:</span> <span class="pl-s"><span class="pl-pds">'</span>Sam<span class="pl-pds">'</span></span>).first
+
+jruby<span class="pl-k">-</span><span class="pl-c1">1.7</span>.<span class="pl-c1">16</span> :<span class="pl-c1">077</span> <span class="pl-k">&gt;</span> sam.student_account
+ =&gt; <span class="pl-c1">nil</span> 
+
+<span class="pl-c"><span class="pl-c">#</span> Create</span>
+jruby<span class="pl-k">-</span><span class="pl-c1">1.7</span>.<span class="pl-c1">16</span> :<span class="pl-c1">079</span> <span class="pl-k">&gt;</span> graph.transaction <span class="pl-k">do</span>
+jruby<span class="pl-k">-</span><span class="pl-c1">1.7</span>.<span class="pl-c1">16</span> :<span class="pl-c1">080</span> <span class="pl-k">&gt;</span>     sam.student_account<span class="pl-k">=</span> accounts[<span class="pl-c1">0</span>]
+jruby<span class="pl-k">-</span><span class="pl-c1">1.7</span>.<span class="pl-c1">16</span> :<span class="pl-c1">081</span>?<span class="pl-k">&gt;</span> <span class="pl-k">end</span>
+
+<span class="pl-c"><span class="pl-c">#</span> Read</span>
+jruby<span class="pl-k">-</span><span class="pl-c1">1.7</span>.<span class="pl-c1">16</span> :<span class="pl-c1">082</span> <span class="pl-k">&gt;</span> sam.student_account
+ =&gt; <span class="pl-c"><span class="pl-c">#</span>&lt;V[124] 124&gt; </span>
+
+<span class="pl-c"><span class="pl-c">#</span> Update</span>
+jruby<span class="pl-k">-</span><span class="pl-c1">1.7</span>.<span class="pl-c1">16</span> :<span class="pl-c1">083</span> <span class="pl-k">&gt;</span> graph.transaction <span class="pl-k">do</span>
+jruby<span class="pl-k">-</span><span class="pl-c1">1.7</span>.<span class="pl-c1">16</span> :<span class="pl-c1">084</span> <span class="pl-k">&gt;</span>     sam.student_account<span class="pl-k">=</span> accounts[<span class="pl-c1">1</span>]
+jruby<span class="pl-k">-</span><span class="pl-c1">1.7</span>.<span class="pl-c1">16</span> :<span class="pl-c1">085</span>?<span class="pl-k">&gt;</span> <span class="pl-k">end</span>
+
+jruby<span class="pl-k">-</span><span class="pl-c1">1.7</span>.<span class="pl-c1">16</span> :<span class="pl-c1">086</span> <span class="pl-k">&gt;</span> sam.student_account
+ =&gt; <span class="pl-c"><span class="pl-c">#</span>&lt;V[123] 123&gt; </span>
+
+<span class="pl-c"><span class="pl-c">#</span> Delete</span>
+jruby<span class="pl-k">-</span><span class="pl-c1">1.7</span>.<span class="pl-c1">16</span> :<span class="pl-c1">087</span> <span class="pl-k">&gt;</span> graph.transaction <span class="pl-k">do</span>
+jruby<span class="pl-k">-</span><span class="pl-c1">1.7</span>.<span class="pl-c1">16</span> :<span class="pl-c1">088</span> <span class="pl-k">&gt;</span>     sam.student_account <span class="pl-k">=</span> <span class="pl-c1">nil</span>
+jruby<span class="pl-k">-</span><span class="pl-c1">1.7</span>.<span class="pl-c1">16</span> :<span class="pl-c1">089</span>?<span class="pl-k">&gt;</span> <span class="pl-k">end</span>
+
+
+jruby<span class="pl-k">-</span><span class="pl-c1">1.7</span>.<span class="pl-c1">16</span> :<span class="pl-c1">090</span> <span class="pl-k">&gt;</span> sam.student_account
+ =&gt; <span class="pl-c1">nil</span> </pre></div>
+<p>Similarly, we can access/modify from-one relations:</p>
+<div class="highlight highlight-source-ruby"><pre>jruby<span class="pl-k">-</span><span class="pl-c1">1.7</span>.<span class="pl-c1">16</span> :<span class="pl-c1">118</span> <span class="pl-k">&gt;</span> graph.transaction <span class="pl-k">do</span>
+jruby<span class="pl-k">-</span><span class="pl-c1">1.7</span>.<span class="pl-c1">16</span> :<span class="pl-c1">119</span> <span class="pl-k">&gt;</span>     sam.student_account <span class="pl-k">=</span> accounts[<span class="pl-c1">0</span>]
+jruby<span class="pl-k">-</span><span class="pl-c1">1.7</span>.<span class="pl-c1">16</span> :<span class="pl-c1">120</span>?<span class="pl-k">&gt;</span> <span class="pl-k">end</span>
+
+jruby<span class="pl-k">-</span><span class="pl-c1">1.7</span>.<span class="pl-c1">16</span> :<span class="pl-c1">121</span> <span class="pl-k">&gt;</span> accounts[<span class="pl-c1">0</span>].student
+ =&gt; <span class="pl-c"><span class="pl-c">#</span>&lt;V[73] Sam&gt; </span>
+
+jruby<span class="pl-k">-</span><span class="pl-c1">1.7</span>.<span class="pl-c1">16</span> :<span class="pl-c1">122</span> <span class="pl-k">&gt;</span> sam.student_account
+ =&gt; <span class="pl-c"><span class="pl-c">#</span>&lt;V[124] 124&gt; </span>
+
+jruby<span class="pl-k">-</span><span class="pl-c1">1.7</span>.<span class="pl-c1">16</span> :<span class="pl-c1">125</span> <span class="pl-k">&gt;</span> graph.transaction <span class="pl-k">do</span>
+jruby<span class="pl-k">-</span><span class="pl-c1">1.7</span>.<span class="pl-c1">16</span> :<span class="pl-c1">126</span> <span class="pl-k">&gt;</span>     accounts[<span class="pl-c1">0</span>].student <span class="pl-k">=</span> <span class="pl-c1">nil</span>
+jruby<span class="pl-k">-</span><span class="pl-c1">1.7</span>.<span class="pl-c1">16</span> :<span class="pl-c1">127</span>?<span class="pl-k">&gt;</span> <span class="pl-k">end</span>
+
+jruby<span class="pl-k">-</span><span class="pl-c1">1.7</span>.<span class="pl-c1">16</span> :<span class="pl-c1">128</span> <span class="pl-k">&gt;</span> sam.student_account
+ =&gt; <span class="pl-c1">nil</span> 
+
+jruby<span class="pl-k">-</span><span class="pl-c1">1.7</span>.<span class="pl-c1">16</span> :<span class="pl-c1">136</span> <span class="pl-k">&gt;</span> accounts[<span class="pl-c1">0</span>].student
+ =&gt; <span class="pl-c1">nil</span></pre></div>
+<p>With to-many relations, xnlogic generates property method for reading the relations, as well as <code>add_X</code> and <code>remove_X</code> methods. Notice that, since this is a to-many relation, xnlogic applies plural inflection to the names of the generated methods. For example, a <code>Student</code> has an <code>add_courses</code> method, that is used to add 1 or more relations to a <code>Course</code>. For more details, see the <a href="#note-on-plural-inflection">note on plural inflection</a>.</p>
+<p>Let's see an example:</p>
+<div class="highlight highlight-source-ruby"><pre>jruby<span class="pl-k">-</span><span class="pl-c1">1.7</span>.<span class="pl-c1">16</span> :<span class="pl-c1">101</span> <span class="pl-k">&gt;</span> sam.courses
+<span class="pl-c"><span class="pl-c">#</span>&lt;V[74] Economics 101&gt;</span>
+<span class="pl-c1">Total:</span> <span class="pl-c1">1</span>
+
+jruby<span class="pl-k">-</span><span class="pl-c1">1.7</span>.<span class="pl-c1">16</span> :<span class="pl-c1">102</span> <span class="pl-k">&gt;</span> graph_theory <span class="pl-k">=</span> graph.v(<span class="pl-c1">M</span>::<span class="pl-c1">Course</span>, <span class="pl-c1">name:</span> <span class="pl-s"><span class="pl-pds">'</span>Graph Theory<span class="pl-pds">'</span></span>).first
+
+jruby<span class="pl-k">-</span><span class="pl-c1">1.7</span>.<span class="pl-c1">16</span> :<span class="pl-c1">103</span> <span class="pl-k">&gt;</span> sam.add_courses(graph_theory)
+<span class="pl-c"><span class="pl-c">#</span>&lt;E[255]:73-course-76&gt;</span>
+jruby<span class="pl-k">-</span><span class="pl-c1">1.7</span>.<span class="pl-c1">16</span> :<span class="pl-c1">104</span> <span class="pl-k">&gt;</span> sam.courses
+<span class="pl-c"><span class="pl-c">#</span>&lt;V[74] Economics 101&gt; #&lt;V[76] Graph Theory&gt; </span>
+<span class="pl-c1">Total:</span> <span class="pl-c1">2</span>
+
+jruby<span class="pl-k">-</span><span class="pl-c1">1.7</span>.<span class="pl-c1">16</span> :<span class="pl-c1">105</span> <span class="pl-k">&gt;</span> sam.remove_courses(graph_theory)
+jruby<span class="pl-k">-</span><span class="pl-c1">1.7</span>.<span class="pl-c1">16</span> :<span class="pl-c1">106</span> <span class="pl-k">&gt;</span> sam.courses
+<span class="pl-c"><span class="pl-c">#</span>&lt;V[74] Economics 101&gt;</span>
+<span class="pl-c1">Total:</span> <span class="pl-c1">1</span>
+
+<span class="pl-c"><span class="pl-c">#</span> Add relations to multiple courses</span>
+jruby<span class="pl-k">-</span><span class="pl-c1">1.7</span>.<span class="pl-c1">16</span> :<span class="pl-c1">107</span> <span class="pl-k">&gt;</span> sam.add_courses(graph.v(<span class="pl-c1">M</span>::<span class="pl-c1">Course</span>))
+jruby<span class="pl-k">-</span><span class="pl-c1">1.7</span>.<span class="pl-c1">16</span> :<span class="pl-c1">108</span> <span class="pl-k">&gt;</span> sam.courses
+<span class="pl-c"><span class="pl-c">#</span>&lt;V[74] Economics 101&gt; #&lt;V[76] Graph Theory&gt;  #&lt;V[75] Advanced Math&gt;</span>
+<span class="pl-c1">Total:</span> <span class="pl-c1">3</span>
+
+<span class="pl-c"><span class="pl-c">#</span> Notice that no duplicate connections are created.</span>
+jruby<span class="pl-k">-</span><span class="pl-c1">1.7</span>.<span class="pl-c1">16</span> :<span class="pl-c1">109</span> <span class="pl-k">&gt;</span> sam.add_courses(graph.v(<span class="pl-c1">M</span>::<span class="pl-c1">Course</span>))
+jruby<span class="pl-k">-</span><span class="pl-c1">1.7</span>.<span class="pl-c1">16</span> :<span class="pl-c1">110</span> <span class="pl-k">&gt;</span> sam.courses
+<span class="pl-c"><span class="pl-c">#</span>&lt;V[74] Economics 101&gt; #&lt;V[76] Graph Theory&gt;  #&lt;V[75] Advanced Math&gt; </span>
+
+<span class="pl-c"><span class="pl-c">#</span> Remove multiple relations</span>
+jruby<span class="pl-k">-</span><span class="pl-c1">1.7</span>.<span class="pl-c1">16</span> :<span class="pl-c1">111</span> <span class="pl-k">&gt;</span> sam.remove_courses(sam.courses)
+
+jruby<span class="pl-k">-</span><span class="pl-c1">1.7</span>.<span class="pl-c1">16</span> :<span class="pl-c1">112</span> <span class="pl-k">&gt;</span> sam.courses
+<span class="pl-c1">Total:</span> <span class="pl-c1">0</span></pre></div>
+<p>From-many relations are accessed/modified in the same manner:</p>
+<div class="highlight highlight-source-ruby"><pre>jruby<span class="pl-k">-</span><span class="pl-c1">1.7</span>.<span class="pl-c1">16</span> :<span class="pl-c1">151</span> <span class="pl-k">&gt;</span> graph_theory.add_students(graph.v(<span class="pl-c1">M</span>::<span class="pl-c1">Student</span>))
+
+jruby<span class="pl-k">-</span><span class="pl-c1">1.7</span>.<span class="pl-c1">16</span> :<span class="pl-c1">159</span> <span class="pl-k">&gt;</span> graph_theory.students
+<span class="pl-c"><span class="pl-c">#</span>&lt;V[73] Sam&gt;      #&lt;V[72] Michelle&gt; #&lt;V[71] Johnny&gt;  </span>
+<span class="pl-c1">Total:</span> <span class="pl-c1">3</span>
+
+jruby<span class="pl-k">-</span><span class="pl-c1">1.7</span>.<span class="pl-c1">16</span> :<span class="pl-c1">160</span> <span class="pl-k">&gt;</span> graph_theory.remove_students(graph_theory.students)
+
+jruby<span class="pl-k">-</span><span class="pl-c1">1.7</span>.<span class="pl-c1">16</span> :<span class="pl-c1">161</span> <span class="pl-k">&gt;</span> graph_theory.students
+<span class="pl-c1">Total:</span> <span class="pl-c1">0</span></pre></div>
+<p>Notice that xnlogic will not let you create an invalid relation. For example, you cannot set the <code>student_account</code> relation of a <code>Student</code> to be the <em>Graph Theory</em> <code>Course</code>.</p>
+<div class="highlight highlight-source-ruby"><pre>jruby<span class="pl-k">-</span><span class="pl-c1">1.7</span>.<span class="pl-c1">16</span> :<span class="pl-c1">162</span> <span class="pl-k">&gt;</span> sam.student_account <span class="pl-k">=</span> graph_theory
+<span class="pl-c1">PacerModel</span>::<span class="pl-c1">RelationshipTypeError:</span> <span class="pl-c1">Object</span> must be a <span class="pl-c1">StudentAccount</span></pre></div>
+<h3>
+<a aria-hidden="true" class="anchor" href="#routes-vs-single-vertices" id="user-content-routes-vs-single-vertices"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Routes vs. Single Vertices</h3>
+<p>Relations are defined for both vertices and routes. For example, the <code>courses</code> method is defined for each student, as well as a route of students:</p>
+<div class="highlight highlight-source-ruby"><pre>jruby<span class="pl-k">-</span><span class="pl-c1">1.7</span>.<span class="pl-c1">16</span> :<span class="pl-c1">150</span> <span class="pl-k">&gt;</span> g.v(<span class="pl-c1">M</span>::<span class="pl-c1">Student</span>).first.courses
+<span class="pl-c"><span class="pl-c">#</span>&lt;V[76] Graph Theory&gt;</span>
+
+jruby<span class="pl-k">-</span><span class="pl-c1">1.7</span>.<span class="pl-c1">16</span> :<span class="pl-c1">151</span> <span class="pl-k">&gt;</span> g.v(<span class="pl-c1">M</span>::<span class="pl-c1">Student</span>).courses
+<span class="pl-c"><span class="pl-c">#</span>&lt;V[76] Graph Theory&gt;  #&lt;V[75] Advanced Math&gt; #&lt;V[74] Economics 101&gt;</span></pre></div>
+<p><em>Gotcha:</em> When following a to-one-relation from a route of vertices, don't forget to apply plural inflection. For example:</p>
+<div class="highlight highlight-source-ruby"><pre><span class="pl-c"><span class="pl-c">#</span> A student has a relation to one student account</span>
+jruby<span class="pl-k">-</span><span class="pl-c1">1.7</span>.<span class="pl-c1">16</span> :<span class="pl-c1">152</span> <span class="pl-k">&gt;</span> g.v(<span class="pl-c1">M</span>::<span class="pl-c1">Student</span>).first.student_account
+
+<span class="pl-c"><span class="pl-c">#</span> A route can contain multiple students, therefore, we can have multiple related student-accounts.</span>
+jruby<span class="pl-k">-</span><span class="pl-c1">1.7</span>.<span class="pl-c1">16</span> :<span class="pl-c1">153</span> <span class="pl-k">&gt;</span> g.v(<span class="pl-c1">M</span>::<span class="pl-c1">Student</span>).student_accounts</pre></div>
+<h3>
+<a aria-hidden="true" class="anchor" href="#summary" id="user-content-summary"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Summary</h3>
+<ul>
+<li>Define from/to one/many relations between parts.</li>
+<li>Methods for basic operations (create, read, update, delete) are generated automatically.</li>
+<li>By default, the name of a relation is the name of the related part (converted from CamelCase to underscore_separated).</li>
+<li>When dealing with to/from many relations, <a href="#note-on-plural-inflection">plural inflection</a> is applied to the relation name by default.</li>
+<li>Creating/updating a relation is type checked.</li>
+</ul>
+<h3>
+<a aria-hidden="true" class="anchor" href="#note-on-plural-inflection" id="user-content-note-on-plural-inflection"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Note on plural inflection</h3>
+<p>xnlogic uses the <code>ActiveSupport::Inflector</code> plugin to apply plural inflection to relation names, when appropriate. In most cases, this results in a cleaner, more developer-friendly API. In some cases, though, you may want to override this default behaviour.</p>
+<p>You can disable plural inflection by including the following code in your part definition.</p>
+<div class="highlight highlight-source-ruby"><pre><span class="pl-c1">ActiveSupport</span>::<span class="pl-c1">Inflector</span>.inflections <span class="pl-k">do</span> |<span class="pl-smi">inflect</span>|
+    inflect.uncountable <span class="pl-s"><span class="pl-pds">'</span>the_name_of_the_relation<span class="pl-pds">'</span></span>
+<span class="pl-k">end</span></pre></div>
+
+        </div>
+
+    </div>]

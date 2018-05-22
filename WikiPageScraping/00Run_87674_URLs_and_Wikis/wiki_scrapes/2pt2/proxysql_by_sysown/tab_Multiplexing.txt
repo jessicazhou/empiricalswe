@@ -1,0 +1,94 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <h2>
+<a aria-hidden="true" class="anchor" href="#conditions-where-multiplexing-is-disabled" id="user-content-conditions-where-multiplexing-is-disabled"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Conditions where multiplexing is disabled</h2>
+<ul>
+<li>active transaction</li>
+</ul>
+<p>When a transaction is active in a connection, multiplexing is disabled until the transaction commits or rollbacks.</p>
+<ul>
+<li>table(s) locked</li>
+</ul>
+<p>If <code>LOCK TABLE</code>, <code>LOCK TABLES</code> or <code>FLUSH TABLES WITH READ LOCK</code> is executed, multiplexing is disabled until <code>UNLOCK TABLES</code> is executed.</p>
+<ul>
+<li>use of <code>GET_LOCK()</code>
+</li>
+</ul>
+<p>If <code>GET_LOCK()</code> is executed, multiplexing is disabled and is never enabled again.</p>
+<ul>
+<li>use of specific session/user variables</li>
+</ul>
+<p>All queries that have <code>@</code> in their query_digest will disable multiplexing, and it will never be enabled again.<br/>
+Similarly happen if these commands are executed:</p>
+<ul>
+<li>
+<code>SET SQL_SAFE_UPDATES=?,SQL_SELECT_LIMIT=?,MAX_JOIN_SIZE=?</code> (<code>mysql --safe-updates</code>)</li>
+<li><code>SET FOREIGN_KEY_CHECKS</code></li>
+<li><code>SET UNIQUE_CHECKS</code></li>
+<li>
+<code>SET AUTO_INCREMENT_INCREMENT</code> (v 1.4.4+)</li>
+<li>
+<code>SET AUTO_INCREMENT_OFFSET</code> (v 1.4.4+)</li>
+<li>
+<code>SET GROUP_CONCAT_MAX_LEN</code> (v 1.4.4+)</li>
+</ul>
+<p>There are 2 exceptions hardcoded that do not disable multiplexing:</p>
+<ul>
+<li><code>SELECT @@tx_isolation</code></li>
+<li><code>SELECT @@version</code></li>
+</ul>
+<p>These exceptions are hardcooded because many applications run these in every connection.</p>
+<ul>
+<li>use of <code>SQL_CALC_FOUND_ROWS</code>
+</li>
+</ul>
+<p>If a query contains <code>SQL_CALC_FOUND_ROWS</code>, multiplexing is disabled and is never enabled again on the connection.</p>
+<ul>
+<li>Temporary tables</li>
+</ul>
+<p>If <code>CREATE TEMPORARY TABLE</code> is executed, multiplexing is disabled and is never enabled again on the connection.</p>
+<ul>
+<li>use of <code>PREPARE</code>
+</li>
+</ul>
+<p>If <code>PREPARE</code> is executed (creation of prepared statements using the TEXT protocol and not the BINARY protocol), multiplexing is disabled and is never enabled again.</p>
+<ul>
+<li>
+<code>SQL_LOG_BIN</code> sets to 0</li>
+</ul>
+<p>If <code>SQL_LOG_BIN</code> is set to 0, multiplexing is disabled until <code>SQL_LOG_BIN</code> is set back to 1.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#not-handled-session-variables" id="user-content-not-handled-session-variables"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Not handled session variables</h3>
+<p>Most of the session variables are not handled automatically.<br/>
+For example, if a client issues <code>SET TX_ISOLATION=?</code> , multiplexing is NOT disabled.<br/>
+This is a bug if you have clients that use different <code>tx_isolation</code>, while it is a feature if all the clients specify the same <code>tx_isolation</code> that is also the default (this is the common case, in my experience).</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#ad-hoc-enabledisable-of-multiplexing" id="user-content-ad-hoc-enabledisable-of-multiplexing"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Ad-hoc enable/disable of multiplexing</h3>
+<p><code>mysql_query_rules</code>.<code>multiplexing</code> allows to enable or disable multiplexing based on matching criteria.<br/>
+The field currently accepts these values:</p>
+<ul>
+<li>0 : disable multiplex</li>
+<li>1 : enable multiplex</li>
+<li>2 : do not disable multiplex for this specific query containing <code>@</code>
+</li>
+</ul>
+<p>For example, in your application is using <code>SET SQL_SELECT_LIMIT</code> , you can create these 2 rules:</p>
+<pre><code>INSERT INTO mysql_query_rules (active,match_digest,multiplex) VALUES
+('1','^SET SQL_SELECT_LIMIT=?',0), (1,'^SET SQL_SELECT_LIMIT=DEFAULT,1);
+</code></pre>
+<p>If your application is sending something like <code>SELECT @@max_allowed_packet</code> and you want to prevent multiplexing to be disabled because of this, you can create the following rule:</p>
+<pre><code>INSERT INTO mysql_query_rules (active,match_digest,multiplex) VALUES
+('1','^SELECT @@max_allowed_packet',2);
+</code></pre>
+<p>... and maybe even cache it:</p>
+<pre><code>INSERT INTO mysql_query_rules (active,match_digest,multiplex,cache_ttl) VALUES
+('1','^SELECT @@max_allowed_packet',2,60000);
+</code></pre>
+<p>If your application is trying to set a variable that will lead to disable multiplexing, and you think that it can be filtered, you can create a filter that returns OK without executing the query:</p>
+<pre><code>INSERT INTO mysql_query_rules (active,match_digest,OK_msg) VALUES
+('1','^SET @@wait_timeout = ?','');
+</code></pre>
+
+        </div>
+
+    </div>]

@@ -1,0 +1,301 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>The Frogatto stats system allows sending of <em>stats events</em>, or <em>samples</em>, generated while users are playing Frogatto to the <em>Frogatto Stats Server</em>. The Frogatto Stats Server aggregates these events according to certain rules and makes the data available using a web-based API.</p>
+<p>An event consists of an FFL map object, which must have a 'type' attribute, and may contain any arbitrary set of other attributes. Firing a stats event using FFL is easy:</p>
+<p><code>report({'type' -&gt; 'myevent', value -&gt; 5, other_values -&gt; [8,4,5]})</code></p>
+<p>Note that the ID of the level that the player was in when the event was fired is automatically tracked and tied to the event.</p>
+<p>Certain events are sent by the game engine itself. These events include:</p>
+<p><code>{'move', 'x' -&gt; 8, 'y' -&gt; 12}</code></p>
+<p><strong>Move events</strong> -- the game engine regularly samples the location of the player and transmits events with their location.</p>
+<p><code>{'quit', 'x' -&gt; 43, 'y' -&gt; 18}</code>
+<code>{'die', 'x' -&gt; 72, 'y' -&gt; 38}</code></p>
+<p><strong>Quit and Die events</strong> -- when the player exits the game or dies, these events are sent with the location they were at.</p>
+<p><code>{'load', time -&gt; 16}</code></p>
+<p><strong>Load events</strong> -- When the game engine loads a level it transmits this event, with the amount of time (in milliseconds) it took to load.</p>
+<p>When the player quits the game, the game engine will transmit all events recorded during the play session to the server. Some additional data is sent, including:</p>
+<ul>
+<li>Segmentation of the events into the levels in which they occurred.</li>
+<li>A unique ID associated with the player (or more correctly the Frogatto install) which generated the events.</li>
+<li>The version of Frogatto under which the events were generated.</li>
+</ul>
+<p>The Frogatto Stats Server records events segregated in several ways:</p>
+<ul>
+<li>A separate data set for each version of Frogatto, as well as a 'global' data set which includes data aggregated from all versions.</li>
+<li>A separate data set for each level. Some types of data will also record their data aggregated across all levels.</li>
+<li>By the <em>type</em> of the data events.</li>
+</ul>
+<p>The server's rules.json configuration file specifies <em>tables</em> for each type of event, with rules of how to aggregate received events into these tables.</p>
+<p>A table consists of a mapping of arbitrary FFL keys to arbitrary FFL values. Let's take a look at a simple definition of a table to handle quit events:</p>
+<pre><code>{
+  "name": "quit",
+  "tables": [
+    {
+      "name": "by_location",
+      "key": "[x, y]",
+      "value": "value + 1",
+      "init_value": "0",
+      "global_scope": false
+    }
+  ]
+}
+</code></pre>
+<p>Note the key parts of this definition:</p>
+<ul>
+<li>There is one table defined for 'quit' events, which is called 'by_location' (since it tracks quit events by the location they occur at)</li>
+<li>The <em>key</em> attribute calculates the key in the table that the new event will be stored at.</li>
+<li>The <em>init_value</em> attribute calculates the value that will be assigned to a freshly created key in the table.</li>
+<li>The <em>value</em> attribute calculates the new value of the entry. It has access to 'value', the current value, and 'sample', the event that has arrived.</li>
+<li>The <em>global_scope</em> attribute here specifies <em>not</em> to use this table across all levels. It only makes sense within the context of a level.</li>
+<li>Note that in this example, value and init_value have the default behavior and so wouldn't need to be specified.</li>
+</ul>
+<p>Let us take an example of what occurs when some events arrive:</p>
+<p>EVENT: <code>{ 'type' -&gt; 'quit', 'x' -&gt; 8, 'y' -&gt; 16}</code></p>
+<p>The table will be in the following state:</p>
+<pre><code>[
+  {
+    "key": [8, 16],
+    "value": 1
+  }
+]
+</code></pre>
+<p>Another event arrives:</p>
+<p>EVENT: <code>{ 'type' -&gt; 'quit', 'x' -&gt; 28, 'y' -&gt; 13}</code></p>
+<p>Now the table looks like this:</p>
+<pre><code>[
+  {
+    "key": [8, 16],
+    "value": 1
+  },
+  {
+    "key": [28, 13],
+    "value": 1
+  }
+]
+</code></pre>
+<p>We can see that after receiving two events we have two entries in the table. But, suppose we received another event with the same location as a previous event:</p>
+<p>EVENT: <code>{ 'type' -&gt; 'quit', 'x' -&gt; 8, 'y' -&gt; 16}</code></p>
+<p>The key generated would be the same as an existing key in the table, so the table would have two entries but with an updated value:</p>
+<pre><code>[
+  {
+    "key": [8, 16],
+    "value": 2
+  },
+  {
+    "key": [28, 13],
+    "value": 1
+  }
+]
+</code></pre>
+<p>Note that a goal of the Frogatto stats system is to take the large amount of data that is received and aggregate it into tables which are much smaller and thus can be efficiently accessed. In the case of location-based messages, such as the quit message, a table keyed by location is likely to end up with many distinct keys and thus many entries. This is undesirable. However, usually we don't need to know the <em>exact</em> location a player quit at, so we can reduce the keyspace dramatically by rounding it. We could re-write the key calculation like this:</p>
+<p><code>"key": "[(x/32)*32 + 16, (y/32)*32 + 16]"</code></p>
+<p>This maps the location to the center of the 32x32 tile it is in. This greatly reduces the number of possible keys.</p>
+<p>As another example, we want to know the average (mean) time it takes for players to load levels. For this, we don't need to use distinct keys at all -- we just want a table with a single value which holds the mean. Here is our table definition:</p>
+<pre><code>		"name": "load",
+		"tables": [
+			{
+				"name": "average_load_time",
+				"value": "{ 'nsamples' -&gt; (value.nsamples+1), 'sum' -&gt; value.sum + sample.time, 'mean' -&gt; (value.sum+sample.time)/(value.nsamples+1) }",
+				"init_value": {
+					"sum": 0,
+					"nsamples": 0,
+					"mean": 0
+				}
+			}
+</code></pre>
+<p>Note that to calculate the average load time, we need to keep track of the number of entries we've seen, and the sum of them. The value keeps track of these numbers, and uses them to calculate the average every time a new event arrives.</p>
+<p>Suppose we had several load events arrive:</p>
+<pre><code>{'type' -&gt; 'load', 'time': 50}
+{'type' -&gt; 'load', 'time': 20}
+{'type' -&gt; 'load', 'time': 10}
+</code></pre>
+<p>Now the table would look like this:</p>
+<pre><code>[
+  {
+    "key": null,
+    "value: {
+      "sum": 80,
+      "nsamples": 3,
+      "mean": 26
+    }
+  }
+]
+</code></pre>
+<h3>
+<a aria-hidden="true" class="anchor" href="#unique-users" id="user-content-unique-users"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Unique Users</h3>
+<p>When calculating keys, we also have access to the user_id field, which is an integer that is unique per Frogatto install. This allows us to track the number of unique users that have triggered different event conditions. For instance, we can add a table definition for the load event to easily track the number of players that have reached various levels:</p>
+<pre><code>			{
+				"name": "unique_users",
+				"key": "user_id"
+			}
+</code></pre>
+<p>This will create a table that looks like this:</p>
+<pre><code>      {
+        "entries": [
+          {
+            "key": 482375297,
+            "value": 1
+          },
+          {
+            "key": 985993827,
+            "value": 2
+          },
+          {
+            "key": 432009403,
+            "value": 1
+          },
+        ],
+        "name": "unique_users"
+      }
+</code></pre>
+<p>Using this data we can conveniently track the number of users that have reached each different level in the game (and how many times they have done so).</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#accessing-the-data" id="user-content-accessing-the-data"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Accessing the Data</h3>
+<p>To access the data received from the stats system we access a URL such as this:</p>
+<p><a href="http://theargentlark.com:5000/?version=1.2&amp;level=titlescreen.cfg" rel="nofollow">http://theargentlark.com:5000/?version=1.2&amp;level=titlescreen.cfg</a></p>
+<p>This will give us all the stats data aggregated for titlescreen.cfg for version 1.2 of Frogatto.</p>
+<p>Here is an annotated sample response we might get:</p>
+<pre><code>[ &lt;-- A list of all the types of events.
+  { &lt;-- begin the entry for the load event.
+    "tables": [ &lt;-- a list of all the tables that are associated with this type of event.
+      { &lt;-- beginning of the 'sum' table.
+        "entries": [ &lt;-- the entries in the table.
+          {
+            "key": null,
+            "value": {
+              "mean": 27, &lt;-- the mean of all load times.
+              "nsamples": 6,
+              "sum": 162
+            }
+          }
+        ],
+        "name": "sum" &lt;-- name of the table.
+      }, &lt;-- end of the 'sum' table.
+      { &lt;-- beginning of the unique_users table.
+        "entries": [ &lt;-- entries in the table.
+          {
+            "key": 482375297,
+            "value": 2
+          },
+          {
+            "key": 2120124826,
+            "value": 1
+          }
+        ],
+        "name": "unique_users" &lt;-- name of the table.
+      } &lt;-- end of the unique_users table
+    ], &lt;-- end of the list of tables associated with the event.
+    "total": 6,  &lt;-- the number of occurrences of this event we've seen.
+    "type": "load"  &lt;-- type of the event.
+  }, &lt;-- end the entry for the load event
+  {
+    "tables": [
+      {
+        "entries": [
+          {
+            "key": [
+              400,
+              432
+            ],
+            "value": 5
+          },
+          {
+            "key": [
+              432,
+              432
+            ],
+            "value": 31
+          },
+          {
+            "key": [
+              464,
+              432
+            ],
+            "value": 1
+          },
+          {
+            "key": [
+              496,
+              432
+            ],
+            "value": 1
+          },
+          {
+            "key": [
+              560,
+              432
+            ],
+            "value": 1
+          },
+          {
+            "key": [
+              592,
+              400
+            ],
+            "value": 1
+          },
+          {
+            "key": [
+              624,
+              240
+            ],
+            "value": 1
+          },
+          {
+            "key": [
+              624,
+              336
+            ],
+            "value": 1
+          },
+          {
+            "key": [
+              656,
+              176
+            ],
+            "value": 1
+          },
+          {
+            "key": [
+              656,
+              336
+            ],
+            "value": 1
+          },
+          {
+            "key": [
+              688,
+              176
+            ],
+            "value": 1
+          },
+          {
+            "key": [
+              752,
+              240
+            ],
+            "value": 1
+          }
+        ],
+        "name": "tile_group"
+      }
+    ],
+    "total": 46,
+    "type": "move"
+  },
+  {
+    "tables": [],
+    "total": 2,
+    "type": "quit"
+  }
+]
+</code></pre>
+
+        </div>
+
+        <div class="wiki-footer gollum-markdown-content boxed-group" id="wiki-footer">
+          <div class="boxed-group-inner wiki-auxiliary-content markdown-body">
+            <p>More help can be found via IRC, <a href="irc://irc.freenode.net/#frogatto" rel="nofollow">#Frogatto</a> on freenode.net. This wiki is not a complete reference.</p>
+
+          </div>
+        </div>
+    </div>]

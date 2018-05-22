@@ -1,0 +1,76 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <blockquote>
+<p>After I went through the steps below with <code>miniconda</code>, I uninstalled that and used full Anaconda (Python 3.5 installer). I did this because of an OS-specific bash bug (on Linux Mint and possibly also Ubuntu I don't know). Solving it required setting an environment variable. <strong>tl;dr</strong> go ahead with the following instructions, you can uninstall Miniconda at any point (just <a href="http://stackoverflow.com/questions/22585235/python-anaconda-how-to-safely-uninstall" rel="nofollow">consists of removing a directory and .bashrc line</a> anyway), you will keep all the scientific Python packages it installs along the way.</p>
+</blockquote>
+<blockquote>
+<p>Installing the full Anaconda3 using Python3.5 takes a quick few minutes.</p>
+</blockquote>
+<blockquote>
+<p>During the course of this setup, I also <a href="http://askubuntu.com/questions/320996/make-default-python-command-to-use-python-3" rel="nofollow">made <code>python3</code> the default <code>python</code></a> with <code>alias python='python3'</code> in my <code>.bashrc</code> (see <a href="http://askubuntu.com/a/475815/266014" rel="nofollow">note on PEP 394</a>)</p>
+</blockquote>
+<blockquote>
+<p>NB: the latest IPython is version 4. <code>ipython3</code> and <code>ipython2</code> are not to be confused with <code>python2</code> and <code>python3</code> - these are the language "kernels".</p>
+</blockquote>
+<blockquote>
+<p><strong>My understanding of this process</strong>: If you have a Python2.7 interpreter as your default, then [<code>pip install</code>'ing] IPython will use a Python2 kernel, on top of which you must install the Py3 kernel. If you have a Python3 installation (as ensured by Conda), you get Python3 and install Python2 kernel in addition. Anaconda handles the difficulties of dependency installation, and the steps below will set Python3 as default <code>python</code> through creation of an "<a href="http://conda.pydata.org/docs/using/envs.html" rel="nofollow">environment</a>".</p>
+</blockquote>
+<p>Installing Python 3 on Linux while retaining Python 2 is possible (as described <a href="http://people.duke.edu/%7Eccc14/sta-663/Jupyter.html#installing-python3-while-keeping-python2" rel="nofollow">here</a>):</p>
+<ul>
+<li>
+<p>First install <code>conda</code> (miniconda is the bare build necessities rather than 100+ other FOSS packages, installer available as a simple shell script <a href="http://conda.pydata.org/docs/install/quick.html" rel="nofollow">here</a>)</p>
+</li>
+<li>
+<p><code>bash Miniconda*-latest-Linux-x86_64.sh</code></p>
+<p>Warning received:</p>
+<pre><code></code></pre>
+</li>
+</ul>
+<p>WARNING:
+You currently have a PYTHONPATH environment variable set. This may cause
+unexpected behavior when running the Python interpreter in Miniconda3.
+For best results, please verify that your PYTHONPATH only points to
+directories of packages that are compatible with the Python interpreter
+in Miniconda3: /home/louis/Downloads/Miniconda3</p>
+<pre><code>
+* once installed you can use a Conda python3 session to pip install IPython 3, specifying the current version of python (I think this is optional - I changed it from 3.4 on the [Duke guide](http://people.duke.edu/~ccc14/sta-663/Jupyter.html))
+
+   ```sh
+conda create -n python3 python=3.5 anaconda
+</code></pre>
+<p>...this will install 100+ packages? Takes ages - numpy, libxslt, lxml etc - but includes <code>pip</code>, required for next step. <a href="https://gist.github.com/lmmx/74750b140ec320d42345">Click here</a> to see example output.</p>
+<pre><code>source activate python3
+pip install -U ipython
+ipython3 kernelspec install-self
+</code></pre>
+<p><a href="https://gist.github.com/lmmx/d26cb26ded6d79feccae">Weird Anaconda/bash bug appeared</a>... was from <a href="https://gist.github.com/lmmx/bd3cd73cded5b84378be"><code>command_not_found_handle</code></a> function using Python3</p>
+<pre><code>Could not find platform independent libraries &lt;prefix&gt;
+Could not find platform dependent libraries &lt;exec_prefix&gt;
+Consider setting $PYTHONHOME to &lt;prefix&gt;[:&lt;exec_prefix&gt;]
+Fatal Python error: Py_Initialize: Unable to get the locale encoding
+ImportError: No module named 'encodings'
+
+Current thread 0x00007f78508cf740 (most recent call first):
+Aborted
+</code></pre>
+<p>Added to my <code>.bashrc</code>:</p>
+<div class="highlight highlight-source-shell"><pre><span class="pl-k">export</span> COMMAND_NOT_FOUND_FORCE_PYTHON2 <span class="pl-c"><span class="pl-c">#</span> weird Anaconda-produced bug</span></pre></div>
+<blockquote>
+<h3>
+<a aria-hidden="true" class="anchor" href="#now-restart-your-notebook-server" id="user-content-now-restart-your-notebook-server"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Now, restart your notebook server</h3>
+<p>If you were successful, you should now see a large number of kernel options in the New drop down menu.</p>
+</blockquote>
+<p><img alt="" src="https://raw.githubusercontent.com/lmmx/devnotes/master/images/ipy4_demo.png"/></p>
+<blockquote>
+<p>Note that you can also change the kernel used for each individual cell!</p>
+</blockquote>
+
+        </div>
+
+        <div class="wiki-footer gollum-markdown-content boxed-group" id="wiki-footer">
+          <div class="boxed-group-inner wiki-auxiliary-content markdown-body">
+            <p><a href="https://github.com/lmmx/devnotes/wiki">Main page</a></p>
+
+          </div>
+        </div>
+    </div>]

@@ -1,0 +1,363 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <h1>
+<a aria-hidden="true" class="anchor" href="#bisqwits-elevator-algorithm" id="user-content-bisqwits-elevator-algorithm"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Bisqwit's elevator algorithm</h1>
+<p>(Scroll below to also see my Global scheduler algorithm)</p>
+<p>This is my best solution so far. It does utilize the up and down indicators to choose which passengers to pick.</p>
+<p>Stats in perpetual demo (In versions 1.2.x): after 1000s, avg wait time of 6.0s, max wait time of 17.2s, 9570 moves, 1987 people transported.</p>
+<p>Stats in perpetual demo (in versions 1.3.x): after 1000s, avg wait time of 9.2s, max wait time of 25.4s, 5120 moves, 2473 people transported.</p>
+<p>Stats in perpetual demo (in versions 1.4.x): after 1000s, avg wait time of 18.3s, max wait time of 107.0s, 8470 moves, 2445 people transported.</p>
+<p>Stats in perpetual demo (in version 1.6.5): after 6000 transported people, avg wait time 11.6s (4011s), max waiting time 45.9s</p>
+<p>Approximate success rates:</p>
+<pre><code>Challenge    1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16
+Win rate    10  8 10 10 10 *1 *2 10 10 10  8  9  8  3  3  5
+out of      10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10
+Type        sp sp sp sp sp mv mv wa wa wa wa wa wa wa wa wa
+</code></pre>
+<p>*) Much better than that if the special case for #6 and #7 is enabled.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#explanation-for-the-algorithm" id="user-content-explanation-for-the-algorithm"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Explanation for the algorithm</h3>
+<p>Each elevator makes standalone decisions, but they may signal another elevator to change their route.</p>
+<h4>
+<a aria-hidden="true" class="anchor" href="#when-idle" id="user-content-when-idle"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>When idle</h4>
+<p>Whenever an elevator is idle, it picks a new target floor from a set of candidates. Candidates are any floors that match the following criteria:</p>
+<ul>
+<li>A passenger aboard wants to go there, or someone in that floor is summoning an elevator, and our current arrows match that request.</li>
+<li>Check whether some other elevators are currently heading towards that floor. If there is another elevator that is targeting this floor, and is closer to that floor than we are, and we don't have passengers exiting in that floor, discard this candidate.</li>
+</ul>
+<p>If there were no candidates, the source floor is chosen as a candidate. In the beginning of the simulation, the index of each elevator becomes their source floor. In the beginning of the simulation, both arrows are lit for every elevator.</p>
+<h5>
+<a aria-hidden="true" class="anchor" href="#candidate-floor-ranking" id="user-content-candidate-floor-ranking"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Candidate floor ranking</h5>
+<p>Candidates are ranked according to fitness, in order of importance:</p>
+<ul>
+<li>If our passenger wants to exit in that floor, the longer they've been waiting, the better the fitness.</li>
+<li>The closer the floor is to where we are now, the better the fitness.</li>
+<li>The longer it has been since someone last visited that floor, the better the fitness.</li>
+</ul>
+<p>The best matching candidate is chosen as a new target floor, and the elevator departs towards the target floor.</p>
+<h4>
+<a aria-hidden="true" class="anchor" href="#departing" id="user-content-departing"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Departing</h4>
+<p>Whenever an elevator departs, the passengers' destinations are checked. If there is a destination above our current target, we light the up-arrow. If there is a destination below our current target, we light the down-arrow. If we didn't decide to light either arrow, we light both arrows.</p>
+<p>Whether the current target is above or below our current position plays no role in the arrow choice.</p>
+<h4>
+<a aria-hidden="true" class="anchor" href="#passing-or-stopping" id="user-content-passing-or-stopping"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Passing or stopping</h4>
+<p>Whenever a moving elevator is about to pass a floor, it checks whether to make an unscheduled stop in that floor.</p>
+<ul>
+<li>If there is a passenger who wants to exit in that floor, make a stop.</li>
+<li>If an elevator has been summoned in that floor and our current arrows match that request, and no other elevator is currently heading towards that floor, and we have room in the elevator, make a stop. Maximum weight is 0.7 if we have passengers exiting in that floor; 0.3 otherwise.</li>
+</ul>
+<p>If a stop is made, the current target is replaced with the new floor: the elevator changes its target while moving. This counts as a departure, and the arrow lights are recalculated.</p>
+<h4>
+<a aria-hidden="true" class="anchor" href="#arriving" id="user-content-arriving"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Arriving</h4>
+<p>Whenever an elevator arrives in a floor, the current floor is set as a new source floor for that elevator. If there remain no passengers, both its arrow lights will light up (passengers will be picked up towards any direction). Additionally, if there is another elevator still heading towards this floor, and all of the following criteria are met, the other elevator is forced to cancel its current route and calculate a new one (by entering its idle state, even though it is moving).</p>
+<ul>
+<li>The other elevator is not depositing passengers in that floor.</li>
+<li>The other elevator doesn't have arrow-lights on that we don't also have.</li>
+</ul>
+<h3>
+<a aria-hidden="true" class="anchor" href="#source-code" id="user-content-source-code"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Source code</h3>
+<pre><code>{
+    /* This is my (Joel Yliluoma's) solution to Elevator Saga at http://play.elevatorsaga.com/ */
+    /* This code plows through all challenges from #1 to #17. However, note:
+     * In challenge #6, you need to change one of the limits, below. (Indicated in comments.)
+     * In the max-wait challenges, you may need to click Restart a few ones to get better luck.
+     */
+    /* Check out my programming-related YouTube channel! http://youtube.com/user/Bisqwit */
+
+    init: function(elevators, floors) {
+        var bot=999, top=-999, age={}, totalage=1;
+        var summonUp={};  // List of floors where any elevator has been summoned to go up
+        var summonDn={};  // List of floors where any elevator has been summoned to go down
+
+        // Configurable settings:
+        var MaxElevators      = 99;    // Change this number into 1 for challenges #6 and #7
+        var ExplicitSummons   = false; // If true, users can directly summon elevators. Theoretically it decreases latency.
+        var TaskRobbing       = true;  // If true, an elevator can rob the task from another elevator
+        var WaitingCoeff      = 500;   // How much priority on the age of passengers' wishes in scheduling
+        var AgeCoeff          = 1;     // How much priority on the age of floor-visiting in scheduling
+        var DistanceCoeff     = 10;    // How much priority on distance in scheduling
+        var MaxSummonWeight   = 0.3;   // Maximum weight to divert route to pick new passengers
+        var MaxSummonWeight2  = 0.7;   // Same as above, but when we have passengers who'll leave first
+        var UtilizeIndicators = true;  // Set to false to ignore arrow indicators.
+        var ForceReroute      = true;  // Whether to signal other elevators to reroute if we arrive first
+
+        // verifySummons: Called whenever someone summons an elevator. Only used when ExplicitSummons=true.
+        var verifySummons = ExplicitSummons ? function(f)
+        {
+            // Check whether any elevator is currently coming here.
+            // If not, but there's an elevator moving towards a floor
+            // for no good reason, reassign that elevator to come here.
+            var closestDistance = 999, closest = null, pending = false;
+            elevators.forEach(function(e) {
+                if(e.currentTarget == f) pending = true; // He's coming right now.
+                //if(e.pOrder[f]) pending = true;        // He's coming eventually.
+                if(e.currentTarget &gt;= 0
+                &amp;&amp; !Object.keys(e.pOrder).length
+                &amp;&amp; !summonUp[e.currentTarget]
+                &amp;&amp; !summonDn[e.currentTarget])          // He's not busy.
+                {
+                    var distance = Math.abs(e.currentFloor() - f);
+                    if(distance &lt; closestDistance)
+                    {
+                        closestDistance = distance;
+                        closest         = e;
+                    }
+                }
+            })
+            if(!pending &amp;&amp; closestDistance &lt; 999)
+                closest.reschedule(f) // Explicitly summon this elevator in particular
+        } : function(){};
+
+        floors.forEach(function(f) {
+            var fn = f.floorNum();
+            // Find top and bottom floors (I thought there might be elevators that only go between certain floors)
+            if(fn &gt; top) top = fn;
+            if(fn &lt; bot) bot = fn;
+            f.on("up_button_pressed",   function() { summonUp[fn] = true; verifySummons(fn) } );
+            f.on("down_button_pressed", function() { summonDn[fn] = true; verifySummons(fn) } );
+            age[fn] = 0;
+        });
+
+        var elevno=0;
+        elevators.forEach(function(e) { 
+            if(elevno &gt;= MaxElevators) return;
+            e.pOrder = {};  // List of floors where passengers currently want to go.
+            e.currentOrigin = elevno++;  // Where we last stopped.
+            e.currentTarget = -1;        // Our current heading (floor number)
+            e.goingDnIndicator = e.goingDownIndicator; // Create a function alias.
+            e.goingUpIndicator(true); // Start with both up &amp; down indicators shining.
+            e.goingDnIndicator(true);
+            // reschedule: Cancel whereever the elevator is currently heading
+            //             f: New floor number (-1 = choose with algorithm)
+            e.reschedule = function(f)
+            {
+                // Cancel the current target
+                e.destinationQueue = [];
+                if(UtilizeIndicators)
+                {
+                    // Calculate which passengers we would like to pick
+                    // - If we have a pOrder that is above current floor, set up-indicator
+                    // - If we have a pOrder that is below current floor, set dn-indicator
+                    // - If we don't have any pOrders at all, set both indicators
+                    var up = false, dn = false;
+                    for(var order in e.pOrder)
+                    {
+                        if(order == f) continue; // Ignore the current heading
+                        if(order &gt; e.currentFloor()) up = true;
+                        if(order &lt; e.currentFloor()) dn = true;
+                    }
+                    e.goingUpIndicator(up || !dn)
+                    e.goingDnIndicator(dn || !up)
+                }
+                // And set a new heading!
+                e.currentTarget = f;
+                if(f &gt;= 0)
+                    e.goToFloor(f);    // Go to this floor
+                else
+                    e.trigger("idle"); // Calculate a new target
+            };
+            // couldPickPassengers: Determine whether we could pick passengers in given floor
+            e.couldPickPassengers = function(f, robbing, summoned, indicator)
+            {
+                var maxLoad = (e.pOrder[f] ? MaxSummonWeight2 : MaxSummonWeight);
+                if(summoned[f] &amp;&amp; indicator(e) &amp;&amp; e.loadFactor() &lt; maxLoad)
+                {
+                    // Check if some other elevator is also acting on this request.
+                    var bad = false;
+                    elevators.forEach(function(e2) {
+                        // Even if they are, but they are farther than we are, consider robbing their task.
+                        if(e2.currentTarget == f &amp;&amp; indicator(e2)
+                        &amp;&amp; (!robbing || e2.pOrder[f] || Math.abs(e2.currentFloor() - f) &lt; Math.abs(e.currentFloor() - f)))
+                            bad = true;
+                     });
+                    if(!bad) return true;
+                }
+                return false;
+            };
+            e.couldPickPassengersUp = function(f,r) { return e.couldPickPassengers(f,r,summonUp, function(obj){return obj.goingUpIndicator()}) }
+            e.couldPickPassengersDn = function(f,r) { return e.couldPickPassengers(f,r,summonDn, function(obj){return obj.goingDnIndicator()}) }
+
+            e.on("floor_button_pressed", function(f) { e.pOrder[f] = totalage++ });
+
+            e.on("passing_floor", function(f,dir) {
+                // If we're passing by a floor, check if there's/ a good reason to make an unscheduled stop there.
+                // However, don't rob another elevator, or the candidate scoring in idle() is for nothing.
+                if(f == e.currentTarget) return;
+                if(e.pOrder[f]    // If the elevator must stop in this floor (but is currently heading some other floor)
+                || e.couldPickPassengersDn(f,false)
+                || e.couldPickPassengersUp(f,false))
+                {
+                    e.reschedule(f);
+                }
+            });
+            e.on("stopped_at_floor", function(f) {
+                // We have arrived at this floor.
+                delete e.pOrder[f];   // Nobody aboard anymore who wants to exit here.
+                e.currentTarget = -1; // We're actually going nowhere right now.
+                e.currentOrigin = f;  // And this is our new point of origin.
+                age[f] = ++totalage;  // Age will be used to prioritize floors.
+                // Check whether some other elevator is heading to this floor
+                if(ForceReroute)
+                    elevators.forEach(function(e2){
+                        // They are, and it's not because they have passengers leaving there.
+                        if(e2.currentTarget == f &amp;&amp; !e2.pOrder[f]
+                        &amp;&amp; e.goingUpIndicator() &gt;= e2.goingUpIndicator()
+                        &amp;&amp; e.goingDnIndicator() &gt;= e2.goingDnIndicator())
+                        {
+                            e2.reschedule(-1);
+                        }
+                });
+                // If we don't have any passengers anymore, set both indicators
+                if(!Object.keys(e.pOrder).length) { e.goingUpIndicator(true); e.goingDnIndicator(true); }
+                // An elevator is no longer being summoned here.
+                if(e.goingUpIndicator()) delete summonUp[f];
+                if(e.goingDnIndicator()) delete summonDn[f];
+            });
+            e.on("idle", function(){
+                var cur = e.currentFloor(),  bestscore=-1e30, target = e.currentOrigin;
+                // Pick a target. Evaluate each floor.
+                for(var f = bot; f &lt;= top; ++f)
+                {
+                    // Ignore requests to go to a floor we're already in, unless we're currently moving
+                    if(f == cur &amp;&amp; e.currentTarget == -1) { continue; }
+                    // Deal with a request only on three conditions:
+                    // - Our passenger wants to go there
+                    // - An elevator has been summoned there and nobody else is doing it
+                    // - Someone else is doing it, but we're in a better position to do it (task robbing)
+                    if(e.pOrder[f]
+                    || e.couldPickPassengersUp(f, TaskRobbing)
+                    || e.couldPickPassengersDn(f, TaskRobbing))
+                    {
+                        // The score is how eager we are to take this particular floor
+                        //   Math.abs(f - cur)  = the distance to the current floor.
+                        //   totalage-age[f]    = How many ticks since someone last landed in that floor
+                        //   totalage-pOrder[f] = How long have customers been waiting this floor
+                        var score = (totalage-age[f])*AgeCoeff - Math.abs(f - cur)*DistanceCoeff;
+                        if(e.pOrder[f]) score += WaitingCoeff*(totalage - e.pOrder[f]);
+                        if(score &gt; bestscore) { bestscore=score; target=f; }
+                    }
+                }
+                // Get the highest ranking candidate, and honor it.
+                e.reschedule(target);
+            });
+        });
+    },
+    update: function(dt, elevators, floors) {
+        // We normally don't need to do anything here
+    }
+}
+</code></pre>
+<h1>
+<a aria-hidden="true" class="anchor" href="#a-global-scheduler-algorithm" id="user-content-a-global-scheduler-algorithm"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>A global-scheduler algorithm</h1>
+<p>I also tried creating a global scheduler algorithm. It isn't very good yet though.
+It runs the rescheduler every time something noteworthy happens, and its characteristic appears to be that the elevators "hesitate" a lot on where they should go next. A jumpy ride for the passengers...</p>
+<p>Stats (version 1.3.1): 2471 transported, avg. wait 11.9s, max wait 34.0s, 7338 moves</p>
+<p>Stats (version 1.4.0): 2428 transported, avg. wait 27.6s, max wait 104.5s, 12101 moves</p>
+<p>Stats in perpetual demo (in version 1.6.5): after 6000 transported people, avg wait time 17.9s (4014s), max waiting time 68.2s</p>
+<pre><code>{
+    update: function(dt, elevators, floors) {},
+    init: function(elevators, floors) {
+        var timer = 1;                    // Global timer.
+        var summonUp = {}, summonDn = {}; // Where elevator has been summoned. {floor:timer}
+        var updateSchedules = function() {
+            // Goals: For each "idle" elevator (currentTarget = -1),
+            //        a new target _must_ be assigned to keep the machine running.
+            //        For every other elevator, a new target _may_ be assigned.
+            //        Targets are assigned using e.reschedule(targetfloornumber).
+            // For every elevator, evaluate each floor as a candidate new target.
+            // Then, reschedule the elevator that would most benefit from a route change.
+            for(var round=0; round&lt;100; ++round)
+            {
+                var bestBenefit = {score:0, elevator:null, target:-1}
+                elevators.forEach(function(e) {
+                    var choices = {}
+                    floors.forEach(function(f) {
+                        var fn = f.floorNum(), score = 0;
+                        // Sum the total age of passengers' wishes to go to this floor
+                        if(e.wishes[fn]) score += 10*Math.pow(timer-e.wishes[fn], 2);
+                        // Sum the summons to this floor, if we can handle it
+                        var free = Math.max(0, (e.wishes[fn] ? 0.7 : 0.3) - e.loadFactor());
+                        if(e.goingUpIndicator() &amp;&amp; summonUp[fn])   score += 4*Math.pow(timer-summonUp[fn], 1.4) * free;
+                        if(e.goingDownIndicator() &amp;&amp; summonDn[fn]) score += 4*Math.pow(timer-summonDn[fn], 1.4) * free;
+                        // Subtract the number of elevators going to this floor,
+                        // each multiplied by their remaining distance
+                        if(!e.wishes[fn])
+                            elevators.forEach(function(e2) {
+                                if(e2.currentTarget == fn &amp;&amp; e.elevatorNumber != e2.elevatorNumber
+                                &amp;&amp; (!summonUp[fn] || e2.goingUpIndicator())
+                                &amp;&amp; (!summonDn[fn] || e2.goingDownIndicator()))
+                                    score -= 50 * (1 - Math.abs(e2.nearestFloor - fn) / floors.length)
+                            })
+                        // Add the estimated time to reach that floor
+                        var distance = Math.abs(e.nearestFloor - fn);
+                        // If the elevator would have to change directions, add some cost to the distance
+                        if(e.currentTarget &gt;= 0 &amp;&amp; fn != e.nearestFloor
+                        &amp;&amp; (e.currentTarget &lt; e.currentOrigin) != (fn &lt; e.nearestFloor))
+                            distance += 2;
+                        choices[fn] = score - Math.pow(distance / floors.length, 1.0)
+                    })
+                    var currentScore = e.currentTarget &gt;= 0 ? choices[e.currentTarget] : -1e9;
+                    for(var fn in choices)
+                        if((choices[fn] - currentScore) &gt; bestBenefit.score)
+                            bestBenefit = {score:(choices[fn] - currentScore), elevator:e, target:fn}
+                })
+                if(bestBenefit.target &lt; 0 || bestBenefit.target == bestBenefit.elevator.currentTarget) break;
+                bestBenefit.elevator.reschedule(bestBenefit.target);
+            }
+            // Enact reschedulings:
+            elevators.forEach(function(e) { e.pending_reschedule() })
+        };
+        var updateNearest = function() {
+            elevators.forEach(function(e) { e.nearestFloor = e.currentFloor() })
+        }
+        var index = 0;
+        elevators.forEach(function(e) {
+            e.elevatorNumber = index++;
+            e.currentOrigin  = e.currentFloor()
+            e.currentTarget  = -1; // -1 = current state: idle
+            e.nearestFloor   = e.currentOrigin;
+            e.wishes         = {} // Where passengers want to go. {floor:timer}
+            e.pending_reschedule = function() {}
+            // Reschedule: Discard current schedule and target a new floor
+            //             fn = floor number
+            e.reschedule = function(fn) {
+                e.currentOrigin    = e.nearestFloor;
+                e.currentTarget    = fn;
+                e.pending_reschedule = function() { e.destinationQueue = []; e.goToFloor(fn); e.pending_reschedule = function() {} }
+            };
+            // UpdateArrows: Update the arrow indicators for the elevator.
+            e.updateArrows = function(whence) {
+                var up = false, dn = false;
+                for(fn in e.wishes) {
+                    if(fn == e.currentTarget) continue;
+                    if(fn &gt; whence) up = true;
+                    if(fn &lt; whence) dn = true;
+                }
+                e.goingUpIndicator(up || !dn);
+                e.goingDownIndicator(dn || !up);
+            }
+            e.on("idle", function()            { e.currentTarget = -1; updateNearest(); updateSchedules() })
+            e.on("passing_floor", function(fn) { e.updateArrows(e.currentTarget); updateNearest(); e.nearestFloor = fn; updateSchedules() })
+            e.on("stopped_at_floor", function(fn) {
+                delete e.wishes[fn]; 
+                e.currentTarget = -1; // state: idle
+                e.currentOrigin = fn;
+                e.updateArrows(e.currentOrigin);
+                if(e.goingUpIndicator()) delete summonUp[fn];
+                if(e.goingDownIndicator()) delete summonDn[fn];
+                // Don't run updateSchedules() here; idle() will be called immediately hereafter anyway.
+            })
+            e.on("floor_button_pressed", function(fn) { e.wishes[fn] = timer++; })
+        })
+        floors.forEach(function(f) {
+            var fn = f.floorNum();
+            f.on("up_button_pressed",   function() { summonUp[fn] = timer++; updateSchedules() })
+            f.on("down_button_pressed", function() { summonDn[fn] = timer++; updateSchedules() })
+        })
+    }
+}
+</code></pre>
+
+        </div>
+
+    </div>]

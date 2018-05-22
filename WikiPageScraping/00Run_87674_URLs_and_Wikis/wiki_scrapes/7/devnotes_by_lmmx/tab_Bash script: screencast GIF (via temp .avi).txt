@@ -1,0 +1,42 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>Using <a href="https://github.com/lolilolicon/FFcast"><code>ffcast</code></a> with <a href="https://github.com/lolilolicon/xrectsel"><code>xrectsel</code></a></p>
+<div class="highlight highlight-source-shell"><pre>mkdir /home/louis/opt/FFcast
+chmod 777 /home/louis/opt/FFcast
+<span class="pl-c1">cd</span> FFcast <span class="pl-k">&amp;&amp;</span> ./bootstrap <span class="pl-k">&amp;&amp;</span> ./configure --enable-xrectsel --prefix /usr --libexecdir /usr/lib --sysconfdir /etc <span class="pl-k">&amp;&amp;</span> make <span class="pl-k">&amp;&amp;</span> make DESTDIR=<span class="pl-s"><span class="pl-pds">"</span>/home/louis/opt/FFcast<span class="pl-pds">"</span></span> install
+chmod 755 /home/louis/opt/FFcast</pre></div>
+<p>If <code>unable to located package autoreconf</code> install <code>dh-autoreconf</code></p>
+<div class="highlight highlight-source-shell"><pre>sudo apt-get install dh-autoreconf</pre></div>
+<p><a href="http://askubuntu.com/questions/265471/autoreconf-not-found-error-during-making-qemu-1-4-0" rel="nofollow">via</a></p>
+<div class="highlight highlight-source-shell"><pre>./bootstrap <span class="pl-k">&amp;&amp;</span> ./configure --enable-xrectsel --prefix /usr --libexecdir /usr/lib --sysconfdir /etc <span class="pl-k">&amp;&amp;</span> make <span class="pl-k">&amp;&amp;</span> make DESTDIR=<span class="pl-s"><span class="pl-pds">"</span>/home/louis/opt/FFcast<span class="pl-pds">"</span></span> install</pre></div>
+<ul>
+<li>Installing <code>ffcast</code> with <code>xrectsel</code> seems to require installation of xrectsel and adding on <code>PATH</code> first, but then oddly manages to delete <code>xrectsel</code> upon installation. Delete <code>xrectsel</code> from your PATH statement in <code>.bashrc</code> (it will be in <code>{ffcast_DESTDIR}/usr/bin/</code> alongside <code>ffcast</code>
+</li>
+</ul>
+<div class="highlight highlight-source-shell"><pre><span class="pl-k">export</span> PATH=<span class="pl-smi">$PATH</span>:/home/louis/opt/FFcast/usr/bin</pre></div>
+<ul>
+<li>Delete <code>git</code> source directories</li>
+<li>Now that <code>ffcast</code> is a command, it can be used in a bash script to make a screencast (GIF via temporary avi video file), and this script can also be put onto the <code>PATH</code> for ease of use <a href="http://unix.stackexchange.com/questions/113695/gif-screencasting-the-unix-way/113696#113696" rel="nofollow">via</a>.</li>
+<li>Create a file in <code>/usr/local/bin/</code> named e.g. <code>gifcast</code> (and <code>chmod 755</code> it) :</li>
+</ul>
+<div class="highlight highlight-source-shell"><pre><span class="pl-c"><span class="pl-c">#!</span>/bin/bash</span>
+TMP_AVI=<span class="pl-s"><span class="pl-pds">$(</span>mktemp /tmp/outXXXXXXXXXX.avi<span class="pl-pds">)</span></span>
+ffcast -s % ffmpeg -y -f x11grab -show_region 1 -framerate 15 \
+    -video_size %s -i %D+%c -codec:v huffyuv                  \
+    -vf crop=<span class="pl-s"><span class="pl-pds">"</span>iw-mod(iw<span class="pl-cce">\\</span>,2):ih-mod(ih<span class="pl-cce">\\</span>,2)<span class="pl-pds">"</span></span> <span class="pl-smi">$TMP_AVI</span>         \
+<span class="pl-k">&amp;&amp;</span> convert -set delay 10 -layers Optimize <span class="pl-smi">$TMP_AVI</span> out.gif</pre></div>
+<p><code>gifcast</code> is now a command to create <code>out.gif</code> from the screen in whichever directory you're running in <img align="absmiddle" alt=":smiley:" class="emoji" data-canonical-src="https://assets-cdn.github.com/images/icons/emoji/unicode/1f603.png" height="20" src="https://camo.githubusercontent.com/11be4fdc31bbe050d5341c53d075a3bf846310f0/68747470733a2f2f6173736574732d63646e2e6769746875622e636f6d2f696d616765732f69636f6e732f656d6f6a692f756e69636f64652f31663630332e706e67" title=":smiley:" width="20"/></p>
+<ul>
+<li>Note: if the script errors out with <code>error: external command '%' not found</code>, try removing the <code>%</code> in the script after <code>-s</code> (see <code>man</code> pages)</li>
+</ul>
+<p>Related: <a href="https://github.com/lmmx/devnotes/wiki/Gif-terminal-manipulation">Gif terminal manipulation/optimisation</a></p>
+
+        </div>
+
+        <div class="wiki-footer gollum-markdown-content boxed-group" id="wiki-footer">
+          <div class="boxed-group-inner wiki-auxiliary-content markdown-body">
+            <p><a href="https://github.com/lmmx/devnotes/wiki">Main page</a></p>
+
+          </div>
+        </div>
+    </div>]

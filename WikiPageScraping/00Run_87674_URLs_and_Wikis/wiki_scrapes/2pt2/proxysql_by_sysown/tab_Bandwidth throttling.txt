@@ -1,0 +1,27 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>ProxySQL 1.4.4 introduces 2 new bandwidth throttling:</p>
+<ul>
+<li>from ProxySQL to client</li>
+<li>from MySQL server to ProxySQL</li>
+</ul>
+<h1>
+<a aria-hidden="true" class="anchor" href="#bandwidth-throttling-from-proxysql-to-client" id="user-content-bandwidth-throttling-from-proxysql-to-client"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Bandwidth throttling from ProxySQL to client</h1>
+<p>In ProxySQL 1.4.4 a new global variable named <code>throttle_max_bytes_per_second_to_client</code> was added. This variable defines the maximum number of bytes per second sent to a client.<br/>
+Note that currently this is only a global variable: it affects every single client connection, no matter from where hostgroup the resultset is coming, neither how many clients are connected.<br/>
+This feature is useful to limit the bandwidth used between the client and proxysql, for example to avoid the financial penalty of purchasing an expensive committed information rate from an Internet service provider.</p>
+<ul>
+<li>Minimum value: 1024       (1KB/s)</li>
+<li>Maximum value: 2147483647 (2GB/s)</li>
+<li>Default value: 2147483647 (2GB/s)</li>
+</ul>
+<h1>
+<a aria-hidden="true" class="anchor" href="#bandwidth-throttling-from-mysql-server-to-proxysql" id="user-content-bandwidth-throttling-from-mysql-server-to-proxysql"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Bandwidth throttling from MySQL server to ProxySQL</h1>
+<p>In order to be able to perform query retry in case a backend connection is terminated while sending resultset, ProxySQL buffers <a href="./Global-variables#mysql-threshold_resultset_size">mysql-threshold_resultset_size</a> bytes coming from the backend before starting data to the client. That means that ProxySQL is able to perform query retry only for queries that return a small resultset.<br/>
+When a big resultset is send from the backend to ProxySQL and <code>mysql-threshold_resultset_size</code> threshold is reached, ProxySQL will immediately start sending data to the client.<br/>
+A problem arises if the client is not able to proceed data at the same rate in which the backend is sending it, for example if the client uses some high level driver or ORM. If this happens, historically ProxySQL would normally buffer all the resultset sent by the backend, waiting the client to retrieve it, leading to a potential OOM.<br/>
+In ProxySQL 1.4.4 the data flow was optimized so that if more than 8 x <code>mysql-threshold_resultset_size</code> bytes are already buffered in ProxySQL and still not sent to the client, ProxySQL will pause retrieving data from the backend unless the client will start consuming the buffered data.</p>
+
+        </div>
+
+    </div>]

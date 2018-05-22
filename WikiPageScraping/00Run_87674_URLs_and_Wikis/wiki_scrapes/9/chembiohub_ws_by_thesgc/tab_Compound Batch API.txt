@@ -1,0 +1,1101 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>Create inventory batches* or list Compound or Inventory Batches</p>
+<p>* Inventory batches are compound batches without chemical information</p>
+<ul>
+<li><strong><a href="#post-inventory-batch">POST Inventory Batch</a></strong></li>
+<li><strong><a href="#patch-compound-or-inventory-batch">PATCH Compound or Inventory Batch</a></strong></li>
+<li><strong><a href="#get-compound-or-inventory-batch">GET Compound or Inventory Batch</a></strong></li>
+<li><strong><a href="#get-compound-or-inventory-batches">GET Compound or Inventory Batches</a></strong></li>
+<li><strong><a href="#get-autocomplete-on-compound-or-inventory-batches">GET Autocomplete on Compound or Inventory Batches</a></strong></li>
+</ul>
+<h2>
+<a aria-hidden="true" class="anchor" href="#post-inventory-batch" id="user-content-post-inventory-batch"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><strong>POST Inventory Batch</strong>
+</h2>
+<p>Save an inventory data point with its project data fields (in the cusdtom field attribute)</p>
+<ul>
+<li>
+<p><strong>Testing</strong></p>
+<ul>
+<li>The test scenario for this API is <a href="https://github.com/thesgc/chembiohub_ws/blob/master/cbh_tests/features/compound_batch_single.feature#L29">here</a> The test results can be viewed on Travis <a href="https://travis-ci.org/thesgc/chembiohub_ws" rel="nofollow">here</a>
+</li>
+</ul>
+</li>
+<li>
+<p><strong>Source Code links</strong></p>
+<ul>
+<li>**This API is used to save single inventory data points in the front end <a href="https://github.com/thesgc/ng-chem/blob/master/app/scripts/controllers/compoundbatchv2.js#L601">here</a> **</li>
+<li>In the back end the saving of an inventory batch is mostly done without need for changing the standard tastypie modelresource code - the post_list function does not need to be implemented <a href="https://github.com/thesgc/chembiohub_ws/blob/master/cbh_chem_api/resources.py#L618">see here</a>. Following saving of the data to the database, some reformatting is done so that data can be indexed in elasticsearch and editied again on the front end. #These changes are mostly necessary because our Hstore column part serializes the data. More on this in the <a class="internal present" href="/thesgc/chembiohub_ws/wiki/Compound-Batch-Indexing-API">Compound Batch Indexing API</a> page.</li>
+<li>This API is a rewrite of the original <a class="internal present" href="/thesgc/chembiohub_ws/wiki/Bulk-Upload-API">Bulk Upload API</a> but insufficient time was available to complete the rewrite process.</li>
+</ul>
+</li>
+<li>
+<p><strong>URL</strong></p>
+<p>/{namespace}/api/cbh_compound_batches_v2/</p>
+</li>
+<li>
+<p><strong>Method:</strong></p>
+<p><code>POST</code></p>
+</li>
+<li>
+<p><strong>URL Params</strong></p>
+<p><strong>Required:</strong></p>
+</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th align="center">Param</th>
+<th>Default</th>
+<th>Description</th>
+<th>options</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="center">namespace</td>
+<td>Default for your installation is chembiohub</td>
+<td>the URL path, conda environment name etc.</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Optional:</strong></p>
+<p>None</p>
+<ul>
+<li><strong>POST data</strong></li>
+</ul>
+<table>
+<thead>
+<tr>
+<th align="center">Param</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="center">project</td>
+<td>The project primary key in the format { "pk" :4}</td>
+</tr>
+<tr>
+<td align="center">custom_fields</td>
+<td>The data against this inventory batch as key values JSON - there will be one key present for each field configured at the project level via the <a class="internal present" href="/thesgc/chembiohub_ws/wiki/Project-API">Project API</a>
+</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li>
+<p><strong>Success Response:</strong></p>
+<ul>
+<li>
+<p><strong>Code:</strong> 201 <br/></p>
+</li>
+<li>
+<p><strong>Notable response attributes</strong></p>
+</li>
+</ul>
+</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th align="center">Param</th>
+<th>Description</th>
+</tr>
+</thead>
+</table>
+<ul>
+<li><strong>Content:</strong></li>
+</ul>
+
+<ul>
+<li>
+<p><strong>Response Schema</strong></p>
+<ul>
+<li>No Schema available</li>
+</ul>
+</li>
+<li>
+<p><strong>Error Response:</strong></p>
+<p>If you are not logged in to the application</p>
+<ul>
+<li>
+<strong>Code:</strong> 401 UNAUTHORIZED <br/>
+<strong>Content:</strong> ``</li>
+</ul>
+<p>OR</p>
+<ul>
+<li>
+<strong>Code:</strong> 403 BAD REQUEST <br/>
+<strong>Content:</strong>
+</li>
+</ul>
+</li>
+</ul>
+
+<pre><code>   { error : "The error name from the back end" , traceback : "The traceback in python"}
+</code></pre>
+<ul>
+<li>
+<strong>Code:</strong> 500 INTERNAL SERVER ERROR <br/>
+<strong>Content:</strong>
+</li>
+</ul>
+
+<pre><code>    { error : "The error name from the back end" , traceback : "The traceback in python"}
+</code></pre>
+<ul>
+<li>
+<p><strong>Sample Call:</strong></p>
+<pre><code>  See code links
+</code></pre>
+</li>
+<li>
+<p><strong>Notes:</strong></p>
+</li>
+</ul>
+<h2>
+<a aria-hidden="true" class="anchor" href="#patch-compound-or-inventory-batch" id="user-content-patch-compound-or-inventory-batch"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><strong>PATCH Compound or Inventory Batch</strong>
+</h2>
+<p>Update an inventory data point with its project data fields (in the custom field attribute).</p>
+<ul>
+<li>
+<p><strong>Testing</strong></p>
+<ul>
+<li>This API is not yet tested</li>
+</ul>
+</li>
+<li>
+<p><strong>Source Code links</strong></p>
+<ul>
+<li><strong>This API is used to update only the custom fields of a compound batch or inventory data point <a href="https://github.com/thesgc/ng-chem/blob/master/app/scripts/controllers/compoundbatchv2.js#L522">here</a>. This function is called in a number of places - <a href="https://github.com/thesgc/ng-chem/blob/master/app/scripts/services/renderers.js#L222">when archiving an item</a>, when  saving the custom fields on an item in the single molecule view <a href="https://github.com/thesgc/ng-chem/blob/master/app/scripts/controllers/singlemol.js#L235">here</a></strong></li>
+<li>In the back end the saving of an inventory batch is mostly done without need for changing the standard tastypie modelresource code - the post_list function does not need to be implemented <a href="https://github.com/thesgc/chembiohub_ws/blob/master/cbh_chem_api/resources.py#L618">see here</a>. Following saving of the data to the database, some reformatting is done so that data can be indexed in elasticsearch and editied again on the front end. #These changes are mostly necessary because our Hstore column part serializes the data. More on this in the <a class="internal present" href="/thesgc/chembiohub_ws/wiki/Compound-Batch-Indexing-API">Compound Batch Indexing API</a> page.</li>
+<li>This API is a rewrite of the original <a class="internal present" href="/thesgc/chembiohub_ws/wiki/Bulk-Upload-API">Bulk Upload API</a> but insufficient time was available to complete the rewrite process.</li>
+</ul>
+</li>
+<li>
+<p><strong>URL</strong></p>
+<p>/{namespace}/api/cbh_compound_batches_v2/</p>
+</li>
+<li>
+<p><strong>Method:</strong></p>
+<p><code>POST</code></p>
+</li>
+<li>
+<p><strong>URL Params</strong></p>
+<p><strong>Required:</strong></p>
+</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th align="center">Param</th>
+<th>Default</th>
+<th>Description</th>
+<th>options</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="center">namespace</td>
+<td>Default for your installation is chembiohub</td>
+<td>the URL path, conda environment name etc.</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Optional:</strong></p>
+<p>None</p>
+<ul>
+<li><strong>POST data</strong></li>
+</ul>
+<table>
+<thead>
+<tr>
+<th align="center">Param</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="center">project</td>
+<td>The project primary key in the format { "pk" :4}</td>
+</tr>
+<tr>
+<td align="center">custom_fields</td>
+<td>The data against this inventory batch as key values JSON - there will be one key present for each field configured at the project level via the <a class="internal present" href="/thesgc/chembiohub_ws/wiki/Project-API">Project API</a>
+</td>
+</tr>
+<tr>
+<td align="center">properties</td>
+<td>Extra data not part of the fields configured at the project level. For example if the item is archived there will be { "archived" : "true"}</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li>
+<p><strong>Success Response:</strong></p>
+<ul>
+<li>
+<p><strong>Code:</strong> 202 <br/></p>
+</li>
+<li>
+<p><strong>Notable response attributes</strong></p>
+</li>
+</ul>
+</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th align="center">Param</th>
+<th>Description</th>
+</tr>
+</thead>
+</table>
+<ul>
+<li><strong>Content:</strong></li>
+</ul>
+
+<ul>
+<li>
+<p><strong>Response Schema</strong></p>
+<ul>
+<li>No Schema available</li>
+</ul>
+</li>
+<li>
+<p><strong>Error Response:</strong></p>
+<p>If you are not logged in to the application</p>
+<ul>
+<li>
+<strong>Code:</strong> 401 UNAUTHORIZED <br/>
+<strong>Content:</strong> ``</li>
+</ul>
+<p>OR</p>
+<ul>
+<li>
+<strong>Code:</strong> 403 BAD REQUEST <br/>
+<strong>Content:</strong>
+</li>
+</ul>
+</li>
+</ul>
+
+<pre><code>   { error : "The error name from the back end" , traceback : "The traceback in python"}
+</code></pre>
+<ul>
+<li>
+<strong>Code:</strong> 500 INTERNAL SERVER ERROR <br/>
+<strong>Content:</strong>
+</li>
+</ul>
+
+<pre><code>    { error : "The error name from the back end" , traceback : "The traceback in python"}
+</code></pre>
+<ul>
+<li>
+<p><strong>Sample Call:</strong></p>
+<pre><code>  See code links
+</code></pre>
+</li>
+<li>
+<p><strong>Notes:</strong></p>
+</li>
+</ul>
+<h2>
+<a aria-hidden="true" class="anchor" href="#get-compound-or-inventory-batch" id="user-content-get-compound-or-inventory-batch"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><strong>GET Compound or Inventory Batch</strong>
+</h2>
+<p>Returns a single compound batch or inventory batch record</p>
+<ul>
+<li>
+<p><strong>Testing</strong></p>
+<ul>
+<li>The test scenario for this API is <a href="https://github.com/thesgc/chembiohub_ws/search?utf8=%E2%9C%93&amp;q=%22I+can+request+a+single+compound+batch+via+the+get+detail+api%22">here</a> The test results can be viewed on Travis <a href="https://travis-ci.org/thesgc/chembiohub_ws" rel="nofollow">here</a>
+</li>
+</ul>
+</li>
+<li>
+<p><strong>Source Code links</strong></p>
+<ul>
+<li><strong>This API is used to load a single inventory item or compound batch when looking at the single molecule view. See <a href="https://github.com/thesgc/ng-chem/blob/master/app/scripts/controllers/singlemol.js#L21">here</a></strong></li>
+<li><strong><a href="https://github.com/thesgc/chembiohub_ws/blob/master/cbh_chem_api/resources.py#L357">Back end code</a> in the get_detail method - data is retrieved form Elasticsearch</strong></li>
+</ul>
+</li>
+<li>
+<p><strong>URL</strong></p>
+<p>/{namespace}/api/cbh_compound_batches_v2/{pk}</p>
+</li>
+<li>
+<p><strong>Method:</strong></p>
+<p><code>GET</code></p>
+</li>
+<li>
+<p><strong>URL Params</strong></p>
+<p><strong>Required:</strong></p>
+</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th align="center">Param</th>
+<th>Default</th>
+<th>Description</th>
+<th>options</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="center">namespace</td>
+<td>Default for your installation is chembiohub</td>
+<td>the URL path, conda environment name etc.</td>
+<td></td>
+</tr>
+<tr>
+<td align="center">format</td>
+<td>json if Ajax</td>
+<td>Data format to return</td>
+<td>json, xml, yaml also for this API xlsx and sdf</td>
+</tr>
+<tr>
+<td align="center">pk</td>
+<td>None</td>
+<td>The ID of the compound or inventory batch to be returned</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Optional:</strong></p>
+<p>None</p>
+<ul>
+<li>
+<p><strong>Success Response:</strong></p>
+<ul>
+<li>
+<p><strong>Code:</strong> 200 <br/></p>
+</li>
+<li>
+<p><strong>Notable response attributes</strong></p>
+</li>
+</ul>
+</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th align="center">Param</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="center">project</td>
+<td>The project uri</td>
+</tr>
+<tr>
+<td align="center">custom_fields</td>
+<td>The data against this inventory batch as key values JSON - there will be one key present for each field configured at the project level via the <a class="internal present" href="/thesgc/chembiohub_ws/wiki/Project-API">Project API</a>
+</td>
+</tr>
+<tr>
+<td align="center">image</td>
+<td>The base 64 encoded image for a compound batch</td>
+</tr>
+<tr>
+<td align="center">uuid</td>
+<td>The unique id (UOX id) of this compound batch</td>
+</tr>
+<tr>
+<td align="center">timestamp</td>
+<td>date created</td>
+</tr>
+<tr>
+<td align="center">creator</td>
+<td>URI of the user that created this compound batch</td>
+</tr>
+<tr>
+<td align="center">projectfull</td>
+<td>Full data form the project object assopciated with this compound batch</td>
+</tr>
+<tr>
+<td align="center">related_molregno</td>
+<td>The molecule dictionary record associated</td>
+</tr>
+<tr>
+<td align="center">uncurated_fields</td>
+<td>The fields left over from the data mapping process</td>
+</tr>
+<tr>
+<td align="center">warnings</td>
+<td>warning labels added on upload</td>
+</tr>
+<tr>
+<td align="center">properties</td>
+<td>An object describing whether the item is archived</td>
+</tr>
+<tr>
+<td align="center">userfull</td>
+<td>The user object that created this item - see the <a class="internal present" href="/thesgc/chembiohub_ws/wiki/User-API">User API</a>
+</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li><strong>Content:</strong></li>
+</ul>
+
+<ul>
+<li>
+<p><strong>Response Schema</strong></p>
+</li>
+<li>
+<p>No schema available</p>
+</li>
+<li>
+<p><strong>Error Response:</strong></p>
+<p>If you are not logged in to the application or do not have permission for the project you are requesting</p>
+<ul>
+<li>
+<strong>Code:</strong> 401 UNAUTHORIZED <br/>
+<strong>Content:</strong> ``</li>
+</ul>
+<p>OR</p>
+<ul>
+<li>
+<strong>Code:</strong> 403 BAD REQUEST <br/>
+<strong>Content:</strong>
+</li>
+</ul>
+</li>
+</ul>
+
+<pre><code>   { error : "The error name from the back end" , traceback : "The traceback in python"}
+</code></pre>
+<ul>
+<li>
+<strong>Code:</strong> 500 INTERNAL SERVER ERROR <br/>
+<strong>Content:</strong>
+</li>
+</ul>
+
+<pre><code>    { error : "The error name from the back end" , traceback : "The traceback in python"}
+</code></pre>
+<ul>
+<li>
+<p><strong>Sample Call:</strong></p>
+<pre><code>  $http.get( configuration.cbh_compound_batches_v2.list_endpoint + "/" + batch_id , {},
+              function(data){
+                 //do something with data.data
+  } );
+</code></pre>
+</li>
+<li>
+<p><strong>Notes:</strong></p>
+</li>
+</ul>
+<h2>
+<a aria-hidden="true" class="anchor" href="#get-compound-or-inventory-batches" id="user-content-get-compound-or-inventory-batches"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><strong>GET Compound or Inventory Batches</strong>
+</h2>
+<p>Search across projects for compound or inventory batches</p>
+<ul>
+<li>
+<p><strong>Testing</strong></p>
+<ul>
+<li>This API is not yet tested for search parameters</li>
+<li>
+<a href="https://github.com/thesgc/chembiohub_ws/search?utf8=%E2%9C%93&amp;q=%22I+can+request+a+single+compound+batch+via+the+get+detail+api%22">here</a> this search API is tested without any parameters. The test results can be viewed on Travis <a href="https://travis-ci.org/thesgc/chembiohub_ws" rel="nofollow">here</a>
+</li>
+</ul>
+</li>
+<li>
+<p><strong>Source Code links</strong></p>
+<ul>
+<li><strong>This API is used to search for a list of compound batches or inventory items on the search page when the query in the user interface is updated or the page resized. See <a href="https://github.com/thesgc/ng-chem/blob/master/app/scripts/controllers/compoundbatchv2.js#L415">the $scope.cbh.changeSearchParams function</a></strong></li>
+<li><strong><a href="https://github.com/thesgc/chembiohub_ws/blob/master/cbh_chem_api/resources.py#L357">Back end code</a> in the get_detail method - data is retrieved form Elasticsearch</strong></li>
+</ul>
+</li>
+<li>
+<p><strong>URL</strong></p>
+<p>/{namespace}/api/cbh_compound_batches_v2/?encoded_query={encoded_query}&amp;encoded_sorts={encoded_sorts}&amp;pids={pids}&amp;archived={archived}&amp;textsearch={textsearch}&amp;chemical_search_id={chemical_search_id}</p>
+</li>
+<li>
+<p><strong>Method:</strong></p>
+<p><code>GET</code></p>
+</li>
+<li>
+<p><strong>URL Params</strong></p>
+<p><strong>Required:</strong></p>
+</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th align="center">Param</th>
+<th>Default</th>
+<th>Description</th>
+<th>example</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="center">namespace</td>
+<td>Default for your installation is chembiohub</td>
+<td>the URL path, conda environment name etc.</td>
+<td></td>
+</tr>
+<tr>
+<td align="center">format</td>
+<td>json if Ajax</td>
+<td>Data format to return</td>
+<td>json, xml, yaml</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Optional:</strong></p>
+<table>
+<thead>
+<tr>
+<th align="center">Param</th>
+<th>Default</th>
+<th>Description</th>
+<th>example</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="center">encoded_query</td>
+<td>None</td>
+<td>The base 64 encoded JSON query to be run on elasticsearch. We have our own search format which is described in <a class="internal present" href="/thesgc/chembiohub_ws/wiki/Search-and-Sort-JSON-Format">Search and Sort JSON Format</a>
+</td>
+<td></td>
+</tr>
+<tr>
+<td align="center">encoded_sorts</td>
+<td>None</td>
+<td>The base 64 encoded sorts to be run on elasticsearch. We have our own sorts format which is described in <a class="internal present" href="/thesgc/chembiohub_ws/wiki/Search-and-Sort-JSON-Format">Search and Sort JSON Format</a>
+</td>
+<td></td>
+</tr>
+<tr>
+<td align="center">pids</td>
+<td>[] - an empty list</td>
+<td>The project ids against which this query should be run - comma separated integers</td>
+<td>1,2,3</td>
+</tr>
+<tr>
+<td align="center">archived</td>
+<td>false</td>
+<td>whether we are looking for archived compound batches / inventory items</td>
+<td></td>
+</tr>
+<tr>
+<td align="center">textsearch</td>
+<td></td>
+<td>A simple text search against all fields</td>
+<td></td>
+</tr>
+<tr>
+<td align="center">chemical_search_id</td>
+<td></td>
+<td>An id string for a chemical search. The chemical search is initially prepared by calling the <a class="internal present" href="/thesgc/chembiohub_ws/wiki/Chemical-Search-API">Chemical Search API</a>. The database search results are then retrieved based on this ID having been run in the background on django Q. This produces a list of batch IDs per project.</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li>
+<p><strong>Success Response:</strong></p>
+<ul>
+<li>
+<p><strong>Code:</strong> 200 <br/></p>
+</li>
+<li>
+<p><strong>Notable response attributes</strong></p>
+</li>
+</ul>
+</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th align="center">Param</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="center">objects[]</td>
+<td>The list of objects retrieved</td>
+</tr>
+<tr>
+<td align="center">objects[].project</td>
+<td>The project uri</td>
+</tr>
+<tr>
+<td align="center">objects[].custom_fields</td>
+<td>The data against this inventory batch as key values JSON - there will be one key present for each field configured at the project level via the <a class="internal present" href="/thesgc/chembiohub_ws/wiki/Project-API">Project API</a>
+</td>
+</tr>
+<tr>
+<td align="center">objects[].image</td>
+<td>The base 64 encoded image for a compound batch</td>
+</tr>
+<tr>
+<td align="center">objects[].uuid</td>
+<td>The unique id (UOX id) of this compound batch</td>
+</tr>
+<tr>
+<td align="center">objects[].timestamp</td>
+<td>date created</td>
+</tr>
+<tr>
+<td align="center">objects[].creator</td>
+<td>URI of the user that created this compound batch</td>
+</tr>
+<tr>
+<td align="center">objects[].projectfull</td>
+<td>Full data form the project object assopciated with this compound batch</td>
+</tr>
+<tr>
+<td align="center">objects[].related_molregno</td>
+<td>The molecule dictionary record associated</td>
+</tr>
+<tr>
+<td align="center">objects[].uncurated_fields</td>
+<td>The fields left over from the data mapping process</td>
+</tr>
+<tr>
+<td align="center">objects[].warnings</td>
+<td>warning labels added on upload</td>
+</tr>
+<tr>
+<td align="center">objects[].properties</td>
+<td>An object describing whether the item is archived</td>
+</tr>
+<tr>
+<td align="center">objects[].userfull</td>
+<td>The user object that created this item - see the <a class="internal present" href="/thesgc/chembiohub_ws/wiki/User-API">User API</a>
+</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li><strong>Content:</strong></li>
+</ul>
+
+<pre><code>      {
+            "meta": {
+                "total_count": 1
+            },
+            "objects": [{
+                "blinded_batch_id": "CBHAB26FQN",
+                "canonical_smiles": null,
+                "created": "2016-05-04T04:20:23.563491",
+                "created_by": "clme1728",
+                "created_by_id": 3,
+                "creator": "/hub/api/users/3",
+                "ctab": null,
+                "custom_fields": {
+                    "Cart number": "15255748.0",
+                    "Catalogue number": "I9516-500ml",
+                    "Comments": "",
+                    "Date ordered": "2010-03-18 00:00:00",
+                    "File": {
+                        "attachments": []
+                    },
+                    "Item ordered": "Isopropanol",
+                    "Number of units ordered": "1",
+                    "Ordered by": "AH",
+                    "Price per unit": "21.22",
+                    "Received": "Yes",
+                    "Supplier": "Sigma",
+                    "Year Ordered": "2010"
+                },
+                "id": 180160,
+                "image": "",
+                "modified": "2016-05-04T04:21:10.633287",
+                "multiple_batch_id": 2602,
+                "original_smiles": null,
+                "project": "/hub/api/cbh_projects/109",
+                "project_counter": 316,
+                "projectfull": {
+                    "assays_configured": false,
+                    "created": "2015-11-19T06:11:28.836946",
+                    "created_by": "/hub/api/users/3",
+                    "custom_field_config": "/hub/api/cbh_chemreg_custom_field_config/195",
+                    "editor": true,
+                    "flowjs_upload_url": "/hub/api/flowv2/upload/109/",
+                    "id": 109,
+                    "is_default": false,
+                    "modified": "2016-05-04T04:34:06.569459",
+                    "name": "Demo InventoryReg Project",
+                    "owner": true,
+                    "project_counter_start": 1,
+                    "project_key": "demo-inventoryreg-project",
+                    "project_type": {
+                        "copy_action_name": "Clone Item",
+                        "created": "2015-08-10T04:10:48.920679",
+                        "custom_field_config_template": [],
+                        "custom_field_config_template_id": -1,
+                        "id": 2,
+                        "modified": "2016-05-04T09:10:56.016838",
+                        "name": "Inventory",
+                        "plate_map_project_type": false,
+                        "project_template": {},
+                        "resource_uri": "/hub/api/cbh_project_types/2",
+                        "saved_search_project_type": false,
+                        "set_as_default": false,
+                        "show_compounds": false
+                    },
+                    "resource_uri": "/hub/api/cbh_projects/109",
+                    "user": {
+                        "can_create_and_own_projects": true,
+                        "can_view_assayreg": true,
+                        "can_view_chemreg": true,
+                        "date_joined": "2015-05-08T05:22:10",
+                        "display_name": "Paul Barrett",
+                        "first_name": "Paul",
+                        "id": 1,
+                        "is_logged_in": true,
+                        "is_staff": true,
+                        "is_superuser": true,
+                        "last_login": "2016-05-04T03:11:09.734504",
+                        "last_name": "Barrett",
+                        "resource_uri": "/hub/api/users/1",
+                        "username": "clme1386"
+                    },
+                    "users_restricted_fields": []
+                },
+                "properties": {
+                    "action": "New Batch",
+                    "archived": "false"
+                },
+                "related_molregno": {
+                    "compoundproperties": {}
+                },
+                "resource_uri": "",
+                "standard_inchi": null,
+                "standard_inchi_key": null,
+                "std_ctab": null,
+                "timestamp": "2016-05-04",
+                "uncurated_fields": {},
+                "userfull": {
+                    "can_create_and_own_projects": true,
+                    "can_view_assayreg": true,
+                    "can_view_chemreg": true,
+                    "date_joined": "2015-05-08T06:32:00",
+                    "display_name": "Adam Hendry",
+                    "first_name": "Adam",
+                    "id": 3,
+                    "is_logged_in": false,
+                    "is_staff": true,
+                    "is_superuser": true,
+                    "last_login": "2016-05-06T03:12:27.375363",
+                    "last_name": "Hendry",
+                    "resource_uri": "/hub/api/users/3",
+                    "username": "clme1728"
+                },
+                "uuid": "CBHAB26FQN",
+                "warnings": {
+                    "nostructure": "true"
+                }
+            }]
+        }   
+</code></pre>
+<ul>
+<li>
+<p><strong>Response Schema</strong></p>
+</li>
+<li>
+<p>No schema available</p>
+</li>
+<li>
+<p><strong>Error Response:</strong></p>
+<p>If you are not logged in to the application or do not have permission for the project you are requesting</p>
+<ul>
+<li>
+<strong>Code:</strong> 401 UNAUTHORIZED <br/>
+<strong>Content:</strong> ``</li>
+</ul>
+<p>OR</p>
+<ul>
+<li>
+<strong>Code:</strong> 403 BAD REQUEST <br/>
+<strong>Content:</strong>
+</li>
+</ul>
+</li>
+</ul>
+
+<pre><code>   { error : "The error name from the back end" , traceback : "The traceback in python"}
+</code></pre>
+<ul>
+<li>
+<strong>Code:</strong> 500 INTERNAL SERVER ERROR <br/>
+<strong>Content:</strong>
+</li>
+</ul>
+
+<pre><code>    { error : "The error name from the back end" , traceback : "The traceback in python"}
+</code></pre>
+<ul>
+<li>
+<p><strong>Sample Call:</strong></p>
+<pre><code>  $http.get( configuration.cbh_compound_batches_v2.list_endpoint + "/" , {
+                                                                    //valid set of params e.g.
+                                                                    "pids" : "1,2,3"
+                                                                }
+              function(data){
+                 //do something with data.data
+  } );
+</code></pre>
+</li>
+<li>
+<p><strong>Notes:</strong></p>
+</li>
+</ul>
+<h2>
+<a aria-hidden="true" class="anchor" href="#get-autocomplete-on-compound-or-inventory-batches" id="user-content-get-autocomplete-on-compound-or-inventory-batches"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><strong>GET Autocomplete on Compound or Inventory Batches</strong>
+</h2>
+<p>Search across projects for compound or inventory batches and return autocomplete values against a particular field</p>
+<ul>
+<li>
+<p><strong>Testing</strong></p>
+<ul>
+<li>This API is not yet tested</li>
+</ul>
+</li>
+<li>
+<p><strong>Source Code links</strong></p>
+<ul>
+<li><strong>This API is used in the pick from list field widget <a class="internal present" href="/thesgc/chembiohub_ws/wiki/Custom-editing-widgets-%28Pick-From-List%29">Custom editing widgets (Pick From List)</a>. The user picks a field by clicking on the top of a column in the handsontable</strong></li>
+<li><strong><a href="https://github.com/thesgc/chembiohub_ws/blob/master/cbh_chem_api/resources.py#L357">Back end code</a> in the get_detail method - data is retrieved form Elasticsearch</strong></li>
+</ul>
+</li>
+<li>
+<p><strong>URL</strong></p>
+<p>/{namespace}/api/cbh_compound_batches_v2/?encoded_query={encoded_query}&amp;encoded_sorts={encoded_sorts}&amp;pids={pids}&amp;archived={archived}&amp;textsearch={textsearch}&amp;chemical_search_id={chemical_search_id}&amp;autocomplete_field_path={autocomplete_field_path}&amp;autocomplete_size={autocomplete_size}&amp;autocomplete={autocomplete}</p>
+</li>
+<li>
+<p><strong>Method:</strong></p>
+<p><code>GET</code></p>
+</li>
+<li>
+<p><strong>URL Params</strong></p>
+<p><strong>Required:</strong></p>
+</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th align="center">Param</th>
+<th>Default</th>
+<th>Description</th>
+<th>example</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="center">namespace</td>
+<td>Default for your installation is chembiohub</td>
+<td>the URL path, conda environment name etc.</td>
+<td></td>
+</tr>
+<tr>
+<td align="center">format</td>
+<td>json if Ajax</td>
+<td>Data format to return</td>
+<td>json, xml, yaml</td>
+</tr>
+<tr>
+<td align="center">autocomplete_field_path</td>
+<td></td>
+<td>The field path in the data that you would like to run an autocomplete against</td>
+<td>custom_fields.Name</td>
+</tr>
+<tr>
+<td align="center">autocomplete</td>
+<td>empty string</td>
+<td>The string to search for</td>
+<td></td>
+</tr>
+<tr>
+<td align="center">autocomplete_size</td>
+<td></td>
+<td>The number of items to return in the autocomplete</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Optional:</strong></p>
+<table>
+<thead>
+<tr>
+<th align="center">Param</th>
+<th>Default</th>
+<th>Description</th>
+<th>example</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="center">encoded_query</td>
+<td>None</td>
+<td>The base 64 encoded JSON query to be run on elasticsearch. We have our own search format which is described in <a class="internal present" href="/thesgc/chembiohub_ws/wiki/Search-and-Sort-JSON-Format">Search and Sort JSON Format</a>
+</td>
+<td></td>
+</tr>
+<tr>
+<td align="center">encoded_sorts</td>
+<td>None</td>
+<td>The base 64 encoded sorts to be run on elasticsearch. We have our own sorts format which is described in <a class="internal present" href="/thesgc/chembiohub_ws/wiki/Search-and-Sort-JSON-Format">Search and Sort JSON Format</a>
+</td>
+<td></td>
+</tr>
+<tr>
+<td align="center">pids</td>
+<td>[] - an empty list</td>
+<td>The project ids against which this query should be run - comma separated integers</td>
+<td>1,2,3</td>
+</tr>
+<tr>
+<td align="center">archived</td>
+<td>false</td>
+<td>whether we are looking for archived compound batches / inventory items</td>
+<td></td>
+</tr>
+<tr>
+<td align="center">textsearch</td>
+<td></td>
+<td>A simple text search against all fields</td>
+<td></td>
+</tr>
+<tr>
+<td align="center">chemical_search_id</td>
+<td></td>
+<td>An id string for a chemical search. The chemical search is initially prepared by calling the <a class="internal present" href="/thesgc/chembiohub_ws/wiki/Chemical-Search-API">Chemical Search API</a>. The database search results are then retrieved based on this ID having been run in the background on django Q. This produces a list of batch IDs per project.</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li>
+<p><strong>Success Response:</strong></p>
+<ul>
+<li>
+<p><strong>Code:</strong> 200 <br/></p>
+</li>
+<li>
+<p><strong>Notable response attributes</strong></p>
+</li>
+</ul>
+</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th align="center">Param</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="center">autocomplete</td>
+<td>The search term used for the autocomplete</td>
+</tr>
+<tr>
+<td align="center">items</td>
+<td>The list of autocomplete iteems ordered alphabetically</td>
+</tr>
+<tr>
+<td align="center">items[].doc_count</td>
+<td>The number of times that this item appears within the current search query</td>
+</tr>
+<tr>
+<td align="center">items[].key</td>
+<td>The item in the field that is being counted - note that two items with different cases will be combined to a single count and the most frequent version will be presented in the pick from list box</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li><strong>Content:</strong></li>
+</ul>
+
+<pre><code>        {
+            "autocomplete": "",
+            "items": [{
+                "doc_count": 1,
+                "key": "CBHAB26FQN"
+            }, {
+                "doc_count": 1,
+                "key": "CBHAC01KDM"
+            }, {
+                "doc_count": 1,
+                "key": "CBHAD11LVS"
+            }, {
+                "doc_count": 1,
+                "key": "CBHAD25SCF"
+            }, {
+                "doc_count": 1,
+                "key": "CBHAE20XES"
+            }],
+            "unique_count": 9960
+        }
+</code></pre>
+<ul>
+<li>
+<p><strong>Response Schema</strong></p>
+</li>
+<li>
+<p>No schema available</p>
+</li>
+<li>
+<p><strong>Error Response:</strong></p>
+<p>If you are not logged in to the application or do not have permission for the project you are requesting</p>
+<ul>
+<li>
+<strong>Code:</strong> 401 UNAUTHORIZED <br/>
+<strong>Content:</strong> ``</li>
+</ul>
+<p>OR</p>
+<ul>
+<li>
+<strong>Code:</strong> 403 BAD REQUEST <br/>
+<strong>Content:</strong>
+</li>
+</ul>
+</li>
+</ul>
+
+<pre><code>   { error : "The error name from the back end" , traceback : "The traceback in python"}
+</code></pre>
+<ul>
+<li>
+<strong>Code:</strong> 500 INTERNAL SERVER ERROR <br/>
+<strong>Content:</strong>
+</li>
+</ul>
+
+<pre><code>    { error : "The error name from the back end" , traceback : "The traceback in python"}
+</code></pre>
+<ul>
+<li>
+<p><strong>Sample Call:</strong></p>
+<pre><code>  $http.get( configuration.cbh_compound_batches_v2.list_endpoint + "/" , {
+                                                                    //valid set of params e.g.
+                                                                    "pids" : "1,2,3"
+                                                                }
+              function(data){
+                 //do something with data.data
+  } );
+</code></pre>
+</li>
+<li>
+<p><strong>Notes:</strong></p>
+</li>
+</ul>
+
+        </div>
+
+    </div>]

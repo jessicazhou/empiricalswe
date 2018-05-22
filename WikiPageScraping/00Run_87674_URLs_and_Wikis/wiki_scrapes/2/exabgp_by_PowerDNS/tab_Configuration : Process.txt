@@ -1,0 +1,67 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>#Process</p>
+<p><em>This document present the NEW, not yet complete process API which is due to be used after the 3.4.x releases.</em></p>
+<p>This statement can be found under the following group:</p>
+<ul>
+<li>BGP</li>
+</ul>
+<p>Please keep in mind that for each section a new helper will be forked. Unless you definitively want more than one process forked ( to make advantage of multicore for example ), you should re-used already defined process sections.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#syntax" id="user-content-syntax"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Syntax</h2>
+<pre><code>process &lt;name&gt; {
+   run &lt;/path/to/command with its args&gt;  # the command can be quoted
+   encoder text|json;
+   receive {
+     # "message" in notification,open,keepalive,update,refresh,operational
+     &lt;message&gt; {
+       parsed;          # send parsed BGP data for "message"
+       packets;         # send raw BGP message for "message"
+       consolidated;    # group parsed and raw information in one JSON object
+     }
+     neighbor-changes;  # state of peer change (up/down)
+     parsed;            # send parsed BGP data for all messages
+     packets;           # send raw BGP message for all messages
+     consolidated;      # group for all messages
+   }
+   send {
+     packets;           # send all generated BGP messages
+   }
+}
+</code></pre>
+<hr/>
+<h3>
+<a aria-hidden="true" class="anchor" href="#run" id="user-content-run"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>run</h3>
+<p>the command can be single or double quoted</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#encoder" id="user-content-encoder"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>encoder</h3>
+<p>The way to send the data to the helper process. Using text the data with use the, old, text API. Using JSON the process will use the new JSON format.</p>
+<p>The default is currently text but user should not rely on this default as it will change to JSON in a future release.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#receive" id="user-content-receive"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>receive</h3>
+<p>The type of event the program wants to receive. Valid options for  are :</p>
+<ul>
+<li>notification</li>
+<li>open</li>
+<li>keepalive</li>
+<li>update</li>
+<li>refresh</li>
+<li>operational</li>
+</ul>
+<p>For each type of message, you can indicate if you want :</p>
+<ul>
+<li>parsed, ExaBGP to parse the data and present the representation</li>
+<li>raw, ExaBGP to present the raw BGP message ( JSON only )</li>
+<li>consolidate, present both parse and raw information in ONE JSON object (instead of two)</li>
+</ul>
+<p>ExaBGP let you define these keyword within the root of "received" if you want to apply the setting to every message type.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#neighbor-changes" id="user-content-neighbor-changes"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>neighbor-changes</h3>
+<p>You want to be informed of adjacency changes ( TCP session going up/down )</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#send" id="user-content-send"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>send</h3>
+<p>You should know what you ask ExaBGP to send to its peer, but should you want to know what raw data was generated and sent on the wire, ExaBGP can pass the JSON object with the packet sent on the wire to the helper process.</p>
+
+        </div>
+
+    </div>]

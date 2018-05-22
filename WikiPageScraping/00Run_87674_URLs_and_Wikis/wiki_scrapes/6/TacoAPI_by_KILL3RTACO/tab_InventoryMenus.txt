@@ -1,0 +1,74 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>A few years ago it was suggested to me that I should add 'menus' to Mineopoly, inventory screens where the items acted as buttons. This was a behavior I never even thought of, never <em>heard</em> of. I see now, however, that this behavior is used very often in larger servers with thousands of players (mainly mini-game servers).</p>
+<p>The InventoryMenu interface is my way of abstracting that system.</p>
+<p>#What does an InventoryMenu Look Like?
+<code>(//TODO: add a picture)</code> An InventoryMenu looks just like a regular inventory. However, this custom inventory acts a bit differently:</p>
+<ul>
+<li>
+<em>All</em> clicks within the top inventory are cancelled, to prevent players from moving things in or out of the top inventory</li>
+<li>When an item is clicked, code will be run, and the menu may be closed</li>
+</ul>
+<h1>
+<a aria-hidden="true" class="anchor" href="#making-sure-inventorymenus-work-properly" id="user-content-making-sure-inventorymenus-work-properly"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Making Sure InventoryMenus Work Properly</h1>
+<p>If you are using the TacoAPI Bukkit plugin, you don't need to worry, the plugin creates a Listener to handle it. If you aren't using the plugin (but still have all classes from <code>com.kill3rtaco.api.bukkit.menu</code>), then you can create a <code>new InventoryMenuListener()</code> and register events that way, e.g.:</p>
+<div class="highlight highlight-source-java"><pre><span class="pl-k">@Override</span>
+<span class="pl-k">public</span> <span class="pl-k">void</span> onEnable(){ <span class="pl-c"><span class="pl-c">//</span>Your plugin's onEnable in Bukkit</span>
+    getServer()<span class="pl-k">.</span>getPluginManager()<span class="pl-k">.</span>registerEvents(<span class="pl-k">new</span> <span class="pl-smi">InventoryMenuListener</span>(), <span class="pl-c1">this</span>);
+}</pre></div>
+<h1>
+<a aria-hidden="true" class="anchor" href="#creating-an-inventorymenu" id="user-content-creating-an-inventorymenu"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Creating an InventoryMenu</h1>
+<p>You can either <code>extend</code> the <code>InventoryMenu</code> class, or create a new instance and and buttons to it. For simplicity sake, the following examples will not be extending, but rather new instances of the class.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#buttons" id="user-content-buttons"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Buttons</h2>
+<p>Buttons are simply named items with lore. However, they are added to an <code>InventoryMenu</code> as <code>InventoryButtons</code></p>
+<p>##Adding Buttons
+You add buttons to an <code>InventoryMenu</code> by setting its x and y position in the menu. The following example shows the different types of buttons:</p>
+<div class="highlight highlight-source-java"><pre><span class="pl-c"><span class="pl-c">//</span>create a new menu</span>
+<span class="pl-c"><span class="pl-c">//</span>note that a menu cannot have a title longer than 32 characters, including color codes</span>
+<span class="pl-smi">InventoryMenu</span> menu <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-smi">InventoryMenu</span>(<span class="pl-s"><span class="pl-pds">"</span>&amp;eMy &amp;aColorful &amp;2Menu<span class="pl-pds">"</span></span>); 
+
+<span class="pl-smi">InventoryButton</span> myButton <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-smi">InventoryButton</span>(menu, <span class="pl-k">new</span> <span class="pl-smi">ItemStack</span>(<span class="pl-smi">Material</span><span class="pl-c1"><span class="pl-k">.</span>COOKIE</span>), <span class="pl-s"><span class="pl-pds">"</span>I Love Cookies<span class="pl-pds">"</span></span>);
+myButton<span class="pl-k">.</span>setDescription(<span class="pl-s"><span class="pl-pds">"</span>Admit it, you love cookies<span class="pl-pds">"</span></span>);
+
+<span class="pl-smi">InventoryNumberedButton</span> myNumberedButton <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-smi">InventoryNumberedButton</span>(menu, <span class="pl-k">new</span> <span class="pl-smi">ItemStack</span>(<span class="pl-smi">Material</span><span class="pl-c1"><span class="pl-k">.</span>COOKIE</span>), <span class="pl-s"><span class="pl-pds">"</span>Cookie Jar<span class="pl-pds">"</span></span>, <span class="pl-c1">5</span>);
+myNumberedButton<span class="pl-k">.</span>setDescription(<span class="pl-s"><span class="pl-pds">"</span>You have %num cookies in your cookie jar<span class="pl-pds">"</span></span>);
+
+<span class="pl-smi">InventoryToggleButton</span> myToggleButton <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-smi">InventoryToggleButton</span>(menu, <span class="pl-k">new</span> <span class="pl-smi">ItemStack</span>(<span class="pl-smi">Material</span><span class="pl-c1"><span class="pl-k">.</span>COOKIE</span>), <span class="pl-k">new</span> <span class="pl-smi">ItemStack</span>(<span class="pl-smi">Material</span><span class="pl-c1"><span class="pl-k">.</span>SKULL</span>), <span class="pl-s"><span class="pl-pds">"</span>Cookies or Death<span class="pl-pds">"</span></span>, <span class="pl-c1">true</span>);
+myToggleButton(<span class="pl-s"><span class="pl-pds">"</span>You either love cookies, or you're dead: %state<span class="pl-pds">"</span></span>);</pre></div>
+<p>An <code>InventoryButton</code> is the basis of a button. Even if given an <code>ItemStack</code> with an amount greater than <code>1</code>, the amount will be set to <code>1</code>. This is because <code>InventoryNumberedButtons</code> are used to hold that value.</p>
+<p>An <code>InventoryNumberedButton</code> is used to hold a number value. This value is mutable, and can even be displayed in the title or description of a button with <code>%num</code>.</p>
+<p>An <code>InventoryToggleButton</code> is used to toggle a state. Two <code>ItemStack</code>s are passed to the constructor: <code>on</code> and <code>off</code>. When an <code>InventoryToggleButton</code> is clicked, its state toggles, and the <code>ItemStack</code> used to represent it switches to <code>on</code> or <code>off</code>, respectively. Like an <code>InventoryNumberedButton</code>, the state can be displayed in the title or description with <code>%state</code></p>
+<p>##Showing the Menu to a Player
+To show a menu to a player, you use the <code>showTo(Player)</code> method. For instance:</p>
+<div class="highlight highlight-source-java"><pre><span class="pl-smi">InventoryMenu</span> menu <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-smi">InventoryMenu</span>(<span class="pl-s"><span class="pl-pds">"</span>My lovely menu<span class="pl-pds">"</span></span>);
+
+<span class="pl-c"><span class="pl-c">//</span>add some buttons</span>
+
+menu<span class="pl-k">.</span>showTo(<span class="pl-smi">Bukkit</span><span class="pl-k">.</span>getPlayer(<span class="pl-s"><span class="pl-pds">"</span>PinheadLarry<span class="pl-pds">"</span></span>));
+</pre></div>
+<h2>
+<a aria-hidden="true" class="anchor" href="#making-the-buttons-do-stuff" id="user-content-making-the-buttons-do-stuff"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Making the Buttons do Stuff</h2>
+<p>The <code>onClick(int, InventoryButtonRunnable)</code> method is used to make the buttons actually do things. The <code>InventoryButtonRunnable</code> that is passed is run when the button is clicked. It has two methods: <code>getPlayer()</code> to get the player who clicked the button, and <code>getButton()</code> to get the button that was clicked.</p>
+<p>Here's an example, of a button that, when clicked, will display <code>"Do you like waffles?"</code> to the player:</p>
+<div class="highlight highlight-source-java"><pre><span class="pl-smi">InventoryMenu</span> menu <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-smi">Inventory</span>(<span class="pl-s"><span class="pl-pds">"</span>Pancakes and Waffles<span class="pl-pds">"</span></span>);
+
+<span class="pl-c"><span class="pl-c">//</span>yeah I know, the paper and "waffles" doesn't make sense.</span>
+<span class="pl-smi">InventoryButton</span> waffles <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-smi">InventoryButton</span>(menu, <span class="pl-k">new</span> <span class="pl-smi">ItemStack</span>(<span class="pl-smi">Material</span><span class="pl-c1"><span class="pl-k">.</span>PAPER</span>), <span class="pl-s"><span class="pl-pds">"</span>WAFFLES<span class="pl-pds">"</span></span>);
+
+waffles<span class="pl-k">.</span>onClick(<span class="pl-smi">InventoryButton</span><span class="pl-c1"><span class="pl-k">.</span>LEFT_CLICK</span>, <span class="pl-k">new</span> <span class="pl-smi">InventoryButtonRunnable</span>(){
+
+    <span class="pl-k">@Override</span>
+    <span class="pl-k">public</span> <span class="pl-k">void</span> <span class="pl-en">run</span>(){
+        sendClickerMessage(<span class="pl-s"><span class="pl-pds">"</span>Do you like waffles?<span class="pl-pds">"</span></span>);
+    }
+
+});</pre></div>
+<p>The <code>int</code> parameter of <code>onClick(int, InventoryButtonRunnable)</code> is one or more bitwise flags from the <code>InventoryButton</code> class. <code>LEFT_CLICK</code> simply means that when the button is left clicked, the following runnable will be run. You can bitwise OR multiple flags to specify that any of the click types are allowed. For instance if <code>InventoryButton.LEFT_CLICK | InventoryButton.RIGHT_CLICK</code> was given, then the runnable will be run when the button is either left clicked or right clicked.</p>
+<p>You can call <code>onClick(int InventoryButtonRunnable)</code> as many times as you want. This is useful if you want separate actions for each click type.</p>
+<p>##Putting it all Together
+(//TODO: FINISH)</p>
+
+        </div>
+
+    </div>]

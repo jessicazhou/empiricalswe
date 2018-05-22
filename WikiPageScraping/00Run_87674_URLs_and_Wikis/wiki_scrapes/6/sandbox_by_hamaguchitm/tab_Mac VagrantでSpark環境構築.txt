@@ -1,0 +1,150 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>###VirtualBox
+<a href="https://www.virtualbox.org/" rel="nofollow">https://www.virtualbox.org/</a></p>
+<p>###Vagrant
+#####インストール
+<a href="https://www.vagrantup.com/" rel="nofollow">https://www.vagrantup.com/</a></p>
+<p>#####Vagrant設定
+box作成</p>
+<p>Vagrantfile編集
+ホスト-ゲスト間の共有ディレクトリ設定</p>
+<pre><code>#config.vm.synced_folder &lt;host_dir_path&gt;, &lt;guest_dir_path&gt;
+config.vm.synced_folder "../vagrant_share", "/share"
+</code></pre>
+<p>メモリサイズ設定</p>
+<pre><code>config.vm.provider "virtualbox" do |vb|
+    vb.memory = "2048"
+end
+</code></pre>
+<p>ノードとして定義</p>
+<pre><code>config.vm.define :spark_test do |node|
+    node.vm.box = "centos65"
+end   
+</code></pre>
+<p>ssh-config追加</p>
+<pre><code>$ vagrant ssh-config &gt;&gt; ~/.ssh/config
+</code></pre>
+<p>#####仮想マシンに接続
+仮想マシン起動</p>
+<pre><code>$ vagrant up spark_test
+</code></pre>
+<p>仮想マシンに接続</p>
+<pre><code>$ vagrant ssh
+   または
+$ ssh spark_test
+</code></pre>
+<p>#####仮想マシン追加設定
+wgetインストール</p>
+<pre><code>$ sudo yum install wget
+</code></pre>
+<p>sudo設定　※最初できたのにできなくなったので設定</p>
+<pre><code>$ su - (パスワードはデフォルトでvagrant)
+# echo 'vagrant ALL=NOPASSWD:ALL' &gt; /etc/sudoers.d/vagrant
+# chmod 440 /etc/suduers.d/vagrant
+</code></pre>
+<p>timezone設定</p>
+<pre><code># cp -p /usr/share/zoneinfo/Japan /etc/localtime
+</code></pre>
+<p>locale設定</p>
+<pre><code># yum install glibc-common
+</code></pre>
+<p>/etc/sysconfig/i18n</p>
+<pre><code>LANG="ja_JP.UTF-8"
+</code></pre>
+<p>###Python
+pipインストール</p>
+<pre><code>$ sudo yum install python-pip
+</code></pre>
+<p>python-develインストール（pipでパッケージインストールする際に必要になる）</p>
+<pre><code>$ sudo yum install python-devel
+</code></pre>
+<p>パッケージ追加</p>
+<pre><code>$ pip install numpy
+</code></pre>
+<p>###Java
+jdkダウンロード
+<a href="http://www.oracle.com/technetwork/java/javase/downloads/" rel="nofollow">http://www.oracle.com/technetwork/java/javase/downloads/</a></p>
+<p>jdkインストール</p>
+<pre><code>$ sudo yum localinstall /share/jdk-8u25-linux-x64.rpm
+</code></pre>
+<p>###Hadoop(CDH5)
+#####Hadoop
+CDH5のリポジトリ追加</p>
+<pre><code>$ wget http://archive.cloudera.com/cdh5/redhat/6/x86_64/cdh/cloudera-cdh5.repo
+$ mv cloudera-cdh5.repo /etc/yum.repos.d/
+$ sudo rpm --import http://archive.cloudera.com/cdh5/redhat/6/x86_64/cdh/RPM-GPG-KEY-cloudera
+</code></pre>
+<p>Hadoopインストール（擬似分散モード）</p>
+<pre><code>$ sudo yum install hadoop-conf-pseudo
+</code></pre>
+<p>/etc/hosts編集</p>
+<pre><code>127.0.0.1 localhost &lt;...略...&gt; の末尾に[hostname]を追加
+</code></pre>
+<p>HDFSのフォーマット</p>
+<pre><code>$ sudo su - hdfs
+$ hdfs namenode -format
+$ exit
+</code></pre>
+<p>Hadoop起動</p>
+<pre><code>$ for x in `cd /etc/init.d ; ls hadoop-hdfs-*` ; do sudo service $x start ; done
+</code></pre>
+<p>HDFSの初期設定</p>
+<pre><code>$ sudo /usr/lib/hadoop/libexec/init-hdfs.sh
+$ hadoop fs -ls /
+</code></pre>
+<p>Hadoop用スクリプトを配備(/etc/hadoop/script/hadoop.sh)</p>
+<pre><code>#!/bin/sh
+
+SERVICES=(\
+  "hadoop-hdfs-namenode"          \
+  "hadoop-hdfs-secondarynamenode" \
+  "hadoop-hdfs-datanode"          \
+  "hadoop-yarn-resourcemanager"   \
+  "hadoop-yarn-nodemanager"       \
+  "hadoop-mapreduce-historyserver" )
+
+if [ $# -eq 1 ]; then
+    if [ $1 = "start" -o $1 = "status" ]; then
+        echo "Hadoop" $1
+	for i in `seq 0 1 5`
+        do
+            service ${SERVICES[$i]} $1
+        done
+    elif [ $1 = "stop" ]; then
+        echo "Hadoop" $1
+        for i in `seq 5 -1 0`
+        do
+	    service ${SERVICES[$i]} $1
+        done
+    fi
+fi
+
+exit 0
+</code></pre>
+<p>#####Hive
+Hiveインストール</p>
+<pre><code>$ sudo yum install hive
+</code></pre>
+<p>metastoreディレクトリのパーミション</p>
+<pre><code>$ sudo chmod 777 /var/lib/hive/metastore
+</code></pre>
+<p>#####Spark
+Sparkインストール</p>
+<pre><code>$ sudo yum install spark-core
+$ sudo yum install spark-master
+$ sudo yum install spark-worker
+$ sudo yum install spark-history-server
+$ sudo yum install spark-python
+</code></pre>
+<p>spark-shellのメッセージレベルをINFO-&gt;WARNに変更</p>
+<pre><code>$ sudo cp -p /etc/spark/conf/log4j.properties.template /etc/spark/conf/log4j.properties
+</code></pre>
+<p>/etc/spark/conf/log4j.properties</p>
+<pre><code>#log4j.rootCategory=INFO, console
+log4j.rootCategory=WARN, console
+</code></pre>
+
+        </div>
+
+    </div>]

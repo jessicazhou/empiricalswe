@@ -1,0 +1,117 @@
+[<div class="wiki-body gollum-asciidoc-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <div>
+<div>Table of Contents</div>
+<ul>
+<li>
+<a href="#dependency-injection">Dependency Injection</a>
+<ul>
+<li><a href="#key-principles">Key Principles</a></li>
+<li><a href="#example-bean">Example Bean</a></li>
+<li><a href="#bean-configuration">Bean configuration</a></li>
+</ul>
+</li>
+</ul>
+</div>
+<h1 id="user-content-dependency-injection">
+<a aria-hidden="true" class="anchor" href="#dependency-injection" id="user-content-dependency-injection"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Dependency Injection</h1>
+<div>
+<p>Dependency injection is one of the most important design patterns and is a key principle to a modular and component based architecture. The Java Standard for dependency injection is <a href="http://docs.oracle.com/javaee/6/api/javax/inject/package-summary.html" rel="nofollow">javax.inject (JSR330)</a> that we use in combination with <a href="http://docs.oracle.com/javaee/5/api/javax/annotation/package-summary.html" rel="nofollow">JSR250</a>.</p>
+</div>
+<div>
+<p>There are many frameworks which support this standard including all recent Java EE application servers. We recommend to use <a href="http://spring.io/" rel="nofollow">Spring</a> (also known as springframework) that we use in our example application. However, the modules we provide typically just rely on JSR330 and can be used with any compliant container.</p>
+</div>
+<div>
+<h2 id="user-content-key-principles">
+<a aria-hidden="true" class="anchor" href="#key-principles" id="user-content-key-principles"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Key Principles</h2>
+<div>
+<div>
+<p>A Bean in CDI (Contexts and Dependency-Injection) or Spring is typically part of a larger component and encapsulates some piece of logic that should in general be replaceable. As an example we can think of a Use-Case, Data-Access-Object (DAO), etc. As best practice we use the following principles:</p>
+</div>
+<div>
+<ul>
+<li>
+<p><strong>Separation of API and implementation</strong><br/>
+We create a self-contained API documented with JavaDoc. Then we create an implementation of this API that we annotate with <code>@Named</code>. This implementation is treated as secret. Code from other components that wants to use the implementation shall only rely on the API. Therefore we use dependency injection via the interface with the <code>@Inject</code> annotation.</p>
+</li>
+<li>
+<p><strong>Stateless implementation</strong><br/>
+By default implementations (CDI-Beans) shall always be stateless. If you store state information in member variables you can easily run into concurrency problems and nasty bugs. This is easy to avoid by using local variables and separate state classes for complex state-information. Try to avoid stateful CDI-Beans wherever possible. Only add state if you are fully aware of what you are doing and properly document this as a warning in your JavaDoc.</p>
+</li>
+<li>
+<p><strong>Usage of JSR330</strong><br/>
+We use javax.inject (JSR330) and JSR250 as a common standard that makes our code portable (works in any modern Java EE environment). However, we recommend to use the springframework as container. But we never use proprietary annotations such as <code>@Autowired</code> instead of standardized annotations like <code>@Inject</code>. Generally we avoid proprietary annotations in business code (<code>common</code> and <a href="guide-logic-layer">logic layer</a>).</p>
+</li>
+<li>
+<p><strong>Simple Injection-Style</strong><br/>
+In general you can choose between constructor, setter or field injection. For simplicity we recommend to do private field injection as it is very compact and easy to maintain. We believe that constructor injection is bad for maintenance especially in case of inheritance (if you change the dependencies you need to refactor all sub-classes). Private field injection and public setter injection are very similar but setter injection is much more verbose (often you are even forced to have javadoc for all public methods). If you are writing re-usable library code setter injection will make sense as it is more flexible. In a business application you typically do not need that and can save a lot of boiler-plate code if you use private field injection instead. Nowadays you are using container infrastructure also for your tests (see <a href="guide-testing">spring integration tests</a>) so there is no need to inject manually (what would require a public setter).</p>
+</li>
+<li>
+<p><strong>KISS</strong><br/>
+To follow the KISS (keep it small and simple) principle we avoid advanced features (e.g. <a href="guide-aop">AOP</a>, non-singleton beans) and only use them where necessary.</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div>
+<h2 id="user-content-example-bean">
+<a aria-hidden="true" class="anchor" href="#example-bean" id="user-content-example-bean"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Example Bean</h2>
+<div>
+<div>
+<p>Here you can see the implementation of an example bean using JSR330 and JSR250:</p>
+</div>
+<div>
+<div>
+<div class="highlight highlight-source-java"><pre><span class="pl-k">@Named</span>
+<span class="pl-k">public</span> <span class="pl-k">class</span> <span class="pl-en">MyBeanImpl</span> <span class="pl-k">implements</span> <span class="pl-e">MyBean</span> {
+  <span class="pl-k">@Inject</span>
+  <span class="pl-k">private</span> <span class="pl-smi">MyOtherBean</span> myOtherBean;
+
+  <span class="pl-k">@PostConstruct</span>
+  <span class="pl-k">public</span> <span class="pl-k">void</span> <span class="pl-en">init</span>() {
+    <span class="pl-c"><span class="pl-c">//</span> initialization if required (otherwise omit this method)</span>
+  }
+
+  <span class="pl-k">@PreDestroy</span>
+  <span class="pl-k">public</span> <span class="pl-k">void</span> <span class="pl-en">dispose</span>() {
+    <span class="pl-c"><span class="pl-c">//</span> shutdown bean, free resources if required (otherwise omit this method)</span>
+  }
+}</pre></div>
+</div>
+</div>
+<div>
+<p>It depends on <code>MyOtherBean</code> that should be the interface of an other component that is injected into the field because of the <code>@Inject</code> annotation. To make this work there must be exactly one implementation of <code>MyOtherBean</code> in the container (in our case spring). In order to put a Bean into the container we use the <code>@Named</code> annotation so in our example we put <code>MyBeanImpl</code> into the container. Therefore it can be injected into all setters that take the interface <code>MyBean</code> as argument and are annotated with <code>@Inject</code>.</p>
+</div>
+<div>
+<p>In some situations you may have an Interface that defines a kind of "plugin" where you can have multiple implementations in your container and want to have all of them. Then you can request a list with all instances of that interface as in the following example:</p>
+</div>
+<div>
+<div>
+<div class="highlight highlight-source-java"><pre>  <span class="pl-k">@Inject</span>
+  <span class="pl-k">private</span> <span class="pl-k">List&lt;<span class="pl-smi">MyConverter</span>&gt;</span> converters;</pre></div>
+</div>
+</div>
+<div>
+<p>Please note that when writing library code instead of annotating implementation with <code>@Named</code> it is better to provide <code>@Configuration</code> classes that choose the implementation via <code>@Bean</code> methods (see <a href="http://docs.spring.io/spring-javaconfig/docs/1.0.0.M4/reference/html/ch02s02.html" rel="nofollow">@Bean documentation</a>). This way you can better "export" specific features instead of relying library users to do a component-scan to your library code and loose control on upgrades.</p>
+</div>
+</div>
+</div>
+<div>
+<h2 id="user-content-bean-configuration">
+<a aria-hidden="true" class="anchor" href="#bean-configuration" id="user-content-bean-configuration"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Bean configuration</h2>
+<div>
+<div>
+<p>Wiring and Bean configuration can be found in <a href="guide-configuration">configuration guide</a>.</p>
+</div>
+</div>
+</div>
+        </div>
+
+        <div class="wiki-footer gollum-markdown-content boxed-group" id="wiki-footer">
+          <div class="boxed-group-inner wiki-auxiliary-content markdown-body">
+            <p><a href="http://creativecommons.org/licenses/by-nd/4.0/" rel="nofollow"><img alt="Creative Commons License Agreement" data-canonical-src="http://i.creativecommons.org/l/by-nd/4.0/88x31.png" src="https://camo.githubusercontent.com/171d004f9ccb9199e35ac8ec3d99ede916037a9f/687474703a2f2f692e6372656174697665636f6d6d6f6e732e6f72672f6c2f62792d6e642f342e302f38387833312e706e67"/></a><br/><span>This documentation</span> is licensed under the <a href="http://creativecommons.org/licenses/by-nd/4.0/" rel="nofollow">Creative Commons License (Attribution-NoDerivatives 4.0 International)</a>.</p>
+
+          </div>
+        </div>
+    </div>]

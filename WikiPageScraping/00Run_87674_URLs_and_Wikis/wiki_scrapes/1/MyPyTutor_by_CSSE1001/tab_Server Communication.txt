@@ -1,0 +1,79 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <h1>
+<a aria-hidden="true" class="anchor" href="#introduction" id="user-content-introduction"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Introduction</h1>
+<p>MyPyTutor has an online component, primarily used to submit solutions and check results of previous submissions.</p>
+<p>The MyPyTutor server runs through a single URL, and different types of requests are made through different <code>action</code> fields in the GET/POST headers. If there is no <code>action</code> field, the server responds with an error message.</p>
+<h1>
+<a aria-hidden="true" class="anchor" href="#authentication" id="user-content-authentication"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Authentication</h1>
+<p>Authentication of users in MyPyTutor is tied into the user account management at The University of Queensland, using the <a href="https://xlex.s3.uqcloud.net/eaitauth5.pdf" rel="nofollow">EAIT Web Authentication</a> system.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#checking-authentication" id="user-content-checking-authentication"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Checking authentication</h2>
+<p>When a user is authenticated, HTTP requests will be sent with a cookie named <code>EAIT_WEB</code>. The server will send the cookie to a backend authentication server, which will respond with a JSON blob containing the user's details, including their username, human name, email address, and other details.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#log-in-process" id="user-content-log-in-process"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Log in process</h2>
+<p>Users will be asked to log in to MyPyTutor if either (a) they select the "login" menu option, or (b) they attempt to make GET/POST requests without being logged in.</p>
+<p>When logging in, the following exchange is made:</p>
+<ol>
+<li>The client makes a GET request to the server with <code>action=userinfo</code>.</li>
+<li>If the <code>EAIT_WEB</code> cookie is not provided or is invalid, the server responds with a redirect to a URL in the domain <code>auth.uq.edu.au</code>, which contains an HTML form used to log in. If the URL of the response is not in the domain <code>auth.uq.edu.au</code>, then the user is already authenticated to the EAIT system (go to step 9).</li>
+<li>The client opens a dialog window asking the user to provide their username and password, and waits for the user to click "Submit".</li>
+<li>The client parses the HTML of the response in step 2 to extract a <code>&lt;form name="f" ...&gt;</code> tag, and all the <code>&lt;input&gt;</code> tags within the form.</li>
+<li>The client makes a POST request to the <code>action</code> URL of the above form, with the username/password the user entered. The response will be another HTML page.</li>
+<li>If the response contains another <code>&lt;form name="f" ...&gt;</code> tag, the credentials were invalid. The client then shows an error message to the user and allows them to re-enter credentials into the dialog (go to step 3).</li>
+<li>If there are no <code>&lt;form name="f" ...&gt;</code> tags, the credentials were valid. The client extracts a <code>&lt;form action="https://api.uqcloud.net/saml/consume" ...&gt;</code> tag, and all the <code>&lt;input&gt;</code> tags within the form, and submits the form using a POST request.</li>
+<li>The response sets the <code>EAIT_WEB</code> cookie, then redirect the user to the original GET request in step 1.</li>
+<li>The response contains a JSON object containing the user's username and human name. This will then be displayed to the user in the application ("Logged in as: XXXX").</li>
+</ol>
+<p>Note that the MyPyTutor server script only plays two roles in this exchange: redirecting the user to the login form in step 2, and responding with the JSON object in step 9. All other client/server interaction is done with the UQ authentication system.</p>
+<p>If any assumptions fail (i.e. the HTML parser cannot find the necessary <code>&lt;form&gt;</code>s), the client will raise an exception and prompt the user to contact the maintainer. This error could occur if UQ redesigns their login forms.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#log-out-process" id="user-content-log-out-process"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Log out process</h2>
+<p>Users can log out by selecting the appropriate menu item. The following exchange is made:</p>
+<ol>
+<li>The client sends a request to <code>http://api.uqcloud.net/logout</code>. This will expire the user's <code>EAIT_WEB</code> cookie.</li>
+<li>The client removes the "Logged in as: XXXX" which is displayed to the user, and replaces it with "Not logged in".</li>
+</ol>
+<h2>
+<a aria-hidden="true" class="anchor" href="#non-uq-users" id="user-content-non-uq-users"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Non-UQ Users</h2>
+<p>Legacy versions of MyPyTutor have their own built-in user account system, with an independent username/password storage. People wishing to use MyPyTutor outside The University of Queensland's EAIT faculty should either adapt MyPyTutor to their own authentication systems, or adapt this legacy account system.</p>
+<h1>
+<a aria-hidden="true" class="anchor" href="#server-interface" id="user-content-server-interface"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Server Interface</h1>
+<p>The MyPyTutor server will generate responses according to the <code>action</code> field of GET/POST requests. The request will either succeed, with response text preceded by <code>mypytutor&gt;&gt;&gt;</code>, or fail, with response text preceded by <code>mypytutor_error&gt;&gt;&gt;</code>.</p>
+<p>The following actions are supported, with extra required fields in parentheses:</p>
+<ul>
+<li>
+<code>get_tut_zip_file()</code>, which responds with the URL of the ZIP file containing tutorials.</li>
+<li>
+<code>get_mpt34()</code>, which responds with the URL of the ZIP file containing the current version of the MyPyTutor client, compiled into Python 3.4.</li>
+<li>
+<code>get_version()</code>, which responds with the version number of the most recent MyPyTutor client.</li>
+</ul>
+<p>The following actions require the user to be authenticated:</p>
+<ul>
+<li>
+<code>userinfo()</code>, which responds with details about the currently logged-in user.</li>
+<li>
+<code>upload(code, problem_name)</code>, which is used to upload the user's code for online storage. (Errors if &gt; 2kB of text is given.)</li>
+<li>
+<code>download(problem_name)</code>, which is used to download previously uploaded code. (Errors if there is no code saved for that problem)</li>
+<li>
+<code>submit(tut_id, tut_id_crypt, tut_check_num, code)</code>, which is used to submit a problem which the client has marked as correct. (Errors if already submitted; tutorial isn't listed on the server; or <code>tut_id</code> doesn't match <code>tut_id_crypt</code>.)</li>
+<li>
+<code>show()</code>, which responds with information about the student's submissions (on-time/late/unsolved).</li>
+</ul>
+<p>A number of administrator actions are also supported. Administrators are specified by a whitelist on the server.</p>
+<ul>
+<li>
+<code>match(match)</code>, which gives a list of users whose details contain a given string.</li>
+<li>
+<code>unset_late(the_user, problem)</code>, which overrides a user's late submission flag. (Errors if user hasn't submitted or wasn't marked late.)</li>
+<li>
+<code>results()</code>, which gives a list of results for all users.</li>
+<li>
+<code>get_user_subs(the_user)</code>, which gives a list of submissions for a given user. (Errors if the user has no information.)</li>
+</ul>
+
+        </div>
+
+    </div>]

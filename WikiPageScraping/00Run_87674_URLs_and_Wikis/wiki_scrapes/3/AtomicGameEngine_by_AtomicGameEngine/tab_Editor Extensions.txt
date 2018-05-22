@@ -1,0 +1,109 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <h3>
+<a aria-hidden="true" class="anchor" href="#background" id="user-content-background"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Background</h3>
+<p>Atomic has an editor extension capability which will allow specially constructed TypeScript/JavaScript plugin files to be hooked into the editor once a project is loaded.  The extension mechanism currently has the following features:</p>
+<ul>
+<li>Scripts can be written in JavaScript or TypeScript</li>
+<li>Scripts run in the same process as the editor</li>
+<li>Menu items can be added to the <code>Developer-&gt;Plugins</code> menu of the editor</li>
+<li>Menu items can be added to the right+click menu on files</li>
+<li>Menu items can be added to the right+click menu on the Hierarchy</li>
+<li>Plugins have access to the active editor scene</li>
+<li>Plugins have access to read/write project preferences</li>
+<li>Plugins can implement their own resource editors</li>
+</ul>
+<p>An example exists in the examples repository in the <a href="https://github.com/AtomicGameEngine/AtomicExamples/tree/master/EditorPlugins">Editor Plugins</a> folder.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#setup" id="user-content-setup"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Setup</h3>
+<p>To get started, you will need to create a new 2D TypeScript project in the editor and then create a new folder called: <code>EditorData</code> under <code>Resources</code></p>
+<p>This folder is what the editor looks at to determine if there are any plugins to load.  Each plugin must follow the naming convention: <code>*.plugin.js</code> and will be loaded up when the project is opened.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#example-adding-a-menu" id="user-content-example-adding-a-menu"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Example: Adding a menu</h3>
+<p>A simple example will be to add a menu to the developer menu.  This example will be written in TypeScript.</p>
+<p>Create a new script file called: <code>mymenu.plugin.ts</code> under the <code>EditorData</code> folder.</p>
+<p>Replace the contents with the following:</p>
+<div class="highlight highlight-source-ts"><pre><span class="pl-k">class</span> <span class="pl-en">MyMenuPlugin</span> <span class="pl-k">extends</span> <span class="pl-en">Atomic</span>.<span class="pl-e">ScriptObject</span> 
+                   <span class="pl-k">implements</span> <span class="pl-en">Editor</span>.<span class="pl-en">HostExtensions</span>.<span class="pl-e">HostEditorService</span>,
+                              <span class="pl-en">Editor</span>.<span class="pl-en">HostExtensions</span>.<span class="pl-e">UIServicesEventListener</span>, 
+                              <span class="pl-en">Editor</span>.<span class="pl-en">HostExtensions</span>.<span class="pl-e">ProjectServicesEventListener</span> {
+
+    <span class="pl-c"><span class="pl-c">//</span> Define the name and description of the plugin.</span>
+<span class="pl-c"></span>    name <span class="pl-k">=</span> <span class="pl-s"><span class="pl-pds">"</span>MyMenuPlugin<span class="pl-pds">"</span></span>;
+    description <span class="pl-k">=</span> <span class="pl-s"><span class="pl-pds">"</span>Simple example of a menu<span class="pl-pds">"</span></span>;
+
+    <span class="pl-k">private</span> serviceLocator<span class="pl-k">:</span> <span class="pl-en">Editor</span>.<span class="pl-en">HostExtensions</span>.<span class="pl-en">HostServiceLocator</span>;
+
+    <span class="pl-c"><span class="pl-c">/**</span></span>
+<span class="pl-c">     * Called when the plugin is first loaded by the editor.  A reference to the</span>
+<span class="pl-c">     * service locator interface will be passed to the initialization routine so that</span>
+<span class="pl-c">     * it can 'talk back' to the editor.</span>
+<span class="pl-c">     *</span>
+<span class="pl-c">     * <span class="pl-k">@param</span> <span class="pl-en">{Editor.HostExtensions.HostServiceLocator}</span> <span class="pl-smi">serviceLocator</span></span>
+<span class="pl-c">     *</span>
+<span class="pl-c">     * @memberOf MyMenuPlugin</span>
+<span class="pl-c">     <span class="pl-c">*/</span></span>
+    initialize(<span class="pl-v">serviceLocator</span><span class="pl-k">:</span> <span class="pl-en">Editor</span>.<span class="pl-en">HostExtensions</span>.<span class="pl-en">HostServiceLocator</span>) {
+        <span class="pl-c"><span class="pl-c">//</span> some debug</span>
+<span class="pl-c"></span>        <span class="pl-c1">console</span>.<span class="pl-c1">log</span>(<span class="pl-s"><span class="pl-pds">`</span>${<span class="pl-c1">this</span>.<span class="pl-c1">name</span>}.initialize<span class="pl-pds">`</span></span>);
+        <span class="pl-c1">this</span>.<span class="pl-smi">serviceLocator</span> <span class="pl-k">=</span> <span class="pl-smi">serviceLocator</span>;
+    }
+}
+
+<span class="pl-k">export</span> <span class="pl-k">default</span> <span class="pl-k">new</span> <span class="pl-en">MyMenuPlugin</span>();
+</pre></div>
+<h4>
+<a aria-hidden="true" class="anchor" href="#register-with-service-event-listeners" id="user-content-register-with-service-event-listeners"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Register with service event listeners</h4>
+<p>This is a minimalist plugin.  It activates, but does not do anything.  In order for the plugin to start interacting with the editor, it needs to register itself with various editor subsystems.  In this example, we want to register with the <code>ProjectServicesEventListener</code> and <code>UIServicesEventListener</code>.</p>
+<p>Add the following to the <code>initialize</code> method:</p>
+<div class="highlight highlight-source-js"><pre><span class="pl-c1">this</span>.<span class="pl-smi">serviceLocator</span>.<span class="pl-smi">uiServices</span>.<span class="pl-en">register</span>(<span class="pl-c1">this</span>);
+<span class="pl-c1">this</span>.<span class="pl-smi">serviceLocator</span>.<span class="pl-smi">projectServices</span>.<span class="pl-en">register</span>(<span class="pl-c1">this</span>);</pre></div>
+<p>At this point, you can add any of the handlers that are available in the <a href="http://docs.atomicgameengine.com/api/interfaces/editor.hostextensions.uiserviceseventlistener.html" rel="nofollow">UIServicesEventListener</a> and <a href="http://docs.atomicgameengine.com/api/interfaces/editor.hostextensions.projectserviceseventlistener.html" rel="nofollow">ProjectServicesEventListener</a></p>
+<h4>
+<a aria-hidden="true" class="anchor" href="#listen-for-the-project-loaded-event" id="user-content-listen-for-the-project-loaded-event"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Listen for the Project Loaded event</h4>
+<p>When the project loads, we want to attach our menu item to the menu.  To do this, we will hook into the Project Loaded Event which will be called by the editor and then call a <a href="http://docs.atomicgameengine.com/api/interfaces/editor.hostextensions.uiservicesprovider.html" rel="nofollow">uiServices</a> method to add the menu:</p>
+<div class="highlight highlight-source-ts"><pre><span class="pl-en">projectLoaded</span>(<span class="pl-smi">ev</span>: <span class="pl-smi">Editor</span>.<span class="pl-smi">EditorLoadProjectEvent</span>) {
+    <span class="pl-c"><span class="pl-c">//</span> some debug</span>
+<span class="pl-c"></span>    <span class="pl-c1">console</span>.<span class="pl-c1">log</span>(<span class="pl-s"><span class="pl-pds">`</span>${<span class="pl-c1">this</span>.<span class="pl-c1">name</span>}.projectLoaded<span class="pl-pds">`</span></span>);
+    <span class="pl-c1">this</span>.<span class="pl-smi">serviceLocator</span>.<span class="pl-smi">uiServices</span>.<span class="pl-en">createPluginMenuItemSource</span>(<span class="pl-s"><span class="pl-pds">"</span>My Menu<span class="pl-pds">"</span></span>, { <span class="pl-s"><span class="pl-pds">"</span>Open<span class="pl-pds">"</span></span> : [<span class="pl-s"><span class="pl-pds">`</span>${<span class="pl-c1">this</span>.<span class="pl-c1">name</span>}.open.myaction<span class="pl-pds">`</span></span>] });
+}</pre></div>
+<p>We also want to make sure the menu is removed and we unregister from the editor when we close the project:</p>
+<div class="highlight highlight-source-ts"><pre><span class="pl-en">projectUnloaded</span>() {
+    <span class="pl-c"><span class="pl-c">//</span> some debug</span>
+<span class="pl-c"></span>    <span class="pl-c1">console</span>.<span class="pl-c1">log</span>(<span class="pl-s"><span class="pl-pds">`</span>${<span class="pl-c1">this</span>.<span class="pl-c1">name</span>}.projectUnloaded<span class="pl-pds">`</span></span>);
+
+    <span class="pl-c1">this</span>.<span class="pl-smi">serviceLocator</span>.<span class="pl-smi">uiServices</span>.<span class="pl-en">removePluginMenuItemSource</span>(<span class="pl-s"><span class="pl-pds">"</span>My Menu<span class="pl-pds">"</span></span>);
+    <span class="pl-c1">this</span>.<span class="pl-smi">serviceLocator</span>.<span class="pl-smi">projectServices</span>.<span class="pl-en">unregister</span>(<span class="pl-c1">this</span>);
+    <span class="pl-c1">this</span>.<span class="pl-smi">serviceLocator</span>.<span class="pl-smi">uiServices</span>.<span class="pl-en">unregister</span>(<span class="pl-c1">this</span>);
+    <span class="pl-c1">this</span>.<span class="pl-en">unsubscribeFromAllEvents</span>();
+}</pre></div>
+<h4>
+<a aria-hidden="true" class="anchor" href="#perform-an-action-when-the-menu-is-clicked" id="user-content-perform-an-action-when-the-menu-is-clicked"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Perform an action when the menu is clicked</h4>
+<p>Finally, we want to actually do something when the menu is clicked.  To do that, we need to implement the <code>menuItemClicked</code> method:</p>
+<div class="highlight highlight-source-ts"><pre><span class="pl-en">menuItemClicked</span>(<span class="pl-smi">refId</span>: <span class="pl-smi">string</span>): <span class="pl-smi">boolean</span> {
+    <span class="pl-c"><span class="pl-c">//</span> some debug</span>
+<span class="pl-c"></span>    <span class="pl-c1">console</span>.<span class="pl-c1">log</span>(<span class="pl-s"><span class="pl-pds">`</span>${<span class="pl-c1">this</span>.<span class="pl-c1">name</span>}.menuItemClicked: ${<span class="pl-smi">refId</span>}<span class="pl-pds">`</span></span>);
+
+    <span class="pl-k">if</span> (<span class="pl-smi">refId</span> <span class="pl-k">==</span> <span class="pl-s"><span class="pl-pds">`</span>${<span class="pl-c1">this</span>.<span class="pl-c1">name</span>}.open.myaction<span class="pl-pds">`</span></span>) {
+
+        <span class="pl-c"><span class="pl-c">//</span> Here we can launch our own dialog, or perform some kind</span>
+<span class="pl-c"></span>        <span class="pl-c"><span class="pl-c">//</span> of action.  But let's just throw an alert</span>
+<span class="pl-c"></span>        <span class="pl-c1">this</span>.<span class="pl-smi">serviceLocator</span>.<span class="pl-smi">uiServices</span>.<span class="pl-en">showModalError</span>(<span class="pl-s"><span class="pl-pds">"</span>Alert<span class="pl-pds">"</span></span>, <span class="pl-s"><span class="pl-pds">"</span>Clicked!<span class="pl-pds">"</span></span>);    
+
+        <span class="pl-c"><span class="pl-c">//</span> Return true to indicate that we handled the click event</span>
+<span class="pl-c"></span>        <span class="pl-k">return</span> <span class="pl-c1">true</span>;
+    }
+    <span class="pl-k">return</span> <span class="pl-c1">false</span>;
+}</pre></div>
+<p>In order for this to be picked up by the editor, you will need to transpile the typescript to javascript.  This can be done by clicking the <code>Developer-&gt;Plugins-&gt;TypeScript-&gt;Compile Project</code> menu item.</p>
+<p>Once it's transpiled, you will need to close your project and re-open it for the changes to be recognized.  Click the <code>Developer-&gt;Plugins-&gt;MyMenu-&gt;Open</code> menu item and then you can see the <em>Clicked</em> message alert.</p>
+
+        </div>
+
+        <div class="wiki-footer gollum-markdown-content boxed-group" id="wiki-footer">
+          <div class="boxed-group-inner wiki-auxiliary-content markdown-body">
+            <p><img align="left" data-canonical-src="https://atomicwiki.us/atomicwiki_imgs/atomicLogo.png" height="22" src="https://camo.githubusercontent.com/221d0a11732835c9763ed76a29958208a863bdfd/68747470733a2f2f61746f6d696377696b692e75732f61746f6d696377696b695f696d67732f61746f6d69634c6f676f2e706e67"/><a href="https://github.com/AtomicGameEngine/AtomicGameEngine/wiki">Home</a> | Copyright (c) 2014 - 2017 THUNDERBEAST GAMES LLC</p>
+
+          </div>
+        </div>
+    </div>]

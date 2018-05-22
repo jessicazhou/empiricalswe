@@ -1,0 +1,39 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <ol>
+<li>安装 protobufjs 库</li>
+</ol>
+<p><code>protobufjs</code> 库是纯<code>js</code>实现的 <code>protobuf</code> 库，没有c++代码不需要编译，可以轻松跨平台。因此这里我们选用它作为 <code>lark.js</code> 使用 <code>protobuf</code> 的推荐方案。但是因为是纯js实现的可能会有性能问题，待测试。</p>
+<pre><code>npm install protobufjs
+</code></pre>
+<ol start="2">
+<li>将 protobuf 的scheme 编译成js文件</li>
+</ol>
+<p>使用 protobufjs 自带的工具能将protobuf 的 scheme 编译成js格式的类。编译完后就可以在程序里直接调用该类了、</p>
+<pre><code>node_modules/protobufjs/bin/proto2js ~/config/store_log.pb -commonjs=b2log &gt; store_log_pb.js
+</code></pre>
+<ol start="3">
+<li>调用protobuf 编译后的类</li>
+</ol>
+<p>lark.js 里对数据库等service访问的接口封装在 dao 层里。因此这里在dao层新建文件 pblog.js, 来对该protobuf 通信格式进行一层封装，提供给上层应用，如 dataService 使用。</p>
+<p>输入如下代码对 protobuf 格式数据 进行生成和读写</p>
+<pre><code>var b2log = require("./store_log_pb.js”) // 载入scheme
+var Request = b2log.Request
+var request = new Request({ // 填充pb scheme中定义的 Request 消息
+    "key": 'key_test’,  
+    "value": 'value_test'
+})
+
+var buffer = request.encode() // 生成 protobuf 数据
+
+var socket = ...;
+socket.send(buffer.toArrayBuffer()); // 用socket发送 protobuf 数据
+    socket.on("message", function(buffer, flags) { // 接收 protobuf数据
+    console.log(Request.decode(buffer) // 解压刚编译的 protobud 内容 =&gt; { key: 'key_test', value: 'value_test' }
+}
+</code></pre>
+<p>至此，lark.js 中读写 protobuf 格式数据的工作就完成了。</p>
+
+        </div>
+
+    </div>]

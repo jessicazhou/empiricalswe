@@ -1,0 +1,201 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <h1>
+<a aria-hidden="true" class="anchor" href="#homebridge-on-intel-edison" id="user-content-homebridge-on-intel-edison"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Homebridge on Intel Edison</h1>
+<p>Installing Homebridge on <a href="https://en.wikipedia.org/wiki/Intel_Edison" rel="nofollow">Edison</a> wasn't particularly straightforward. Intel's <a href="https://www.yoctoproject.org/" rel="nofollow">Yocto Linux</a> image has some outdated tools, its existing mDNS service clashes with Homebridge's dependencies and its package manager doesn't have all the requirements. But I eventualy figured it out, and guess it should take about five hours to complete these steps (including downloading and some lengthy build times).</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#os" id="user-content-os"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>OS</h2>
+<p>You may want to start with a fresh install of Linux. See the <a href="https://software.intel.com/en-us/flashing-firmware-on-your-intel-edison-board-mac-os-x" rel="nofollow">official instructions</a> also.</p>
+<p>Download: <a href="https://downloadcenter.intel.com/download/27074/Intel-Edison-Yocto-Poky-image" rel="nofollow">Intel Edison Yocto Poky image</a> from Intel.com and decompress it. The filename is <code>iot-devkit-prof-dev-image-edison-20160606.zip</code>. Intel refer to it as version 3.5 on the site but it appears as <code>Poky (Yocto Project Reference Distro) 1.7.3</code> when booting.</p>
+<p>To flash the Edison via the Arduino breakout board, ensure the switch beside the USB cables is switched towards them and connect both cables <em>without a USB hub</em>.</p>
+<p>On OS X, install <a href="http://dfu-util.sourceforge.net/" rel="nofollow">dfu-util - Device Firmware Upgrade Utilities</a> using <a href="https://brew.sh/" rel="nofollow">Homebrew</a> in Terminal with:</p>
+<p><code>brew install dfu-util coreutils gnu-getopt</code></p>
+<p>If you can already connect via serial to the Edison, you can watch the progress better.</p>
+<p>List connected serial devices with:</p>
+<p><code>ls /dev/cu.usb*</code></p>
+<pre><code>/dev/cu.usbserial-A903BYXU
+</code></pre>
+<p>Connect to your Edison (changing the identifier as appropriate):</p>
+<p><code>screen /dev/cu.usbserial-A903BYXU 15200 -L</code></p>
+<p>You might need to press Enter before anything appears on screen.</p>
+<p>In another Terminal tab, <code>cd</code> into the image directory and run the flash tool:</p>
+<p><code>./flashall.sh</code></p>
+<p>You'll be asked to restart the Edison.</p>
+<pre><code>Using U-Boot target: edison-blankcdc
+Now waiting for dfu device 8087:0a99
+Please plug and reboot the board
+</code></pre>
+<p>There is a reset button on Arduino breakout board immediately to the top right of the Intel logo labelled "SW1U15 RESET". Press this for ten seconds and release. When the second LED turns on, the install should start. The image should take a few minutes to install.</p>
+<p>In the serial tab keep an eye on the progress, then login as <code>root</code> (you won't be asked for a password) when prompted:</p>
+<pre><code>Poky (Yocto Project Reference Distro) 1.7.3 edison ttyMFD2
+
+edison login:     
+</code></pre>
+<p><em>If you have trouble connecting by serial</em>, read <a href="http://rexstjohn.com/solving-could-not-find-a-pty-with-intel-edison/" rel="nofollow">this article</a> by <a href="https://github.com/rexstjohn">Rex St John</a>. I found the <a href="https://www.npmjs.com/package/bloop" rel="nofollow">Bloop</a> tool very useful. Install using: <code>npm install bloop</code>. Reset previous serial connections with: <code>bloop clean</code>. Connect to the Edison without knowing the serial address with: <code>bloop c</code>.</p>
+<p><em>If you're having trouble flashing but can connect by serial</em>, copy the still compressed zip file to the mounted drive, copy the <code>ota_update.scr</code> file from the zip to the root of the drive, and from the Edison run <code>reboot ota</code> via SSH.</p>
+<p><em>If flashing finished too quickly</em>, you can enter another mode by rebooting and quickly pressing a key before Linux begins to load, where you can find a list of tools with: <code>env print</code></p>
+<p>Once logged in, finish the setup through the serial terminal with:</p>
+<p><code>configure_edison --setup</code></p>
+<p>I prefer working over SSH because I can scroll back further. Find the Edison's wlan IP address ("inet addr") with:</p>
+<p><code>ifconfig</code></p>
+<pre><code>...
+wlan0     Link encap:Ethernet  HWaddr fc:c2:de:30:a4:19  
+          inet addr:192.168.1.9  Bcast:192.168.1.255  Mask:255.255.255.0
+...
+</code></pre>
+<p>Change back to the other Terminal tab and:</p>
+<p><code>ssh root@192.168.1.9</code></p>
+<p>If you get an error because you have a saved SSH key which is no longer valid for that address, remove it with: <code>ssh-keygen -R 192.168.1.9</code></p>
+<p>Before doing anything specific, we need to update the package list in the <a href="https://wiki.openwrt.org/doc/techref/opkg" rel="nofollow">opkg  package manager</a>:</p>
+<p><code>opkg update</code></p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#nodejs" id="user-content-nodejs"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>NodeJS</h2>
+<p>The version of Node JS already on Poky is quite old.</p>
+<pre><code>root@homebridge:~# node --version
+v4.4.3
+root@homebridge:~# npm --version
+2.15.1
+</code></pre>
+<p>It's new enough to run Homebridge itself but the first plugin I tried to install needed a newer version. Unfortunately, it doesn't seem possible to update via NPM:</p>
+<pre><code>ERROR: npm is known not to run on Node.js v4.4.3
+Node.js 4 is supported but the specific version you're running has
+a bug known to break npm. Please update to at least 4.7.0 to use this
+version of npm. You can find the latest release of Node.js at https://nodejs.org/
+</code></pre>
+<p>Node will need <a href="https://www.gnu.org/software/tar/" rel="nofollow">Tar</a> to decompress the files, but the version on Edison doesn't have the required <code>--strip-components</code> option.</p>
+<pre><code>root@homebridge:~# tar
+BusyBox v1.22.1 (2016-06-06 14:50:27 PDT) multi-call binary.
+...
+</code></pre>
+<p>So update with:</p>
+<p><code>opkg install tar</code></p>
+<pre><code>root@homebridge:~# tar --version
+tar (GNU tar) 1.27.1
+...
+</code></pre>
+<p>Install the <a href="https://github.com/tj/n">N version management tool</a>:</p>
+<p><code>npm install -g n</code></p>
+<p>You can ignore the list of <code>npm WARN unmet dependency</code> warnings, all <a href="https://github.com/intel-iot-devkit/mraa">mraa</a> related.</p>
+<p>Install the stable version of Node:</p>
+<p><code>n stable</code></p>
+<p>Update NPM:</p>
+<p><code>npm install -g npm@latest</code></p>
+<p>To get:</p>
+<pre><code>root@homebridge:~# node --version
+v9.4.0
+root@homebridge:~# npm --version
+5.6.0
+</code></pre>
+<h2>
+<a aria-hidden="true" class="anchor" href="#mdns" id="user-content-mdns"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>MDNS</h2>
+<p>Homebridge requires us to use
+<a href="http://avahi.org/" rel="nofollow">Avahi</a> mDNS implementation.</p>
+<p>We can see the Apple implementation already installed:</p>
+<pre><code>root@homebridge:~# systemctl list-unit-files | grep mdns
+mdns.service                           enabled 
+root@homebridge:~# opkg list_installed | grep mdns
+mdns - 544-r1
+mdns-dev - 544-r1
+</code></pre>
+<p>Remove it:</p>
+<p><code>opkg remove mdns --force-removal-of-dependent-packages</code></p>
+<p>On other platforms, Avahi is installed from the <code>libavahi-compat-libdnssd-dev</code> package, but this specifically is not published to Intel's opkg repository.</p>
+<p>First, install Avahi:</p>
+<p><code>opkg install avahi avahi-dev</code></p>
+<p>Then we'll build it and copy the missing files. These following instructions were posted as <a href="https://github.com/agnat/node_mdns/issues/73">an issue solution</a> by <a href="https://github.com/AshuJoshi">Ashu Joshi</a> and <a href="https://github.com/aallan">Alasdair Allan</a> – compiled files were also uploaded but are not compatible.</p>
+<p><code>opkg install texinfo</code><br/>
+<code>git clone git://git.0pointer.de/libdaemon &amp;&amp; cd libdaemon</code><br/>
+<code>autoreconf -i</code><br/>
+<code>autoconf configure.ac &gt; configure</code><br/>
+<code>chmod uog+x configure</code><br/>
+<code>./configure</code><br/>
+<code>make</code><br/>
+<code>make install</code><br/>
+<code>export LIBDAEMON_CFLAGS=-I/usr/local/include</code><br/>
+<code>export LIBDAEMON_LIBS=-L/usr/local/lib</code></p>
+<p><code>cd ~</code><br/>
+<code>wget -qO- http://avahi.org/download/avahi-0.6.31.tar.gz | tar xvz &amp;&amp; cd avahi-0.6.31</code><br/>
+<code>export PTHREAD_CFLAGS='-lpthread'</code><br/>
+<code>opkg install libssp-dev intltool</code><br/>
+<code>./configure --disable-static --disable-mono --disable-monodoc --disable-gtk3 --disable-gtk --disable-qt3 --disable-python --disable-qt4 --disable-core-docs --enable-compat-libdns_sd --disable-tests --with-distro=none</code><br/>
+<code>make -B</code></p>
+<p>Ignore the error returned:</p>
+<pre><code>...
+Makefile:621: recipe for target 'all' failed
+make: *** [all] Error 2
+</code></pre>
+<p><code>cd avahi-compat-libdns_sd/</code><br/>
+<code>make</code></p>
+<p><code>cp .libs/*.* /usr/lib/</code><br/>
+<code>cp dns_sd.h /usr/include/</code></p>
+<p><code>cd ~</code><br/>
+<code>rm -rf libdaemon</code><br/>
+<code>rm -rf avahi-0.6.31*</code></p>
+<p><code>reboot</code></p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#homebridge" id="user-content-homebridge"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Homebridge</h2>
+<p>Installing Homebridge with the main command listed on Github didn't work for me but I followed the <a href="https://github.com/nfarina/homebridge/issues/780#issuecomment-248703377">fix in an issue</a>:</p>
+<p><code>npm install -g --unsafe-perm homebridge hap-nodejs node-gyp</code></p>
+<p>Ignore the deprecation warnings.</p>
+<p><code>cd /usr/local/lib/node_modules/homebridge/</code><br/>
+<code>npm install --unsafe-perm bignum</code><br/>
+<code>cd /usr/local/lib/node_modules/hap-nodejs/node_modules/mdns</code><br/>
+<code>node-gyp BUILDTYPE=Release rebuild</code></p>
+<p>And run Homebridge!</p>
+<p><code>cd ~</code><br/>
+<code>homebridge</code></p>
+<p>The following warning <a href="https://github.com/nfarina/homebridge#errors-on-startup">can be ignored</a>:</p>
+<pre><code>*** WARNING *** The program 'nodejs' uses the Apple Bonjour compatibility layer of Avahi
+</code></pre>
+<h2>
+<a aria-hidden="true" class="anchor" href="#autostart" id="user-content-autostart"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Autostart</h2>
+<p>To configure autostart, following <a href="https://gist.github.com/johannrichard/0ad0de1feb6adb9eb61a">this gist</a> by <a href="https://github.com/johannrichard">Johann Richard</a>, first add a service user:</p>
+<p><code>useradd -M --system homebridge</code></p>
+<p>Create new directories:</p>
+<p><code>mkdir /var/lib/homebridge</code><br/>
+<code>mkdir /usr/local/lib/node_modules/homebridge/node_modules/node-persist/storage</code></p>
+<p>Download and configure config.json – i.e. delete the sample accessories:</p>
+<p><code>wget https://raw.githubusercontent.com/nfarina/homebridge/master/config-sample.json -O /var/lib/homebridge/config.json</code><br/>
+<code>nano /var/lib/homebridge/config.json</code></p>
+<p>Copy the default config:</p>
+<p><code>cp -r ~/.homebridge/persist /var/lib/homebridge</code></p>
+<p>Give the service user ownership:</p>
+<p><code>chown -R homebridge: /var/lib/homebridge</code>
+<code>chmod 777 /usr/local/lib/node_modules/homebridge/node_modules/node-persist/storage</code></p>
+<p>Create the service:</p>
+<p><code>wget https://gist.githubusercontent.com/johannrichard/0ad0de1feb6adb9eb61a/raw/1cf926e63e553c7cbfacf9970042c5ac876fadfa/homebridge -O /etc/default/homebridge</code><br/>
+<code>wget https://gist.githubusercontent.com/johannrichard/0ad0de1feb6adb9eb61a/raw/1cf926e63e553c7cbfacf9970042c5ac876fadfa/homebridge.service -O /etc/systemd/system/homebridge.service</code></p>
+<p>Start the service:</p>
+<p><code>systemctl daemon-reload</code><br/>
+<code>systemctl enable homebridge</code><br/>
+<code>systemctl start homebridge</code></p>
+<p>Check it's running:</p>
+<p><code>systemctl status homebridge</code></p>
+<pre><code>● homebridge.service - Node.js HomeKit Server
+   Loaded: loaded (/etc/systemd/system/homebridge.service; enabled)
+   Active: active (running) since Wed 2018-02-14 19:51:41 UTC; 3s ago
+ Main PID: 479 (homebridge)
+   CGroup: /system.slice/homebridge.service
+           ├─479 homebridge
+           ├─485 /bin/sh -c /bin/echo -n "$(npm -g prefix)/lib/node_modules"
+           ├─486 /bin/sh -c /bin/echo -n "$(npm -g prefix)/lib/node_modules"
+           └─487 npm
+</code></pre>
+<h2>
+<a aria-hidden="true" class="anchor" href="#troubleshooting" id="user-content-troubleshooting"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Troubleshooting</h2>
+<p>For logs, run: <code>journalctl -fu homebridge</code>.</p>
+<p>Try change the username and pin in <code>config.json</code>.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#plugins" id="user-content-plugins"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Plugins</h2>
+<p>I guess the <code>-g</code> global option is exceptionally important to remember when installing plugins because of the service user, e.g. <code>npm install -g homebridge-tplink-smarthome</code></p>
+<p>After installing a plugin, if necessary edit the correct <code>config.json</code> with:</p>
+<p><code>nano /var/lib/homebridge/config.json</code></p>
+<p>And always restart Homebridge:</p>
+<p><code>systemctl restart homebridge</code></p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#hardware" id="user-content-hardware"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Hardware</h2>
+<p>I bought the <a href="https://www.sparkfun.com/products/13727" rel="nofollow">SparkFun Power Block for Intel Edison</a> but it didn't connect to WiFi when I powered it on. If you do decide to try it, you'll need a #000 philiips head screwdriver.</p>
+
+        </div>
+
+    </div>]

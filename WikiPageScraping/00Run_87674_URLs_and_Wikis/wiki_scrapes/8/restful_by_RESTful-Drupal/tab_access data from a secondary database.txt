@@ -1,0 +1,80 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>This example data provider allows your resource to draw data from a secondary database (i.e. the kind Drupal defines in <code>settings.php</code>'s <code>$databases</code> array.) This data provider refers to a <code>dbName</code> value, which is pulled from the resource's annotation data, and which describes which database Drupal should use.</p>
+<p>It may be placed anywhere in a PSR-4 filesystem path, but in the given code, it exists at <code>my_module/src/Plugin/DataProvider/DataProviderDbQueryExternalDB.php</code>.</p>
+<div class="highlight highlight-text-html-php"><pre><span class="pl-pse">&lt;?php</span><span class="pl-s1"></span>
+<span class="pl-s1"></span>
+<span class="pl-s1"><span class="pl-c"><span class="pl-c">/**</span></span></span>
+<span class="pl-s1"><span class="pl-c"> * @file</span></span>
+<span class="pl-s1"><span class="pl-c"> * Contains \Drupal\my_module\Plugin\DataProvider\DataProviderDbQueryExternalDB.</span></span>
+<span class="pl-s1"><span class="pl-c"> <span class="pl-c">*/</span></span></span>
+<span class="pl-s1"></span>
+<span class="pl-s1"><span class="pl-k">namespace</span> <span class="pl-en">Drupal\my_module\Plugin\DataProvider</span>;</span>
+<span class="pl-s1"></span>
+<span class="pl-s1"><span class="pl-k">use</span> <span class="pl-c1">Drupal\restful\Plugin\resource\DataProvider\DataProviderDbQuery</span>;</span>
+<span class="pl-s1"></span>
+<span class="pl-s1"><span class="pl-k">class</span> <span class="pl-en">DataProviderDbQueryExternalDB</span> <span class="pl-k">extends</span> <span class="pl-e">DataProviderDbQuery</span> {</span>
+<span class="pl-s1">  <span class="pl-c"><span class="pl-c">/**</span></span></span>
+<span class="pl-s1"><span class="pl-c">   * Get a basic query object, using the specified database.</span></span>
+<span class="pl-s1"><span class="pl-c">   *</span></span>
+<span class="pl-s1"><span class="pl-c">   * <span class="pl-k">@return</span> \SelectQuery</span></span>
+<span class="pl-s1"><span class="pl-c">   *   A new SelectQuery object for this connection.</span></span>
+<span class="pl-s1"><span class="pl-c">   <span class="pl-c">*/</span></span></span>
+<span class="pl-s1">  <span class="pl-k">protected</span> <span class="pl-k">function</span> <span class="pl-en">getQuery</span>() {</span>
+<span class="pl-s1">    <span class="pl-smi">$db_name</span> <span class="pl-k">=</span> <span class="pl-smi">$this</span><span class="pl-k">-&gt;</span><span class="pl-smi">options</span>[<span class="pl-s"><span class="pl-pds">'</span>dbName<span class="pl-pds">'</span></span>];</span>
+<span class="pl-s1">    <span class="pl-smi">$table</span> <span class="pl-k">=</span> <span class="pl-smi">$this</span><span class="pl-k">-&gt;</span>getTableName();</span>
+<span class="pl-s1"></span>
+<span class="pl-s1">    <span class="pl-k">return</span> <span class="pl-c1">\</span><span class="pl-c1">Database</span><span class="pl-k">::</span>getConnection(<span class="pl-s"><span class="pl-pds">'</span>default<span class="pl-pds">'</span></span>, <span class="pl-smi">$db_name</span>)<span class="pl-k">-&gt;</span>select(<span class="pl-smi">$table</span>)<span class="pl-k">-&gt;</span>fields(<span class="pl-smi">$table</span>);</span>
+<span class="pl-s1">  }</span>
+<span class="pl-s1"></span>
+<span class="pl-s1">}</span></pre></div>
+<p>This would be used by a resource as follows:</p>
+<div class="highlight highlight-text-html-php"><pre><span class="pl-s1">?<span class="pl-c1">php</span></span>
+<span class="pl-s1"></span>
+<span class="pl-s1"><span class="pl-c"><span class="pl-c">/**</span></span></span>
+<span class="pl-s1"><span class="pl-c"> * @file</span></span>
+<span class="pl-s1"><span class="pl-c"> * Contains \Drupal\my_module\Plugin\resource\db_query\participant\Myresource__1_0.</span></span>
+<span class="pl-s1"><span class="pl-c"> <span class="pl-c">*/</span></span></span>
+<span class="pl-s1"></span>
+<span class="pl-s1"><span class="pl-k">namespace</span> <span class="pl-en">Drupal\my_module\Plugin\resource\db_query\myresource</span>;</span>
+<span class="pl-s1"></span>
+<span class="pl-s1"><span class="pl-k">use</span> <span class="pl-c1">Drupal\restful\Plugin\resource\ResourceDbQuery</span>;</span>
+<span class="pl-s1"><span class="pl-k">use</span> <span class="pl-c1">Drupal\restful\Plugin\resource\ResourceInterface</span>;</span>
+<span class="pl-s1"></span>
+<span class="pl-s1"><span class="pl-c"><span class="pl-c">/**</span></span></span>
+<span class="pl-s1"><span class="pl-c"> * Class Myresource__1_0</span></span>
+<span class="pl-s1"><span class="pl-c"> * <span class="pl-k">@package</span> Drupal\my_module\Plugin\resource</span></span>
+<span class="pl-s1"><span class="pl-c"> *</span></span>
+<span class="pl-s1"><span class="pl-c"> * @Resource(</span></span>
+<span class="pl-s1"><span class="pl-c"> *   name = "myresource:1.0",</span></span>
+<span class="pl-s1"><span class="pl-c"> *   resource = "myresource",</span></span>
+<span class="pl-s1"><span class="pl-c"> *   label = "My Resource",</span></span>
+<span class="pl-s1"><span class="pl-c"> *   description = "Expose my resource to the REST API.",</span></span>
+<span class="pl-s1"><span class="pl-c"> *   authenticationTypes = TRUE,</span></span>
+<span class="pl-s1"><span class="pl-c"> *   authenticationOptional = TRUE,</span></span>
+<span class="pl-s1"><span class="pl-c"> *   dataProvider = {</span></span>
+<span class="pl-s1"><span class="pl-c"> *     "dbName": "my_secondary_db", // As per the key specified in settings.php </span></span>
+<span class="pl-s1"><span class="pl-c"> *     "tableName": "my_table",</span></span>
+<span class="pl-s1"><span class="pl-c"> *     "idColumn": "my_tables_primary_key_column",</span></span>
+<span class="pl-s1"><span class="pl-c"> *     "primary": "my_tables_primary_key_column",</span></span>
+<span class="pl-s1"><span class="pl-c"> *     "idField": "my_tables_primary_key_column",</span></span>
+<span class="pl-s1"><span class="pl-c"> *   },</span></span>
+<span class="pl-s1"><span class="pl-c"> *   majorVersion = 1,</span></span>
+<span class="pl-s1"><span class="pl-c"> *   minorVersion = 0</span></span>
+<span class="pl-s1"><span class="pl-c"> * )</span></span>
+<span class="pl-s1"><span class="pl-c"> <span class="pl-c">*/</span></span></span>
+<span class="pl-s1"><span class="pl-k">class</span> <span class="pl-en">Myresource__1_0</span> <span class="pl-k">extends</span> <span class="pl-e">ResourceDbQuery</span> <span class="pl-k">implements</span> <span class="pl-e">ResourceInterface</span> {</span>
+<span class="pl-s1"></span>
+<span class="pl-s1">  <span class="pl-c"><span class="pl-c">//</span> ...your method overrides here...</span></span>
+<span class="pl-s1"></span>
+<span class="pl-s1">  <span class="pl-c"><span class="pl-c">/**</span></span></span>
+<span class="pl-s1"><span class="pl-c">   * {@inheritdoc}</span></span>
+<span class="pl-s1"><span class="pl-c">   <span class="pl-c">*/</span></span></span>
+<span class="pl-s1">  <span class="pl-k">protected</span> <span class="pl-k">function</span> <span class="pl-en">dataProviderClassName</span>() {</span>
+<span class="pl-s1">    <span class="pl-k">return</span> <span class="pl-s"><span class="pl-pds">'</span>\Drupal\my_module\Plugin\DataProvider\DataProviderDbQueryExternalDB<span class="pl-pds">'</span></span>;</span>
+<span class="pl-s1">  }</span>
+<span class="pl-s1">}</span></pre></div>
+
+        </div>
+
+    </div>]

@@ -1,0 +1,202 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          
+<ul>
+<li><a href="#introduction">Introduction</a></li>
+<li><a href="#finding-your-pi">Finding your Pi</a></li>
+<li><a href="#basic-setup-preparations">Basic setup preparations</a></li>
+<li><a href="#install-c14-skip-if-this-part-if-you-are-on-raspbian-jessie">Install C++14 (Skip if this part if you are on Raspbian Jessie)</a></li>
+<li>
+<a href="#install-node">Install Node</a>
+<ul>
+<li><a href="#nodejs-manual-install">Node.js manual install</a></li>
+<li><a href="#nodejs-package-manager-apt-get-install">Node.js package manager (apt-get) install</a></li>
+<li><a href="#nodejs-binaries-install">Node.js binaries install</a></li>
+</ul>
+</li>
+<li><a href="#install-avahi-and-other-dependencies">Install Avahi and other Dependencies</a></li>
+<li><a href="#install-homebridge-and-dependencies">Install Homebridge and dependencies</a></li>
+<li><a href="#proceed-as-usual">Proceed as Usual</a></li>
+<li><a href="#running-homebridge-on-bootup">Running Homebridge on Bootup</a></li>
+<li>
+<a href="#running-homebridge-on-bootup-systemd">Running Homebridge on Bootup (systemd)</a>
+<ul>
+<li><a href="#configuration">Configuration</a></li>
+<li><a href="#notes">Notes</a></li>
+</ul>
+</li>
+<li><a href="#running-homebridge-on-bootup-initd">Running Homebridge on Bootup (init.d)</a></li>
+<li><a href="#running-homebridge-on-boot-etcrclocal-using-screen">Running Homebridge on Boot (/etc/rc.local) using Screen</a></li>
+</ul>
+
+<h2>
+<a aria-hidden="true" class="anchor" href="#introduction" id="user-content-introduction"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Introduction</h2>
+<p>Running Homebridge on a Raspberry Pi is straightforward. These instructions have been tested on a Raspberry Pi B+ with Raspbian, a Raspberry Pi 2 with Raspbian, and a Raspberry Pi 3 with <a href="https://www.raspberrypi.org/downloads/raspbian/" rel="nofollow">Raspbian Jessie Lite</a>.</p>
+<p>For help installing an operating system like NOOBS on your Pi, check the <a href="https://www.raspberrypi.org/help/noobs-setup/" rel="nofollow">official Raspberry Pi documentation</a>.</p>
+<p>For a video (in English), check <a href="https://youtu.be/_S66mtwNkQo" rel="nofollow">this</a> out.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#finding-your-pi" id="user-content-finding-your-pi"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Finding your Pi</h2>
+<p>After you install the operating system and connect your Pi to your network (and into power), you'll need to locate it so you can <code>ssh</code> into it and run some commands.</p>
+<p>The default "Raspbian" OS will automatically broadcast its presence on your network under the mDNS name "raspberrypi". If you are using Mac or Linux, you can reach your Pi easily:</p>
+<div class="highlight highlight-source-shell"><pre>ssh pi@raspberrypi.local</pre></div>
+<blockquote>
+<p>Note that in SSH is disabled by default in recent version of Raspbian; <a href="https://www.raspberrypi.org/blog/a-security-update-for-raspbian-pixel/" rel="nofollow">see this page for instructions to re-enable it</a>.</p>
+</blockquote>
+<p>The default username for Raspbian is <code>pi</code> and the password is <code>raspberry</code>.</p>
+<p>If you have a different OS installed on your Pi or you can't find it via <code>pi@raspberrypi.local</code> then you can try connecting to your home router by pointing your web browser at somewhere like <a href="">http://192.168.0.1</a>, <a href="">http://192.168.1.1</a>, <a href="">http://10.1.1.1</a> etc. (this depends on the router you're using and your network setup). Once you are logged in, you can usually find a list of devices connected to your network under "DHCP".</p>
+<p>Windows does not support <code>ssh</code> on the command line, but you can use a free SSH client like <a href="http://www.chiark.greenend.org.uk/%7Esgtatham/putty/download.html" rel="nofollow">Putty</a> to connect to your Pi.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#basic-setup-preparations" id="user-content-basic-setup-preparations"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Basic setup preparations</h2>
+<p>Once you're logged into your Pi, you should begin by updating the default system packages (note that these commands may be different if you are not running Raspbian OS).</p>
+<div class="highlight highlight-source-shell"><pre>sudo apt-get update
+sudo apt-get upgrade</pre></div>
+<p>For OSMC or other stripped down Raspberry OS, you may need to install git and make</p>
+<div class="highlight highlight-source-shell"><pre>sudo apt-get install git make</pre></div>
+<h2>
+<a aria-hidden="true" class="anchor" href="#install-c14-skip-this-part-if-you-are-on-raspbian-jessie" id="user-content-install-c14-skip-this-part-if-you-are-on-raspbian-jessie"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Install C++14 (Skip this part if you are on Raspbian Jessie)</h2>
+<p>If you are running a version of the Raspbian OS based on Debian Wheezy, it comes with a C++ compiler that is too old for some of the packages Homebridge requires. You'll need to <a href="https://solarianprogrammer.com/2015/01/13/raspberry-pi-raspbian-install-gcc-compile-cpp-14-programs/" rel="nofollow">follow these instructions</a> to install an updated version of the C++14 compiler.</p>
+<p>You should be able to type:</p>
+<div class="highlight highlight-source-shell"><pre><span class="pl-k">&gt;</span> g++-4.9 -v
+...
+gcc version 4.9.2 (Raspbian 4.9.2-10) </pre></div>
+<p>Now you have the needed compiler, but it is not yet set to be the <em>default</em> compiler. You can fix that using <a href="http://lektiondestages.blogspot.com/2013/05/installing-and-switching-gccg-versions.html" rel="nofollow">the instructions here</a>.</p>
+<p>In my case I simply did this:</p>
+<div class="highlight highlight-source-shell"><pre>sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-4.9 60 --slave /usr/bin/g++ g++ /usr/bin/g++-4.9
+sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-4.6 40 --slave /usr/bin/g++ g++ /usr/bin/g++-4.7</pre></div>
+<p>You should be able to now type:</p>
+<div class="highlight highlight-source-shell"><pre><span class="pl-k">&gt;</span> g++ -v
+...
+gcc version 4.9.2 (Raspbian 4.9.2-10) </pre></div>
+<p>For OSMC or other stripped down Raspberry OS, you may need to install g++</p>
+<div class="highlight highlight-source-shell"><pre>sudo apt-get install g++</pre></div>
+<h2>
+<a aria-hidden="true" class="anchor" href="#install-node" id="user-content-install-node"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Install Node</h2>
+<p>Starting with version 4.0.0, NodeJS now supports ARM-based platforms like Raspberry Pi by default.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#nodejs-package-manager-install-easiest-preferred" id="user-content-nodejs-package-manager-install-easiest-preferred"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Node.js package manager install (Easiest, Preferred)</h3>
+<p>If you are running a newish Raspberry Pi with an ARMv7 chip or better, you can install NodeJS using their apt-get repository. <a href="https://nodejs.org/en/download/package-manager/#debian-and-ubuntu-based-linux-distributions" rel="nofollow">Follow the instructions here</a>.</p>
+<p>Example:</p>
+<div class="highlight highlight-source-shell"><pre>curl -sL https://deb.nodesource.com/setup_8.x <span class="pl-k">|</span> sudo -E bash -
+sudo apt-get install -y nodejs</pre></div>
+<p>To check what chip your Raspberry Pi has, type:</p>
+<div class="highlight highlight-source-shell"><pre>uname -a</pre></div>
+<p>The response will look something like:</p>
+<div class="highlight highlight-source-shell"><pre>Linux raspberrypi 4.4.50-v7+ 970 SMP Mon Feb 20 19:18:29 GMT 2017 armv7l GNU/Linux</pre></div>
+<p>Notice the <strong>armv7l</strong> which indicates that this method will work.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#nodejs-binaries-install" id="user-content-nodejs-binaries-install"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Node.js binaries install</h3>
+<p>If you have an older ARM chip, you can grab Node binaries for <em>armv6</em> from <a href="https://nodejs.org/en/download/" rel="nofollow">here</a>.</p>
+<p>Example:</p>
+<div class="highlight highlight-source-shell"><pre>wget https://nodejs.org/dist/v6.9.5/node-v6.9.5-linux-armv6l.tar.xz
+tar xJvf node-v6.9.5-linux-armv6l.tar.xz
+sudo mkdir -p /opt/node
+sudo mv node-v6.9.5-linux-armv6l/<span class="pl-k">*</span> /opt/node/
+sudo update-alternatives --install <span class="pl-s"><span class="pl-pds">"</span>/usr/bin/node<span class="pl-pds">"</span></span> <span class="pl-s"><span class="pl-pds">"</span>node<span class="pl-pds">"</span></span> <span class="pl-s"><span class="pl-pds">"</span>/opt/node/bin/node<span class="pl-pds">"</span></span> 1
+sudo update-alternatives --install <span class="pl-s"><span class="pl-pds">"</span>/usr/bin/npm<span class="pl-pds">"</span></span> <span class="pl-s"><span class="pl-pds">"</span>npm<span class="pl-pds">"</span></span> <span class="pl-s"><span class="pl-pds">"</span>/opt/node/bin/npm<span class="pl-pds">"</span></span> 1</pre></div>
+<h3>
+<a aria-hidden="true" class="anchor" href="#nodejs-manual-install" id="user-content-nodejs-manual-install"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Node.js manual install</h3>
+<p>To manually install Node.js you can follow either of these guides:</p>
+<ul>
+<li>
+<a href="http://blog.wia.io/installing-node-js-v4-0-0-on-a-raspberry-pi/" rel="nofollow">Installing Node.js v4.0.0 on a Raspberry Pi (All Models)</a>.</li>
+<li><a href="http://blog.wia.io/installing-node-js-on-a-raspberry-pi-3" rel="nofollow">Installing Node.js on a Raspberry Pi 3</a></li>
+</ul>
+<p>Following those instructions explicitly will install version 4.0.0. There are many new versions published since then; to install the latest version (or any other version, Homebridge now requires a minimal Node.js version of v5.10.0), modify those instructions with the appropriate directory in the <a href="https://nodejs.org/dist/" rel="nofollow">nodejs.org repository</a>.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#install-avahi-and-other-dependencies" id="user-content-install-avahi-and-other-dependencies"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Install Avahi and other Dependencies</h2>
+<p>This is required by the <code>mdns</code> package in <code>HAP-NodeJS</code> library.</p>
+<div class="highlight highlight-source-shell"><pre>sudo apt-get install libavahi-compat-libdnssd-dev</pre></div>
+<h2>
+<a aria-hidden="true" class="anchor" href="#proceed-as-usual" id="user-content-proceed-as-usual"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Proceed as Usual</h2>
+<p>Now you can simply follow the instructions in the <a href="/nfarina/homebridge">README</a> to install Homebridge and start it up.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#alternate-installation-untested" id="user-content-alternate-installation-untested"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Alternate Installation (Untested)</h2>
+<p>If the "proceed as usual" section above didn't work for you, you might try these instructions which another user posted (but I have not verified because the simple <code>npm install -g homebridge</code> worked for me):</p>
+<p><strong>Only try these if normal way doesn't work!</strong></p>
+<div class="highlight highlight-source-shell"><pre>sudo npm install -g --unsafe-perm homebridge hap-nodejs node-gyp
+<span class="pl-c1">cd</span> /usr/local/lib/node_modules/homebridge/
+sudo npm install --unsafe-perm bignum
+<span class="pl-c1">cd</span> /usr/local/lib/node_modules/hap-nodejs/node_modules/mdns
+sudo node-gyp BUILDTYPE=Release rebuild</pre></div>
+<p>(note that <code>/usr/local/lib</code> should be replaced with <code>/usr/lib/</code> if you installed node using apt-get method above or with <code>/opt/node/lib/</code> if binary method used)</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#running-homebridge-on-bootup" id="user-content-running-homebridge-on-bootup"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Running Homebridge on Bootup</h2>
+<p>Note that you should first make sure you can successfully run Homebridge manually as described in the main <a href="/nfarina/homebridge">README</a></p>
+<p>If you are new to Linux and the Raspberry Pi, it is recommended you read the instructions for all three methods before implementing your chosen method.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#running-homebridge-on-bootup-systemd" id="user-content-running-homebridge-on-bootup-systemd"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Running Homebridge on Bootup (systemd)</h2>
+<p>Follow this <a href="https://timleland.com/setup-homebridge-to-start-on-bootup/" rel="nofollow">Guide</a></p>
+<p>On newer Raspberry Pi and Debian systems (Jessie +), managing of services with <code>init.d</code> is (transparently) replaced with <code>systemd</code>. If you wish to use <code>systemd</code> for running Homebridge on boot, you can find instructions in a Gist under <a href="https://gist.github.com/johannrichard/0ad0de1feb6adb9eb61a/">johannrichard/homebridge</a>. As you can see, the service definition is much shorter than a comparable init.d script.</p>
+<p>Download the two files and place <code>homebridge</code> under <code>/etc/default</code> and <code>homebridge.service</code> under <code>/etc/systemd/system</code> on your Raspberry Pi.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#configuration" id="user-content-configuration"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Configuration</h3>
+<p>In order to use the systemd service as is, the following folders and user have to exists:</p>
+<ul>
+<li>A system user named <code>homebridge</code>. You can easily create this user with <code>useradd --system homebridge</code> or choose a different name</li>
+<li>A directory called <code>/var/lib/homebridge</code>, writable by the user created above, and a corresponding <code>config.json</code> file in that directory. Homebridge by default looks for its configuration in <code>/home/&lt;username&gt;/.homebridge</code>. This is unsuitable for services and the <code>-U /var/lib/homebridge</code> flag ensures the config is read from a different place.</li>
+</ul>
+<p>Then Enable and run the service (first time) with the following commands:</p>
+<pre><code>systemctl daemon-reload
+systemctl enable homebridge
+systemctl start homebridge
+</code></pre>
+<p>You can check the status of the service by calling</p>
+<pre><code>systemctl status homebridge
+</code></pre>
+<p>On subsequent reboots, it should start automatically, if not, use the <code>journalctl -u homebridge</code> to check the error cause.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#notes" id="user-content-notes"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Notes</h3>
+<ul>
+<li>The service will restart after 10 seconds if it fails for any reason (or if you kill it for example with <code>kill -s SIGSEGV &lt;pid&gt;</code>)</li>
+<li>You might also try the tips in this <a href="https://timleland.com/setup-homebridge-to-start-on-bootup/" rel="nofollow">Tutorial</a>.</li>
+<li>To see the homebridge output, call <code>sudo journalctl -au homebridge</code>.  Make sure to specify <code>-n</code>, or the QR code won't be displayed.</li>
+</ul>
+<h2>
+<a aria-hidden="true" class="anchor" href="#running-homebridge-on-bootup-initd" id="user-content-running-homebridge-on-bootup-initd"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Running Homebridge on Bootup (init.d)</h2>
+<p>If you would like your Pi to start up Homebridge automatically on reboot, you will need to install an "init script". This free <a href="https://github.com/fhd/init-script-template">init script template</a> is a great place to start.</p>
+<p>For example, first go to the <a href="https://raw.githubusercontent.com/fhd/init-script-template/master/template" rel="nofollow">raw template file</a> and select the whole page and copy it to your clipboard. Then connect to your pi:</p>
+<div class="highlight highlight-source-shell"><pre>ssh pi@raspberrypi.local
+sudo nano /etc/init.d/homebridge
+[paste clipboard contents]</pre></div>
+<p>Now you'll need to modify the top of the file. Here's an example:</p>
+<div class="highlight highlight-source-shell"><pre><span class="pl-c"><span class="pl-c">#!</span>/bin/sh</span>
+<span class="pl-c"><span class="pl-c">#</span>## BEGIN INIT INFO</span>
+<span class="pl-c"><span class="pl-c">#</span> Provides: homebridge</span>
+<span class="pl-c"><span class="pl-c">#</span> Required-Start:    $network $remote_fs $syslog</span>
+<span class="pl-c"><span class="pl-c">#</span> Required-Stop:     $remote_fs $syslog</span>
+<span class="pl-c"><span class="pl-c">#</span> Default-Start:     2 3 4 5</span>
+<span class="pl-c"><span class="pl-c">#</span> Default-Stop:      0 1 6</span>
+<span class="pl-c"><span class="pl-c">#</span> Short-Description: Start daemon at boot time</span>
+<span class="pl-c"><span class="pl-c">#</span> Description:       Enable service provided by daemon.</span>
+<span class="pl-c"><span class="pl-c">#</span>## END INIT INFO</span>
+
+dir=<span class="pl-s"><span class="pl-pds">"</span>/home/pi<span class="pl-pds">"</span></span>
+cmd=<span class="pl-s"><span class="pl-pds">"</span>DEBUG=* /usr/local/bin/homebridge<span class="pl-pds">"</span></span>
+user=<span class="pl-s"><span class="pl-pds">"</span>pi<span class="pl-pds">"</span></span></pre></div>
+<p>This assumes you have installed Homebridge globally via <code>sudo npm install -g homebridge</code>.</p>
+<p>Now type CTRL+o to save, then enter, then CTRL+x to exit. Now change the file permissions and "install" the script:</p>
+<div class="highlight highlight-source-shell"><pre>sudo chmod 755 /etc/init.d/homebridge
+sudo update-rc.d homebridge defaults</pre></div>
+<p>It should now run when your Pi reboots. You can also start it up manually like this:</p>
+<div class="highlight highlight-source-shell"><pre>sudo /etc/init.d/homebridge start</pre></div>
+<p>To view the running logs, you can <code>tail</code> the output log or error log:</p>
+<div class="highlight highlight-source-shell"><pre>tail -f /var/log/homebridge.log
+tail -f /var/log/homebridge.err</pre></div>
+<h2>
+<a aria-hidden="true" class="anchor" href="#running-homebridge-on-boot-etcrclocal-using-screen" id="user-content-running-homebridge-on-boot-etcrclocal-using-screen"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Running Homebridge on Boot (/etc/rc.local) using Screen</h2>
+<p>If you would like your Pi to start up Homebridge automatically in a Screen session on reboot, you need to install Screen and edit the Pi's <code>/etc/rc.local</code> file.</p>
+<p>Install Screen</p>
+<div class="highlight highlight-source-shell"><pre>sudo apt-get install screen</pre></div>
+<p>Edit <code>/etc/rc.local</code></p>
+<div class="highlight highlight-source-shell"><pre>sudo nano /etc/rc.local</pre></div>
+<p>Add this line before the <code>exit 0</code> line:</p>
+<div class="highlight highlight-source-shell"><pre>su -c <span class="pl-s"><span class="pl-pds">"</span>screen -dmS homebridge homebridge<span class="pl-pds">"</span></span> -s /bin/sh pi</pre></div>
+<p>Hit Ctrl+X, Y to save and exit.</p>
+<p>Using <code>rc.local</code> is similar to adding things to your Login items on macOS or putting things in your Startup folder on Windows. The command is run once when you boot the Pi.</p>
+<p>The example above will open Homebridge using Screen. Screen acts like a separate terminal session that is run on the server rather than on your local computer. The advantage of this is that you can disconnect from the server without disrupting whatever was running in the Screen session. Typically when you open a terminal session session from one computer to another, when you exit (or get disconnected) everything running in the session at that time would be stopped (read more here: <a href="https://www.rackaid.com/blog/linux-screen-tutorial-and-how-to/" rel="nofollow">https://www.rackaid.com/blog/linux-screen-tutorial-and-how-to/</a>).</p>
+<p>Unless you are familiar with Screen or have a specific reason for using Screen, it is recommended that you set up Homebridge as a Service using <code>systemd</code> or <code>init.d</code>. If running Jessie or above then ideally <code>systemd</code> (especially if you are new to Linux)</p>
+<p>Whilst it would get Homebridge running on boot, using Screen does add an extra layer of complexity. Using a Service is considered the "correct" way and has other advantages notably self restarting after a fail.</p>
+
+        </div>
+
+    </div>]

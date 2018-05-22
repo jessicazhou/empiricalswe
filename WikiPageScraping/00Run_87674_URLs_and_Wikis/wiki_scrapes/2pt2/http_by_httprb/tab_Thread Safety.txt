@@ -1,0 +1,29 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>This gem provides no explicit mechanisms for thread-safe operation. That said, this gem actively avoids all global state, preferring to use an API built on immutable context objects which <em>can</em> be safely shared across threads.</p>
+<p>Thread safety comes into play when you:</p>
+<ul>
+<li><a class="internal present" href="/httprb/http/wiki/Making-Requests">Make an HTTP request</a></li>
+<li>Open a <a class="internal present" href="/httprb/http/wiki/Persistent-Connections-%28keep-alive%29">persistent connection</a> with <code>HTTP.persistent</code>
+</li>
+</ul>
+<p>If you would like to open a thread-safe connection pool, we would recommend you use <a class="internal present" href="/httprb/http/wiki/Persistent-Connections-%28keep-alive%29">persistent connections</a> and a third-party connection pool gem, such as <a href="https://github.com/mperham/connection_pool">connection_pool</a>:</p>
+<div class="highlight highlight-source-ruby"><pre><span class="pl-k">require</span> <span class="pl-s"><span class="pl-pds">"</span>http<span class="pl-pds">"</span></span>
+<span class="pl-k">require</span> <span class="pl-s"><span class="pl-pds">"</span>connection_pool<span class="pl-pds">"</span></span>
+
+pool <span class="pl-k">=</span> <span class="pl-c1">ConnectionPool</span>.<span class="pl-k">new</span>(<span class="pl-c1">size:</span> <span class="pl-c1">5</span>, <span class="pl-c1">timeout:</span> <span class="pl-c1">5</span>) <span class="pl-k">do</span>
+  <span class="pl-c1">HTTP</span>.persistent(<span class="pl-s"><span class="pl-pds">"</span>https://github.com<span class="pl-pds">"</span></span>)
+<span class="pl-k">end</span>
+
+<span class="pl-c"><span class="pl-c">#</span> Fetch multiple paths concurrently</span>
+responses <span class="pl-k">=</span> <span class="pl-s">%w(/ruby /httprb /sparklemotion)</span>.map <span class="pl-k">do</span> |<span class="pl-smi">path</span>|
+  <span class="pl-c1">Thread</span>.<span class="pl-k">new</span> <span class="pl-k">do</span>
+    pool.with { |<span class="pl-smi">conn</span>| conn.get(path).to_s }
+  <span class="pl-k">end</span>.value
+<span class="pl-k">end</span></pre></div>
+<p>Unlike almost every other Ruby HTTP client (except native libraries like curl and EventMachine-based ones), this gem uses an asynchronous timeout backend which does <em>not</em> use the <a href="https://headius.blogspot.com/2008/02/rubys-threadraise-threadkill-timeoutrb.html" rel="nofollow">thread-unsafe</a> <code>timeout.rb</code> library (except for DNS resolution, which can't be avoided without bypassing the system resolver). This means (except for the aforementioned DNS timeout usage) this gem provides advanced timeout.rb-free thread-safe timeout support which is not commonly found in other Ruby HTTP libraries, including <code>Net::HTTP</code> and all of its wrappers/derivatives.</p>
+<p>(NOTE: this gem previously supported <a href="https://github.com/celluloid/celluloid-io">Celluloid::IO</a>, but that support was removed to add the current timeout backend. It may be added back in a future version)</p>
+
+        </div>
+
+    </div>]

@@ -1,0 +1,134 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <h1>
+<a aria-hidden="true" class="anchor" href="#blocks-of-code-lines" id="user-content-blocks-of-code-lines"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Blocks of Code Lines</h1>
+<p>Blocks of disassembled code appear in regular markup files. The markup processor automatically identifies blocks of code.</p>
+<pre><code># Routines to manipulate the screen
+
+PrintChar:                        
+; This routine prints a character 
+
+0014: 3E 80           LD      A,$80               ; Flag that tells objects ...
+0016: 32 72 20        LD      ($2072),A           ; ... on the lower half 
+0019: 21 C0 20        LD      HL,$20C0            ; Decrement ...
+</code></pre>
+<p>A line of markup is code if:</p>
+<ul>
+<li>It begins with 4 hex digits and a colon like <code>0014:</code>
+</li>
+<li>The first non-space character is a semicolon like <code>; This is a comment</code>
+</li>
+<li>A line is blank and the next non-blank, non-label line is code</li>
+<li>A line begins with a word and a colon like <code>ClearScreen:</code> and the next non-label, non-blank line is code</li>
+</ul>
+<p>In the above example, the first line is regular markup (a heading). The lines that start with "00xx:" are code lines. The blank line above "0014" is grouped with the code because the line below it is a code line. The line comment and the label are code lines. The blank space above the label is grouped with the code as a code line.</p>
+<h1>
+<a aria-hidden="true" class="anchor" href="#comment-markup" id="user-content-comment-markup"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Comment Markup</h1>
+<p>You may use the standard link markup in your comments like:<br/>
+<code>; See [Info on galaga](http://galaga.com) for more</code></p>
+<p>You must not use <code>{</code> or <code>}</code> or <code>@@</code> anywhere in a code comment. These are reserved for the web generator and <code>NamesInCode</code> tool described below.</p>
+<h1>
+<a aria-hidden="true" class="anchor" href="#symbolic-addresses" id="user-content-symbolic-addresses"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Symbolic Addresses</h1>
+<p>Disassembly is littered with numeric constants. Many times these are counter values or offsets, but often they refer to memory locations:</p>
+<ul>
+<li>Jump-destinations in the code: <code>JP $1292</code>
+</li>
+<li>Memory locations (RAM and ROM): <code>LD ($2082),A</code>
+</li>
+<li>Hardware port locations: <code>OUT ($12),A</code>
+</li>
+</ul>
+<p>Disassembly is about figuring out what these locations are. We place comments and labels in the code to identify routines. For instance, the address "1292" is given the symbolic name "PrintChar":</p>
+<pre><code>PrintChar:
+1292: 35        INC   (HL)      ; Bump the cursor
+1293: ...
+</code></pre>
+<p>We create separate markup pages with tables of "address=name" entries to describe memory locations. See the wiki page on <a href="https://github.com/topherCantrell/computerarcheology/wiki/Memory-Maps">Memory Maps</a> for the syntax of memory maps.</p>
+<p>As an example, a typical memory map table looks something like this:</p>
+<pre><code>{{{memory
+||= Address  || Name      || Description                      ||
+|| 2082      || cursor    || The next screen location to fill ||
+|| 2083:20FF || inpBuffer || User input buffer                ||
+}}}
+</code></pre>
+<p>This markup is regular table-markup but wrapped in a <code>{{{memory</code> block. Only tables wrapped in a memory block are parsed as memory maps.</p>
+<p>This tables says memory address 2082 is given the symbolic name "cursor". The sequence of bytes from 2083 through 20FF is a chunk of memory functioning as "inpBuffer".</p>
+<h1>
+<a aria-hidden="true" class="anchor" href="#substitution" id="user-content-substitution"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Substitution</h1>
+<p>The web generator can replace address constants with the symbolic name. And those names are HTML links to other parts of the code or other pages that contain the memory tables. Thus:</p>
+<ul>
+<li>
+<code>JP $1292</code> becomes <code>JP PrintChar</code> (click on "PrintChar" to jump to that section of code)</li>
+<li>
+<code>LD ($2082),A</code> becomes <code>LD (cursor),A</code> (click on "cursor" to open the memory table in a separate tab)</li>
+<li>
+<code>OUT ($12),A</code> becomes <code>OUT (watchdog),A</code> (click on "watchdog" to open the port table in a separate tab)</li>
+</ul>
+<h1>
+<a aria-hidden="true" class="anchor" href="#defining-the-cpu" id="user-content-defining-the-cpu"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Defining the CPU</h1>
+<p>Whether a number is a constant or a memory address depends mostly on the opcodes for the target CPU. The web generator must know what processor the disassembly is for in order to separate constants from addresses and memory-addresses from port-addresses. You must define the CPU variable before the first line of disassembly code:</p>
+<pre><code>%%cpu = 6502
+</code></pre>
+<h1>
+<a aria-hidden="true" class="anchor" href="#linking-code-and-memory-tables" id="user-content-linking-code-and-memory-tables"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Linking Code and Memory Tables</h1>
+<p>The web generator will look all through the current markup file for code labels and code addresses. It does not look in other markup files for code labels. It only links the current file to one or more memory map tables.</p>
+<p>Memory maps are usually defined in separate files so the reader can open code and memory side by side. You specify the various map files with variable definitions:</p>
+<pre><code>%%-ram  = Arcade/SpaceInvaders/RAMUse.mark   /Arcade/SpaceInvaders/RAMUse.html
+%%-hard = Arcade/SpaceInvaders/Hardware.mark /Arcade/SpaceInvaders/Hardware.html
+</code></pre>
+<p>A variable-set that begins with "-" will load a standard markup file and parse any address tables within. These address definitions are then available to the later disassembly code.</p>
+<p>There can be multiple memory map files. For instance, there might be one that describes memory usage and one that describes hardware registers.</p>
+<p>The token following the "-" gives a hint to the web generator as to how the links should be styled.</p>
+<ul>
+<li>
+<code>ram</code> Color the links a green color</li>
+<li>
+<code>hard</code> Color the links a teal color</li>
+<li>any other name uses the <code>ram</code> styling</li>
+</ul>
+<p>Specifically, the links are given the <code>addr_</code> class preamble like <code>addr_ram</code> or <code>addr_other</code>. This allows you to define your own types of memory maps in the CSS.</p>
+<p>The first word after the equals is the name of the markup file to parse for information. The second word is the URL of the HTML file that results from the markup! That URL is the target for the links placed in the code. Yes, the tools COULD figure out the URL automatically from the site info JSON object. Maybe one day ...</p>
+<h1>
+<a aria-hidden="true" class="anchor" href="#the-namesincode-tool" id="user-content-the-namesincode-tool"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>The NamesInCode Tool</h1>
+<p>The web links between files are great for web viewing. But the archeologist works with the raw markup files. The <code>NamesInCode</code> tool tracks down the symbolic names and adds them to the comments in the raw code markup. This way the archeologist can see the symbols without modifying the numbers in the opcodes.</p>
+<p>As you flesh out the disassembly you will add/change code labels and memory definitions. Run the <code>NamesInCode</code> periodically as a disassembly progresses to update the symbols in the comments.</p>
+<p>The <code>NamesInCode</code> tool places the numeric symbols within {...} in the comments. These comment symbols are for the human disassembler. The HTML generator ignores them.</p>
+<p>Here is an example of the raw markup modified by <code>NamesInCode</code>:</p>
+<pre><code>0014: 3E 80           LD      A,$80               ; Flag that tells objects ...
+0016: 32 72 20        LD      ($2072),A           ; {-ram_vblankStatus} ... on the lower half of the screen to draw/move
+0019: 21 C0 20        LD      HL,$20C0            ; Decrement ...
+001C: 35              DEC     (HL)                ; ... the general countdown (used for pauses)
+001D: CD CD 17        CALL    $17CD               ; {CheckHandleTilt} Check and handle TILT
+0020: DB 01           IN      A,($01)             ; {-hard_INP1} Read coin switch
+0022: 0F              RRCA                        ; Has a coin been deposited (bit 0)?
+0023: DA 67 00        JP      C,$0067             ; Yes ... note that switch is closed and continue at 3F with A=1
+0026: 3A EA 20        LD      A,($20EA)           ; {-ram_coinSwitch} Switch is now open. Was it ...
+0029: A7              AND     A                   ; ... closed last time?
+002A: CA 42 00        JP      Z,$0042             ; No ... skip registering the credit
+</code></pre>
+<p>Identifiers with a leading "-" represent external memory tables. Identifiers with no preamble represent local code labels.</p>
+<h1>
+<a aria-hidden="true" class="anchor" href="#direct-page" id="user-content-direct-page"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Direct Page</h1>
+<p>Many processors allow a short-form memory access to the lowest page in memory (00xx). Some processors, like the 6809, allow you to specify the upper byte of the direct page address in a special direct page register. This value can change over the course of a program, but it is usually fixed.</p>
+<p>You can tell the web generator tool what the current value is with a variable set before the disassembly code that uses it. That way the web generator can find the correct memory address symbols.</p>
+<p><code>%%directPage = 0C00</code> Accesses to the direct page go to 0Cxx.</p>
+<h1>
+<a aria-hidden="true" class="anchor" href="#symbol-substitution-override" id="user-content-symbol-substitution-override"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Symbol Substitution Override</h1>
+<p>The web generator does its best to decide if each numeric constant is a memory reference or not. This is not always easy to do. Take <code>$100,X</code> for instance. We might be using X to walk an array of data in memory at $100. In this case, $100 should be replaced by a symbol. Or we might be using X to point to a screen location and we are writing data seven rows later. In this case, $100 is just an offset and has no memory symbol.</p>
+<p>The web generator picks one way or another for a particular opcode. If it picks wrong then you can override (reverse) the choice by placing <code>@@</code> anywhere in the line's comment.</p>
+<p>For instance, the generator picks c</p>
+<pre><code>09D8: 8E 02 40        LDX    #$0240      ; This is a constant
+
+09DA: 8E 02 40        LDX    #$0240      ; @@{inputBuffer} Pointer to the input buffer
+</code></pre>
+<p>Or with indexed opcodes:</p>
+<pre><code>082F: E7 C9 05 11     STB    $0511,U     ; Set the number of lives
+
+0833: E7 C9 01 00     STB    $0100,U     ; @@{blockTable} Clear the blocked passage
+</code></pre>
+<p>Here the value <code>$0100</code> is replaced with a link to <code>blockTable</code> in the memory table. But <code>$0511</code> is treated as a constant. This is the default treatment of all indexed forms.</p>
+<p>Again, the names in <code>{...}</code> are for the human reader. They are ignored by the web generator. They are updated by the <code>NamesInCode</code> tool.</p>
+
+        </div>
+
+    </div>]

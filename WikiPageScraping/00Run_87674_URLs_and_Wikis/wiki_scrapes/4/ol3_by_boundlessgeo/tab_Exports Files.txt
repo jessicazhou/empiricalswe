@@ -1,0 +1,84 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <h2>
+<a aria-hidden="true" class="anchor" href="#exporting-constructors-methods-and-functions" id="user-content-exporting-constructors-methods-and-functions"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Exporting constructors, methods and functions</h2>
+<p>Alongside js files, the <code>src</code> directory includes "exports files" (e.g. <code>src/ol/map.exports</code>). The export files declare symbols and properties that the library exports. (See the <a href="https://developers.google.com/closure/compiler/docs/api-tutorial3?hl=fr#export" rel="nofollow">Closure Compiler docs</a> to know more about <em>exporting</em>.)</p>
+<p>For example the <code>src/ol/map.exports</code> file includes this:</p>
+<pre><code>@exportClass ol.Map ol.MapOptions
+@exportProperty ol.Map.prototype.addLayer
+</code></pre>
+<p>This declares that the <code>ol.Map</code> symbol, and that the <code>ol.Map.prototype.addLayer</code> property, should be <em>exported</em>, i.e. made available to library's users.</p>
+<p>Exports files are processed by the <code>bin/generate-exports</code> script, using the <code>--exports</code> switch. This script receives a list of exports files as its input, and outputs JavaScript code including calls to Closure's <code>goog.exportSymbol</code> and <code>goog.exportProperty</code> functions.</p>
+<p>As an example, try the following:</p>
+<pre><code>python bin/generate-exports.py --exports src/objectliterals.jsdoc src/ol/map.exports
+</code></pre>
+<p>The <code>build.py</code> script places the output of <code>generate-exports --exports</code> into the <code>build/src/external/src/exports.js</code> file. This script thus takes care of exporting the symbols and properties that make up the OpenLayers 3 API. It is used as an input file for the <code>ol.js</code> build, and is therefore included in <code>ol.js</code> after compilation.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#exporting-options-objects" id="user-content-exporting-options-objects"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Exporting options objects</h2>
+<p>All the (exported) constructors are <em>single-argument constructors</em>, they take one argument, <code>options</code>, which is a JavaScript literal object. Here is, for example, how options are passed to the <code>ol.Map</code> constructor:</p>
+<pre><code>var map = new ol.Map({
+  layers: [
+    new ol.layer.TileLayer({
+      source: new ol.source.OSM()
+    })
+  ],
+  target: 'map'
+});
+</code></pre>
+<p>The constructors' options objects, and their properties, are declared in the <code>src/objectliterals.jsdoc</code> file. The options objects themselves are declared using the <code>@typedef</code> keyword, while properties are declared using the <code>@property</code> keyword. This is, for example, how the <code>ol.Map</code> constructor's options are declared:</p>
+<pre><code>/**
+ * Object literal with config options for the map.
+ * @typedef {Object} ol.MapOptions
+ * @property {Array.&lt;ol.control.Control&gt;|undefined} controls Controls initially
+ *     added to the map.
+ * @property {ol.Collection|undefined} interactions Interactions.
+ * @property {Array.&lt;ol.layer.Layer&gt;|ol.Collection|undefined} layers Layers.
+ * @property {ol.RendererHint|undefined} renderer Renderer.
+ * @property {Array.&lt;ol.RendererHint&gt;|undefined} renderers Renderers.
+ * @property {Element|string|undefined} target The container for the map.
+ * @property {ol.IView|undefined} view The map's view. Currently
+ *     {@link ol.View2D} is available as view.
+ */
+</code></pre>
+<p>[Note: config objects and properties are declared in a specific (separate) file because they may be shared by multiple constructors. For example the <code>ol.source.Vector</code> constructor currently takes an <code>ol.source.SourceOptions</code> options object, and <code>ol.source.SourceOptions</code> is a generic/base type that may be used for other constructors. We may want to change that in the future, and force each constructor to have its own config object type. In this way config objects and properties could be declared in the same file as their corresponding constructors.]</p>
+<p>This file is also processed with the <code>bin/generate-exports</code> script, but using the <code>--externs</code> and <code>--typedef</code> switches.</p>
+<p>The <code>generate-exports --externs</code> generates Closure externs from the <code>@typedef</code> and <code>@property</code> directives. The <code>build.py</code> script places these externs in the <code>build/src/external/externs/types.js</code> file, which is used as a regular externs file by the Closure compiler (see <code>buildcfg/ol.json</code>).</p>
+<p>The <code>generate-exports --typedef</code> command generate typedef's for the object literals declared with <code>@typedef</code> and <code>@property</code>. The <code>build.py</code> script places the typedef's in the <code>build/src/external/src/types.js</code>, which, like <code>exports.js</code>, is used as an input file for the ol.js build (see <code>buildcfg/ol.json</code>).</p>
+<p>Externs define types for options objects created by library's users, while typedef's define types created internally by the library.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#the-olijs-externs-file" id="user-content-the-olijs-externs-file"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>The oli.js externs file</h2>
+<p>The <code>externs/oli.js</code> file defines externs for functions that may be defined in application code and called by the library. For the library to be able to call user-defined functions, these functions should not be renamed within the library.</p>
+<p>For example, <code>oli.js</code> includes the following definition:</p>
+<pre><code>/**
+ * @param {ol.Map} map Map.
+ * @return {undefined} Undefined.
+ */
+oli.control.Control.prototype.setMap = function(map) {};
+</code></pre>
+<p>This will prevent the Compiler from renaming <code>setMap</code> internally, allowing the creation of custom controls defining their own <code>setMap</code> functions. (The <code>ol.control.Control.prototype.setMap</code> function is also exported, making it possible to call it from child implementations.)</p>
+<p><a href="http://ol3js.org/ol3/master/examples/custom-controls.html" rel="nofollow">http://ol3js.org/ol3/master/examples/custom-controls.html</a> provides an example for creating custom controls.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#under-the-hood" id="user-content-under-the-hood"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Under the hood</h2>
+<p><code>build/src/internal/src/requireall.js</code> is used in the <code>build.py build-all</code> target to ensure that all source files are passed to the compiler.</p>
+<p>Before reading on, you should have a thorough understand of how the Closure Compiler handles exports and externs.</p>
+<p>The exports/externs/typedefs system is required so that the same source files can be used in several modes:</p>
+<ol>
+<li>Uncompiled (i.e. <code>mode=RAW</code>)</li>
+<li>Application and ol3 library compiled together</li>
+<li>ol3 library compiled, application uncompiled</li>
+</ol>
+<p>Cases 1 are 2 similar: no exports are needed (except for <code>ol.Object</code> property <code>get</code> and <code>set</code> methods whose names must be preserved), and object literals passed to single argument constructors are defined as <code>@typedef</code>s so that they can be type checked and the compiler can rename their properties. Everything is "internal".</p>
+<p>Case 3 is more complicated: we need to ensure that the appropriate library functions are exported so they can be used by application code.  However, anything that is exported will be included in the built library and so increase the library size, hence the need for custom builds. Coarse-grained control over the custom build contents is achieved by deciding which <code>.exports</code> files to pass to the compiler.  Object literals to single argument constructors are more complicated: these are supplied by the application, so the compiled library must not rename their properties.  So, in "external" mode, in addition to the <code>@typedef</code>s, each object literals must be shadowed by an <code>@extern</code> declaration that declares an <code>@interface</code> in the <code>olx</code> namespace.  A separate namespace is needed to avoid conflicts with the <code>ol</code> namespace used internally.   Furthermore, a shadow derived class (e.g. <code>ol.MapExport</code>) is defined for each exported class that transparently translates the un-renamed external object literal into a possibly renamed internal object literal. This derived class is exported as its parent class by a cunning rename when it's exported. Easy, huh?</p>
+<p>Luckily, all this complexity is handled by the <code>generate-exports</code> script.  The ol3 developer need only add his declarations to the <code>.exports</code> files and everything is auto-generated from this single source.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#approaches-that-dont-work" id="user-content-approaches-that-dont-work"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Approaches that don't work</h3>
+<h4>
+<a aria-hidden="true" class="anchor" href="#using-the-export-annotation" id="user-content-using-the-export-annotation"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Using the <code>@export</code> annotation</h4>
+<p>Using <code>@export</code> in the source code means that all exported symbols would always be exported, this prevents custom builds.</p>
+<h4>
+<a aria-hidden="true" class="anchor" href="#using-the-expose-annotation" id="user-content-using-the-expose-annotation"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Using the <code>@expose</code> annotation</h4>
+<p>This also prevents custom builds, as well as increasing the generated code size.</p>
+
+        </div>
+
+    </div>]

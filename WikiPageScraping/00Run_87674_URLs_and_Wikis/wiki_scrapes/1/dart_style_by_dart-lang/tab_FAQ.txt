@@ -1,0 +1,254 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <h2>
+<a aria-hidden="true" class="anchor" href="#why-have-a-formatter" id="user-content-why-have-a-formatter"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Why have a formatter?</h2>
+<p>The formatter has a few goals, in order of descending priority:</p>
+<ol>
+<li>
+<p><strong>Produce consistently formatted code.</strong> Consistent style improves
+readability because you aren't distracted by differences in style between
+different parts of a program. It makes it easier to contribute to others'
+code because their style will already be familiar to you.</p>
+</li>
+<li>
+<p><strong>End debates about style issues in code reviews.</strong> This consumes an
+astonishingly large quantity of very valuable engineering energy. Style
+debates are time-consuming, upset people, and rarely change anyone's mind.
+They make code reviews take longer and be more acrimonious.</p>
+</li>
+<li>
+<p><strong>Free users from having to think about and apply formatting.</strong> When
+writing code, you don't have to try to figure out the best way to split a
+line and then painstakingly add in the line breaks. When you do a global
+refactor that changes the length of some identifier, you don't have to go
+back and rewrap all of the lines. When you're in the zone, you can just
+pump out code and let the formatter tidy it up for you as you go.</p>
+</li>
+<li>
+<p><strong>Produce beautiful, readable output that helps users understand the code.</strong>
+We could solve all of the above goals with a formatter that just removed
+<em>all</em> whitespace, but that wouldn't be very human-friendly. So, finally,
+the formatter tries very hard to produce output that is not just consistent
+but readable to a human. It tries to use indentation and line breaks to
+highlight the structure and organization of the code.</p>
+<p>In several cases, the formatter has pointed out bugs where the existing
+indentation was misleading and didn't represent what the code actually did.
+For example, automated formatted would have helped make Apple's
+<a href="https://gotofail.com/" rel="nofollow">"gotofail"</a> security bug easier to notice:</p>
+<div class="highlight highlight-source-c"><pre><span class="pl-k">if</span> ((err = SSLHashSHA1.update(&amp;hashCtx, &amp;signedParams)) != <span class="pl-c1">0</span>)
+    <span class="pl-k">goto</span> fail;
+    <span class="pl-k">goto</span> fail;
+<span class="pl-k">if</span> ((err = SSLHashSHA1.final(&amp;hashCtx, &amp;hashOut)) != <span class="pl-c1">0</span>)
+    <span class="pl-k">goto</span> fail;</pre></div>
+<p>The formatter would change this to:</p>
+<div class="highlight highlight-source-c"><pre><span class="pl-k">if</span> ((err = SSLHashSHA1.update(&amp;hashCtx, &amp;signedParams)) != <span class="pl-c1">0</span>)
+    <span class="pl-k">goto</span> fail;
+<span class="pl-k">goto</span> fail; <span class="pl-c"><span class="pl-c">//</span> &lt;-- now clearly not under the "if".</span>
+<span class="pl-k">if</span> ((err = SSLHashSHA1.final(&amp;hashCtx, &amp;hashOut)) != <span class="pl-c1">0</span>)
+    <span class="pl-k">goto</span> fail;</pre></div>
+</li>
+</ol>
+<h2>
+<a aria-hidden="true" class="anchor" href="#i-dont-like-the-output" id="user-content-i-dont-like-the-output"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>I don't like the output!</h2>
+<p>First of all, that's not a question. But, yes, sometimes you may dislike the
+output of the formatter. This may be a bug or it may be a deliberate stylistic
+choice of the formatter that you disagree with. The simplest way to find out is
+to file an <a href="https://github.com/dart-lang/dart_style/issues">issue</a>.</p>
+<p>Now that the formatter is pretty mature, it's more likely that the output is
+deliberate. If you still aren't happy with what it did to your code, the
+easiest thing you can do is tweak what you send it. While the formatter
+tries to make <em>all</em> code look great, there are trade-offs in some of the
+rules. In those cases, it leans towards making more common idioms look better.</p>
+<p>If your code ends up looking bad, your code may be off the beaten path.
+Usually hoisting an expression up to a local variable or taking a big lambda
+out and making it a named function is all that's need to get back to a happy
+place.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#why-cant-i-configure-it" id="user-content-why-cant-i-configure-it"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Why can't I configure it?</h2>
+<p>The formatter supports very few tweakable settings, by design. If you look up at the list of priorities above, you'll see configurability goes directly against the first two priorities, and halfway against the third (you have to think about it, but not apply it).</p>
+<p>This may be surprising, but the goal of dartfmt is not to automatically make your code look the way <em>you like</em>. It's to make everyone's Dart code look <em>the same</em>. The primary goal of dartfmt is to improve the quality of the Dart ecosystem. That transitively improves the live's of each Dart developer as well—you get more code to reuse, more consistent code, it's easier to read and contribute to each other's code, etc. But it does that at the expense of individual preference.</p>
+<p>It requires you to buy in to the idea that a consistent ecosystem is more valuable than anyone's individual formatting preferences. Or, another way to say that is that no one's individual formatting style is measurably better enough than what dartfmt produces to compensate for the costs of inconsistency and having to argue over what your team's house style should be.</p>
+<p>If you don't buy that, that's OK. It just means dartfmt probably isn't the right tool for you.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#how-stable-is-it" id="user-content-how-stable-is-it"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>How stable is it?</h2>
+<p>You can rely on the formatter to not break your code or change its semantics.
+If it does do so, this is a critical bug and we'll fix it quickly.</p>
+<p>The formatter is in wide use, so changes that affect the way a significant
+fraction of code is formatted are very unlikely.</p>
+<p>The rules the formatter uses to determine the "best" way to split a line may
+change over time, mostly in complex cases. We don't promise that code produced by the formatter today
+will be identical to the same code run through a later version of the formatter.
+We do hope that you'll like the output of the later version more.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#how-does-it-work" id="user-content-how-does-it-work"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>How does it work?</h2>
+<p>I wrote a long article about how the formatter is implemented <a href="http://journal.stuffwithstuff.com/2015/09/08/the-hardest-program-ive-ever-written/" rel="nofollow">here</a>.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#why-cant-i-tell-the-formatter-to-ignore-a-region-of-code" id="user-content-why-cant-i-tell-the-formatter-to-ignore-a-region-of-code"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Why can't I tell the formatter to ignore a region of code?</h2>
+<p>Even a really sophisticated formatter can't beat a human in <em>all</em> cases. Our
+semantic knowledge of the code can let us show more than the formatter can. One
+escape hatch would be to have a comment telling the formatter "leave this
+alone".</p>
+<p>This might help the fourth goal above, but does so at the expense of the first
+three. We want code that is <em>consistent</em> and we want you to stop thinking about
+formatting. If you can decide to turn off the formatter, now you have regions
+of code that are inconsistent by design.</p>
+<p>Further, you're right back into debates about how the code in there should be
+formatted, with the extra bonus of now debating whether or not that annotation
+should be used and where. None of this is making your life better.</p>
+<p>Yes, <em>maybe</em> you can hand-format some things better than the formatter. (Though,
+in most cases where users have asked for this, I've seen formatting errors in
+the examples they provided!) But does doing that really add <em>enough</em> value to
+make up for re-opening that can of worms?</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#why-isnt-this-function-or-collection-indented-enough" id="user-content-why-isnt-this-function-or-collection-indented-enough"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Why isn't this function or collection indented enough?</h2>
+<p>In most cases, a function expression or a multiline collection literal's body is
+indented relative to the containing statement, not relative to the expression
+nesting where it appears. This style was inherited from <a href="https://google.github.io/styleguide/javascriptguide.xml?showone=Code_formatting#Code_formatting" rel="nofollow">Google's JavaScript
+style guide</a> where it seems to work well.</p>
+<p>It is so natural in most code that you probably don't even notice it:</p>
+<div class="highlight highlight-source-dart"><pre>argParser.<span class="pl-en">addAll</span>([
+  <span class="pl-s">"--help"</span>,
+  <span class="pl-s">"--mode"</span>,
+  <span class="pl-s">"debug"</span>
+]);</pre></div>
+<div class="highlight highlight-source-dart"><pre><span class="pl-en">test</span>(<span class="pl-s">"adds two numbers correctly"</span>, () {
+  <span class="pl-en">expect</span>(<span class="pl-c1">1</span> <span class="pl-k">+</span> <span class="pl-c1">2</span>, <span class="pl-en">equals</span>(<span class="pl-c1">3</span>));
+});</pre></div>
+<p>But the same behavior kicks in even when the body is contained in an expression
+that has other splits:</p>
+<div class="highlight highlight-source-dart"><pre><span class="pl-en">configure</span>(
+    debugStuff<span class="pl-k">:</span> <span class="pl-c1">false</span>,
+    optimizeStuff<span class="pl-k">:</span> <span class="pl-c1">true</span>,
+    removeExtraStuff<span class="pl-k">:</span> <span class="pl-c1">false</span>,
+    thingsToInclude<span class="pl-k">:</span> [
+  <span class="pl-s">"widgets"</span>,
+  <span class="pl-s">"gadgets"</span>,
+  <span class="pl-s">"doodads"</span>,
+  <span class="pl-s">"doohickeys"</span>
+]);</pre></div>
+<p>Here, the indentation of the list body is less than the <code>thingsToInclude:</code>
+parameter that it applies to, which breaks the general guideline that
+indentation should reflect nesting depth.</p>
+<p>We could always indent relative to the surrounding expression, but that also
+leads to bad output in many cases:</p>
+<div class="highlight highlight-source-dart"><pre><span class="pl-en">group</span>(<span class="pl-s">"this description is too long"</span>
+    <span class="pl-s">"too fit in one line"</span>,
+    () {
+      <span class="pl-c">// 1000 lines of annoyingly indented test code...</span>
+    });</pre></div>
+<p>Both indentation styles are useful in different places, so the formatter
+supports both and tries to choose the best based on the context where the body
+appears. The rules here are fairly subtle, and take into account method chains,
+other arguments in the argument list, etc. There doesn't appear to be a <em>simple</em>
+rule that makes all code look good and the heuristics it uses aren't perfect. It
+does its best.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#why-does-the-formatter-mess-up-my-collection-literals" id="user-content-why-does-the-formatter-mess-up-my-collection-literals"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Why does the formatter mess up my collection literals?</h2>
+<p>Large collection literals are often used to define big chunks of structured
+data, like:</p>
+<div class="highlight highlight-source-dart"><pre><span class="pl-c">///</span><span class="pl-c"> Maps ASCII character values to what kind of character they represent.</span>
+<span class="pl-k">const</span> characterTypes <span class="pl-k">=</span> <span class="pl-k">const</span> [
+  other, other, other, other, other, other, other, other,
+  other, white, white, other, other, white,
+  other, other, other, other, other, other, other, other,
+  other, other, other, other, other, other, other, other,
+  other, other, white,
+  punct, other, punct, punct, punct, punct, other,
+  brace, brace, punct, punct, comma, punct, punct, punct,
+  digit, digit, digit, digit, digit,
+  digit, digit, digit, digit, digit,
+  punct, punct, punct, punct, punct, punct, punct,
+  alpha, alpha, alpha, alpha, alpha, alpha, alpha, alpha,
+  alpha, alpha, alpha, alpha, alpha, alpha, alpha, alpha,
+  alpha, alpha, alpha, alpha, alpha, alpha, alpha, alpha,
+  alpha, alpha, brace, punct, brace, punct, alpha, other,
+  alpha, alpha, alpha, alpha, alpha, alpha, alpha, alpha,
+  alpha, alpha, alpha, alpha, alpha, alpha, alpha, alpha,
+  alpha, alpha, alpha, alpha, alpha, alpha, alpha, alpha,
+  alpha, alpha, brace, punct, brace, punct
+];</pre></div>
+<p>The formatter doesn't know those newlines are meaningful, so it wipes it out
+to:</p>
+<div class="highlight highlight-source-dart"><pre><span class="pl-c">///</span><span class="pl-c"> Maps ASCII character values to what kind of character they represent.</span>
+<span class="pl-k">const</span> characterTypes <span class="pl-k">=</span> <span class="pl-k">const</span> [
+  other,
+  other,
+  other,
+
+  <span class="pl-c">// lots more ...</span>
+
+  punct,
+  brace,
+  punct
+];</pre></div>
+<p>In many cases, ignoring these newlines is a good thing. If you've removed a few
+items from a list, it's a win for the formatter to repack it into one line if
+it fits. But here it clearly loses useful information.</p>
+<p>Fortunately, in most cases, structured collections like this have comments
+describing their structure:</p>
+<div class="highlight highlight-source-dart"><pre><span class="pl-k">const</span> characterTypes <span class="pl-k">=</span> <span class="pl-k">const</span> [
+  other, other, other, other, other, other, other, other,
+  other, white, white, other, other, white,
+  other, other, other, other, other, other, other, other,
+  other, other, other, other, other, other, other, other,
+  other, other, white,
+  punct, other, punct, punct, punct, punct, other, <span class="pl-c">//          !"#$%&amp;´</span>
+  brace, brace, punct, punct, comma, punct, punct, punct, <span class="pl-c">//   ()*+,-./</span>
+  digit, digit, digit, digit, digit, <span class="pl-c">//                        01234</span>
+  digit, digit, digit, digit, digit, <span class="pl-c">//                        56789</span>
+  punct, punct, punct, punct, punct, punct, punct, <span class="pl-c">//          :;&lt;=&gt;?@</span>
+  alpha, alpha, alpha, alpha, alpha, alpha, alpha, alpha, <span class="pl-c">//   ABCDEFGH</span>
+  alpha, alpha, alpha, alpha, alpha, alpha, alpha, alpha,
+  alpha, alpha, alpha, alpha, alpha, alpha, alpha, alpha,
+  alpha, alpha, brace, punct, brace, punct, alpha, other, <span class="pl-c">//   YZ[\]^_'</span>
+  alpha, alpha, alpha, alpha, alpha, alpha, alpha, alpha, <span class="pl-c">//   abcdefgh</span>
+  alpha, alpha, alpha, alpha, alpha, alpha, alpha, alpha,
+  alpha, alpha, alpha, alpha, alpha, alpha, alpha, alpha,
+  alpha, alpha, brace, punct, brace, punct  <span class="pl-c">//                 yz{|}~</span>
+];</pre></div>
+<p>In that case, the formatter is smart enough to recognize this and preserve your
+original newlines. So, if you have a collection that you have carefully split
+into lines, add at least one line comment somewhere inside it to get it to
+preserve all of the newlines in it.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#why-doesnt-the-formatter-add-curlies-or-otherwise-clean-up-code" id="user-content-why-doesnt-the-formatter-add-curlies-or-otherwise-clean-up-code"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Why doesn't the formatter add curlies or otherwise clean up code?</h2>
+<p>The formatter has a simple, restricted charter: it rewrites <em>only the
+non-semantic whitespace of your program.</em> It makes absolutely no other changes
+to your code. This makes it more reliable to run the formatter automatically in things like
+presubmit scripts where a human does not vet the output.</p>
+<p>Making non-whitespace changes like reordering or adding or removing curly
+braces has a lot of very ugly failure cases.</p>
+<ul>
+<li>
+<p>If we add curlies to the body of an <code>if</code> that doesn't fit on one line, do we
+<em>remove</em> them if it <em>does</em> fit? What if the user prefers using curly braces on all
+<code>if</code>s? If we don't remove them, then it means the formatter's behavior isn't
+reversible. If make the <code>if</code> condition longer, then reformat, it may add
+curlies. Then you change it back to the original condition but it doesn't
+remove them, so you aren't back where you started.</p>
+</li>
+<li>
+<p>If we alphabetize your imports, what happens to comments in the middle of
+them? What if it appears to be a commented out import? Do we sort it?</p>
+</li>
+<li>
+<p>If we split long string literals so that they fit in the line length, do we
+<em>unsplit</em> adjacent ones that <em>would</em> fit? What kind of string literal do we use
+when we split or unsplit? How do we handle escaped quotation marks that are
+affected by that choice? Are all of the things we might do here reversible?</p>
+</li>
+</ul>
+<p>We probably could come up with reasonable behavior for most of these, but the
+heuristics get increasingly hairy and likely to not work. That's not the kind
+of program you want modifying all of your code right before you
+commit it.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#why-did-the-formatter-only-format-some-of-my-code" id="user-content-why-did-the-formatter-only-format-some-of-my-code"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Why did the formatter only format some of my code?</h2>
+<p>The algorithm the formatter uses to choose where to insert line breaks globally optimizes the entire statement. It has smart heuristics so that it can do this quickly for almost all code, but the worst-case behavior is exponential in the length of the statement. In order to avoid locking up the entire formatter for who knows how long, it has a sanity check where it will only try a maximum number of solutions before it gives up and picks the best it found so far.</p>
+<p>If you see output where the beginning of a statement was formatted and then the rest runs onto one giant long line, you probably hit this limit. It typically involves a long chain of cascade expressions, each of which is complex and often contains nested collections or function literals.</p>
+<p>In most cases, the code in question packs so much into one statement that it's also hard for a <em>human</em> to read. Splitting it into multiple shorter statements typically makes it easier on the formatter and easier on the human reader, so that's a good workaround.</p>
+<p>Still, the formatter's job is to do the best it can with whatever code you give it. I haven't had time to work on it, but I'd like to see if it's possible to improve the heuristics so that it doesn't get stuck in these cases. <a href="https://github.com/dart-lang/dart_style/issues/573">This</a> is the relevant tracking issue. If you run into this bug on your own code, it would help me if you could add a comment there containing the full statement for the code it failed to format.</p>
+
+        </div>
+
+    </div>]

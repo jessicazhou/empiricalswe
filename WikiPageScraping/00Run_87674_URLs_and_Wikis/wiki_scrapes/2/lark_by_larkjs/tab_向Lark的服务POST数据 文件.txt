@@ -1,0 +1,54 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <h2>
+<a aria-hidden="true" class="anchor" href="#%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88" id="user-content-解决方案"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>解决方案</h2>
+<p>增加<code>receive</code>方法，通过<code>receive</code>方法将post的数据进行处理，并放到<code>request.body</code>中。</p>
+<p>方案示例如下：</p>
+<pre><code>yield this.receive('json', 'urlencoded');
+console.log(this.request.body);
+</code></pre>
+<p>POST的数据为：</p>
+<pre><code>curl -X POST 'localhost:3000/post' -d 'a=b%20c&amp;d=e'
+</code></pre>
+<p>结果是：</p>
+<pre><code>{ a: 'b c', d: 'e' }
+</code></pre>
+<p>对于<code>multipart/form-data</code>的数据，则可以使用如下方法进行处理：</p>
+<pre><code>yield this.receive('multipart/form-data');
+console.log(this.request.body);
+</code></pre>
+<p>获得的数据：</p>
+<pre><code>{ userfile: 
+   { filename: 'haha.jpg',
+     name: 'userfile',
+     mime: 'image/jpeg',
+     mimeType: 'image/jpeg',
+     content: &lt;Buffer ff d8 ff e0 00 10 4a 46 49 46 00 01 01 01 00 60 00 60 00 00 ff db 00 43 00 06 04 05 06 05 04 06 06 05 06 07 07 06 08 0a 10 0a 0a 09 09 0a 14 0e 0f 0c ... &gt; } }
+</code></pre>
+<p>可见post的图片被转换成了buffer。</p>
+<p>大多数情况下并不需要对post来的文件直接进行处理，而是进行保存，所以提供了一个<code>saveAs</code>参数，如：</p>
+<pre><code>yield this.receive('multipart/form-data', {
+    saveAs: 'upload/{name}.jpg',
+});
+
+// alternative solution:
+yield this.receive('multipart/form-data', {
+    saveAs:  function (readable) { return 'upload/' + readable.name + '.jpg'; },
+});
+</code></pre>
+<p><em>上述2个方案是等价的，不过必须保证readable下有name属性</em></p>
+<p>这样上传之后，文件会被保存在对应的位置（通过管道的方式，因此不会占用过多的内存），这样得到的结果中不会有<code>content</code>而是被<code>saveAs</code>取代，<code>saveAs</code>中是保存的最终位置:</p>
+<pre><code>{ userfile: 
+   { filename: 'haha.jpg',
+     name: 'userfile',
+     mime: 'image/jpeg',
+     mimeType: 'image/jpeg',
+     saveAs: '/Users/mbu-se-vc/haohao/projects/appPost/upload/userfile.jpg' } }
+</code></pre>
+<h2>
+<a aria-hidden="true" class="anchor" href="#%E5%85%BC%E5%AE%B9%E7%9A%84%E6%96%B9%E5%BC%8F" id="user-content-兼容的方式"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>兼容的方式</h2>
+<p>已经和上一版进行兼容，选择对于urlencoded的数据，系统会自动执行receive函数，因此可以直接用<code>this.request.body</code>获取到数据。</p>
+
+        </div>
+
+    </div>]

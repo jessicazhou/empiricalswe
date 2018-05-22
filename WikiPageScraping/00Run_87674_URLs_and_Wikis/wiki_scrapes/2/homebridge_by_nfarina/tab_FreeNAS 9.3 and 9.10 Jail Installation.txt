@@ -1,0 +1,50 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p><em>All credit to @axemann for these instructions.</em></p>
+<hr/>
+<p>OK everyone, I believe I have worked out how to get Homebridge installed in a jail in FreeNAS/FreeBSD 9.3. It took a bit of Googling and poking around in things, but you should be able to create a standard jail, log in, and paste the following into a terminal window to get Homebridge installed (I recommend enabling sshd and using putty or another SSH client):</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#freenas-93" id="user-content-freenas-93"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>FreeNAS 9.3</h2>
+<pre><code>pkg install -y node npm dbus avahi-libdns
+sysrc dbus_enable="YES"
+sysrc avahi_daemon_enable="YES"
+ln -s /usr/local/include/avahi-compat-libdns_sd/dns_sd.h /usr/include/dns_sd.h
+env CC=/usr/local/bin/gcc48 CXX=/usr/local/bin/g++48 npm install -g homebridge
+npm install -g pm2
+service dbus start
+service avahi-daemon start
+pm2 startup
+sysrc pm2_enable="YES"
+mkdir ~/.homebridge
+cp /usr/local/lib/node_modules/homebridge/config-sample.json ~/.homebridge/config.json
+</code></pre>
+<h2>
+<a aria-hidden="true" class="anchor" href="#freenas-910" id="user-content-freenas-910"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>FreeNAS 9.10</h2>
+<pre><code>pkg install -y node npm dbus avahi-libdns gcc
+sysrc dbus_enable="YES"
+sysrc avahi_daemon_enable="YES"
+ln -s /usr/local/include/avahi-compat-libdns_sd/dns_sd.h /usr/include/dns_sd.h
+npm install bignum
+npm install -g homebridge
+npm install -g homebridge-smartthings
+npm install -g pm2
+service dbus start
+service avahi-daemon start
+pm2 startup rcd
+sysrc pm2_enable="YES"
+mkdir ~/.homebridge
+cp /usr/local/lib/node_modules/homebridge/config-sample.json ~/.homebridge/config.json
+</code></pre>
+<p>You'll have to edit the ~/.homebridge/config.json to work with your particular configuration, but that should be documented fairly well elsewhere in the Wiki.</p>
+<p>Once you have your config.json file built and working, run:</p>
+<pre><code>pm2 start homebridge -- -D
+pm2 save
+</code></pre>
+<p>to start Homebridge and have it run as a daemon. PM2 will automatically start the process at boot-time, so no need for any further hackery in that department. :)</p>
+<p>Output and Debug logs will be located at ~/.pm2/logs/ for monitoring and troubleshooting purposes.</p>
+<p>Just an FYI: This was tested while running as root, which is probably a Very Bad Thing, but I believe it should work properly under another user (but it will have to be installed by a user with root privileges). Also, VIMAGE was enabled on the jail, since I was unable to get the Bonjour/avahi service advertisement to work properly without it during my testing.</p>
+<p>Best of luck, and let me know how it goes!</p>
+
+        </div>
+
+    </div>]

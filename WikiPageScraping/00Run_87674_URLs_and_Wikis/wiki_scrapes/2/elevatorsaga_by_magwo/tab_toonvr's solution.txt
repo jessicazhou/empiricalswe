@@ -1,0 +1,136 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>No JavaScript experience before this, so no fancy stuff.</p>
+<div class="highlight highlight-source-js"><pre>{
+    <span class="pl-en">init</span><span class="pl-k">:</span> <span class="pl-k">function</span>(<span class="pl-smi">elevators</span>, <span class="pl-smi">floors</span>) {
+        <span class="pl-k">var</span> reorder <span class="pl-k">=</span> <span class="pl-c1">true</span>; <span class="pl-c"><span class="pl-c">//</span>reorder floor order to minimize moves. Keep on true </span>
+        <span class="pl-k">var</span> minimalfilled <span class="pl-k">=</span> <span class="pl-c1">0</span>; <span class="pl-c"><span class="pl-c">//</span>set to 0.6 for minimal move challenges </span>
+        <span class="pl-k">var</span> backtozero <span class="pl-k">=</span> <span class="pl-c1">false</span>; <span class="pl-c"><span class="pl-c">//</span>make elevators go back to floor zero if idle or not.</span>
+    
+        <span class="pl-k">var</span> uppressed <span class="pl-k">=</span> []; <span class="pl-c"><span class="pl-c">//</span>keep track of up button presses</span>
+        <span class="pl-k">var</span> downpressed <span class="pl-k">=</span> []; <span class="pl-c"><span class="pl-c">//</span>keep track of down button presses</span>
+    
+        <span class="pl-c"><span class="pl-c">//</span> loop over floors</span>
+        <span class="pl-smi">_</span>.<span class="pl-en">each</span>(floors, <span class="pl-k">function</span>(<span class="pl-smi">floor</span>) {
+            <span class="pl-c"><span class="pl-c">//</span> if an up button is pressed, add it to the list of up presses</span>
+            <span class="pl-smi">floor</span>.<span class="pl-en">on</span>(<span class="pl-s"><span class="pl-pds">"</span>up_button_pressed<span class="pl-pds">"</span></span>, <span class="pl-k">function</span>() {
+                <span class="pl-smi">uppressed</span>.<span class="pl-c1">push</span>(<span class="pl-smi">floor</span>.<span class="pl-smi">level</span>);
+            });
+    
+            <span class="pl-c"><span class="pl-c">//</span> if a down button is pressed, add it to the list of down presses</span>
+            <span class="pl-smi">floor</span>.<span class="pl-en">on</span>(<span class="pl-s"><span class="pl-pds">"</span>down_button_pressed<span class="pl-pds">"</span></span>, <span class="pl-k">function</span>() {
+                <span class="pl-smi">downpressed</span>.<span class="pl-c1">push</span>(<span class="pl-smi">floor</span>.<span class="pl-smi">level</span>);
+            }); 
+        });
+    
+        <span class="pl-c"><span class="pl-c">//</span> loop over elevators</span>
+        <span class="pl-smi">_</span>.<span class="pl-en">each</span>(elevators, <span class="pl-k">function</span>(<span class="pl-smi">elevator</span>) {
+    
+            <span class="pl-c"><span class="pl-c">//</span> if a button is pressed in the elevator, go to that floor (order can be changed when a floor is passed)</span>
+            <span class="pl-smi">elevator</span>.<span class="pl-en">on</span>(<span class="pl-s"><span class="pl-pds">"</span>floor_button_pressed<span class="pl-pds">"</span></span>, <span class="pl-k">function</span>(<span class="pl-smi">floorNum</span>) {
+                <span class="pl-smi">elevator</span>.<span class="pl-en">goToFloor</span>(floorNum);
+            });
+    
+            <span class="pl-c"><span class="pl-c">//</span> if idle, determine the next floor to go to</span>
+            <span class="pl-smi">elevator</span>.<span class="pl-en">on</span>(<span class="pl-s"><span class="pl-pds">"</span>idle<span class="pl-pds">"</span></span>, <span class="pl-k">function</span>() {
+                <span class="pl-c"><span class="pl-c">//</span> compute the center floor - unused</span>
+                <span class="pl-c"><span class="pl-c">//</span>var middle = Math.floor(floors.length/2);</span>
+                <span class="pl-k">var</span> floor;
+    
+                <span class="pl-c"><span class="pl-c">//</span> if a down button is pressed, go to the floor where a button is pressed</span>
+                <span class="pl-k">if</span> (<span class="pl-smi">downpressed</span>.<span class="pl-c1">length</span> <span class="pl-k">&gt;</span> <span class="pl-c1">0</span>) {
+                    floor <span class="pl-k">=</span> <span class="pl-smi">downpressed</span>.<span class="pl-c1">pop</span>();
+                    <span class="pl-c"><span class="pl-c">//</span>inProcessDown.push(floor);</span>
+                <span class="pl-c"><span class="pl-c">//</span> if an up button is pressed, go to the floor where an up button is pressed</span>
+                <span class="pl-c"><span class="pl-c">//</span> this comes after the down presses, because up presses mostly occur at ground floor, where plenty of elevators pass anyway</span>
+                } <span class="pl-k">else</span> <span class="pl-k">if</span> (<span class="pl-smi">uppressed</span>.<span class="pl-c1">length</span> <span class="pl-k">&gt;</span> <span class="pl-c1">0</span>){
+                    floor <span class="pl-k">=</span> <span class="pl-smi">uppressed</span>.<span class="pl-c1">pop</span>();
+                    <span class="pl-c"><span class="pl-c">//</span>inProcessUp.push(floor);</span>
+                <span class="pl-c"><span class="pl-c">//</span> if the variable is set to true, and no buttons are pressed, go to ground floor</span>
+                } <span class="pl-k">else</span> <span class="pl-k">if</span> (backtozero){
+                    floor <span class="pl-k">=</span> <span class="pl-c1">0</span>;
+                <span class="pl-c"><span class="pl-c">//</span> stay on the current floor</span>
+                } <span class="pl-k">else</span> {
+                    floor <span class="pl-k">=</span> <span class="pl-smi">elevator</span>.<span class="pl-en">currentFloor</span>();
+                }
+                <span class="pl-c"><span class="pl-c">//</span> go to the floor chosen above</span>
+                <span class="pl-smi">elevator</span>.<span class="pl-en">goToFloor</span>(floor);
+            });
+    
+            <span class="pl-c"><span class="pl-c">//</span> when stopping on a floor</span>
+            <span class="pl-smi">elevator</span>.<span class="pl-en">on</span>(<span class="pl-s"><span class="pl-pds">"</span>stopped_at_floor<span class="pl-pds">"</span></span>, <span class="pl-k">function</span>() {
+                <span class="pl-c"><span class="pl-c">//</span> if the elevator is not sufficiently filled, stay on the current floor</span>
+                <span class="pl-c"><span class="pl-c">//</span> can be used for the minimal move challenges</span>
+                <span class="pl-k">if</span> (<span class="pl-smi">elevator</span>.<span class="pl-en">loadFactor</span>()<span class="pl-k">&lt;</span>minimalfilled){
+                    <span class="pl-smi">elevator</span>.<span class="pl-en">goToFloor</span>(<span class="pl-smi">elevator</span>.<span class="pl-en">currentFloor</span>(),<span class="pl-c1">true</span>);
+                }
+            });
+    
+            <span class="pl-c"><span class="pl-c">//</span> when passing a floor, rearrange the queue</span>
+            <span class="pl-smi">elevator</span>.<span class="pl-en">on</span>(<span class="pl-s"><span class="pl-pds">"</span>passing_floor<span class="pl-pds">"</span></span>, <span class="pl-k">function</span>(<span class="pl-smi">floorNum</span>, <span class="pl-smi">direction</span>) {
+                <span class="pl-k">var</span> arr <span class="pl-k">=</span> <span class="pl-smi">elevator</span>.<span class="pl-smi">destinationQueue</span>;
+                <span class="pl-k">var</span> uppressedIndex<span class="pl-k">=</span><span class="pl-smi">uppressed</span>.<span class="pl-c1">indexOf</span>(floorNum);
+                <span class="pl-k">var</span> downPressedIndex<span class="pl-k">=</span><span class="pl-smi">downpressed</span>.<span class="pl-c1">indexOf</span>(floorNum);
+    
+                <span class="pl-c"><span class="pl-c">//</span> see if someone pressed a floor button, if you're not full and you're going in the right direction add the floor to the queue</span>
+                <span class="pl-k">if</span>(<span class="pl-smi">elevator</span>.<span class="pl-en">loadFactor</span>()<span class="pl-k">&lt;=</span><span class="pl-c1">0.5</span> <span class="pl-k">&amp;&amp;</span> (((uppressedIndex <span class="pl-k">&gt;</span> <span class="pl-k">-</span><span class="pl-c1">1</span>) <span class="pl-k">&amp;&amp;</span> direction <span class="pl-k">==</span> <span class="pl-s"><span class="pl-pds">"</span>up<span class="pl-pds">"</span></span>) <span class="pl-k">||</span> ((downPressedIndex <span class="pl-k">&gt;</span> <span class="pl-k">-</span><span class="pl-c1">1</span>) <span class="pl-k">&amp;&amp;</span> direction <span class="pl-k">==</span> <span class="pl-s"><span class="pl-pds">"</span>down<span class="pl-pds">"</span></span>))){
+                    <span class="pl-k">if</span> (uppressedIndex <span class="pl-k">&gt;</span> <span class="pl-k">-</span><span class="pl-c1">1</span>)
+                        <span class="pl-smi">uppressed</span>.<span class="pl-c1">splice</span>(uppressedIndex,<span class="pl-c1">1</span>);
+                    <span class="pl-k">if</span> (downPressedIndex <span class="pl-k">&gt;</span> <span class="pl-k">-</span><span class="pl-c1">1</span>)
+                        <span class="pl-smi">downpressed</span>.<span class="pl-c1">splice</span>(downPressedIndex,<span class="pl-c1">1</span>);
+                    <span class="pl-smi">arr</span>.<span class="pl-c1">push</span>(floorNum);                
+                }            
+    
+                <span class="pl-c"><span class="pl-c">//</span> remove potential duplicate values from the queue               </span>
+                <span class="pl-k">var</span> i,
+                len<span class="pl-k">=</span><span class="pl-smi">arr</span>.<span class="pl-c1">length</span>,
+                out<span class="pl-k">=</span>[],
+                obj<span class="pl-k">=</span>{};
+    
+                <span class="pl-k">for</span> (i<span class="pl-k">=</span><span class="pl-c1">0</span>;i<span class="pl-k">&lt;</span>len;i<span class="pl-k">++</span>) {
+                    obj[arr[i]]<span class="pl-k">=</span><span class="pl-c1">0</span>;
+                }
+                <span class="pl-k">for</span> (i <span class="pl-k">in</span> obj) {
+                    <span class="pl-smi">out</span>.<span class="pl-c1">push</span>(i);
+                }
+                <span class="pl-c"><span class="pl-c">//</span> duplicates removed</span>
+    
+                <span class="pl-c"><span class="pl-c">//</span> reorder the queue so floors on the path are first in the queue</span>
+                <span class="pl-k">if</span>(reorder){
+                    out<span class="pl-k">=</span><span class="pl-smi">out</span>.<span class="pl-c1">sort</span>();
+                    <span class="pl-k">var</span> out2<span class="pl-k">=</span>[];
+                    <span class="pl-k">var</span> out3<span class="pl-k">=</span>[];
+                    <span class="pl-k">if</span>(direction <span class="pl-k">==</span> <span class="pl-s"><span class="pl-pds">"</span>up<span class="pl-pds">"</span></span>){
+                        <span class="pl-k">for</span>(i <span class="pl-k">in</span> out){
+                            <span class="pl-k">if</span>(out[i]<span class="pl-k">&gt;=</span>floorNum){
+                                <span class="pl-smi">out2</span>.<span class="pl-c1">push</span>(out[i]);
+                            } <span class="pl-k">else</span> {
+                                <span class="pl-smi">out3</span>.<span class="pl-c1">push</span>(out[i]);
+                            }
+                        }
+                    } <span class="pl-k">else</span> {
+                        out <span class="pl-k">=</span> <span class="pl-smi">out</span>.<span class="pl-c1">reverse</span>();
+                        <span class="pl-k">for</span>(i <span class="pl-k">in</span> out){
+                            <span class="pl-k">if</span>(out[i]<span class="pl-k">&lt;=</span>floorNum){
+                                <span class="pl-smi">out2</span>.<span class="pl-c1">push</span>(out[i]);
+                            } <span class="pl-k">else</span> {
+                                <span class="pl-smi">out3</span>.<span class="pl-c1">push</span>(out[i]);
+                            }
+                        }
+                    }
+                    out <span class="pl-k">=</span> <span class="pl-smi">out2</span>.<span class="pl-c1">concat</span>(out3);
+                }
+    
+                <span class="pl-smi">elevator</span>.<span class="pl-smi">destinationQueue</span> <span class="pl-k">=</span> out;
+                <span class="pl-smi">elevator</span>.<span class="pl-en">checkDestinationQueue</span>();
+            });                        
+        });
+    },
+    
+    <span class="pl-en">update</span><span class="pl-k">:</span> <span class="pl-k">function</span>(<span class="pl-smi">dt</span>, <span class="pl-smi">elevators</span>, <span class="pl-smi">floors</span>) {
+    }
+}</pre></div>
+
+        </div>
+
+    </div>]

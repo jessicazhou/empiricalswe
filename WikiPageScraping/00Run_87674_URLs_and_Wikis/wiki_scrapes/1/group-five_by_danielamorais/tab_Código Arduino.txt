@@ -1,0 +1,132 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>Para utilizar o acelerômetro, lembre-se de baixar a biblioteca do MMA7361 ([https://code.google.com/p/mma7361-library/]) e se utilizar o cartão SD, importe para seu sketch!</p>
+<p><code>#include &lt;AcceleroMMA7361.h&gt;</code></p>
+<p><code>AcceleroMMA7361 accelero;</code></p>
+<p><code>int x;</code></p>
+<p><code>int y;</code></p>
+<p><code>int z;</code></p>
+<p><code>String tmpu, tmpx, tmpy, tmpz, us;</code></p>
+<p><code>int antu, antx, anty, antz, proxu, proxx, proxy, proxz;</code></p>
+<p><code>int led_1 = 2;</code></p>
+<p><code>int led_2 = 3;</code></p>
+<p><code>int BUZZER = 5; // Ligar o buzzer (Som) no pino 5</code></p>
+<p><code>boolean testex, testez, testey;</code></p>
+<p><code>void setup(){</code></p>
+<p><code>Serial.begin(9600);</code></p>
+<p><code>testex = false;</code></p>
+<p><code>testez = false;</code></p>
+<p><code>testey = false;</code></p>
+<p><code>pinMode(BUZZER,OUTPUT);</code></p>
+<p><code>pinMode(led_1,OUTPUT);</code></p>
+<p><code>pinMode(led_2,OUTPUT);</code></p>
+<p><code>pinMode(10, OUTPUT);</code></p>
+<p><code>accelero.begin(8, 7, 9, 6, A0, A1, A2);</code></p>
+<p><code>accelero.setARefVoltage(5);</code></p>
+<p><code>accelero.setSensitivity(HIGH);</code></p>
+<p><code>accelero.calibrate();</code></p>
+<p><code>Serial.println("");</code></p>
+<p><code>}</code></p>
+<p><code>void loop(){</code></p>
+<p><code>antu = analogRead(A3);</code></p>
+<p><code>if(antu &lt;= 300){</code></p>
+<p><code>us = "Solo Seco";</code></p>
+<p><code>Serial.println(us);</code></p>
+<p><code>}</code></p>
+<p><code>if((antu &gt; 300)&amp;&amp;(antu &lt;= 700)){</code></p>
+<p><code>us = "Solo Umido";</code></p>
+<p><code>Serial.println(us);</code></p>
+<p><code>}</code></p>
+<p><code>if((antu &gt; 700)&amp;&amp;(antu &lt;= 950)){</code></p>
+<p><code>us = "Super Umido";</code></p>
+<p><code>Serial.println(us);</code></p>
+<p><code>}</code></p>
+<p><code>if(antu &gt; 950){</code></p>
+<p><code>us = "Submerso";</code></p>
+<p><code>Serial.println(us);</code></p>
+<p><code>}</code></p>
+<p><code>tmpu = "u" + (String)analogRead(A3);</code></p>
+<p><code>antx = accelero.getXRaw();</code></p>
+<p><code>tmpx = "x" + (String)accelero.getXRaw();</code></p>
+<p><code>anty = accelero.getYRaw();</code></p>
+<p><code>tmpy = "y" + (String)accelero.getYRaw();</code></p>
+<p><code>antz = accelero.getZRaw();</code></p>
+<p><code>tmpz = "z" + (String)accelero.getZRaw();</code></p>
+<p><code>delay(500);</code></p>
+<p><code>//verificar novos valores</code></p>
+<p><code>proxu = analogRead(A3);</code></p>
+<p><code>proxx = accelero.getXRaw();</code></p>
+<p><code>int absolutox = abs(abs(proxx) - abs(antx));</code></p>
+<p><code>proxy = accelero.getYRaw();</code></p>
+<p><code>int absolutoy = abs(abs(proxy) - abs(anty));</code></p>
+<p><code>proxz = accelero.getZRaw();</code></p>
+<p><code>int absolutoz = abs(abs(proxz) - abs(antz));</code></p>
+<p><code>if(absolutox &gt;= 10 &amp;&amp; absolutox &lt;= 20){</code></p>
+<p><code>digitalWrite(led_1, HIGH);</code></p>
+<p><code>testex = false;</code></p>
+<p><code>testey = false;</code></p>
+<p><code>testez = false;</code></p>
+<p><code>}</code></p>
+<p><code>if(absolutoz &gt;= 10 &amp;&amp; absolutoz &lt;= 20){</code></p>
+<p><code>digitalWrite(led_1, HIGH);</code></p>
+<p><code>testex = false;</code></p>
+<p><code>testey = false;</code></p>
+<p><code>testez = false;</code></p>
+<p><code>}</code></p>
+<p><code>if(absolutoy &gt;= 10 &amp;&amp; absolutoy &lt;= 20){</code></p>
+<p><code>digitalWrite(led_1, HIGH);</code></p>
+<p><code>digitalWrite(led_2, LOW);</code></p>
+<p><code>testex = false;</code></p>
+<p><code>testey = false;</code></p>
+<p><code>testez = false;</code></p>
+<p><code>}</code></p>
+<p><code>//apagar</code></p>
+<p><code>if(absolutox &lt; 10 &amp;&amp; absolutoz &lt; 10 &amp;&amp; absolutoy &lt; 10){</code></p>
+<p><code>digitalWrite(led_1, LOW);</code></p>
+<p><code>digitalWrite(led_2, LOW);</code></p>
+<p><code>testex = false;</code></p>
+<p><code>testey = false;</code></p>
+<p><code>testez = false;</code></p>
+<p><code>}</code>
+<code>if(absolutox &gt; 20){</code></p>
+<p><code>digitalWrite(led_1, HIGH);</code></p>
+<p><code>digitalWrite(led_2, HIGH);</code></p>
+<p><code>testex = true;</code></p>
+<p><code>}</code></p>
+<p><code>if(absolutoz &gt; 20){</code></p>
+<p><code>digitalWrite(led_1, HIGH);</code></p>
+<p><code>digitalWrite(led_2, HIGH);</code></p>
+<p><code>testez = true;</code></p>
+<p><code>}</code></p>
+<p><code>if(absolutoy &gt; 20){</code></p>
+<p><code>digitalWrite(led_1, HIGH);</code></p>
+<p><code>digitalWrite(led_2, HIGH);</code></p>
+<p><code>testey = true;</code></p>
+<p><code>}</code></p>
+<p><code>if(testex==true || testez==true || testey==true){</code></p>
+<p><code>tone(5,300,300); //aqui sai o som</code></p>
+<p><code>delay(500);</code></p>
+<p><code>tone(5,300,300); //aqui sai o som</code></p>
+<p><code>delay(500);</code></p>
+<p><code>tone(5,300,300); //aqui sai o som</code></p>
+<p><code>delay(500);</code></p>
+<p><code>tone(5,300,300); //aqui sai o som</code></p>
+<p><code>delay(500);</code></p>
+<p><code>}</code></p>
+<p><code>Serial.println(tmpu);</code></p>
+<p><code>delay(500);</code></p>
+<p><code>Serial.println(tmpx);</code></p>
+<p><code>delay(500);</code></p>
+<p><code>Serial.println(tmpy);</code></p>
+<p><code>delay(500);</code></p>
+<p><code>Serial.println(tmpz);</code></p>
+<p><code>}</code></p>
+<hr/>
+<p>Obs.: i) Existem tantas variáveis para poder fazer uma comparação entre os valores do acelerômetro nesse intervalo de tempo de 1 loop, verificando se houve alteração.
+ii) Observe que se for uma grande mudança nos eixos, o buzzer e os 2 LEDS irão se acender. Se for alguma leve mudança, somente 1 LED irá acender.
+iii) Esse código necessita ser otimizado e calibrado: Caso alterações nesse intervalo de tempo sejam bruscas ou os níveis do sensor de umidade estejam alto, o ideal seria um tempo de delay menor para verificações.</p>
+<hr/>
+
+        </div>
+
+    </div>]

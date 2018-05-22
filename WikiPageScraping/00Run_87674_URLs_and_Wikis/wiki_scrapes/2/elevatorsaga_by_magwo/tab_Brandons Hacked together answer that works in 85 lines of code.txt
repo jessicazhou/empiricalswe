@@ -1,0 +1,96 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>Passed all tests, you just need to change the <code>weight</code> variable depending on the test (and maybe run it a few times). To optimize for minimum turns you'd want to be close to 1, to optimize for minimum wait, you want to be close to 0.2.</p>
+<p>Each elevator decides where it will go every time a button is pushed, it approaches a floor with folks waiting going the same direction, or it's idle.</p>
+<p>Uses a queue <code>next</code> that holds which floors are waiting for an elevator, as well as two boolean arrays to keep track of directions in a straightforward way.</p>
+<p>The trick to getting this to work was to make sure more than one elevator wasn't going to the same floor for the same signal, which requires constant culling of the <code>next</code> queue.</p>
+<pre><code>{
+    init: function(elevators, floors) {
+        console.clear();
+        var goingup = [];
+        var goingdown = [];
+        var next = [];        
+        var weight = 0.2;
+
+        for (var i in elevators){
+            init_elevator(elevators[i], i);
+        }
+        
+        for (var i in floors){
+            init_floor(floors[i]);
+        }
+        
+        function next_scrub(floor){
+            var tmp = [];
+            for (var i=1; i&lt;next.length; i++){
+                if (next[i] != floor){tmp.push(next[i]);}
+            }
+            return tmp;
+        }
+        
+        function init_floor(floor){
+            floor.on("up_button_pressed", function() {
+                goingup[floor.level] = true;
+                next.push(floor.level);
+            });
+            floor.on("down_button_pressed", function() {
+                goingdown[floor.level] = true;
+                next.push(floor.level);
+            });
+        }
+
+        function init_elevator(elevator, i){
+            elevator.on("idle", function() {
+                if (next.length &gt; 0){
+                    elevator.goToFloor(next[0]);
+                    next = next_scrub(next[0]);
+                } else {
+                    elevator.goToFloor(0);
+                }
+            });
+            elevator.on("floor_button_pressed", function(floor){
+                var places = elevator.getPressedFloors();
+                var z;
+                for (z=0; z&lt;places.length; z++){
+                    if (elevator.currentFloor() &lt;= places[z]) {
+                        break;
+                    }
+                }
+                elevator.destinationQueue = places.splice(z).concat(places.splice(0,z).reverse());
+                elevator.checkDestinationQueue();
+                if (next[0]==floor){
+                    next = next_scrub(floor);
+                }
+            });
+            elevator.on("passing_floor", function(floor, direction){
+                if (direction=="up" &amp;&amp; goingup[floor] &amp;&amp; elevator.loadFactor() &lt; weight){
+                    elevator.goToFloor(floor, true);
+                    goingup[floor] = false;
+                    if (next[0] == floor) {next = next_scrub(floor);}
+                }
+                else if (direction=="down" &amp;&amp; goingdown[floor] &amp;&amp; elevator.loadFactor() &lt; weight){
+                    elevator.goToFloor(floor, true);
+                    goingdown[floor] = false;
+                    if (next[0] == floor) {next = next_scrub(floor);}
+                }
+                
+            });
+            elevator.on("stopped_at_floor", function(floor){
+                if(next[0] == floor){
+                    next = next_scrub(floor);
+                }
+                goingdown[floor] = false;
+                goingup[floor] = false;
+            });
+        };
+
+    },
+    update: function(dt, elevators, floors) {
+        // We normally don't need to do anything here
+    }
+}
+</code></pre>
+
+        </div>
+
+    </div>]

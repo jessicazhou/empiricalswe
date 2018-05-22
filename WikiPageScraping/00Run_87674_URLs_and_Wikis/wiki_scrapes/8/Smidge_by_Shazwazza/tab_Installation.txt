@@ -1,0 +1,62 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <h2>
+<a aria-hidden="true" class="anchor" href="#install" id="user-content-install"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Install</h2>
+<p><em>Currently supporting .NET Core 1.0 (netstandard1.6) and .NET 4.5.2</em></p>
+<p>Nuget:</p>
+<pre><code>Install-Package Smidge
+</code></pre>
+<p>In Startup.ConfigureServices:</p>
+<div class="highlight highlight-source-cs"><pre><span class="pl-c"><span class="pl-c">//</span>You can pass in an IConfiguration instance here which contains the Smidge configuration</span>
+<span class="pl-c"><span class="pl-c">//</span>values, alternatively you can use a separate smidge.json file (see below)</span>
+<span class="pl-smi">services</span>.<span class="pl-en">AddSmidge</span>(<span class="pl-c"><span class="pl-c">/*</span> optional IConfiguration parameter <span class="pl-c">*/</span></span>);</pre></div>
+<p>You can customize Smidge's global configuration here too, for example you can</p>
+<ul>
+<li>change the default pipeline</li>
+<li>register a callback to modify the default pipeline for a given file</li>
+<li>set the default <code>BundleOptions</code> for Debug or Production environments</li>
+</ul>
+<p>Example:</p>
+<div class="highlight highlight-source-cs"><pre><span class="pl-smi">services</span>.<span class="pl-en">AddSmidge</span>(<span class="pl-smi">_config</span>)
+    .<span class="pl-en">Configure</span>&lt;<span class="pl-en">SmidgeOptions</span>&gt;(<span class="pl-smi">options</span> <span class="pl-k">=&gt;</span>
+    {
+        <span class="pl-c"><span class="pl-c">//</span>specify callback for filtering the pipeline for a given web file:</span>
+        <span class="pl-smi">options</span>.<span class="pl-smi">PipelineFactory</span>.<span class="pl-smi">OnGetDefault</span> <span class="pl-k">=</span> <span class="pl-smi">GetDefaultPipelineFactory</span>;
+        <span class="pl-c"><span class="pl-c">//</span>change some of the bundle options for rendering in Debug mode:</span>
+        <span class="pl-smi">options</span>.<span class="pl-smi">DefaultBundleOptions</span>.<span class="pl-smi">DebugOptions</span>.<span class="pl-en">SetCacheBusterType</span>&lt;<span class="pl-en">AppDomainLifetimeCacheBuster</span>&gt;();
+        <span class="pl-smi">options</span>.<span class="pl-smi">DefaultBundleOptions</span>.<span class="pl-smi">DebugOptions</span>.<span class="pl-smi">FileWatchOptions</span>.<span class="pl-smi">Enabled</span> <span class="pl-k">=</span> <span class="pl-c1">true</span>;
+        <span class="pl-c"><span class="pl-c">//</span>change some of the bundle options for rendering in Production mode:</span>
+        <span class="pl-smi">options</span>.<span class="pl-smi">DefaultBundleOptions</span>.<span class="pl-smi">ProductionOptions</span>.<span class="pl-en">SetCacheBusterType</span>&lt;<span class="pl-en">AppDomainLifetimeCacheBuster</span>&gt;();
+    });</pre></div>
+<p>In Startup.Configure</p>
+<div class="highlight highlight-source-cs"><pre><span class="pl-smi">app</span>.<span class="pl-en">UseSmidge</span>(<span class="pl-c"><span class="pl-c">/*</span> delegate for creating bundles goes here <span class="pl-c">*/</span></span>);</pre></div>
+<p>The configuration format for Smidge is as follows. You can either include this structure in your own configuration file and pass in the <code>IConfiguration</code> reference to the <code>AddSmidge</code> method above or add a config file to your app root (not wwwroot) called <strong>smidge.json</strong>:</p>
+<div class="highlight highlight-source-json"><pre>{
+    <span class="pl-s"><span class="pl-pds">"</span>dataFolder<span class="pl-pds">"</span></span>: <span class="pl-s"><span class="pl-pds">"</span>App_Data/Smidge<span class="pl-pds">"</span></span>,
+    <span class="pl-s"><span class="pl-pds">"</span>version<span class="pl-pds">"</span></span>:  <span class="pl-s"><span class="pl-pds">"</span>1<span class="pl-pds">"</span></span>
+}</pre></div>
+<ul>
+<li>dataFolder: where the cache files are stored</li>
+<li>version: can be any string, this is used for cache busting in URLs generated</li>
+</ul>
+<p>Create a file in your ~/Views folder:  <code>_ViewImports.cshtml</code>
+(This is an <strong>ASP.NET MVC Core</strong> way of injecting services into all of your views)
+In <code>_ViewImports.cshtml</code> add an injected service and a reference to Smidge's tag helpers:</p>
+<div class="highlight highlight-source-cs"><pre>@<span class="pl-smi">inject</span> <span class="pl-smi">Smidge</span>.<span class="pl-smi">SmidgeHelper</span> <span class="pl-smi">Smidge</span>
+@<span class="pl-smi">addTagHelper</span> <span class="pl-k">*</span>, <span class="pl-smi">Smidge</span></pre></div>
+<p><em>NOTE: There is a website example project in this source for a reference: <a href="https://github.com/Shazwazza/Smidge/tree/master/src/Smidge.Web">https://github.com/Shazwazza/Smidge/tree/master/src/Smidge.Web</a></em></p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#nuglify-minification-engine" id="user-content-nuglify-minification-engine"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Nuglify minification engine</h2>
+<p>You can configure Smidge to use Nuglify as it's minification engine (<a href="https://github.com/Shazwazza/Smidge/wiki/Custom-pre-processing">a custom pre-processing pipeline</a>) which will allow you to have source maps, however keep in mind there are <a href="https://github.com/Shazwazza/Smidge/wiki/Custom-pre-processing#minification-benchmarks">pros/cons of switching this on</a></p>
+<p>If you wish to use <a href="https://github.com/xoofx/NUglify">Nuglify</a> for the minification engine, install via Nuget</p>
+<pre><code>Install-Package Smidge.Nuglify
+</code></pre>
+<p>In Startup.ConfigureServices:</p>
+<div class="highlight highlight-source-cs"><pre><span class="pl-smi">services</span>.<span class="pl-en">AddSmidgeNuglify</span>();</pre></div>
+<p>In Startup.Configure:</p>
+<div class="highlight highlight-source-cs"><pre><span class="pl-smi">app</span>.<span class="pl-en">UseSmidgeNuglify</span>();</pre></div>
+<p>Then you can replace any pre-processor with the <code>NuglifyJs</code> or <code>NuglifyCss</code> processor, or you could replace the whole default pipeline. Examples of this can be found in the demo web project <a href="https://github.com/Shazwazza/Smidge/blob/master/src/Smidge.Web/Startup.cs#L69">https://github.com/Shazwazza/Smidge/blob/master/src/Smidge.Web/Startup.cs#L69</a></p>
+
+        </div>
+
+    </div>]

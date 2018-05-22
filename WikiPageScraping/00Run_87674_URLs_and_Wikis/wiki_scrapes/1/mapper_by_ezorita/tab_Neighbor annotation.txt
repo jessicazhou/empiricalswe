@@ -1,0 +1,52 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <h1>
+<a aria-hidden="true" class="anchor" href="#neighbor-annotation" id="user-content-neighbor-annotation"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Neighbor annotation</h1>
+<h2>
+<a aria-hidden="true" class="anchor" href="#annotation-data-structure" id="user-content-annotation-data-structure"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Annotation data structure</h2>
+<h3>
+<a aria-hidden="true" class="anchor" href="#temporary-data-structure-used-in-the-annotation-process" id="user-content-temporary-data-structure-used-in-the-annotation-process"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Temporary data structure used in the annotation process</h3>
+<pre><code>bytes 0-1: Exact number of different neighbors.
+byte    2: Distance to closest neighbor.
+bytes 3-M: bitfield of M bytes encoding the mutated positions to recompute the closest neighbors.
+
+M is max(3,tau).
+
+Special values:
+bytes 0-1 set to 0xFFFF: "NO_INFO", search returned no matches within distance 'd'.
+bytes 0-1 all set to 0: Take same information as the previous suffix (if any).
+</code></pre>
+<p><code>NO_INFO</code>: the partial search of the <code>k</code>-mer did not produce any match but could have been matched by a subsequent query.</p>
+<p>If the number of mutations is greater than <code>M</code>, the alignment information is not stored. When the computation has finished, the information is compressed in a single byte.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#compressed-annotation-data-structure" id="user-content-compressed-annotation-data-structure"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Compressed annotation data structure</h3>
+<pre><code>bit 7 - Locus alignment info.
+bit 6 - Locus alignment flag.
+bit 5 *
+bit 4 - Distance to closest neighbor (00: 1, 01: 2, 10: 3, 11: 4).
+bit 3 *
+bit 2 *
+bit 1 * 
+bit 0 - Neighbor count
+</code></pre>
+<p>Considerations:</p>
+<ul>
+<li>If the locus has no neighbors (closest at distance &gt; tau), Neighbor count is set to 0.</li>
+<li>If <code>Locus alignment flag</code> is set, there is alignment information available for this <code>k</code>-mer.</li>
+<li>The locus alignment info is the bitfield that contains information of mismatched positions. This bit corresponds to the 0-th position of the current locus, the 1st position of the previous locus, and so on.</li>
+</ul>
+<p><strong>IMPORTANT NOTE:</strong> Exact repeats are not considered in the annotation and must be manually checked by seeding during the mapping process.</p>
+<p>How to read the neighbor count field:</p>
+<pre><code>Neighbor count:
+  value          neighbors
+  0x00..0x0A       0..10  
+  0x0B            11..20
+  0x0C            21..50
+  0x0D            51..100
+  0x0E           101..500
+  0x0F              &gt; 500
+</code></pre>
+
+        </div>
+
+    </div>]

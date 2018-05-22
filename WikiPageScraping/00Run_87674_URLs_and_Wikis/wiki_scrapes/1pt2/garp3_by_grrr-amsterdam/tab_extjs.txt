@@ -1,0 +1,198 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>Random ExtJS notes.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#extended-model-file-intro" id="user-content-extended-model-file-intro"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Extended model file intro</h2>
+<p>Basically, in the model files you are dealing with part configuration, part compiled form widgets. In the <code>init</code> function, everything's just a big array of form configuration.<br/>
+In the <code>loaddata</code> event you can manipulate the actual form widgets.</p>
+<p>Skeleton of a model file:</p>
+<pre><code>Garp.dataTypes.MyModel.on('init', function() {
+	this.addListener('loaddata', function(rec, formPanel) {
+	});
+});
+</code></pre>
+<h2>
+<a aria-hidden="true" class="anchor" href="#grabbing-a-field" id="user-content-grabbing-a-field"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Grabbing a field</h2>
+<p>In the configuration stage, do:</p>
+<pre><code>this.getField('column'); 
+
+// Immediately manipulate its properties:
+this.getField('column').fieldLabel = 'foo bar';
+</code></pre>
+<p>When compiled:</p>
+<pre><code>var field = formPanel.getForm().findField('column');
+</code></pre>
+<h2>
+<a aria-hidden="true" class="anchor" href="#make-field-required" id="user-content-make-field-required"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Make field required</h2>
+<pre><code>this.getField('image_id').allowBlank = false;
+</code></pre>
+<p>When dealing with a relation field, the following needs to be added:</p>
+<pre><code>var ref = '../../../ImagePreview_' + this.getField('image_id').name;
+Ext.each(this.formConfig[0].items[0].items, function(item){
+	if (item.ref === ref) {
+		item.allowBlank = false;
+		return false;
+	}
+});
+</code></pre>
+<h2>
+<a aria-hidden="true" class="anchor" href="#insert-a-field-at-runtime-at-a-specific-position" id="user-content-insert-a-field-at-runtime-at-a-specific-position"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Insert a field at runtime at a specific position</h2>
+<pre><code>this.insertField(3, {
+  xtype: 'blabla'
+});
+</code></pre>
+<h2>
+<a aria-hidden="true" class="anchor" href="#choose-image-as-column-for-columnmodel" id="user-content-choose-image-as-column-for-columnmodel"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Choose image as column (for columnModel)</h2>
+<p>You can just spawn this:</p>
+<pre><code>{
+  "listFields": ["image_id", "name"]
+}
+</code></pre>
+<h2>
+<a aria-hidden="true" class="anchor" href="#disable-a-field" id="user-content-disable-a-field"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Disable a field</h2>
+<pre><code>this.getField('show_on_page').disabled = true;
+</code></pre>
+<p>Or after compilation:</p>
+<pre><code>formPanel.getForm().findField('name').setDisabled(true); // or .disable()
+</code></pre>
+<h2>
+<a aria-hidden="true" class="anchor" href="#change-a-fields-height" id="user-content-change-a-fields-height"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Change a field's height</h2>
+<pre><code>this.getField('column').height = 400;
+</code></pre>
+<h2>
+<a aria-hidden="true" class="anchor" href="#add-something-to-the-form-at-runtime" id="user-content-add-something-to-the-form-at-runtime"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Add something to the form at runtime</h2>
+<pre><code>this.formConfig[0].items[0].items.unshift({
+    xtype: 'box',
+    ref: '../../../document_url_text',
+    hideMode: 'display',
+    html: '',
+    fieldLabel: ' ',
+    hidden: true
+});
+</code></pre>
+<p>Element with a <code>ref</code> property register themselves as a property of a parent.<br/>
+In this case the element will become a property of the <code>formPanel</code>. You can access it thry <code>formPanel.document_url_text</code>.</p>
+<p>Note: We use <code>unshift</code> here but of course you can do all your usual array manipulation:</p>
+<pre><code>this.formConfig[0].items[0].items.splice(8, 0, {
+    xtype: 'box',
+    ref: '../../../contact_header',
+    html: '&lt;h2&gt;' + __('school contact header') + '&lt;/h2&gt;',
+    fieldLabel: ' '
+});
+</code></pre>
+<h2>
+<a aria-hidden="true" class="anchor" href="#how-to-read-record-data" id="user-content-how-to-read-record-data"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>How to read record data</h2>
+<pre><code>this.addListener('loaddata', function(rec, formPanel) {
+    // rec is the record. Data is in rec.data
+    
+    if (rec.data.filename) {
+        var docUrl = DOCUMENTS_CDN + rec.data.filename;
+        formPanel.document_url_text.update('De URL naar dit document is: &lt;a target="_blank" href="' + docUrl + '"&gt;' + docUrl + '&lt;/a&gt;');
+        formPanel.document_url_text.show();
+    }
+});
+</code></pre>
+<h2>
+<a aria-hidden="true" class="anchor" href="#adding-filters" id="user-content-adding-filters"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Adding filters</h2>
+<pre><code>function addQuery(key, val) {
+    var store = Garp.gridPanel.getStore();
+    store.baseParams.query = {};
+    store.baseParams.query[key] = val;
+    store.reload();
+}
+
+this.filterMenu = [{
+    text: __('Future'),
+    group: 'filter',
+    handler: function(){
+        addQuery('start &gt;=', new Date().format('Y-m-d'));
+    }
+}
+</code></pre>
+<p>These filters manipulate the list at the left of the form. An admin can select them with the button beneath the list.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#query-a-model" id="user-content-query-a-model"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Query a model</h2>
+<p>Need to arbitrarily fetch some model data from the server?</p>
+<pre><code>// Discipline is the model name in this case
+Garp.Discipline.fetch({}, function(result) {
+    if (!result.rows || !result.rows.length) {
+        return;
+    }
+    Ext.each(result.rows, function(row) {
+        // ...
+    });
+});
+</code></pre>
+<h2>
+<a aria-hidden="true" class="anchor" href="#add-a-button-to-the-form-toolbar" id="user-content-add-a-button-to-the-form-toolbar"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Add a button to the form toolbar</h2>
+<pre><code>var tb = formpanel.formcontent.getTopToolbar();
+tb.addButton({
+    text: __("Do something"),
+    iconCls: 'icon-something',
+    ref: 'abc',
+    handler: function() {
+        // ...
+    }
+});
+tb.doLayout();
+</code></pre>
+<h2>
+<a aria-hidden="true" class="anchor" href="#access-the-top-toolbar" id="user-content-access-the-top-toolbar"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Access the top toolbar</h2>
+<p>It's <code>Garp.toolbar</code>.<br/>
+From there you can access all the buttons e.g. <code>Garp.toolbar.newButton</code>.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#count-items-in-gridpanel" id="user-content-count-items-in-gridpanel"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Count items in GridPanel</h2>
+<pre><code>Garp.gridPanel.getStore().getCount()
+</code></pre>
+<h2>
+<a aria-hidden="true" class="anchor" href="#make-sure-an-html-field-is-not-rendered-in-the-gridpanel" id="user-content-make-sure-an-html-field-is-not-rendered-in-the-gridpanel"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Make sure an HTML field is not rendered in the gridPanel</h2>
+<pre><code>this.getColumn('code').renderer = Garp.renderers.htmlRenderer;
+</code></pre>
+<h2>
+<a aria-hidden="true" class="anchor" href="#make-form-labels-wider" id="user-content-make-form-labels-wider"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Make form labels wider</h2>
+<pre><code>this.formConfig[0].items[0].labelWidth = 200;
+</code></pre>
+<h2>
+<a aria-hidden="true" class="anchor" href="#remove-a-relationpanel" id="user-content-remove-a-relationpanel"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Remove a relationPanel</h2>
+<pre><code>this.removeRelationPanel('Event');
+</code></pre>
+<h2>
+<a aria-hidden="true" class="anchor" href="#access-a-relationpanel-at-compilation-stage" id="user-content-access-a-relationpanel-at-compilation-stage"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Access a relationPanel at compilation stage</h2>
+<p>In the configuration stage, you can browse the <code>this.formConfig</code> collection and find the config for the relationPanels.<br/>
+Getting to the actual rendered panels in the compilation stage can be done like this:</p>
+<pre><code>var tabs = formpanel.items.items[0];
+// "Event" relation is the third tab
+var eventTab = tabs.items.items[2];
+// The relateePanel (the right one) will be here:
+var eventRelateePanel = eventTab.items.items[1].items.items[0];
+</code></pre>
+<p>(it's not really clear what to actually do with the panel at the time of writing, but surely you can do all kinds of stuff to it at runtime)</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#change-the-title-of-a-relationpanel" id="user-content-change-the-title-of-a-relationpanel"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Change the title of a relationPanel</h2>
+<pre><code>var eventRelPanel = this.getRelationPanel('Event');
+eventRelPanel.title = eventRelPanel.tabTip = 'Related events';
+</code></pre>
+<h2>
+<a aria-hidden="true" class="anchor" href="#add-a-virtual-column" id="user-content-add-a-virtual-column"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Add a virtual column</h2>
+<p>Your backend could return an unknown column that is for instance an expression.<br/>
+Something like a count, or concatenated value. In the extended model, just add a column with a matching <code>dataIndex</code> to include the value in the <code>gridPanel</code>.</p>
+<pre><code>this.insertColumn(0, {
+  dataIndex: 'donation_count',
+  visible: true,
+  sortable: true,
+  searchable: false,
+  header: __('Aantal donaties')
+});
+</code></pre>
+<h2>
+<a aria-hidden="true" class="anchor" href="#interesting-files" id="user-content-interesting-files"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Interesting files</h2>
+<p><code>garp.datatype.js</code>
+Contains blueprint for all datatypes. <code>getField()</code>, <code>getRelationPanel()</code> – all those functions are there if you want to refactor or inspect them.</p>
+<p><code>garp.relationpanel.js</code>
+Class for relationPanels</p>
+<p><code>garp.createrelatewindow.js</code>
+Class for quick-creating records (From relationPanels and relationFields).</p>
+
+        </div>
+
+    </div>]

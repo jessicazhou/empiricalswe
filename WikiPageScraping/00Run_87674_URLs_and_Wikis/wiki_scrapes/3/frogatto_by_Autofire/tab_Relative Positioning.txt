@@ -1,0 +1,46 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>All objects in frogatto have a position value which is the "absolute position" in terms of level coordinates.  A common desire is to make one object (say, a separate turret object mounted on a tank) follow another object.  Formerly, the only means we had to do this was to use an <code>on_process="set(x, creator.x)"</code>, and have a reference to another object we wanted to follow;  on each frame, the 'child' would manually set its absolute postion to match the object that created it.  This is messy, but it's also a performance hit, because it involves interpreting a formula, per each object, every cycle.  If many objects have children, this rapidly adds up.</p>
+<p>We've made a new system to specifically support this, which has better performance, and is cleaner.</p>
+<p>To make an object automatically follow another, you set the object to have that other as its parent - this will not be set automatically when a different object "spawns" another, it has to be done explicitly.  Once you do this, it will automatically stay that relative distance away from the parent without any further intervention.  A common idiom is to, in the spawn command, add:   <code>spawn('object_name', x, y, facing, set(parent, me))</code>  Once this is done, you can set/query the values "relative_x" and "relative_y", which otherwise work exactly like the regular x,y values.</p>
+<pre><code>// For example, from object_tracked_dungeon.cfg, the platform object spawns a sound controller.
+spawn('sound_source_individual', 0,0, { //since we're parenting, the x and y are ignored
+	parent:me, 
+	relative_x:me.img_w/2-img_w/2, //center the sound source on platform
+	relative_y:me.img_h/2-img_h/2, 
+	sound_file:'ambient/Metal-squeak.ogg',
+})
+</code></pre>
+<p>For certain usages, you need the ability to modify what point the child object is positioned relative to.  For a simple example in game, if frogatto were given a "hat" as a child object, it would look very odd if the hat did not bob along with him in his standing position.  Both different animations, and even individual frames within animations, would need custom offsets.  To do this, you specify what is called a "pivot point".  Pivot points each have a different name, which allows multiple pivot points to be created and tracked.  For example, if one were creating a large creature out of multiple objects, you might have one pivot point for an arm, and a separate pivot point for the head.</p>
+<p>First, inside the child object, you need to declare the name of the parent's pivot point to follow: <code>[set(parent, level.player), set(pivot, 'foo')]</code></p>
+<p>Second, inside the parent's animation tags, you need to declare the position of this pivot point:  <code>pivot_foo=x,y</code></p>
+<p>To make it change per frame, you can provide a list of values, and it will smoothly interpolate between them:
+<code>pivot_foo=x1,y1,x2,y2...xn,yn</code></p>
+<p>##Examples and design notes:</p>
+<ul>
+<li>
+<p>Upon setting a parent object, the relative_xy will immediately be set to the current offset from the parent, rather than to <code>[0,0]</code>.  So for example if an object is at <code>[323,210]</code>, and its parent is at <code>[333,212]</code>, its new relative_xy will be <code>[10,2]</code>.  If you set the relative_x, relative_y values at the same time that you declare a parent object, they will override this setting.  (In a list of commands, set them after the parent, since the act of setting the parent would otherwise overwrite them.)</p>
+</li>
+<li>
+<p><code>relative_x</code> and <code>relative_y</code>, by default (if an object has no formal "pivot point" declared), are measured relative to the parent's midpoint.   If it's solid, <code>midpoint</code> means center of its solidity.</p>
+</li>
+<li>
+<p>If you set a child object to an absolute position whilst it has a parent, the new setting will be ignored, and will be overwritten on the next frame by the existing relative_xy setting.  Similarly, any velocity or acceleration values will, although internally calculated, be immediately overridden and thus will have no effect.</p>
+</li>
+<li>
+<p>Relative positioning does respect facing - if an object reverses its facing, the relatively-positioned child will have it's position flipped across the parent's midpoint.  The child will also reverse its facing, which makes sense for common usages like placing a hat on a character.</p>
+</li>
+<li>
+<p>From an outside perspective, one might reason that instead of making new <code>relative_x</code>, <code>relative_y</code> variables, we could have instead had a boolean that, when active, would make <code>x</code> and <code>y</code> store a relative position rather than an absolute position.  We chose not to do this because many internal calculations need the vanilla versions of <code>x,y</code> to work correctly - we also chose not to do this because whilst <code>x</code> and <code>y</code> are no longer possible to set, they're still very useful to read - other objects may still be interested in the position of a relatively-positioned object.</p>
+</li>
+</ul>
+
+        </div>
+
+        <div class="wiki-footer gollum-markdown-content boxed-group" id="wiki-footer">
+          <div class="boxed-group-inner wiki-auxiliary-content markdown-body">
+            <p>More help can be found via IRC, <a href="irc://irc.freenode.net/#frogatto" rel="nofollow">#Frogatto</a> on freenode.net. This wiki is not a complete reference.</p>
+
+          </div>
+        </div>
+    </div>]

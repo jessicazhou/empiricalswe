@@ -1,0 +1,43 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>主流的量化交易软件如MT4, MultiChart, TradeStation, TB等都带有时序变量，它简化了策略编写的逻辑。时序变量
+的长度随着策略的逐Bar运行自行变长。并且可以通过索引回溯前面的值, 如果回溯超过了界限，返回时序变量的默认值。
+时序变量的内部实现封装了一个预先分配好的数组实。如果策略函数 <code>on_symbol</code> 或 <code>on_bar</code> 运行到某根Bar时，
+没有更新时序变量的值，那么时序变量在该Bar的值为前其在前一根Bar的值，即它的最新值拷贝了上一个值。如果从未更新它的值，
+那么时序变量在每根Bar上的值都为相应的默认值。以下是一个用时序变量保存3周期均线的例子：</p>
+<div class="highlight highlight-source-python"><pre>   <span class="pl-k">def</span> <span class="pl-en">on_init</span>(<span class="pl-smi">ctx</span>):
+       ctx.ma3 <span class="pl-k">=</span> NumberSeires()
+
+   <span class="pl-k">def</span> <span class="pl-en">on_symbol</span>(<span class="pl-smi">ctx</span>):
+       <span class="pl-k">if</span> ctx.curbar <span class="pl-k">&gt;=</span> <span class="pl-c1">3</span> <span class="pl-k">and</span> ctx.curbar <span class="pl-k">&lt;=</span> <span class="pl-c1">5</span>:
+           ctx.ma3.update((ctx.close <span class="pl-k">+</span> ctx.close[<span class="pl-c1">1</span>] <span class="pl-k">+</span> ctx.close[<span class="pl-c1">2</span>]) <span class="pl-k">/</span> <span class="pl-c1">3</span>)</pre></div>
+<p>在上面的例子中， <code>ctx.curbar</code> 为1，2的时候, 即策略函数运行在第1根和第2根Bar的时候，时序变量的值没有更新。
+所以，在第1根bar的时候，时序变量的值为数字时序变量的默认值0。在第2根bar的时候，时序其值为复制前面一根Bar下该时序变量的值，
+这里为0。同理，第5根Bar以后时序变量没有更新，所以该时序变量的值都等于其在第5根Bar下的值。</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#%E6%97%B6%E5%BA%8F%E5%8F%98%E9%87%8F%E7%B1%BB%E5%9E%8B" id="user-content-时序变量类型"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>时序变量类型</h2>
+<p>NumberSeries: 数字时序变量，默认值为0。</p>
+<p>DateTimeSeries: 时间时序变量，默认值为 <code>datetime(1980,1,1)</code> 。</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#%E6%97%B6%E5%BA%8F%E5%8F%98%E9%87%8F%E6%8E%A5%E5%8F%A3" id="user-content-时序变量接口"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>时序变量接口</h2>
+<h3>
+<a aria-hidden="true" class="anchor" href="#%E5%B1%9E%E6%80%A7" id="user-content-属性"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>属性</h3>
+<ul>
+<li>
+<p>Series.data: 时序变量内部的数组，真正存放数据的地方。用户可以像普通数组一样使用它, 甚至引用未来的数据, 比如:
+ctx.close.data[0: ctx.curbar]</p>
+<pre><code>  注意: 由于 ctx.curbar 从1开始索引，Series.data从0开始索引，所以 ctx.close.data[ctx.curbar]实际上就是下一根Bar的收盘价。
+</code></pre>
+</li>
+</ul>
+<h3>
+<a aria-hidden="true" class="anchor" href="#%E6%96%B9%E6%B3%95" id="user-content-方法"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>方法</h3>
+<ul>
+<li>Series.update(value) 更新当前Bar下时序变量的值。</li>
+</ul>
+<h2>
+<a aria-hidden="true" class="anchor" href="#%E4%B8%8A%E4%B8%80%E8%8A%82%E6%92%AE%E5%90%88%E6%9C%BA%E5%88%B6-----%E4%B8%8B%E4%B8%80%E8%8A%82%E6%8A%80%E6%9C%AF%E6%8C%87%E6%A0%87-" id="user-content-上一节撮合机制-----下一节技术指标-"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><em>上一节</em> <a class="internal present" href="/QuantFans/quantdigger/wiki/%E6%92%AE%E5%90%88%E6%9C%BA%E5%88%B6">撮合机制</a>          <em>下一节</em> <a href="technical.md">[技术指标]</a>  </h2>
+
+        </div>
+
+    </div>]

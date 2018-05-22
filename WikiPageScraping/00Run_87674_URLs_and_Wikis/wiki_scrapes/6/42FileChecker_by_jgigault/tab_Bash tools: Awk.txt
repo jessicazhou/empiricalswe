@@ -1,0 +1,129 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>AWK is an interpreted programming language designed for text processing and typically used as a data extraction and reporting tool. It is a standard feature of most Unix-like operating systems. (Source: <a href="https://en.wikipedia.org/wiki/AWK" rel="nofollow">Wikipedia</a>)</p>
+<hr/>
+<h4>
+<a aria-hidden="true" class="anchor" href="#1-how-to-use-awk" id="user-content-1-how-to-use-awk"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><a name="user-content-part1"></a>1. How to use AWK</h4>
+<p>An awk script can be used in several ways. It is commonly used right inside a command-line as following:</p>
+<div class="highlight highlight-source-shell"><pre>cat <span class="pl-s"><span class="pl-pds">"</span>path/to/a/file/to/scan<span class="pl-pds">"</span></span> <span class="pl-k">|</span> awk <span class="pl-s"><span class="pl-pds">'</span>&lt;AWK SCRIPT&gt;<span class="pl-pds">'</span></span> <span class="pl-k">&gt;</span> ./output_file</pre></div>
+<p>The same result by placing the file path as an argument:</p>
+<div class="highlight highlight-source-shell"><pre>awk <span class="pl-s"><span class="pl-pds">'</span>&lt;AWK SCRIPT&gt;<span class="pl-pds">'</span></span> <span class="pl-s"><span class="pl-pds">"</span>path/to/a/file/to/scan<span class="pl-pds">"</span></span> <span class="pl-k">&gt;</span> ./output_file</pre></div>
+<p>When an awk script becomes complexe and long, put it in a file (e.g. AWK_SCRIPT.awk) and call <code>awk</code> with the option <code>-f</code>:</p>
+<div class="highlight highlight-source-shell"><pre>cat <span class="pl-s"><span class="pl-pds">"</span>path/to/a/file/to/scan<span class="pl-pds">"</span></span> <span class="pl-k">|</span> awk -f AWK_SCRIPT.awk <span class="pl-k">&gt;</span> ./output_file</pre></div>
+<p>or</p>
+<div class="highlight highlight-source-shell"><pre>awk -f AWK_SCRIPT.awk <span class="pl-s"><span class="pl-pds">"</span>path/to/a/file/to/scan<span class="pl-pds">"</span></span> <span class="pl-k">&gt;</span> ./output_file</pre></div>
+<p>Finally, you can add a <a href="https://en.wikipedia.org/wiki/Shebang_(Unix)" rel="nofollow">shebang</a> at the beginning of the file on the very first line (<code>#!/bin/awk -f</code>) and use the your script (e.g. AWK_SCRIPT.awk) as a binary:</p>
+<div class="highlight highlight-source-shell"><pre>cat <span class="pl-s"><span class="pl-pds">"</span>path/to/a/file/to/scan<span class="pl-pds">"</span></span> <span class="pl-k">|</span> ./AWK_SCRIPT.awk <span class="pl-k">&gt;</span> ./output_file</pre></div>
+<p>or</p>
+<div class="highlight highlight-source-shell"><pre>./AWK_SCRIPT.awk <span class="pl-s"><span class="pl-pds">"</span>path/to/a/file/to/scan<span class="pl-pds">"</span></span> <span class="pl-k">&gt;</span> ./output_file</pre></div>
+<p>And the file AWK_SCRIPT.awk should look like this:</p>
+<div class="highlight highlight-source-awk"><pre><span class="pl-c">#!/bin/awk -f</span>
+<span class="pl-k">&lt;</span>AWK SCRIPT<span class="pl-k">&gt;</span></pre></div>
+<hr/>
+<h4>
+<a aria-hidden="true" class="anchor" href="#2-how-works-awk" id="user-content-2-how-works-awk"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><a name="user-content-part2"></a>2. How works AWK</h4>
+<p>Awk reads a file descriptor one line at a time. For each line, called <strong>records</strong>, awk executes one or more blocks of instructions surrounded by braces <code>{...}</code>. The most basic instruction is <code>print</code>:</p>
+<div class="highlight highlight-source-awk"><pre>{<span class="pl-k">print</span>}               <span class="pl-c"># Print each line on the standard output</span></pre></div>
+<p>Awk splits each <strong>record</strong> into <strong>fields</strong>, or columns, according to a character (the character <code>&lt;space&gt;</code> by default). Each <strong>field</strong> is stored in a positional parameter $1, $2, $3.. where $1 is the first field:</p>
+<div class="highlight highlight-source-awk"><pre>{<span class="pl-k">print</span> <span class="pl-c1">$1</span>, <span class="pl-c1">$2</span>, <span class="pl-c1">$3</span>}    <span class="pl-c"># Print the first three fields of each line</span>
+                      <span class="pl-c"># If a line is:    "This is a line from a file"</span>
+                      <span class="pl-c"># Output would be: "This is a"</span></pre></div>
+<p>The positional parameter <code>$0</code> contains the entire line, as the following instructions are similar:</p>
+<div class="highlight highlight-source-awk"><pre>{<span class="pl-k">print</span>}               <span class="pl-c"># Print each line on the standard output</span>
+{<span class="pl-k">print</span> <span class="pl-c1">$0</span>}</pre></div>
+<p>Add several instructions by separating them with the symbol <code>;</code>:</p>
+<div class="highlight highlight-source-awk"><pre>{<span class="pl-k">print</span> <span class="pl-c1">$0</span>; <span class="pl-k">print</span> <span class="pl-c1">$0</span>} <span class="pl-c"># Print each line twice on the standard output</span>
+</pre></div>
+<p>Awk may execute several blocks of instructions for each line:</p>
+<div class="highlight highlight-source-awk"><pre>{<span class="pl-k">print</span> <span class="pl-c1">$0</span>} {<span class="pl-k">print</span> <span class="pl-c1">$0</span>} <span class="pl-c"># Print each line twice on the standard output</span></pre></div>
+<p>A block of instructions may have a condition which is prefixed:</p>
+<div class="highlight highlight-source-awk"><pre><span class="pl-c1">$0</span> <span class="pl-k">==</span> <span class="pl-s"><span class="pl-pds">"</span>this is a string<span class="pl-pds">"</span></span> {<span class="pl-k">print</span> <span class="pl-c1">$0</span>}
+<span class="pl-c"># Print each line that is strictly equal to "this is a string"</span>
+
+<span class="pl-c1">$0</span> <span class="pl-k">~</span> /<span class="pl-sr">this is a string</span>/ {<span class="pl-k">print</span> <span class="pl-c1">$0</span>}
+<span class="pl-c"># Print each line that contains the string "this is a string"</span></pre></div>
+<p>Several blocks of instructions may have their own condition:</p>
+<div class="highlight highlight-source-awk"><pre><span class="pl-c1">$0</span> <span class="pl-k">~</span> /<span class="pl-sr">42</span>/ {<span class="pl-k">print</span> <span class="pl-c1">$0</span>} <span class="pl-c1">$0</span> <span class="pl-k">~</span> /<span class="pl-sr">42 School</span>/ {<span class="pl-k">print</span> <span class="pl-s"><span class="pl-pds">"</span>WOW<span class="pl-pds">"</span></span>} 
+<span class="pl-c"># Print lines that contain the term '42'</span>
+<span class="pl-c"># And then print 'WOW' if the same line contain the term '42 School'</span></pre></div>
+<hr/>
+<h4>
+<a aria-hidden="true" class="anchor" href="#3-awk-built-in-variables" id="user-content-3-awk-built-in-variables"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><a name="user-content-part3"></a>3. AWK built-in variables</h4>
+<p><em>To be written...</em></p>
+<hr/>
+<h4>
+<a aria-hidden="true" class="anchor" href="#4-begin-and-end-statements" id="user-content-4-begin-and-end-statements"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><a name="user-content-part4"></a>4. BEGIN and END statements</h4>
+<p>An awk script may have a BEGIN and an END statements. These blocks of instructions are executed before or after reading the file. Use it to declare local variables or to display headings/footers:</p>
+<div class="highlight highlight-source-awk"><pre><span class="pl-c1">BEGIN</span> {<span class="pl-k">print</span> <span class="pl-s"><span class="pl-pds">"</span>START<span class="pl-pds">"</span></span>}  {<span class="pl-k">print</span> <span class="pl-c1">$0</span>}  <span class="pl-c1">END</span> {<span class="pl-k">print</span> <span class="pl-s"><span class="pl-pds">"</span>END OF FILE<span class="pl-pds">"</span></span>}
+<span class="pl-c"># Will output:  START</span>
+<span class="pl-c">#               [Lines of the file]</span>
+<span class="pl-c">#               END OF FILE</span></pre></div>
+<p><em>To be written...</em></p>
+<hr/>
+<h4>
+<a aria-hidden="true" class="anchor" href="#5-simple-awk-examples" id="user-content-5-simple-awk-examples"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><a name="user-content-part5"></a>5. Simple AWK examples</h4>
+<p>For greater readability in the following examples, the file is first read into a variable "$TEXT" which is sent within the standard entry to awk:</p>
+<div class="highlight highlight-source-shell"><pre><span class="pl-k">declare</span> TEXT=<span class="pl-s"><span class="pl-pds">$(</span>cat <span class="pl-s"><span class="pl-pds">"</span>./path/to/the/file<span class="pl-pds">"</span></span><span class="pl-pds">)</span></span>
+
+<span class="pl-c1">echo</span> <span class="pl-s"><span class="pl-pds">"</span><span class="pl-smi">$TEXT</span><span class="pl-pds">"</span></span> <span class="pl-k">|</span> awk <span class="pl-s"><span class="pl-pds">'</span>$0 ~ /word/ {print $0}<span class="pl-pds">'</span></span>
+<span class="pl-c"><span class="pl-c">#</span> Print lines that contain the term 'word'</span>
+
+<span class="pl-c1">echo</span> <span class="pl-s"><span class="pl-pds">"</span><span class="pl-smi">$TEXT</span><span class="pl-pds">"</span></span> <span class="pl-k">|</span> awk <span class="pl-s"><span class="pl-pds">'</span>$0 ~ /^word/ {print $0}<span class="pl-pds">'</span></span>
+<span class="pl-c"><span class="pl-c">#</span> Print lines that begin with the term 'word'</span>
+
+<span class="pl-c1">echo</span> <span class="pl-s"><span class="pl-pds">"</span><span class="pl-smi">$TEXT</span><span class="pl-pds">"</span></span> <span class="pl-k">|</span> awk <span class="pl-s"><span class="pl-pds">'</span>$0 ~ /word$/ {print $0}<span class="pl-pds">'</span></span>
+<span class="pl-c"><span class="pl-c">#</span> Print lines that end with the term 'word'</span>
+
+<span class="pl-c1">echo</span> <span class="pl-s"><span class="pl-pds">"</span><span class="pl-smi">$TEXT</span><span class="pl-pds">"</span></span> <span class="pl-k">|</span> awk <span class="pl-s"><span class="pl-pds">'</span>$0 ~ /^word$/ {print $0}<span class="pl-pds">'</span></span>
+<span class="pl-c"><span class="pl-c">#</span> Print lines that strictly contain the term 'word'</span>
+
+<span class="pl-c1">echo</span> <span class="pl-s"><span class="pl-pds">"</span><span class="pl-smi">$TEXT</span><span class="pl-pds">"</span></span> <span class="pl-k">|</span> awk <span class="pl-s"><span class="pl-pds">'</span>$0 ~ /word\t/ {print $0}<span class="pl-pds">'</span></span>
+<span class="pl-c"><span class="pl-c">#</span> Print lines that contain the term 'word' followed by a tab</span>
+
+<span class="pl-c1">echo</span> <span class="pl-s"><span class="pl-pds">"</span><span class="pl-smi">$TEXT</span><span class="pl-pds">"</span></span> <span class="pl-k">|</span> awk <span class="pl-s"><span class="pl-pds">'</span>$0 ~ /[\t]word/ {print $0}<span class="pl-pds">'</span></span>
+<span class="pl-c"><span class="pl-c">#</span> Print lines that contain the term 'word' prefixed by a tab</span>
+
+<span class="pl-c1">echo</span> <span class="pl-s"><span class="pl-pds">"</span><span class="pl-smi">$TEXT</span><span class="pl-pds">"</span></span> <span class="pl-k">|</span> awk <span class="pl-s"><span class="pl-pds">'</span>$0 ~ /word[\t]?/ {print $0}<span class="pl-pds">'</span></span>
+<span class="pl-c"><span class="pl-c">#</span> Print lines that contain the term 'word' followed by zero or one tab</span>
+
+<span class="pl-c1">echo</span> <span class="pl-s"><span class="pl-pds">"</span><span class="pl-smi">$TEXT</span><span class="pl-pds">"</span></span> <span class="pl-k">|</span> awk <span class="pl-s"><span class="pl-pds">'</span>$0 ~ /word[\t]+/ {print $0}<span class="pl-pds">'</span></span>
+<span class="pl-c"><span class="pl-c">#</span> Print lines that contain the term 'word' followed by one or more tabs</span>
+
+<span class="pl-c1">echo</span> <span class="pl-s"><span class="pl-pds">"</span><span class="pl-smi">$TEXT</span><span class="pl-pds">"</span></span> <span class="pl-k">|</span> awk <span class="pl-s"><span class="pl-pds">'</span>$0 ~ /word[\t]*/ {print $0}<span class="pl-pds">'</span></span>
+<span class="pl-c"><span class="pl-c">#</span> Print lines that contain the term 'word' followed by </span>
+<span class="pl-c"><span class="pl-c">#</span> zero, one or more tabs</span>
+
+<span class="pl-c1">echo</span> <span class="pl-s"><span class="pl-pds">"</span><span class="pl-smi">$TEXT</span><span class="pl-pds">"</span></span> <span class="pl-k">|</span> awk <span class="pl-s"><span class="pl-pds">'</span>$0 ~ /word[\t]{1,2,3}/ {print $0}<span class="pl-pds">'</span></span>
+<span class="pl-c"><span class="pl-c">#</span> Print lines that contain the term 'word' followed by </span>
+<span class="pl-c"><span class="pl-c">#</span> one, two, or three tabs</span>
+
+<span class="pl-c1">echo</span> <span class="pl-s"><span class="pl-pds">"</span><span class="pl-smi">$TEXT</span><span class="pl-pds">"</span></span> <span class="pl-k">|</span> awk <span class="pl-s"><span class="pl-pds">'</span>$0 ~ /word[\t ]/ {print $0}<span class="pl-pds">'</span></span>
+<span class="pl-c"><span class="pl-c">#</span> Print lines that contain the term 'word' followed by</span>
+<span class="pl-c"><span class="pl-c">#</span> either a space or a tab</span>
+
+<span class="pl-c1">echo</span> <span class="pl-s"><span class="pl-pds">"</span><span class="pl-smi">$TEXT</span><span class="pl-pds">"</span></span> <span class="pl-k">|</span> awk <span class="pl-s"><span class="pl-pds">'</span>BEGIN {print "I found this:"} $0 ~ /word/ {print $0}<span class="pl-pds">'</span></span>
+<span class="pl-c"><span class="pl-c">#</span> At the beginning of the script, print the sentence "If found this:"</span>
+<span class="pl-c"><span class="pl-c">#</span> Then find and print lines that contain the term 'word'</span>
+
+<span class="pl-c1">echo</span> <span class="pl-s"><span class="pl-pds">"</span><span class="pl-smi">$TEXT</span><span class="pl-pds">"</span></span> <span class="pl-k">|</span> awk <span class="pl-s"><span class="pl-pds">'</span>$0 ~ /word/ {print $0} END {print "I have read all."}<span class="pl-pds">'</span></span>
+<span class="pl-c"><span class="pl-c">#</span> Print lines that contain the term 'word'</span>
+<span class="pl-c"><span class="pl-c">#</span> At the end of the script, print the sentence "I have read lines."</span>
+
+<span class="pl-c1">echo</span> <span class="pl-s"><span class="pl-pds">"</span><span class="pl-smi">$TEXT</span><span class="pl-pds">"</span></span> <span class="pl-k">|</span> awk <span class="pl-s"><span class="pl-pds">'</span>$0 ~ /word/ {print "true"; exit} END {print "false"}<span class="pl-pds">'</span></span>
+<span class="pl-c"><span class="pl-c">#</span> Find a line that contains the term 'word', print "true" and</span>
+<span class="pl-c"><span class="pl-c">#</span> stop searching by exiting the script.</span>
+<span class="pl-c"><span class="pl-c">#</span> If no line is found, the 'END' block is executed and prints "false"</span></pre></div>
+<hr/>
+<h4>
+<a aria-hidden="true" class="anchor" href="#6-a-complete-awk-example" id="user-content-6-a-complete-awk-example"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><a name="user-content-part6"></a>6. A complete AWK example</h4>
+<p><em>To be written...</em></p>
+
+        </div>
+
+        <div class="wiki-footer gollum-markdown-content boxed-group" id="wiki-footer">
+          <div class="boxed-group-inner wiki-auxiliary-content markdown-body">
+            <p><a href="https://github.com/jgigault/42FileChecker/wiki/"><strong>Back to summary</strong></a> - <a href="#"><strong>Back to top</strong></a></p>
+
+          </div>
+        </div>
+    </div>]

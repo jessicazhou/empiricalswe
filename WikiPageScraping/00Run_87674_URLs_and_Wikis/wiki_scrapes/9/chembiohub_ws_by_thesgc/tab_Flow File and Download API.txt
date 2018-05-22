@@ -1,0 +1,431 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <ul>
+<li><a href="#get-flowfile--upload-progress">GET FlowFile (Upload Progress)</a></li>
+<li><a href="#post-flowfile-when-uploading">POST FlowFile (When Uploading)</a></li>
+<li><a href="#get-flowfile-metadata-json">GET FlowFile metadata JSON</a></li>
+<li><a href="#get-download-a-flowfile">GET Download a FlowFile</a></li>
+</ul>
+<h2>
+<a aria-hidden="true" class="anchor" href="#get-flowfile--upload-progress" id="user-content-get-flowfile--upload-progress"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><strong>GET FlowFile  (Upload Progress)</strong>
+</h2>
+<p>This django view is used by the flowjs library to check whether a particular chunk of a file has been uploaded yet and report progress during the upload. It is designed to report back with a 404 and may not strictly be necessary.</p>
+<ul>
+<li>
+<p><strong>Tests</strong></p>
+<ul>
+<li>This API is not yet tested</li>
+</ul>
+</li>
+<li>
+<p><strong>Source Code links</strong></p>
+<ul>
+<li><strong>The upload url is passed to the front end flowjs library <a href="https://github.com/thesgc/ng-chem/blob/master/app/scripts/config.js#L116">here</a></strong></li>
+<li>**URL setup is in its <a href="https://github.com/thesgc/chembiohub_ws/blob/master/cbh_core_api/flowjs_urls.py#L11">own file</a> for flowjs</li>
+<li><strong><a href="https://github.com/thesgc/chembiohub_ws/blob/master/cbh_core_api/views.py#L24">Back end code</a></strong></li>
+</ul>
+</li>
+<li>
+<p><strong>URL</strong></p>
+<p>/{namespace}/api/flowv2/{project_id}/?flowChunkNumber={flowChunkNumber}&amp;flowChunkSize={flowChunkSize}&amp;flowCurrentChunkSize={flowCurrentChunkSize}&amp;flowTotalSize={flowTotalSize}&amp;flowIdentifier={flowIdentifier}&amp;flowFilename={flowFilename}&amp;flowRelativePath={flowRelativePath}&amp;flowTotalChunks={flowTotalChunks}</p>
+</li>
+<li>
+<p><strong>Method:</strong></p>
+<p><code>GET</code></p>
+</li>
+<li>
+<p><strong>URL Params</strong></p>
+<p><strong>Required:</strong></p>
+</li>
+</ul>
+<p>|  Param | Default | Description                 |
+|:------:|---------|-----------------------------|-----|
+| namespace  | Default for your installation is chembiohub   | the URL path, conda environment name etc. |<br/>
+| project id  | None     | The project ID that the file is being uploaded to |
+| flowChunkNumber  | None     | The number of the chunk that is currently being looked for to get upload progress |
+| flowChunkSize  | None     | The size of the chunk being uploaded|
+| flowCurrentChunkSize  | None     |  |
+| flowTotalSize  | None     | The total size of the file |
+| flowIdentifier  | None     | The identifier for this file that was generated on the front end. A function is passed to the flowjs library to generate this identifier see <a href="https://github.com/thesgc/ng-chem/search?utf8=%E2%9C%93&amp;q=generateUniqueIdentifier">here</a>. |
+| flowFilename  | None     | The name of the uploaded file |
+| flowRelativePath  | None     | |
+| flowTotalChunks  | None     | Total number of chunks being uploaded |
+<strong>Optional:</strong></p>
+<p>None</p>
+<ul>
+<li>
+<p><strong>Success Response:</strong></p>
+<ul>
+<li>
+<p><strong>Code:</strong> 200 <br/></p>
+</li>
+<li>
+<p><strong>Notable response attributes</strong></p>
+</li>
+<li>
+<p><strong>Response Schema</strong></p>
+<ul>
+<li>No Schema - if the chunk upload was successful the identifier will be returned</li>
+</ul>
+</li>
+<li>
+<p><strong>Code:</strong> 404 not found <br/>
+*<em>Content:</em>
+This is nothing to worry about - just means the file has not yet finished uploading.</p>
+</li>
+</ul>
+</li>
+<li>
+<p><strong>Error Response:</strong></p>
+<p>If you are not logged in to the application</p>
+<ul>
+<li>
+<strong>Code:</strong> 401 UNAUTHORIZED <br/>
+<strong>Content:</strong> ``</li>
+</ul>
+<p>OR</p>
+<ul>
+<li>
+<strong>Code:</strong> 403 BAD REQUEST <br/>
+<strong>Content:</strong>
+</li>
+</ul>
+<p>OR</p>
+</li>
+</ul>
+
+<pre><code>   { error : "The error name from the back end" , traceback : "The traceback in python"}
+</code></pre>
+<ul>
+<li>
+<strong>Code:</strong> 500 INTERNAL SERVER ERROR <br/>
+<strong>Content:</strong>
+</li>
+</ul>
+
+<pre><code>    { error : "The error name from the back end" , traceback : "The traceback in python"}
+</code></pre>
+<ul>
+<li>
+<p><strong>Sample Call:</strong></p>
+<p>API is called internally by the flowjs library - see documentation <a href="https://github.com/flowjs">here</a></p>
+</li>
+<li>
+<p><strong>Notes:</strong></p>
+</li>
+</ul>
+<h2>
+<a aria-hidden="true" class="anchor" href="#post-flowfile-when-uploading" id="user-content-post-flowfile-when-uploading"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><strong>POST FlowFile (When Uploading)</strong>
+</h2>
+<p>This django view is used by the flowjs library to POST form encoded files with extra metadata about the file.</p>
+<ul>
+<li>
+<p><strong>Tests</strong></p>
+<ul>
+<li>This API is tested as part of the data import tests <a href="https://github.com/thesgc/chembiohub_ws/blob/master/cbh_tests/features/compound_batch_upload.feature">here</a>.</li>
+</ul>
+</li>
+<li>
+<p><strong>Source Code links</strong></p>
+<ul>
+<li><strong>The upload url is passed to the front end flowjs library <a href="https://github.com/thesgc/ng-chem/blob/master/app/scripts/config.js#L116">here</a></strong></li>
+<li>**URL setup is in its <a href="https://github.com/thesgc/chembiohub_ws/blob/master/cbh_core_api/flowjs_urls.py#L11">own file</a> for flowjs</li>
+<li><strong><a href="https://github.com/thesgc/chembiohub_ws/blob/master/cbh_core_api/views.py#L24">Back end code</a></strong></li>
+</ul>
+</li>
+<li>
+<p><strong>URL</strong></p>
+<p>/{namespace}/api/flowv2/{project_id}/</p>
+</li>
+<li>
+<p><strong>Method:</strong></p>
+<p><code>POST</code></p>
+</li>
+<li>
+<p><strong>URL Params</strong></p>
+<p><strong>Required:</strong></p>
+</li>
+</ul>
+<p>|  Param | Default | Description                 |
+|:------:|---------|-----------------------------|-----|
+| namespace  | Default for your installation is chembiohub   | the URL path, conda environment name etc. |<br/>
+| project id  | None     | The project ID that the file is being uploaded to |</p>
+<p><strong>Optional:</strong></p>
+<p>None</p>
+<p><strong>POST Data params</strong></p>
+<p>|  Param | Default | Description                 |
+|:------:|---------|-----------------------------|-----|
+| flowChunkNumber  | None     | The number of the chunk that is currently being looked for to get upload progress |
+| flowChunkSize  | None     | The size of the chunk being uploaded|
+| flowCurrentChunkSize  | None     |  |
+| flowTotalSize  | None     | The total size of the file |
+| flowIdentifier  | None     | The identifier for this file that was generated on the front end. A function is passed to the flowjs library to generate this identifier see <a href="https://github.com/thesgc/ng-chem/search?utf8=%E2%9C%93&amp;q=generateUniqueIdentifier">here</a>. |
+| flowFilename  | None     | The name of the uploaded file |
+| flowRelativePath  | None     | |
+| flowTotalChunks  | None     | Total number of chunks being uploaded |</p>
+<ul>
+<li>
+<p><strong>Success Response:</strong></p>
+<ul>
+<li>
+<p><strong>Code:</strong> 200 <br/></p>
+</li>
+<li>
+<p><strong>Notable response attributes</strong></p>
+</li>
+<li>
+<p><strong>Response Schema</strong></p>
+<ul>
+<li>No Schema - if the chunk upload was successful the identifier will be returned</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+<p><strong>Error Response:</strong></p>
+<p>If you are not logged in to the application</p>
+<ul>
+<li>
+<strong>Code:</strong> 401 UNAUTHORIZED <br/>
+<strong>Content:</strong> ``</li>
+</ul>
+<p>OR</p>
+<ul>
+<li>
+<strong>Code:</strong> 403 BAD REQUEST <br/>
+<strong>Content:</strong>
+</li>
+</ul>
+<p>OR</p>
+</li>
+</ul>
+
+<pre><code>   { error : "The error name from the back end" , traceback : "The traceback in python"}
+</code></pre>
+<ul>
+<li>
+<strong>Code:</strong> 500 INTERNAL SERVER ERROR <br/>
+<strong>Content:</strong>
+</li>
+</ul>
+
+<pre><code>    { error : "The error name from the back end" , traceback : "The traceback in python"}
+</code></pre>
+<ul>
+<li>
+<p><strong>Sample Call:</strong></p>
+<p>API is called internally by the flowjs library - see documentation <a href="https://github.com/flowjs">here</a></p>
+<p>The API can also be called using python code by building a request with requestfactory and sending a POST request, see a nearly complete example <a href="https://github.com/thesgc/chembiohub_ws/blob/master/cbh_tests/features/steps/test__django_flowjs.flowjs.views.py#L12">here</a></p>
+</li>
+<li>
+<p><strong>Notes:</strong></p>
+</li>
+</ul>
+<h2>
+<a aria-hidden="true" class="anchor" href="#get-flowfile-metadata-json" id="user-content-get-flowfile-metadata-json"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><strong>GET FlowFile metadata JSON</strong>
+</h2>
+<p>This API provides access to the metadata about an upload. It is used to provide a permanent URL for a particular upload so that the session ID one used by flowjs is not required as the session ID will becomeout of date</p>
+<ul>
+<li>
+<p><strong>Tests</strong></p>
+<ul>
+<li>This API is not yet tested</li>
+</ul>
+</li>
+<li>
+<p><strong>Source Code links</strong></p>
+<ul>
+<li><strong>When a file <a class="internal present" href="/thesgc/chembiohub_ws/wiki/Attachments">attachments</a> field has been added to a particular project, there is an event handler following upload <a href="https://github.com/thesgc/ng-chem/blob/master/app/scripts/controllers/addsinglecompound.js#L47">which calls this API</a></strong></li>
+<li>**URL setup is in its <a href="https://github.com/thesgc/chembiohub_ws/blob/master/cbh_core_api/flowjs_urls.py#L88">own file</a> for flowjs</li>
+<li><strong><a href="https://github.com/thesgc/chembiohub_ws/blob/master/cbh_core_api/views.py#L24">Back end code</a></strong></li>
+</ul>
+</li>
+<li>
+<p><strong>URL</strong></p>
+<p>/{namespace}/api/cbh_flowfiles/{flow_identifier}</p>
+</li>
+<li>
+<p><strong>Method:</strong></p>
+<p><code>GET</code></p>
+</li>
+<li>
+<p><strong>URL Params</strong></p>
+<p><strong>Required:</strong></p>
+</li>
+</ul>
+<p>|  Param | Default | Description                 |
+|:------:|---------|-----------------------------|-----|
+| namespace  | Default for your installation is chembiohub   | the URL path, conda environment name etc. |<br/>
+| project id  | None     | The project ID that the file is being uploaded to |
+| flow_identifier  | None     | The part of the identifier that was returned by the POST FlowFile API |</p>
+<p><strong>Optional:</strong></p>
+<p>None</p>
+<ul>
+<li>
+<p><strong>Success Response:</strong></p>
+<ul>
+<li>
+<p><strong>Code:</strong> 200 <br/></p>
+</li>
+<li>
+<p><strong>Notable response attributes</strong></p>
+</li>
+</ul>
+</li>
+</ul>
+<p>|  Param | Default | Description                 |
+|:------:|---------|-----------------------------|-----|
+| download_uri  |    | The URI to be used to download this particular file which will be saved in any data points which contain a set of attachments |</p>
+<ul>
+<li>
+<p><strong>Response Schema</strong></p>
+<ul>
+<li>see <a class="internal present" href="/thesgc/chembiohub_ws/wiki/Copy-of-CBH-Flowfile-schema">Copy of CBH Flowfile schema</a> or go to /{namespace}/api/cbh_flowfiles/schema?format=json</li>
+</ul>
+</li>
+<li>
+<p><strong>Code:</strong> 404 not found <br/>
+*<em>Content:</em>
+This is nothing to worry about - just means the file has not yet finished uploading.</p>
+</li>
+<li>
+<p><strong>Error Response:</strong></p>
+<p>If you are not logged in to the application</p>
+<ul>
+<li>
+<strong>Code:</strong> 401 UNAUTHORIZED <br/>
+<strong>Content:</strong> ``</li>
+</ul>
+<p>OR</p>
+<ul>
+<li>
+<strong>Code:</strong> 403 BAD REQUEST <br/>
+<strong>Content:</strong>
+</li>
+</ul>
+<p>OR</p>
+</li>
+</ul>
+
+<pre><code>   { error : "The error name from the back end" , traceback : "The traceback in python"}
+</code></pre>
+<ul>
+<li>
+<strong>Code:</strong> 500 INTERNAL SERVER ERROR <br/>
+<strong>Content:</strong>
+</li>
+</ul>
+
+<pre><code>    { error : "The error name from the back end" , traceback : "The traceback in python"}
+</code></pre>
+<ul>
+<li>
+<p><strong>Sample Call:</strong></p>
+<p>API is called with a standard get request as shown <a href="https://github.com/thesgc/ng-chem/blob/master/app/scripts/controllers/addsinglecompound.js#L47">here</a></p>
+</li>
+<li>
+<p><strong>Notes:</strong></p>
+</li>
+</ul>
+<h2>
+<a aria-hidden="true" class="anchor" href="#get-download-a-flowfile" id="user-content-get-download-a-flowfile"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><strong>GET Download a FlowFile</strong>
+</h2>
+<p>This API provides access to a download of the file in the appropriate mimetype as an attachment. The primary key required to download is retrieved from the above <a href="#get-flowfile-metadata-json">GET FlowFile metadata JSON</a> API.</p>
+<ul>
+<li>
+<p><strong>Tests</strong></p>
+<ul>
+<li>This API is not yet tested</li>
+</ul>
+</li>
+<li>
+<p><strong>Source Code links</strong></p>
+<ul>
+<li>When a file <a class="internal present" href="/thesgc/chembiohub_ws/wiki/Attachments">attachments</a> field has been added to a particular project and files have been attached to the CompoundBatch objects in that project, a field is then filled in with a JSON object containing references to the files that have been uploaded. These download URLs point to this API. The attachment objects are pushed into the JSON object <a href="https://github.com/thesgc/ng-chem/blob/master/app/scripts/controllers/addsinglecompound.js#L57">here</a>. Display of the attachment object is handled by the special case code in the modal pop-up <a href="https://github.com/thesgc/ng-chem/blob/master/app/views/templates/single-compound-full.html#L83">here</a>. This ensures that a download link is available allowing the user to call this API.</li>
+<li>**URL setup is in its <a href="https://github.com/thesgc/chembiohub_ws/blob/master/cbh_core_api/flowjs_urls.py#L88">own file</a> for flowjs</li>
+<li><strong><a href="https://github.com/thesgc/chembiohub_ws/blob/master/cbh_core_api/views.py#L133">Back end code</a></strong></li>
+</ul>
+</li>
+<li>
+<p><strong>URL</strong></p>
+<p>/{namespace}/api/cbh_downloads/{pk}</p>
+</li>
+<li>
+<p><strong>Method:</strong></p>
+<p><code>GET</code></p>
+</li>
+<li>
+<p><strong>URL Params</strong></p>
+<p><strong>Required:</strong></p>
+</li>
+</ul>
+<p>|  Param | Default | Description                 |
+|:------:|---------|-----------------------------|-----|
+| namespace  | Default for your installation is chembiohub   | the URL path, conda environment name etc. |<br/>
+| pk  | None     | The primary key of the flowfile object |</p>
+<p><strong>Optional:</strong></p>
+<p>None</p>
+<ul>
+<li>
+<p><strong>Success Response:</strong></p>
+<ul>
+<li>
+<p><strong>Code:</strong> 200 <br/></p>
+</li>
+<li>
+<p><strong>Notable response attributes</strong></p>
+</li>
+</ul>
+</li>
+</ul>
+<p>The output data will be a file attachment</p>
+<ul>
+<li>
+<p><strong>Error Response:</strong></p>
+<p>If you are not logged in to the application OR you do not have viewer rights on the project in question</p>
+<ul>
+<li>
+<strong>Code:</strong> 401 UNAUTHORIZED <br/>
+<strong>Content:</strong> ``</li>
+</ul>
+<p>OR</p>
+<ul>
+<li>
+<strong>Code:</strong> 403 BAD REQUEST <br/>
+<strong>Content:</strong>
+</li>
+</ul>
+<p>OR</p>
+<ul>
+<li>
+<strong>Code:</strong> 404 not found <br/>
+*<em>Content:</em>
+The file does not exist</li>
+</ul>
+</li>
+</ul>
+
+<pre><code>   { error : "The error name from the back end" , traceback : "The traceback in python"}
+</code></pre>
+<ul>
+<li>
+<strong>Code:</strong> 500 INTERNAL SERVER ERROR <br/>
+<strong>Content:</strong>
+</li>
+</ul>
+
+<pre><code>    { error : "The error name from the back end" , traceback : "The traceback in python"}
+</code></pre>
+<ul>
+<li>
+<p><strong>Sample Call:</strong></p>
+<p>API is called with a standard get request as shown <a href="https://github.com/thesgc/ng-chem/blob/master/app/scripts/controllers/addsinglecompound.js#L47">here</a></p>
+</li>
+<li>
+<p><strong>Notes:</strong></p>
+</li>
+</ul>
+
+        </div>
+
+    </div>]

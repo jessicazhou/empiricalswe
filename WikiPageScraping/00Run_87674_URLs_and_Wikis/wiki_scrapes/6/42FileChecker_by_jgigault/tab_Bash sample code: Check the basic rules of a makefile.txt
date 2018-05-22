@@ -1,0 +1,166 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>42FileChecker features a test that checks the rules of a Makefile (Which rule is missing and which rule is failing), here are a sample code and its tips.</p>
+<hr/>
+<h3>
+<a aria-hidden="true" class="anchor" href="#sample-code" id="user-content-sample-code"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><a name="user-content-code"></a>Sample code</h3>
+<div class="highlight highlight-source-shell"><pre><span class="pl-c"><span class="pl-c">#</span> Declare a function that takes 2 arguments</span>
+<span class="pl-k">function</span> <span class="pl-en">makefile_checker</span>
+{
+	<span class="pl-k">local</span> MK_PATH=<span class="pl-smi">$1</span>      <span class="pl-c"><span class="pl-c">#</span> 1st argument: Working directory</span>
+	<span class="pl-k">local</span> MK_BINARY=<span class="pl-smi">$2</span>    <span class="pl-c"><span class="pl-c">#</span> 2nd argument: Name of the binary to be compiled</span>
+
+	<span class="pl-c"><span class="pl-c">#</span> Does a file named 'Makefile' exist in the working directory?</span>
+	<span class="pl-k">if</span> [ <span class="pl-k">!</span> <span class="pl-k">-f</span> <span class="pl-s"><span class="pl-pds">"</span><span class="pl-smi">$MK_PATH</span>/Makefile<span class="pl-pds">"</span></span> ]
+	<span class="pl-k">then</span>
+		<span class="pl-c1">echo</span> <span class="pl-s"><span class="pl-pds">"</span>Makefile not found<span class="pl-pds">"</span></span>
+		<span class="pl-k">return</span>
+	<span class="pl-k">fi</span>
+
+	<span class="pl-c"><span class="pl-c">#</span> Read the 'Makefile' and save it into a temporary variable $MK_CAT</span>
+ 	<span class="pl-k">local</span> MK_CAT=<span class="pl-s"><span class="pl-pds">`</span>cat <span class="pl-s"><span class="pl-pds">"</span><span class="pl-smi">$MK_PATH</span>/Makefile<span class="pl-pds">"</span></span><span class="pl-pds">`</span></span>
+	<span class="pl-k">local</span> TEST
+
+	<span class="pl-c"><span class="pl-c">#</span> Check if a rule named 'all:' does exist</span>
+	TEST=<span class="pl-s"><span class="pl-pds">$(</span>echo <span class="pl-s"><span class="pl-pds">"</span><span class="pl-smi">$MK_CAT</span><span class="pl-pds">"</span></span> <span class="pl-k">|</span> awk <span class="pl-s"><span class="pl-pds">'</span>$0 ~ /^all[\t ]*:/ {print}<span class="pl-pds">'</span></span><span class="pl-pds">)</span></span>
+	<span class="pl-k">if</span> [ <span class="pl-s"><span class="pl-pds">"</span><span class="pl-smi">$TEST</span><span class="pl-pds">"</span></span> <span class="pl-k">==</span> <span class="pl-s"><span class="pl-pds">"</span><span class="pl-pds">"</span></span> ]
+	<span class="pl-k">then</span>
+		<span class="pl-c1">echo</span> <span class="pl-s"><span class="pl-pds">"</span>Missing rule: 'all'<span class="pl-pds">"</span></span>
+		<span class="pl-k">return</span>
+	<span class="pl-k">fi</span>
+
+	<span class="pl-c"><span class="pl-c">#</span> Check if a rule named 'clean:' does exist</span>
+	TEST=<span class="pl-s"><span class="pl-pds">$(</span>echo <span class="pl-s"><span class="pl-pds">"</span><span class="pl-smi">$MK_CAT</span><span class="pl-pds">"</span></span> <span class="pl-k">|</span> awk <span class="pl-s"><span class="pl-pds">'</span>$0 ~ /^clean[\t ]*:/ {print}<span class="pl-pds">'</span></span><span class="pl-pds">)</span></span>
+	<span class="pl-k">if</span> [ <span class="pl-s"><span class="pl-pds">"</span><span class="pl-smi">$TEST</span><span class="pl-pds">"</span></span> <span class="pl-k">==</span> <span class="pl-s"><span class="pl-pds">"</span><span class="pl-pds">"</span></span> ]
+        <span class="pl-k">then</span>
+		<span class="pl-c1">echo</span> <span class="pl-s"><span class="pl-pds">"</span>Missing rule: 'clean'<span class="pl-pds">"</span></span>
+		<span class="pl-k">return</span>
+	<span class="pl-k">fi</span>
+
+	<span class="pl-c"><span class="pl-c">#</span> Check if a rule named 'fclean:' does exist</span>
+	TEST=<span class="pl-s"><span class="pl-pds">$(</span>echo <span class="pl-s"><span class="pl-pds">"</span><span class="pl-smi">$MK_CAT</span><span class="pl-pds">"</span></span> <span class="pl-k">|</span> awk <span class="pl-s"><span class="pl-pds">'</span>$0 ~ /^fclean[\t ]*:/ {print}<span class="pl-pds">'</span></span><span class="pl-pds">)</span></span>
+	<span class="pl-k">if</span> [ <span class="pl-s"><span class="pl-pds">"</span><span class="pl-smi">$TEST</span><span class="pl-pds">"</span></span> <span class="pl-k">==</span> <span class="pl-s"><span class="pl-pds">"</span><span class="pl-pds">"</span></span> ]
+	<span class="pl-k">then</span>
+		<span class="pl-c1">echo</span> <span class="pl-s"><span class="pl-pds">"</span>Missing rule: 'fclean'<span class="pl-pds">"</span></span>
+		<span class="pl-k">return</span>
+	<span class="pl-k">fi</span>
+
+	<span class="pl-c"><span class="pl-c">#</span> Check if a rule named 're:' does exist	</span>
+	TEST=<span class="pl-s"><span class="pl-pds">$(</span>echo <span class="pl-s"><span class="pl-pds">"</span><span class="pl-smi">$MK_CAT</span><span class="pl-pds">"</span></span> <span class="pl-k">|</span> awk <span class="pl-s"><span class="pl-pds">'</span>$0 ~ /^re[\t ]*:/ {print}<span class="pl-pds">'</span></span><span class="pl-pds">)</span></span>
+	<span class="pl-k">if</span> [ <span class="pl-s"><span class="pl-pds">"</span><span class="pl-smi">$TEST</span><span class="pl-pds">"</span></span> <span class="pl-k">==</span> <span class="pl-s"><span class="pl-pds">"</span><span class="pl-pds">"</span></span> ]
+	<span class="pl-k">then</span>
+		<span class="pl-c1">echo</span> <span class="pl-s"><span class="pl-pds">"</span>Missing rule: 're'<span class="pl-pds">"</span></span>
+		<span class="pl-k">return</span>
+	<span class="pl-k">fi</span>
+
+	<span class="pl-c"><span class="pl-c">#</span> Check if a rule named '$(NAME):' does exist	</span>
+	TEST=<span class="pl-s"><span class="pl-pds">$(</span>echo <span class="pl-s"><span class="pl-pds">"</span><span class="pl-smi">$MK_CAT</span><span class="pl-pds">"</span></span> <span class="pl-k">|</span> awk <span class="pl-s"><span class="pl-pds">'</span>$0 ~ /^\$\(NAME\)[\t ]*:/ {print}<span class="pl-pds">'</span></span><span class="pl-pds">)</span></span>
+	<span class="pl-k">if</span> [ <span class="pl-s"><span class="pl-pds">"</span><span class="pl-smi">$TEST</span><span class="pl-pds">"</span></span> <span class="pl-k">==</span> <span class="pl-s"><span class="pl-pds">"</span><span class="pl-pds">"</span></span> ]
+	<span class="pl-k">then</span>
+		<span class="pl-c1">echo</span> <span class="pl-s"><span class="pl-pds">"</span>Missing rule: '<span class="pl-cce">\$</span>(NAME)'<span class="pl-pds">"</span></span>
+		<span class="pl-k">return</span>
+	<span class="pl-k">fi</span>
+
+	<span class="pl-c"><span class="pl-c">#</span> Clean the working directory by running 'make fclean'</span>
+	make -C <span class="pl-s"><span class="pl-pds">"</span><span class="pl-smi">$MK_PATH</span><span class="pl-pds">"</span></span> fclean <span class="pl-k">1&gt;</span>/dev/null <span class="pl-k">2&gt;&amp;1</span>
+
+	<span class="pl-c"><span class="pl-c">#</span> Check if the rule 'all' is compiling the proper binary</span>
+	make -C <span class="pl-s"><span class="pl-pds">"</span><span class="pl-smi">$MK_PATH</span><span class="pl-pds">"</span></span> all <span class="pl-k">1&gt;</span>/dev/null <span class="pl-k">2&gt;&amp;1</span>
+	<span class="pl-k">if</span> [ <span class="pl-k">!</span> <span class="pl-k">-f</span> <span class="pl-s"><span class="pl-pds">"</span><span class="pl-smi">$MK_PATH</span>/<span class="pl-smi">$MK_BINARY</span><span class="pl-pds">"</span></span> ]
+	<span class="pl-k">then</span>
+		<span class="pl-c1">echo</span> <span class="pl-s"><span class="pl-pds">"</span>Failing rule: 'all' does not compile the binary<span class="pl-pds">"</span></span>
+		<span class="pl-k">return</span>
+	<span class="pl-k">fi</span>
+
+	<span class="pl-c"><span class="pl-c">#</span> Check if the rule 'clean' is removing the objects</span>
+	make -C <span class="pl-s"><span class="pl-pds">"</span><span class="pl-smi">$MK_PATH</span><span class="pl-pds">"</span></span> clean <span class="pl-k">1&gt;</span>/dev/null <span class="pl-k">2&gt;&amp;1</span>
+	<span class="pl-k">if</span> [ <span class="pl-k">!</span> <span class="pl-k">-z</span> <span class="pl-s"><span class="pl-pds">"</span><span class="pl-s"><span class="pl-pds">$(</span>ls -1 <span class="pl-s"><span class="pl-pds">"</span><span class="pl-smi">$MK_PATH</span><span class="pl-pds">"</span></span> <span class="pl-k">|</span> awk <span class="pl-s"><span class="pl-pds">'</span>$0 ~ /\.o$/ {print}<span class="pl-pds">'</span></span><span class="pl-pds">)</span></span><span class="pl-pds">"</span></span> ]
+	<span class="pl-k">then</span>
+		<span class="pl-c1">echo</span> <span class="pl-s"><span class="pl-pds">"</span>Failing rule: 'clean' does not remove the objects<span class="pl-pds">"</span></span>
+		<span class="pl-k">return</span>
+	<span class="pl-k">fi</span>
+
+	<span class="pl-c"><span class="pl-c">#</span> Check if the rule 'fclean' is removing the binary</span>
+	make -C <span class="pl-s"><span class="pl-pds">"</span><span class="pl-smi">$MK_PATH</span><span class="pl-pds">"</span></span> fclean <span class="pl-k">1&gt;</span>/dev/null <span class="pl-k">2&gt;&amp;1</span>
+	<span class="pl-k">if</span> [ <span class="pl-k">-f</span> <span class="pl-s"><span class="pl-pds">"</span><span class="pl-smi">$MK_PATH</span>/<span class="pl-smi">$MK_BINARY</span><span class="pl-pds">"</span></span> ]
+	<span class="pl-k">then</span>
+		<span class="pl-c1">echo</span> <span class="pl-s"><span class="pl-pds">"</span>Failing rule: 'fclean' does not remove the binary<span class="pl-pds">"</span></span>
+		<span class="pl-k">return</span>
+	<span class="pl-k">fi</span>
+
+	<span class="pl-c"><span class="pl-c">#</span> Check if the rule 're' is re-compiling the binary</span>
+	<span class="pl-c"><span class="pl-c">#</span> 1. Get inode value of the binary after running 'make all'</span>
+	make -C <span class="pl-s"><span class="pl-pds">"</span><span class="pl-smi">$MK_PATH</span><span class="pl-pds">"</span></span> all <span class="pl-k">1&gt;</span>/dev/null <span class="pl-k">2&gt;&amp;1</span>
+	<span class="pl-k">local</span> TEST1=<span class="pl-s"><span class="pl-pds">$(</span>ls -i <span class="pl-s"><span class="pl-pds">"</span><span class="pl-smi">$MK_PATH</span>/<span class="pl-smi">$MK_BINARY</span><span class="pl-pds">"</span></span><span class="pl-pds">)</span></span>
+	<span class="pl-c"><span class="pl-c">#</span> 2. Get inode value of the binary after running 'make re'</span>
+	make -C <span class="pl-s"><span class="pl-pds">"</span><span class="pl-smi">$MK_PATH</span><span class="pl-pds">"</span></span> re <span class="pl-k">1&gt;</span>/dev/null <span class="pl-k">2&gt;&amp;1</span>
+	<span class="pl-k">local</span> TEST2=<span class="pl-s"><span class="pl-pds">$(</span>ls -i <span class="pl-s"><span class="pl-pds">"</span><span class="pl-smi">$MK_PATH</span>/<span class="pl-smi">$MK_BINARY</span><span class="pl-pds">"</span></span> <span class="pl-k">2&gt;</span>/dev/null<span class="pl-pds">)</span></span>
+	<span class="pl-c"><span class="pl-c">#</span> 3. When the two inode values are identical, the rule 're' has failed</span>
+	<span class="pl-k">if</span> [ <span class="pl-s"><span class="pl-pds">"</span><span class="pl-smi">$TEST1</span><span class="pl-pds">"</span></span> <span class="pl-k">==</span> <span class="pl-s"><span class="pl-pds">"</span><span class="pl-smi">$TEST2</span><span class="pl-pds">"</span></span> <span class="pl-k">-o</span> <span class="pl-s"><span class="pl-pds">"</span><span class="pl-smi">$TEST2</span><span class="pl-pds">"</span></span> <span class="pl-k">==</span> <span class="pl-s"><span class="pl-pds">"</span><span class="pl-pds">"</span></span> ]
+	<span class="pl-k">then</span>
+		<span class="pl-c1">echo</span> <span class="pl-s"><span class="pl-pds">"</span>Failing rule: 're' is not re-compiling the binary<span class="pl-pds">"</span></span>
+		<span class="pl-k">return</span>
+	<span class="pl-k">fi</span>
+
+	<span class="pl-c"><span class="pl-c">#</span> The test did not failed, everything is OK</span>
+	<span class="pl-c1">echo</span> <span class="pl-s"><span class="pl-pds">"</span>Makefile seems to work perfectly<span class="pl-pds">"</span></span>
+}
+
+<span class="pl-c"><span class="pl-c">#</span> Call the function with two arguments:</span>
+<span class="pl-c"><span class="pl-c">#</span> 1st: The path where the Makefile is working</span>
+<span class="pl-c"><span class="pl-c">#</span> 2nd: The name of the binary to be compiled</span>
+makefile_checker <span class="pl-s"><span class="pl-pds">"</span>.<span class="pl-pds">"</span></span> <span class="pl-s"><span class="pl-pds">"</span>test.a<span class="pl-pds">"</span></span></pre></div>
+<hr/>
+<h3>
+<a aria-hidden="true" class="anchor" href="#tips" id="user-content-tips"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Tips</h3>
+<hr/>
+<h5>
+<a aria-hidden="true" class="anchor" href="#check-if-a-file-or-a-directory-exists" id="user-content-check-if-a-file-or-a-directory-exists"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><a name="user-content-tip1"></a>Check if a file or a directory exists</h5>
+<div class="highlight highlight-source-shell"><pre><span class="pl-k">declare</span> FILENAME=./Makefile    <span class="pl-c"><span class="pl-c">#</span> Declare a variable containing the filename</span>
+<span class="pl-k">if</span> [ <span class="pl-k">-f</span> <span class="pl-s"><span class="pl-pds">"</span><span class="pl-smi">$FILENAME</span><span class="pl-pds">"</span></span> ]          <span class="pl-c"><span class="pl-c">#</span> Use the file test '-f'</span>
+<span class="pl-k">then</span>
+    <span class="pl-c1">echo</span> <span class="pl-s"><span class="pl-pds">"</span><span class="pl-smi">$FILENAME</span> exists<span class="pl-pds">"</span></span>    <span class="pl-c"><span class="pl-c">#</span> On succes, the file exists</span>
+<span class="pl-k">fi</span>
+
+<span class="pl-k">declare</span> DIRECTORY=./includes   <span class="pl-c"><span class="pl-c">#</span> Declare a variable containing the dirname</span>
+<span class="pl-k">if</span> [ <span class="pl-k">-d</span> <span class="pl-s"><span class="pl-pds">"</span><span class="pl-smi">$DIRECTORY</span><span class="pl-pds">"</span></span> ]         <span class="pl-c"><span class="pl-c">#</span> Use the directory test '-d'</span>
+<span class="pl-k">then</span>
+    <span class="pl-c1">echo</span> <span class="pl-s"><span class="pl-pds">"</span><span class="pl-smi">$DIRECTORY</span> exists<span class="pl-pds">"</span></span>   <span class="pl-c"><span class="pl-c">#</span> On succes, the directory exists</span>
+<span class="pl-k">fi</span></pre></div>
+<p>More primaries test here: <a href="http://tldp.org/LDP/Bash-Beginners-Guide/html/sect_07_01.html" rel="nofollow">Bash Beginners Guide</a></p>
+<hr/>
+<h5>
+<a aria-hidden="true" class="anchor" href="#read-a-whole-file-into-a-variable" id="user-content-read-a-whole-file-into-a-variable"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><a name="user-content-tip2"></a>Read a whole file into a variable</h5>
+<div class="highlight highlight-source-shell"><pre><span class="pl-k">declare</span> MY_VAR=<span class="pl-s"><span class="pl-pds">`</span>cat <span class="pl-s"><span class="pl-pds">"</span>./path/to/the/file<span class="pl-pds">"</span></span><span class="pl-pds">`</span></span>   <span class="pl-c"><span class="pl-c">#</span> Using `...`</span>
+<span class="pl-k">declare</span> MY_VAR=<span class="pl-s"><span class="pl-pds">$(</span>cat <span class="pl-s"><span class="pl-pds">"</span>./path/to/the/file<span class="pl-pds">"</span></span><span class="pl-pds">)</span></span>  <span class="pl-c"><span class="pl-c">#</span> Using $(...)</span></pre></div>
+<hr/>
+<h5>
+<a aria-hidden="true" class="anchor" href="#find-a-string-in-a-file-using-awk" id="user-content-find-a-string-in-a-file-using-awk"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><a name="user-content-tip3"></a>Find a string in a file using awk</h5>
+<p>Read <a href="https://github.com/jgigault/42FileChecker/wiki/Bash-tools:-Awk"><strong>Bash tools: Awk</strong></a> to learn more about Awk.</p>
+<div class="highlight highlight-source-shell"><pre><span class="pl-k">declare</span> TEXT=<span class="pl-s"><span class="pl-pds">$(</span>cat <span class="pl-s"><span class="pl-pds">"</span>./path/to/the/file<span class="pl-pds">"</span></span><span class="pl-pds">)</span></span>
+
+<span class="pl-c1">echo</span> <span class="pl-s"><span class="pl-pds">"</span><span class="pl-smi">$TEXT</span><span class="pl-pds">"</span></span> <span class="pl-k">|</span> awk <span class="pl-s"><span class="pl-pds">'</span>$0 ~ /word/ {print "true"; exit} END {print "false"}<span class="pl-pds">'</span></span>
+<span class="pl-c"><span class="pl-c">#</span> Find a line that contains the term 'word', </span>
+<span class="pl-c"><span class="pl-c">#</span> -&gt; print "true" and stop searching (exit) if a line is found</span>
+<span class="pl-c"><span class="pl-c">#</span> If any line is found after reading the whole file: </span>
+<span class="pl-c"><span class="pl-c">#</span> -&gt; do the END block and print "false"</span></pre></div>
+<hr/>
+<h5>
+<a aria-hidden="true" class="anchor" href="#get-inode-of-a-file" id="user-content-get-inode-of-a-file"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><a name="user-content-tip4"></a>Get inode of a file</h5>
+<div class="highlight highlight-source-shell"><pre><span class="pl-k">declare</span> MY_FILE=<span class="pl-s"><span class="pl-pds">"</span>./path/to/the/file<span class="pl-pds">"</span></span>
+
+ls -i <span class="pl-s"><span class="pl-pds">"</span><span class="pl-smi">$MY_FILE</span><span class="pl-pds">"</span></span>                     <span class="pl-c"><span class="pl-c">#</span> Use 'ls' to get inode</span>
+ls -i <span class="pl-s"><span class="pl-pds">"</span><span class="pl-smi">$MY_FILE</span><span class="pl-pds">"</span></span> <span class="pl-k">|</span> awk <span class="pl-s"><span class="pl-pds">'</span>{print $1}<span class="pl-pds">'</span></span>  <span class="pl-c"><span class="pl-c">#</span> Use awk to keep the 1st column only</span>
+
+<span class="pl-c"><span class="pl-c">#</span> Save the result in a variable</span>
+<span class="pl-k">declare</span> MY_VAR=<span class="pl-s"><span class="pl-pds">$(</span>ls -i <span class="pl-s"><span class="pl-pds">"</span><span class="pl-smi">$MY_FILE</span><span class="pl-pds">"</span></span> <span class="pl-k">|</span> awk <span class="pl-s"><span class="pl-pds">'</span>{print $1}<span class="pl-pds">'</span></span><span class="pl-pds">)</span></span></pre></div>
+
+        </div>
+
+        <div class="wiki-footer gollum-markdown-content boxed-group" id="wiki-footer">
+          <div class="boxed-group-inner wiki-auxiliary-content markdown-body">
+            <p><a href="https://github.com/jgigault/42FileChecker/wiki/"><strong>Back to summary</strong></a> - <a href="#"><strong>Back to top</strong></a></p>
+
+          </div>
+        </div>
+    </div>]

@@ -1,0 +1,149 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <div class="highlight highlight-source-r"><pre><span class="pl-c"><span class="pl-c">#</span> install.packages('DiagrammeR')</span>
+<span class="pl-c"><span class="pl-c">#</span> requires V8 package (in turn requires `apt-get install libv8-dev`)</span>
+
+<span class="pl-c"><span class="pl-c">#</span> source("http://bioconductor.org/bioclite.r")</span>
+<span class="pl-c"><span class="pl-c">#</span> biocLite("KEGGgraph")</span>
+<span class="pl-c"><span class="pl-c">#</span> biocLite('Rgraphviz')</span>
+
+<span class="pl-c"><span class="pl-c">#</span> library('DiagrammeR')</span>
+<span class="pl-c"><span class="pl-c">#</span> library('KEGGgraph')</span>
+<span class="pl-c"><span class="pl-c">#</span> library('Rgraphviz')</span></pre></div>
+<p>Download your KGML (<code>.xml</code>) for the organism/pathway from KEGG, e.g. adenine pathway in <em>S. cerevisiae</em>:</p>
+<p><img alt="" src="https://github.com/lmmx/devnotes/raw/master/images/KEGG%20PATHWAY:%20Purine%20metabolism%20-%20Saccharomyces%20cerevisiae%20(budding%20yeast)%20-%20Google%20Chrome_011.png?raw=true"/></p>
+<p>KEGGgraph parses KEGG XML ("KGML") into graph models in R</p>
+<div class="highlight highlight-source-r"><pre><span class="pl-c"><span class="pl-c">#</span> purine.kgml &lt;- system.file("sce00230.xml", package="KEGGgraph")</span>
+<span class="pl-c"><span class="pl-c">#</span> ^ did not work</span>
+
+<span class="pl-smi">purine.kgml</span> <span class="pl-k">&lt;-</span> <span class="pl-s"><span class="pl-pds">"</span>sce00230.xml<span class="pl-pds">"</span></span>
+<span class="pl-smi">purine.graph</span> <span class="pl-k">&lt;-</span> parseKGML2DataFrame(<span class="pl-smi">purine.kgml</span>, <span class="pl-v">genesOnly</span> <span class="pl-k">=</span> <span class="pl-c1">FALSE</span>)
+<span class="pl-c"><span class="pl-c">#</span> purine.graph is Formal class graphNEL</span></pre></div>
+<p><code>DiagrammeR</code> works with <a href="https://en.wikipedia.org/wiki/DOT_(graph_description_language)" rel="nofollow">DOT language</a> graph specifications. <code>graphViz</code> can create these from this data frame (actually I think it's a <code>Diagrammer</code> function) :</p>
+<div class="highlight highlight-source-r"><pre><span class="pl-smi">nodes_edges</span> <span class="pl-k">&lt;-</span>
+    graphviz_single_df(
+        <span class="pl-v">df</span> <span class="pl-k">=</span> <span class="pl-smi">purine.graph</span>,
+        <span class="pl-v">edge_between</span> <span class="pl-k">=</span> c(<span class="pl-s"><span class="pl-pds">"</span>from -&gt; to<span class="pl-pds">"</span></span>),
+        <span class="pl-v">node_attr</span> <span class="pl-k">=</span> c(<span class="pl-s"><span class="pl-pds">"</span>from:</span>
+<span class="pl-s">                   shape = circle,</span>
+<span class="pl-s">                   style = filled,</span>
+<span class="pl-s">                   height = 2,</span>
+<span class="pl-s">                   layer = 'all',</span>
+<span class="pl-s">                   fontname = Helvetica,</span>
+<span class="pl-s">                   fontsize = 42,</span>
+<span class="pl-s">                   fillcolor = lightblue<span class="pl-pds">"</span></span>,
+                      <span class="pl-s"><span class="pl-pds">"</span>to: </span>
+<span class="pl-s">                   shape = circle,</span>
+<span class="pl-s">                   style = filled,</span>
+<span class="pl-s">                   height = 1,</span>
+<span class="pl-s">                   layer = 'all',</span>
+<span class="pl-s">                   fontname = Helvetica,</span>
+<span class="pl-s">                   fontsize = 0,</span>
+<span class="pl-s">                   fillcolor = seagreen3<span class="pl-pds">"</span></span>),
+        <span class="pl-v">edge_attr</span> <span class="pl-k">=</span> <span class="pl-s"><span class="pl-pds">"</span>1:</span>
+<span class="pl-s">                   color = #ff000040,</span>
+<span class="pl-s">                   arrowhead = dot</span>
+<span class="pl-s">                  <span class="pl-pds">"</span></span>
+    )
+
+<span class="pl-c"><span class="pl-c">#</span> this is for the radial plot (stolen from flights example)</span>
+
+grViz(<span class="pl-s"><span class="pl-pds">"</span></span>
+<span class="pl-s">digraph adenine {</span>
+<span class="pl-s"></span>
+<span class="pl-s">  # Graph statements</span>
+<span class="pl-s">  graph [layout = twopi,</span>
+<span class="pl-s">         overlap = false,</span>
+<span class="pl-s">         fixedsize = true,</span>
+<span class="pl-s">         ranksep = 11,</span>
+<span class="pl-s">         outputorder = edgesfirst]</span>
+<span class="pl-s"></span>
+<span class="pl-s">  # Nodes and edges</span>
+<span class="pl-s">  @@1</span>
+<span class="pl-s"></span>
+<span class="pl-s">}</span>
+<span class="pl-s">[1]: nodes_edges</span>
+<span class="pl-s"><span class="pl-pds">"</span></span>)</pre></div>
+<p>Not working: KEGG IDs being displayed, potentially multiple names per KEGG ID so just explicitly write out <img align="absmiddle" alt=":disappointed:" class="emoji" data-canonical-src="https://assets-cdn.github.com/images/icons/emoji/unicode/1f61e.png" height="20" src="https://camo.githubusercontent.com/84a9aa7233e1997d96d7fc096ca83dd70b421997/68747470733a2f2f6173736574732d63646e2e6769746875622e636f6d2f696d616765732f69636f6e732f656d6f6a692f756e69636f64652f31663631652e706e67" title=":disappointed:" width="20"/></p>
+<p>...the following will crash all your open Chrome windows...</p>
+<div class="highlight highlight-source-r"><pre><span class="pl-smi">purine_graph</span> <span class="pl-k">&lt;-</span> <span class="pl-s"><span class="pl-pds">"</span></span>
+<span class="pl-s">digraph purine_graph {</span>
+<span class="pl-s">    # enzyme 'node' statements</span>
+<span class="pl-s">    node [shape = box,</span>
+<span class="pl-s">          fontname = Helvetica]</span>
+<span class="pl-s">    ADE4; ADE5; ADE8; ADE6; ADE7; ADE2; ADE1; etc</span>
+<span class="pl-s">    # gene 'node' statements</span>
+<span class="pl-s">    node [shape = circle,</span>
+<span class="pl-s">          fixedsize = true,</span>
+<span class="pl-s">          width = 0.9] // sets as circles</span>
+<span class="pl-s">    P-ribosyl-PP; P-ribosylamine; P-ribosylglycinamide; P-ribosylformyl glycinamide; P-ribosylformyl glycinamidine; P-ribosylamino imidazole (AIR); P-ribosylamino imidazolecarboxylate (CAIR); P-ribosylsuccino carboxamide aminoimidazole (SAICAIR); adenine</span>
+<span class="pl-s"></span>
+<span class="pl-s">    # several 'edge' statements</span>
+<span class="pl-s">    P-ribosyl-PP-&gt;ADE4</span>
+<span class="pl-s">    ADE4-&gt;P-ribosylamine</span>
+<span class="pl-s">    P-ribosylamine-&gt;ADE5</span>
+<span class="pl-s">    ADE5-&gt;P-ribosylglycinamide</span>
+<span class="pl-s">    P-ribosylglycinamide-&gt;ADE8</span>
+<span class="pl-s">    ADE8-&gt;P-ribosylformyl glycinamide</span>
+<span class="pl-s">    P-ribosylformyl glycinamide-&gt;ADE6</span>
+<span class="pl-s">    ADE6-&gt;P-ribosylformyl glycinamidine</span>
+<span class="pl-s">    P-ribosylformyl glycinamide-&gt;ADE7</span>
+<span class="pl-s">    ADE7-&gt;P-ribosylamino imidazole (AIR)</span>
+<span class="pl-s">    P-ribosylamino imidazole (AIR)-&gt;ADE2</span>
+<span class="pl-s">    ADE2-&gt;P-ribosylamino imidazolecarboxylate (CAIR)</span>
+<span class="pl-s">    P-ribosylamino imidazolecarboxylate (CAIR)-&gt;ADE1</span>
+<span class="pl-s">    ADE1-&gt;P-ribosylsuccino carboxamide aminoimidazole (SAICAIR)</span>
+<span class="pl-s">    P-ribosylsuccino carboxamide aminoimidazole (SAICAIR)-&gt;etc</span>
+<span class="pl-s">    etc-&gt;adenine</span>
+<span class="pl-s">    </span>
+<span class="pl-s">    # a 'graph' statement</span>
+<span class="pl-s">    graph [overlap = true, fontsize = 10]</span>
+<span class="pl-s">}</span>
+<span class="pl-s"><span class="pl-pds">"</span></span>
+grViz(<span class="pl-smi">purine_graph</span>)</pre></div>
+<p>Don't use node labels with non-alphanumeric character (yes this hugely limits the usefulness)</p>
+<div class="highlight highlight-source-r"><pre><span class="pl-smi">purine_graph</span> <span class="pl-k">&lt;-</span> <span class="pl-s"><span class="pl-pds">"</span></span>
+<span class="pl-s">digraph purine_graph {</span>
+<span class="pl-s">    # enzyme 'node' statements</span>
+<span class="pl-s">node [shape = box,</span>
+<span class="pl-s">fontname = Helvetica]</span>
+<span class="pl-s">ADE4; ADE5; ADE8; ADE6; ADE7; ADE2; ADE1; etc</span>
+<span class="pl-s"># gene 'node' statements</span>
+<span class="pl-s">node [shape = circle,</span>
+<span class="pl-s">fixedsize = true,</span>
+<span class="pl-s">width = 0.9] // sets as circles</span>
+<span class="pl-s">P_ribosyl_PP; P_ribosylamine; P_ribosylglycinamide; P_ribosylformyl_glycinamide; P_ribosylformyl_glycinamidine; AIR; CAIR; SAICAIR; adenine</span>
+<span class="pl-s"></span>
+<span class="pl-s"># several 'edge' statements</span>
+<span class="pl-s">P_ribosyl-PP-&gt;ADE4</span>
+<span class="pl-s">ADE4-&gt;P_ribosylamine</span>
+<span class="pl-s">P_ribosylamine-&gt;ADE5</span>
+<span class="pl-s">ADE5-&gt;P_ribosylglycinamide</span>
+<span class="pl-s">P_ribosylglycinamide-&gt;ADE8</span>
+<span class="pl-s">ADE8-&gt;P_ribosylformyl_glycinamide</span>
+<span class="pl-s">P_ribosylformyl_glycinamide-&gt;ADE6</span>
+<span class="pl-s">ADE6-&gt;P_ribosylformyl_glycinamidine</span>
+<span class="pl-s">P_ribosylformyl_glycinamide-&gt;ADE7</span>
+<span class="pl-s">ADE7-&gt;AIR</span>
+<span class="pl-s">AIR-&gt;ADE2</span>
+<span class="pl-s">ADE2-&gt;CAIR</span>
+<span class="pl-s">CAIR-&gt;ADE1</span>
+<span class="pl-s">ADE1-&gt;SAICAIR</span>
+<span class="pl-s">SAICAIR-&gt;etc</span>
+<span class="pl-s">etc-&gt;adenine</span>
+<span class="pl-s"></span>
+<span class="pl-s"># a 'graph' statement</span>
+<span class="pl-s">graph [overlap = true, fontsize = 10]</span>
+<span class="pl-s">}</span>
+<span class="pl-s"><span class="pl-pds">"</span></span>
+grViz(<span class="pl-smi">purine_graph</span>)</pre></div>
+
+        </div>
+
+        <div class="wiki-footer gollum-markdown-content boxed-group" id="wiki-footer">
+          <div class="boxed-group-inner wiki-auxiliary-content markdown-body">
+            <p><a href="https://github.com/lmmx/devnotes/wiki">Main page</a></p>
+
+          </div>
+        </div>
+    </div>]

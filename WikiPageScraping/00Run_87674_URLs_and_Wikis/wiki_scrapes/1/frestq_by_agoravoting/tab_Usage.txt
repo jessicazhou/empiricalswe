@@ -1,0 +1,87 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>For now, we have a proposed example of how one could, in the future, use frestq:</p>
+<pre><code>@frestq.task(action="election-orchestra-post_tally", queue=director_queue)
+@frestq.permissions(check_election_certificate)
+def post_tally(request):
+    '''
+    Example of a task performed by the election-orchestra director
+    '''
+
+    election = get_object(Election, session_id=request.data.session_id)
+    tally = Tally(election)
+    tally.votes = download(ciphertexts_url, ciphertexts_hash)
+    tally.save()
+
+    approve_tally = ChordTask()
+    for auth in authorities:
+        task = Task(worker=auth.url,
+            action="election-orchestra.approve_tally",
+            receiver_ssl_cert=auth.ssl_cert,
+            data=dict(
+                tally_id=tally.id,
+                session_id=tally.election.session_id)
+            ),
+            async_data=dict(
+                votes__path=tally.votes_path
+            )
+        approve_tally.append(task)
+    request.current_task.add(approve_tally)
+
+    perform_tally = SynchronousTasks(algorithm="naive")
+    for auth in authorities:
+        tally_task = Task(worker=auth.url,
+            action="election-orchestra.perform_tally",
+            receiver_ssl_cert=auth.ssl_cert,
+            data=dict(tally_id=tally.id))
+        perform_tally.append(task)
+
+    request.current_task.expiration_time = now() + delta(hours=24)
+    request.current_task.add(approve_tally)
+
+
+def check_director_certificate(request):
+    '''
+    Example of permissions decorator
+    '''
+    election = get_object(Election, session_id=request.data.session_id)
+    if not election.director_ssl_cert.check(request.ssl_cert):
+        raise frestq.UnauthorizedError(info="invalid ssl director certificate")
+
+@frestq.task(action="election-orchestra.approve_tally", queue=orchestra_queue)
+@frestq.permissions(check_director_certificate)
+def approve_tally(request):
+    '''
+    Example of a task performed by an election-orchestra authority requested by
+    a director
+    '''
+
+    # NOTE that the usual interface that the authorities operator will use will
+    # NOT be a frestq interface, but a taylor-made interface for elections and
+    # tallies. It'll be specific for this and user-friendly.
+
+    # There will also be an interface for frestq, but that will be completely
+    # differet.
+    tally = Tally(election__session_id=request.data.session_id,
+        id=request.data.tally_id)
+    # stores votes in a persistent file
+    tally.set_votes(request.async_data.votes__path)
+    tally.status = "PENDING"
+    tally.task_id = request.current_task.id
+    tally.save()
+
+    request.current_task.status="waiting"
+    request.current_task.info = "waiting on authority operator to review",
+
+
+// app.py:
+    orchestra_queue = frestq.Queue("orchestra")
+    director_queue = frestq.Queue("director")
+
+    app.register_queue(orchestra_queue)
+    app.register_queue(director_queue)
+</code></pre>
+
+        </div>
+
+    </div>]

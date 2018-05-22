@@ -1,0 +1,137 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>QuantDigger中技术指标的使用方法是在策略函数 <code>on_init</code> 中初始化，然后在其它策略函数中使用它。技术指标有两种运行方式，
+逐步执行和向量执行。逐步执行是针对实盘数据的，只对最新的数据运行，由于目前无法实盘，不展开讨论。向量运行用在回测中，特点是一次计算所有的
+值，然后逐步引用它，优点是效率高。技术指标分为两类： <code>单值指标</code> ，如移动平均线； <code>多值指标</code> ，如布林带。所有的技术指标都继承 <code>TechnicalBase</code> 类。</p>
+<pre><code>注意：无论是逐步还是向量方式运行, 针对的都是指标，策略函数都是逐步运行的，因为很难以向量运行的方式写策略。
+</code></pre>
+<h2>
+<a aria-hidden="true" class="anchor" href="#%E5%8D%95%E6%8C%87%E6%8C%87%E6%A0%87%E5%AE%9A%E4%B9%89" id="user-content-单指指标定义"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>单指指标定义</h2>
+<p>一个移动平均线指标为例子。</p>
+<div class="highlight highlight-source-python"><pre>    <span class="pl-k">class</span> <span class="pl-en">MA</span>(<span class="pl-e">TechnicalBase</span>):
+        <span class="pl-s"><span class="pl-pds">"""</span> 移动平均线指标。 <span class="pl-pds">"""</span></span>
+        <span class="pl-en">@tech_init</span>
+        <span class="pl-k">def</span> <span class="pl-c1">__init__</span>(<span class="pl-smi"><span class="pl-smi">self</span></span>, <span class="pl-smi">data</span>, <span class="pl-smi">n</span>, <span class="pl-smi">name</span><span class="pl-k">=</span><span class="pl-s"><span class="pl-pds">'</span>MA<span class="pl-pds">'</span></span>,
+                     <span class="pl-smi">color</span><span class="pl-k">=</span><span class="pl-s"><span class="pl-pds">'</span>y<span class="pl-pds">'</span></span>, <span class="pl-smi">lw</span><span class="pl-k">=</span><span class="pl-c1">1</span>, <span class="pl-smi">style</span><span class="pl-k">=</span><span class="pl-s"><span class="pl-pds">"</span>line<span class="pl-pds">"</span></span>):
+            <span class="pl-c1">super</span>(<span class="pl-c1">MA</span>, <span class="pl-c1">self</span>).<span class="pl-c1">__init__</span>(data, n, name)
+            <span class="pl-c"><span class="pl-c">#</span> 必须的函数参数</span>
+            <span class="pl-c1">self</span>._args <span class="pl-k">=</span> [data, n]
+
+        <span class="pl-k">def</span> <span class="pl-en">_rolling_algo</span>(<span class="pl-smi"><span class="pl-smi">self</span></span>, <span class="pl-smi">data</span>, <span class="pl-smi">n</span>, <span class="pl-smi">i</span>):
+            <span class="pl-s"><span class="pl-pds">"""</span> 逐步运行函数。<span class="pl-pds">"""</span></span> 
+            <span class="pl-k">return</span> (talib.SMA(data, n)[i], )
+
+        <span class="pl-k">def</span> <span class="pl-en">_vector_algo</span>(<span class="pl-smi"><span class="pl-smi">self</span></span>, <span class="pl-smi">data</span>, <span class="pl-smi">n</span>):
+            <span class="pl-s"><span class="pl-pds">"""</span>向量化运行, 必须对self.values赋值。<span class="pl-pds">"""</span></span> 
+            <span class="pl-c1">self</span>.values <span class="pl-k">=</span> talib.SMA(data, n)
+
+        <span class="pl-k">def</span> <span class="pl-en">plot</span>(<span class="pl-smi"><span class="pl-smi">self</span></span>, <span class="pl-smi">widget</span>):
+            <span class="pl-s"><span class="pl-pds">"""</span> 绘图，参数可由UI调整。 <span class="pl-pds">"""</span></span>
+            <span class="pl-c1">self</span>.widget <span class="pl-k">=</span> widget
+            <span class="pl-c1">self</span>.plot_line(<span class="pl-c1">self</span>.values, <span class="pl-c1">self</span>.color, <span class="pl-c1">self</span>.lw, <span class="pl-c1">self</span>.style)</pre></div>
+<p><code>@tech_init</code> 函数修饰器会把传递给类实例构造函数 <code>__init__</code> 的参数构建为类的成员变量, 并触发向量计算，从而简化代码。所以以下代码会为类构建成员变量： <code>self.data</code>, <code>self.n</code>, <code>self.name</code>, <code>self.color</code>, <code>self.lw</code>, <code>self.style</code> 。
+参数 <code>data</code> 是类型为 <code>np.ndarray</code> 的数据， <code>n</code> 表计算窗口的长度， <code>name</code> 表指标的名称。 其它是指标的绘图参数。
+<code>self._args</code> 是传递给指标的逐步函数和向量函数的参数, 是必须有的。</p>
+<div class="highlight highlight-source-python"><pre>    <span class="pl-en">@tech_init</span>
+    <span class="pl-k">def</span> <span class="pl-c1">__init__</span>(<span class="pl-smi"><span class="pl-smi">self</span></span>, <span class="pl-smi">data</span>, <span class="pl-smi">n</span>, <span class="pl-smi">name</span><span class="pl-k">=</span><span class="pl-s"><span class="pl-pds">'</span>MA<span class="pl-pds">'</span></span>,
+                 <span class="pl-smi">color</span><span class="pl-k">=</span><span class="pl-s"><span class="pl-pds">'</span>y<span class="pl-pds">'</span></span>, <span class="pl-smi">lw</span><span class="pl-k">=</span><span class="pl-c1">1</span>, <span class="pl-smi">style</span><span class="pl-k">=</span><span class="pl-s"><span class="pl-pds">"</span>line<span class="pl-pds">"</span></span>):
+        <span class="pl-c1">super</span>(<span class="pl-c1">MA</span>, <span class="pl-c1">self</span>).<span class="pl-c1">__init__</span>(data, n, name)
+        <span class="pl-c"><span class="pl-c">#</span> 必须的函数参数</span>
+        <span class="pl-c1">self</span>._args <span class="pl-k">=</span> [data, n]</pre></div>
+<p><code>_rolling_algo</code> 是指标的逐步计算函数， <code>_vector_algo</code> 是指标的向量计算函数。它们都会被指标父类 <code>TechnicalBase</code> 调用，参数对用于
+<code>self._args</code> ，其中逐步函数多了一个 <code>i</code>,  表示当前所在步数，即在数组中的索引，虽然是逐步运行，但是参数 <code>data</code> 的大小也是预分配好的, 这样可以提示效率。 <code>self.values</code> 存放向量计算的结果，也是必须有的。</p>
+<div class="highlight highlight-source-python"><pre>    <span class="pl-k">def</span> <span class="pl-en">_rolling_algo</span>(<span class="pl-smi"><span class="pl-smi">self</span></span>, <span class="pl-smi">data</span>, <span class="pl-smi">n</span>, <span class="pl-smi">i</span>):
+        <span class="pl-s"><span class="pl-pds">"""</span> 逐步运行函数。<span class="pl-pds">"""</span></span> 
+        <span class="pl-k">return</span> (talib.SMA(data, n)[i], )
+
+    <span class="pl-k">def</span> <span class="pl-en">_vector_algo</span>(<span class="pl-smi"><span class="pl-smi">self</span></span>, <span class="pl-smi">data</span>, <span class="pl-smi">n</span>):
+        <span class="pl-s"><span class="pl-pds">"""</span>向量化运行, 必须对self.values赋值。<span class="pl-pds">"""</span></span> 
+        <span class="pl-c1">self</span>.values <span class="pl-k">=</span> talib.SMA(data, n)</pre></div>
+<h2>
+<a aria-hidden="true" class="anchor" href="#%E5%A4%9A%E5%80%BC%E6%8C%87%E6%A0%87%E5%AE%9A%E4%B9%89" id="user-content-多值指标定义"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>多值指标定义</h2>
+<p>布林带指标例子。多值指标和单指指标的定义大同小异，主要的不同是多值指标的计算结果有多个返回值。因此，多值指标的逐步计算
+返回一个元组，它的向量计算放回一个字典，对应于不同的返回值。</p>
+<div class="highlight highlight-source-python"><pre>    <span class="pl-k">class</span> <span class="pl-en">BOLL</span>(<span class="pl-e">TechnicalBase</span>):
+        <span class="pl-s"><span class="pl-pds">"""</span> 布林带指标。 <span class="pl-pds">"""</span></span>
+        <span class="pl-en">@tech_init</span>
+        <span class="pl-k">def</span> <span class="pl-c1">__init__</span>(<span class="pl-smi"><span class="pl-smi">self</span></span>, <span class="pl-smi">data</span>, <span class="pl-smi">n</span>, <span class="pl-smi">name</span><span class="pl-k">=</span><span class="pl-s"><span class="pl-pds">'</span>BOLL<span class="pl-pds">'</span></span>, <span class="pl-smi">colors</span><span class="pl-k">=</span>(<span class="pl-s"><span class="pl-pds">'</span>y<span class="pl-pds">'</span></span>, <span class="pl-s"><span class="pl-pds">'</span>b<span class="pl-pds">'</span></span>, <span class="pl-s"><span class="pl-pds">'</span>g<span class="pl-pds">'</span></span>), <span class="pl-smi">lw</span><span class="pl-k">=</span><span class="pl-c1">1</span>, <span class="pl-smi">style</span><span class="pl-k">=</span><span class="pl-s"><span class="pl-pds">"</span>line<span class="pl-pds">"</span></span>):
+            <span class="pl-c1">super</span>(<span class="pl-c1">BOLL</span>, <span class="pl-c1">self</span>).<span class="pl-c1">__init__</span>(name)
+            <span class="pl-c1">self</span>._args <span class="pl-k">=</span> [data, n, <span class="pl-c1">2</span>, <span class="pl-c1">2</span>]
+
+        <span class="pl-k">def</span> <span class="pl-en">_rolling_algo</span>(<span class="pl-smi"><span class="pl-smi">self</span></span>, <span class="pl-smi">data</span>, <span class="pl-smi">n</span>, <span class="pl-smi">a1</span>, <span class="pl-smi">a2</span>, <span class="pl-smi">i</span>):
+            <span class="pl-s"><span class="pl-pds">"""</span> 逐步运行函数。<span class="pl-pds">"""</span></span> 
+            upper, middle, lower <span class="pl-k">=</span>  talib.BBANDS(data, n, a1, a2)
+            <span class="pl-k">return</span> (upper[i], middle[i], lower[i])
+
+        <span class="pl-k">def</span> <span class="pl-en">_vector_algo</span>(<span class="pl-smi"><span class="pl-smi">self</span></span>, <span class="pl-smi">data</span>, <span class="pl-smi">n</span>, <span class="pl-smi">a1</span>, <span class="pl-smi">a2</span>):
+            <span class="pl-s"><span class="pl-pds">"""</span>向量化运行<span class="pl-pds">"""</span></span> 
+            u, m, l <span class="pl-k">=</span> talib.BBANDS(data, n, a1, a2)
+            <span class="pl-c1">self</span>.values <span class="pl-k">=</span> {
+                    <span class="pl-s"><span class="pl-pds">'</span>upper<span class="pl-pds">'</span></span>: u,
+                    <span class="pl-s"><span class="pl-pds">'</span>middler<span class="pl-pds">'</span></span>: m,
+                    <span class="pl-s"><span class="pl-pds">'</span>lower<span class="pl-pds">'</span></span>: l
+                    }
+
+        <span class="pl-k">def</span> <span class="pl-en">plot</span>(<span class="pl-smi"><span class="pl-smi">self</span></span>, <span class="pl-smi">widget</span>):
+            <span class="pl-s"><span class="pl-pds">"""</span> 绘图，参数可由UI调整。 <span class="pl-pds">"""</span></span>
+            <span class="pl-c1">self</span>.widget <span class="pl-k">=</span> widget
+            <span class="pl-c1">self</span>.plot_line(<span class="pl-c1">self</span>.values[<span class="pl-s"><span class="pl-pds">'</span>upper<span class="pl-pds">'</span></span>], <span class="pl-c1">self</span>.colors[<span class="pl-c1">0</span>], <span class="pl-c1">self</span>.lw, <span class="pl-c1">self</span>.style)
+            <span class="pl-c1">self</span>.plot_line(<span class="pl-c1">self</span>.values[<span class="pl-s"><span class="pl-pds">'</span>middler<span class="pl-pds">'</span></span>], <span class="pl-c1">self</span>.colors[<span class="pl-c1">1</span>], <span class="pl-c1">self</span>.lw, <span class="pl-c1">self</span>.style)
+            <span class="pl-c1">self</span>.plot_line(<span class="pl-c1">self</span>.values[<span class="pl-s"><span class="pl-pds">'</span>lower<span class="pl-pds">'</span></span>], <span class="pl-c1">self</span>.colors[<span class="pl-c1">2</span>], <span class="pl-c1">self</span>.lw, <span class="pl-c1">self</span>.style)
+</pre></div>
+<h2>
+<a aria-hidden="true" class="anchor" href="#%E6%8C%87%E6%A0%87%E7%9A%84%E5%88%9B%E5%BB%BA%E5%92%8C%E4%BD%BF%E7%94%A8" id="user-content-指标的创建和使用"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>指标的创建和使用</h2>
+<p>单值指标变量和时序变量类似，都可通过索引取到前面的值。如 <code>ctx.ma10[1]</code> 表示前面一根bar上 <code>ctx.ma10</code> 的值。
+多值指标返回的是字典， <code>key</code> 是指标名称， <code>value</code> 是时序变量。因此字典的值也可回溯引用。</p>
+<div class="highlight highlight-source-python"><pre>    <span class="pl-k">def</span> <span class="pl-en">on_init</span>(<span class="pl-smi"><span class="pl-smi">self</span></span>, <span class="pl-smi">ctx</span>):
+        <span class="pl-s"><span class="pl-pds">"""</span>初始化数据<span class="pl-pds">"""</span></span> 
+        ctx.ma10 <span class="pl-k">=</span> MA(ctx.close, <span class="pl-c1">10</span>)
+        ctx.boll <span class="pl-k">=</span> BOLL(ctx.close, <span class="pl-c1">10</span>)
+
+    <span class="pl-k">def</span> <span class="pl-en">on_symbol</span>(<span class="pl-smi"><span class="pl-smi">self</span></span>, <span class="pl-smi">ctx</span>):
+        <span class="pl-c1">print</span> ctx.ma10
+        <span class="pl-c1">print</span> ctx.ma10[<span class="pl-c1">1</span>]
+        <span class="pl-c1">print</span> boll[<span class="pl-s"><span class="pl-pds">'</span>upper<span class="pl-pds">'</span></span>], boll[<span class="pl-s"><span class="pl-pds">'</span>middler<span class="pl-pds">'</span></span>], boll[<span class="pl-s"><span class="pl-pds">'</span>lower<span class="pl-pds">'</span></span>]
+        <span class="pl-c1">print</span> boll[<span class="pl-s"><span class="pl-pds">'</span>upper<span class="pl-pds">'</span></span>][<span class="pl-c1">1</span>], boll[<span class="pl-s"><span class="pl-pds">'</span>middler<span class="pl-pds">'</span></span>][<span class="pl-c1">1</span>], boll[<span class="pl-s"><span class="pl-pds">'</span>lower<span class="pl-pds">'</span></span>][<span class="pl-c1">1</span>]</pre></div>
+<h2>
+<a aria-hidden="true" class="anchor" href="#%E6%8A%80%E6%9C%AF%E6%8C%87%E6%A0%87%E7%BB%98%E5%88%B6" id="user-content-技术指标绘制"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>技术指标绘制</h2>
+<p>技术指标的绘制是基本需求。指标父类 <code>TechnicalBase</code> 继承了绘图类 <code>PlotInterface</code>, <code>PlotInterface</code> 定义了很多绘图函数，比如 <code>plot_line</code>, 并负责和QuantDigger的UI框架互动。其中 <code>plot</code> 函数是绘图的入口, <code>self.widget = widget</code> 是必须的。如果用户不关心移动平均线的绘制，那么无需定义 <code>plot</code> 函数。
+关于界面的详情见 [UI 。</p>
+<div class="highlight highlight-source-python"><pre>    <span class="pl-k">def</span> <span class="pl-en">plot</span>(<span class="pl-smi"><span class="pl-smi">self</span></span>, <span class="pl-smi">widget</span>):
+        <span class="pl-s"><span class="pl-pds">"""</span> 绘图，参数可由UI调整。 <span class="pl-pds">"""</span></span>
+        <span class="pl-c1">self</span>.widget <span class="pl-k">=</span> widget
+        <span class="pl-c1">self</span>.plot_line(<span class="pl-c1">self</span>.values, <span class="pl-c1">self</span>.color, <span class="pl-c1">self</span>.lw, <span class="pl-c1">self</span>.style)</pre></div>
+<p>指标类的使用和绘制并不是必须与QuantDigger的其它模块强耦合，用户可以根据自己的风格使用和绘制指标，就像如下代码，脱离QuantDigger的UI,
+绘制两条移动平均线。详细代码见demo/plot_ma.py</p>
+<div class="highlight highlight-source-python"><pre>    <span class="pl-c"><span class="pl-c">#</span> 创建画布</span>
+    fig, ax <span class="pl-k">=</span> plt.subplots()
+    <span class="pl-c"><span class="pl-c">#</span> 加载数据</span>
+    price_data <span class="pl-k">=</span> pd.read_csv(<span class="pl-s"><span class="pl-pds">"</span>./work/IF000.SHFE-10.Minute.csv<span class="pl-pds">"</span></span>, 
+                            <span class="pl-v">index_col</span><span class="pl-k">=</span><span class="pl-c1">0</span>, <span class="pl-v">parse_dates</span><span class="pl-k">=</span><span class="pl-c1">True</span>)
+    <span class="pl-c"><span class="pl-c">#</span> 创建平均线</span>
+    ma10 <span class="pl-k">=</span> MA(price_data.close, <span class="pl-c1">10</span>, <span class="pl-s"><span class="pl-pds">'</span>MA10<span class="pl-pds">'</span></span>, <span class="pl-s"><span class="pl-pds">'</span>y<span class="pl-pds">'</span></span>, <span class="pl-c1">2</span>)
+    ma20 <span class="pl-k">=</span> MA(price_data.close, <span class="pl-c1">60</span>, <span class="pl-s"><span class="pl-pds">'</span>MA10<span class="pl-pds">'</span></span>, <span class="pl-s"><span class="pl-pds">'</span>b<span class="pl-pds">'</span></span>, <span class="pl-c1">2</span>)
+    <span class="pl-c"><span class="pl-c">#</span> 绘制指标</span>
+    ma10.plot(ax)
+    ma20.plot(ax)
+    plt.show()</pre></div>
+<h2>
+<a aria-hidden="true" class="anchor" href="#%E7%BB%98%E5%9B%BE%E6%8C%87%E6%A0%87" id="user-content-绘图指标"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>绘图指标</h2>
+<p>绘图指标和技术指标类似，只不过它不存在逐步和向量计算之分，绘制所需的数据直接在构造函数赋值，并且只能做绘图，无法被
+策略函数使用。比如下面的资金曲线绘制, 它能很好的和系统的UI结合, 见demo/plot_strategy.py</p>
+<div class="highlight highlight-source-python"><pre>    <span class="pl-k">class</span> <span class="pl-en">EquityCurve</span>(<span class="pl-e">PlotInterface</span>):
+        <span class="pl-s"><span class="pl-pds">"""</span> 资金曲线 <span class="pl-pds">"""</span></span>
+        <span class="pl-en">@plot_init</span>
+        <span class="pl-k">def</span> <span class="pl-c1">__init__</span>(<span class="pl-smi"><span class="pl-smi">self</span></span>, <span class="pl-smi">data</span>, <span class="pl-smi">name</span><span class="pl-k">=</span><span class="pl-s"><span class="pl-pds">'</span>EquityCurve<span class="pl-pds">'</span></span>, <span class="pl-smi">color</span><span class="pl-k">=</span><span class="pl-s"><span class="pl-pds">'</span>black<span class="pl-pds">'</span></span>, <span class="pl-smi">lw</span><span class="pl-k">=</span><span class="pl-c1">1</span>, <span class="pl-smi">style</span><span class="pl-k">=</span><span class="pl-s"><span class="pl-pds">'</span>line<span class="pl-pds">'</span></span>):
+            <span class="pl-c1">super</span>(EquityCurve, <span class="pl-c1">self</span>).<span class="pl-c1">__init__</span>(name, <span class="pl-c1">None</span>)
+            <span class="pl-c1">self</span>.values <span class="pl-k">=</span> data
+
+        <span class="pl-k">def</span> <span class="pl-en">plot</span>(<span class="pl-smi"><span class="pl-smi">self</span></span>, <span class="pl-smi">widget</span>):
+            <span class="pl-c1">self</span>.widget <span class="pl-k">=</span> widget
+            <span class="pl-c1">self</span>.plot_line(<span class="pl-c1">self</span>.values, <span class="pl-c1">self</span>.color, <span class="pl-c1">self</span>.lw, <span class="pl-c1">self</span>.style)</pre></div>
+<h2>
+<a aria-hidden="true" class="anchor" href="#%E4%B8%8A%E4%B8%80%E8%8A%82%E6%97%B6%E5%BA%8F%E5%8F%98%E9%87%8F---%E4%B8%8B%E4%B8%80%E8%8A%82%E7%BB%98%E5%9B%BE%E6%8C%87%E6%A0%87-" id="user-content-上一节时序变量---下一节绘图指标-"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><em>上一节</em> <a class="internal present" href="/QuantFans/quantdigger/wiki/%E6%97%B6%E5%BA%8F%E5%8F%98%E9%87%8F">时序变量</a>        <em>下一节</em> <a class="internal present" href="/QuantFans/quantdigger/wiki/%E7%BB%98%E5%9B%BE%E6%8C%87%E6%A0%87">绘图指标</a>  </h2>
+
+        </div>
+
+    </div>]

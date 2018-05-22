@@ -1,0 +1,45 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <h1>
+<a aria-hidden="true" class="anchor" href="#measuring-component-networks" id="user-content-measuring-component-networks"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Measuring Component Networks</h1>
+<p>In a <a href="Measuring-Frequency-Response">previous tutorial</a>, we used the Tsunami to produce a basic frequency response plot for a headphone amplifier. Today, we'll take a look at a more sophisticated version, measuring phase and frequency response of electrical components.</p>
+<p>For this, we'll use an improved sketch. Once again, note that we're using a very early version of the library; some of this may change by the time the Tsunami's in your hands!</p>
+<p>It's also worth noting that this is very much a "how the sausage is made" type tutorial; we'll be providing a sketch that automates much of this as one of the examples in the Arduino library.</p>
+<pre><code>float factor = pow(10, 1/50.0);
+
+void setup() {
+    Tsunami.begin();
+    Tsunami.setAmplitude(3000);
+}
+
+void loop() {
+    float frequency = 10000.0;
+    while(!Serial.available());
+    while(frequency &lt; 4000000.0) {
+        Tsunami.setFrequency(frequency);
+        frequency *= factor;
+        delay(1000);
+        Serial.print(frequency);
+        Serial.print(", ");
+        Serial.print(Tsunami.measurePeakVoltage());
+        Serial.print(" ");
+        Serial.println(Tsunami.measurePhase());
+    }
+}
+</code></pre>
+<p>First, we define the rate at which we'll scan, as 50 measurements per decade. Then, we set up the Tsunami, enabling it, and setting the output voltage to 3 volts peak-peak.</p>
+<p>In the main loop, we wait for a keypress, then starting at 10 kilohertz and going up to 4 megahertz, we step through the frequency range. At each, we set the frequency, wait a while, then measure and output both the amplitude, and the phase of the return signal.</p>
+<p>Before we can get useful measurements, we need a baseline. For that, we'll plug the Tsunami's output into its input, then measure and graph the result:</p>
+<p><img alt="" src="https://raw.githubusercontent.com/arachnidlabs/tsunami-arduino/docs/network-baseline-response.png"/></p>
+<p>This shows us the amplitude and phase response for the entire Tsunami signal chain, both output and input. The blue line is voltage, charted using the axis on the left, while the red line is phase offset, charted using the axis on the right. As you can see, the Tsunami's amplitude response is fairly smooth, tapering off at higher frequencies - by 4MHz (twice its design maximum) we're down to 25% - this is due to the lowpass filters on both input and output. The phase difference also increases as the frequency goes up, due to delays in the signal processing chain.</p>
+<p>Next, on to measuring something! The simplest thing we can measure is a single component; here we'll measure an unknown inductor, simply hooking it up across the Tsunami's input and output terminals with a couple of test clips. The Tsunami's built in 50 ohm output resistor forms one half of a voltage divider, and the inductor forms the other.</p>
+<p>After hooking it up, we run our frequency sweep, and get this result:</p>
+<p><a href="https://raw.githubusercontent.com/arachnidlabs/tsunami-arduino/docs/network-measured-response.png" rel="nofollow">https://raw.githubusercontent.com/arachnidlabs/tsunami-arduino/docs/network-measured-response.png</a></p>
+<p>To get a useful result, though, we need to normalise it using the Tsunami's measured frequency response. We'll do that by dividing the amplitudes, and subtracting the phases, producing our final result:</p>
+<p><a href="https://raw.githubusercontent.com/arachnidlabs/tsunami-arduino/docs/network-response-computed.png" rel="nofollow">https://raw.githubusercontent.com/arachnidlabs/tsunami-arduino/docs/network-response-computed.png</a></p>
+<p>Presto! As you'd expect for an inductor, the voltage across it - and thus, its resistance - increases with frequency. We haven't made any attempt to normalise the values here, so we can't get an actual value for the inductor, but with a little number crunching we could easily compute the inductor's value, along with other values like its series resistance, parasitic properties, and so forth.</p>
+<p>As you might expect, this extends easily to measuring more complex networks of components, passive filters, and so forth.</p>
+
+        </div>
+
+    </div>]

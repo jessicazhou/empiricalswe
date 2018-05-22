@@ -1,0 +1,104 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>So far we have only seen <code>addSQLiteStoreAndWait(...)</code> used to initialize our persistent store. As the method name's "AndWait" suffix suggests, this method will block, even if a migration occurs. If migrations are expected, the asynchronous variant <code>addSQLiteStore(... completion:)</code> method is recommended:</p>
+<div class="highlight highlight-source-swift"><pre><span class="pl-k">do</span> {
+    <span class="pl-k">let</span> progress<span class="pl-k">:</span> NSProgress <span class="pl-k">=</span> <span class="pl-k">try</span> dataStack.<span class="pl-c1">addSQLiteStore</span>(
+        <span class="pl-c1">fileName</span>: <span class="pl-s"><span class="pl-pds">"</span>MyStore.sqlite<span class="pl-pds">"</span></span>,
+        <span class="pl-c1">configuration</span>: <span class="pl-s"><span class="pl-pds">"</span>Config2<span class="pl-pds">"</span></span>,
+        <span class="pl-c1">completion</span>: { (result) <span class="pl-k">-&gt;</span> <span class="pl-c1">Void</span> <span class="pl-k">in</span>
+            <span class="pl-k">switch</span> result {
+            <span class="pl-k">case</span> .<span class="pl-c1">Success</span>(<span class="pl-k">let</span> persistentStore)<span class="pl-k">:</span>
+                <span class="pl-c1">print</span>(<span class="pl-s"><span class="pl-pds">"</span>Successfully added sqlite store: <span class="pl-pse">\(</span><span class="pl-s1">persistentStore</span><span class="pl-pse"><span class="pl-s1">)</span></span><span class="pl-pds">"</span></span>
+            <span class="pl-k">case</span> .<span class="pl-c1">Failure</span>(<span class="pl-k">let</span> error)<span class="pl-k">:</span>
+                <span class="pl-c1">print</span>(<span class="pl-s"><span class="pl-pds">"</span>Failed adding sqlite store with error: <span class="pl-pse">\(</span><span class="pl-s1">error</span><span class="pl-pse"><span class="pl-s1">)</span></span><span class="pl-pds">"</span></span>
+            }
+        }
+    )
+}
+<span class="pl-k">catch</span> {
+    <span class="pl-c1">print</span>(<span class="pl-s"><span class="pl-pds">"</span>Failed adding sqlite store with error: <span class="pl-pse">\(</span><span class="pl-s1">error <span class="pl-k">as</span> NSError</span><span class="pl-pse"><span class="pl-s1">)</span></span><span class="pl-pds">"</span></span>
+}</pre></div>
+<p>The <code>completion</code> block reports a <code>PersistentStoreResult</code> that indicates success or failure.</p>
+<p><code>addSQLiteStore(...)</code> throws an error if the store at the specified URL conflicts with an existing store in the <code>DataStack</code>, or if an existing sqlite file could not be read. If an error is thrown, the <code>completion</code> block will not be executed.</p>
+<p>Notice that this method also returns an optional <code>NSProgress</code>. If <code>nil</code>, no migrations are needed, thus progress reporting is unnecessary as well. If not <code>nil</code>, you can use this to track migration progress by using standard KVO on the "fractionCompleted" key, or by using a closure-based utility exposed in <em>NSProgress+Convenience.swift</em>:</p>
+<div class="highlight highlight-source-swift"><pre>progress<span class="pl-k">?</span>.<span class="pl-smi">setProgressHandler</span> { [<span class="pl-k">weak</span> <span class="pl-c1">self</span>] (progress) <span class="pl-k">-&gt;</span> <span class="pl-c1">Void</span> <span class="pl-k">in</span>
+    <span class="pl-c1">self</span><span class="pl-k">?</span>.<span class="pl-smi">progressView</span><span class="pl-k">?</span>.<span class="pl-c1">setProgress</span>(<span class="pl-c1">Float</span>(progress.<span class="pl-smi">fractionCompleted</span>), <span class="pl-c1">animated</span>: <span class="pl-c1">true</span>)
+    <span class="pl-c1">self</span><span class="pl-k">?</span>.<span class="pl-smi">percentLabel</span><span class="pl-k">?</span>.<span class="pl-c1">text</span> <span class="pl-k">=</span> progress.<span class="pl-smi">localizedDescription</span> <span class="pl-c"><span class="pl-c">//</span> "50% completed"</span>
+<span class="pl-c"></span>    <span class="pl-c1">self</span><span class="pl-k">?</span>.<span class="pl-smi">stepLabel</span><span class="pl-k">?</span>.<span class="pl-c1">text</span> <span class="pl-k">=</span> progress.<span class="pl-smi">localizedAdditionalDescription</span> <span class="pl-c"><span class="pl-c">//</span> "0 of 2"</span>
+<span class="pl-c"></span>}</pre></div>
+<p>This closure is executed on the main thread so UIKit calls can be done safely.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#incremental-migrations" id="user-content-incremental-migrations"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Incremental migrations</h3>
+<p>By default, CoreStore uses Core Data's default automatic migration mechanism. In other words, CoreStore will try to migrate the existing persistent store to the <em>.xcdatamodeld</em> file's current model version. If no mapping model is found from the store's version to the data model's version, CoreStore gives up and reports an error.</p>
+<p>The <code>DataStack</code> lets you specify hints on how to break a migration into several sub-migrations using a <code>MigrationChain</code>. This is typically passed to the <code>DataStack</code> initializer and will be applied to all stores added to the <code>DataStack</code> with <code>addSQLiteStore(...)</code> and its variants:</p>
+<div class="highlight highlight-source-swift"><pre><span class="pl-k">let</span> dataStack <span class="pl-k">=</span> <span class="pl-c1">DataStack</span>(<span class="pl-c1">migrationChain</span>: 
+    [<span class="pl-s"><span class="pl-pds">"</span>MyAppModel<span class="pl-pds">"</span></span>, <span class="pl-s"><span class="pl-pds">"</span>MyAppModelV2<span class="pl-pds">"</span></span>, <span class="pl-s"><span class="pl-pds">"</span>MyAppModelV3<span class="pl-pds">"</span></span>, <span class="pl-s"><span class="pl-pds">"</span>MyAppModelV4<span class="pl-pds">"</span></span>])</pre></div>
+<p>The most common usage is to pass in the <em>.xcdatamodeld</em> version names in increasing order as above.</p>
+<p>For more complex migration paths, you can also pass in a version tree that maps the key-values to the source-destination versions:</p>
+<div class="highlight highlight-source-swift"><pre><span class="pl-k">let</span> dataStack <span class="pl-k">=</span> <span class="pl-c1">DataStack</span>(<span class="pl-c1">migrationChain</span>: [
+    <span class="pl-s"><span class="pl-pds">"</span>MyAppModel<span class="pl-pds">"</span></span><span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">"</span>MyAppModelV3<span class="pl-pds">"</span></span>,
+    <span class="pl-s"><span class="pl-pds">"</span>MyAppModelV2<span class="pl-pds">"</span></span><span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">"</span>MyAppModelV4<span class="pl-pds">"</span></span>,
+    <span class="pl-s"><span class="pl-pds">"</span>MyAppModelV3<span class="pl-pds">"</span></span><span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">"</span>MyAppModelV4<span class="pl-pds">"</span></span>
+])</pre></div>
+<p>This allows for different migration paths depending on the starting version. The example above resolves to the following paths:</p>
+<ul>
+<li>MyAppModel-MyAppModelV3-MyAppModelV4</li>
+<li>MyAppModelV2-MyAppModelV4</li>
+<li>MyAppModelV3-MyAppModelV4</li>
+</ul>
+<p>Initializing with empty values (either <code>nil</code>, <code>[]</code>, or <code>[:]</code>) instructs the <code>DataStack</code> to disable incremental migrations and revert to the default migration behavior (i.e. use the .xcdatamodel's current version as the final version):</p>
+<div class="highlight highlight-source-swift"><pre><span class="pl-k">let</span> dataStack <span class="pl-k">=</span> <span class="pl-c1">DataStack</span>(<span class="pl-c1">migrationChain</span>: <span class="pl-c1">nil</span>)</pre></div>
+<p>The <code>MigrationChain</code> is validated when passed to the <code>DataStack</code> and unless it is empty, will raise an assertion if any of the following conditions are met:</p>
+<ul>
+<li>a version appears twice in an array</li>
+<li>a version appears twice as a key in a dictionary literal</li>
+<li>a loop is found in any of the paths</li>
+</ul>
+<p>One important thing to remember is that <strong>if a <code>MigrationChain</code> is specified, the <em>.xcdatamodeld</em>'s "Current Version" will be bypassed</strong> and the <code>MigrationChain</code>'s leafmost version will be the <code>DataStack</code>'s base model version.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#forecasting-migrations" id="user-content-forecasting-migrations"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Forecasting migrations</h3>
+<p>Sometimes migrations are huge and you may want prior information so your app could display a loading screen, or to display a confirmation dialog to the user. For this, CoreStore provides a <code>requiredMigrationsForSQLiteStore(...)</code> method you can use to inspect a persistent store before you actually call <code>addSQLiteStore(...)</code>:</p>
+<div class="highlight highlight-source-swift"><pre><span class="pl-k">do</span> {
+    <span class="pl-k">let</span> migrationTypes<span class="pl-k">:</span> [MigrationType] <span class="pl-k">=</span> CoreStore.<span class="pl-c1">requiredMigrationsForSQLiteStore</span>(<span class="pl-c1">fileName</span>: <span class="pl-s"><span class="pl-pds">"</span>MyStore.sqlite<span class="pl-pds">"</span></span>)
+    <span class="pl-k">if</span> migrationTypes.<span class="pl-c1">count</span> <span class="pl-k">&gt;</span> <span class="pl-c1">1</span>
+        <span class="pl-k">||</span> (migrationTypes.<span class="pl-c1">filter</span> { <span class="pl-c1">$0</span>.<span class="pl-smi">isHeavyweightMigration</span> }.<span class="pl-c1">count</span>) <span class="pl-k">&gt;</span> <span class="pl-c1">0</span> {
+        <span class="pl-c"><span class="pl-c">//</span> ... Show special waiting screen</span>
+<span class="pl-c"></span>    }
+    <span class="pl-k">else</span> <span class="pl-k">if</span> migrationTypes.<span class="pl-c1">count</span> <span class="pl-k">&gt;</span> <span class="pl-c1">0</span> {
+        <span class="pl-c"><span class="pl-c">//</span> ... Show simple activity indicator</span>
+<span class="pl-c"></span>    }
+    <span class="pl-k">else</span> {
+        <span class="pl-c"><span class="pl-c">//</span> ... Do nothing</span>
+<span class="pl-c"></span>    }
+
+    CoreStore.<span class="pl-c1">addSQLiteStore</span>(<span class="pl-c"><span class="pl-c">/*</span> ... <span class="pl-c">*/</span></span>)
+}
+<span class="pl-k">catch</span> {
+    <span class="pl-c"><span class="pl-c">//</span> ...</span>
+<span class="pl-c"></span>}</pre></div>
+<p><code>requiredMigrationsForSQLiteStore(...)</code> returns an array of <code>MigrationType</code>s, where each item in the array may be either of the following values:</p>
+<div class="highlight highlight-source-swift"><pre><span class="pl-k">case</span> <span class="pl-c1">Lightweight</span>(<span class="pl-c1">sourceVersion</span>: <span class="pl-c1">String</span>, <span class="pl-c1">destinationVersion</span>: <span class="pl-c1">String</span>)
+<span class="pl-k">case</span> <span class="pl-c1">Heavyweight</span>(<span class="pl-c1">sourceVersion</span>: <span class="pl-c1">String</span>, <span class="pl-c1">destinationVersion</span>: <span class="pl-c1">String</span>)</pre></div>
+<p>Each <code>MigrationType</code> indicates the migration type for each step in the <code>MigrationChain</code>. Use these information as fit for your app.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#contents" id="user-content-contents"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Contents</h2>
+<ul>
+<li><a class="internal present" href="/JohnEstropia/CoreStore/wiki/TL%3BDR-%28a.k.a.-sample-codes%29">TL;DR (a.k.a. sample codes)</a></li>
+<li><a class="internal present" href="/JohnEstropia/CoreStore/wiki/Architecture">Architecture</a></li>
+<li>CoreStore Tutorials
+<ul>
+<li><a class="internal present" href="/JohnEstropia/CoreStore/wiki/Setting-up">Setting up</a></li>
+<li><a class="internal present" href="/JohnEstropia/CoreStore/wiki/Migrations">Migrations</a></li>
+<li><a class="internal present" href="/JohnEstropia/CoreStore/wiki/Saving-and-processing-transactions">Saving and processing transactions</a></li>
+<li><a class="internal present" href="/JohnEstropia/CoreStore/wiki/Fetching-and-querying">Fetching and querying</a></li>
+<li><a class="internal present" href="/JohnEstropia/CoreStore/wiki/Logging-and-error-handling">Logging and error handling</a></li>
+<li><a class="internal present" href="/JohnEstropia/CoreStore/wiki/Observing-changes-and-notifications">Observing changes and notifications</a></li>
+</ul>
+</li>
+<li><a class="internal present" href="/JohnEstropia/CoreStore/wiki/Installation">Installation</a></li>
+<li><a class="internal present" href="/JohnEstropia/CoreStore/wiki/Changesets">Changesets</a></li>
+</ul>
+
+        </div>
+
+    </div>]

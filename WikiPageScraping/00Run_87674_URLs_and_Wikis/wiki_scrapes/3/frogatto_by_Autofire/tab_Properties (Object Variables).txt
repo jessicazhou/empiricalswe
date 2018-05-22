@@ -1,0 +1,93 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>In Frogatto, properties hold the place of that variables and functions do in other languages. In addition to this, a property can also hold some metadata about what it does and how long it should last.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#variables" id="user-content-variables"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Variables</h2>
+<p>To make a variable, in the <code>properties: {}</code> tag in an object, we say:</p>
+<pre><code>properties: {
+	basic_boolean: {
+		default: true,
+	},
+}
+</code></pre>
+<p>We can now use this variable in our event handlers:</p>
+<pre><code>on_create: "set(basic_boolean, not basic_boolean)"
+</code></pre>
+<p>This example flips the initial value. This is what we call a "data-backed property", since it stores data between the times we access it. If we wanted to make basic_boolean unflippable, we could write it out as follows to keep people from changing it:</p>
+<pre><code>basic_boolean: true,
+</code></pre>
+<p>It is more succinct to make a constant value than a variable one because most of the "variables" we use in Frogatto are actually constant in nature. Another way to define a constant would be:</p>
+<pre><code>random_choice: "2d6",
+</code></pre>
+<p>This would, each time we queried it, constantly return a random value between 2 and 12. The value would change each time, but we could never accidentally overwrite our random_choice with a static integer.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#functions" id="user-content-functions"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Functions</h2>
+<p>To define a functional property, you can say:</p>
+<pre><code>properties: {
+	double: "def(decimal x) -&gt; decimal x*2",
+}
+</code></pre>
+<p>If we define this in an object and select the object in the debug console, typing <code>double(5)</code> will return <code>10</code> and an error in the logs the console tries to figure out how it should execute <code>10</code>.</p>
+<p>We can also do something like:</p>
+<pre><code>properties: {
+	_padding: "[15,15]", //Vertical and horizontal padding.
+	screen_size_with_padding: "zip(level.camera_position[2:4], _padding, a-b*2)",
+}
+</code></pre>
+<p><code>screen_size_with_padding</code> is a "function" that takes no args, so we can leave the def() stuff off. Return type is once again implied, just like in the first example on the page. Since it looks like a variable now, we can call it like a variable. For me, putting <code>screen_size_with_padding</code> in the console gives <code>[770, 570]</code>. (<code>level.camera_position</code> gave <code>[0,0,800,600]</code>.) If we want to type this, we can use a static cast like <code>screen_size_with_padding: "[decimal] :: zip(level.camera_position[2:4], _padding, a-b*2)",</code>.</p>
+<p>All variables you will interact with in Frogatto are properties, but <a class="internal present" href="/Autofire/frogatto/wiki/Object-Properties">many are built in to the engine</a>. For example, setting x to 5 will not set x to 5, it will move the sprite position to be five pixels right of the level origin. When you query x again, it will derive x from the sprite position on the level, giving 5.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#reference-of-keysvalues" id="user-content-reference-of-keysvalues"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Reference of Keys/Values</h2>
+<p>A property is private to the object if it is prefaced with an underscore, such as <code>_padding</code> is in the previous example.</p>
+<p>A property map can have the following keys. A sensible default for all these are implied by the previous single-string formats, and it is rare that we have to break out these long-form definitions.</p>
+<ul>
+<li>
+<code>type</code>: A pipe-delimited list of types. eg, <code>"string|null"</code>.</li>
+<li>
+<code>default</code>: The initial value for the variable. Interpreted as ffl, so strings must be quoted like <code>"'standard'"</code>.</li>
+<li>
+<code>editor_info</code>: A map containing the editor entry definition for the property. eg, <code>editor_info: {type: "boolean", value: "false",}</code>. An object exposing a property like this will need an editor_info entry, which looks like <code>editor_info: {category: 'for the drop-down menu', help: 'text to display on mouseover'}</code>. (This is generally placed before the <code>properties: {}</code> definition, after single-line variables are initialized. See the <a class="internal present" href="/Autofire/frogatto/wiki/Style-Guide-for-2014">style guide</a> for more on organization.)
+<ul>
+<li>
+<code>type</code>: Probably one of <code>"enum"</code> (various types), <code>"boolean"</code> (bool type), <code>"int"</code> (int, compatible with decimal), <code>"points"</code> (<code>[[int, int]]</code> or <code>[Point2d]</code> from the lib_2d module, I think.), <code>"decimal"</code> (decimal), or <code>"label"</code> (string label of another object).</li>
+<li>
+<code>value</code>: Initial value for the variable, eg, <code>"'standard'"</code> or <code>"mid_x-(7*32)"</code>. (Conflicts with default of property, probably shouldn't use both at once.) Generally specified for everything but label.</li>
+<li>
+<code>enum_values</code>: If <code>type</code> is set to <code>enum</code>, this is what's in the list. eg: <code>["none", "standard", "iPhone", "iPad"]</code>
+</li>
+<li>
+<code>min_value</code>: For an <code>int</code> or <code>decimal</code>, the minimum value of the slider. Defaults to -100, iirc.</li>
+<li>
+<code>max_value</code>: Defaults to +100.</li>
+</ul>
+</li>
+<li>
+<code>get</code>: A plain property, specifies the value of the property. For example, <code>get: "x+5"</code> would make the property always return our x position with an offset.</li>
+<li>
+<code>set</code>: A single-arg function, runs when the property is set to a value. For example, <code>set: def(int x_in) -&gt; commands set(me.x, x_in-5)</code> would set our current x position to the value passed in less the offset. (Note: I believe there is some way to access property-specific storage, so you could theoretically make tiny little state machines.)</li>
+<li>
+<code>set_type</code>: If <code>set</code> is set to a plain string, such as <code>set(me.x, value-5)</code>, <code>set_type</code> would be set to <code>int</code>. This would be equivalent to the example for <code>set</code>. <code>get_type</code> is just the <code>type</code> field.</li>
+<li>
+<code>init</code>: The results of this FFL string is assigned to the _data variable in a data-backed property when the object is created.</li>
+<li>
+<code>variable</code>: <code>true</code> (default) or <code>false</code>. If false, disables <code>persistent</code>, <code>dynamic_initialization</code>, and changing.</li>
+<li>
+<code>persistent</code>: The value of the property is saved when you save the game.</li>
+<li>
+<code>dynamic_initialization</code>: I'm not sure about this one. I think it defers the type-check of the variable until after the object is actually made and any setters have been run, eg in <a href="">[spawn|https://github.com/frogatto/frogatto/wiki/Object-Functions]</a>.</li>
+</ul>
+<p>For further reading, check out the <a href="http://www.frogatto.com/forum/index.php?topic=533.0" rel="nofollow">FFL Improvement Thread</a> on the forums. It covers more topics than just properties, and is a great reference for modern FFL. For some more complex live examples, check <a href="https://github.com/frogatto/frogatto/blob/master/data/objects/playable/frogatto_playable.cfg">frogatto_playable.cfg</a> and <a href="https://github.com/frogatto/frogatto/blob/master/data/objects/effects/control/camera_controller.cfg">camera_controller.cfg</a>. For a simple example, check the <a href="https://github.com/frogatto/frogatto/blob/master/data/object_prototypes/enemies/ant_flying.cfg">ant_flying.cfg</a> prototype.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#history" id="user-content-history"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>History</h2>
+<p>Disclaimer: This either doesn't work any more, or should be treated like it won't work very soon. It is presented only as a historical curiosity, a quirk of language design.</p>
+<p>Properties can be switched around from constant to variable to get/set to function without any change required in other areas of code. This means you don't have to specify something, for example, as <code>unsure_of_the_future: "def() 5"</code> because you might need to scale 5 to some other variable later. The system before this, especially until v1.2, was to: set functions in a <code>functions: ""</code> block (accessed via me.name), variables that we wanted saved in <code>vars: {}</code> block (accessed by <code>me.name</code> or <code>me.vars.name</code>), constants (eg, <code>variable: false</code>) in <code>consts: {}</code> (accessed by <code>consts.name</code>), and temporary variables which we didn't want saved (eg, <code>persistent: false</code>) in <code>tmp: {}</code> (accessed via <code>tmp.name</code>). This made it difficult to switch between, say, a constant 5 and a functionally-derived 5. In this incarnation, functions were purely functional - they didn't get the current object passed to them for free like properties do. This mean we would often see functions taking <code>level</code> or <code>me</code>/<code>self</code> as their first arg. This proved to be annoying, and was removed for properties. While properties can be more verbose, they are much more flexible. We would not have discovered what we needed if we hadn't been able to go through the original system first.</p>
+
+        </div>
+
+        <div class="wiki-footer gollum-markdown-content boxed-group" id="wiki-footer">
+          <div class="boxed-group-inner wiki-auxiliary-content markdown-body">
+            <p>More help can be found via IRC, <a href="irc://irc.freenode.net/#frogatto" rel="nofollow">#Frogatto</a> on freenode.net. This wiki is not a complete reference.</p>
+
+          </div>
+        </div>
+    </div>]

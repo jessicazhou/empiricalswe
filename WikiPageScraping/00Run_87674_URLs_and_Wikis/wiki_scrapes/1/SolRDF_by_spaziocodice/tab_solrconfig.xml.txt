@@ -1,0 +1,151 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>The SolRDF solrconfig.xml [1] contains a lot of extensions on top of the built-in Solr components and modules. Although most of them are described in this guide, in a dedicated section, this page offers an overview about how they are arranged in the main Solr configuration file and what their role is.</p>
+<p>For all things / attributes / parameters / sections not covered here and generally related with Solr configuration you can refer to the Solr Wiki [2].<br/>
+Being a regula Solr configuration file, you can change, tune and adjust each aspect of Solr behaviour, in terms of search and indexing. However, keep in mind that something (explicitly described in this guide) cannot be changed, otherwise the "RDF" perspective will stop working.</p>
+<h1>
+<a aria-hidden="true" class="anchor" href="#httpservletrequest" id="user-content-httpservletrequest"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>HTTPServletRequest</h1>
+<p>When Solr receives an incoming request, it creates a kind of context, which is actually a Map&lt;Object,Object&gt; that carries on several attributes collected through the execution chain.<br/>
+By default the HTTP request representation (i.e. the javax.servlet.http.HttpServletRequest instance) is not inserted in such context. SolRDF requires that for several reasons (e.g. HTTP Headers): that's the reason you'll find the following fragment in solrconfig.xml:</p>
+<div class="highlight highlight-text-xml"><pre>&lt;<span class="pl-ent">requestParsers</span> 
+   <span class="pl-e">enableRemoteStreaming</span>=<span class="pl-s"><span class="pl-pds">"</span>true<span class="pl-pds">"</span></span> 
+   <span class="pl-e">multipartUploadLimitInKB</span>=<span class="pl-s"><span class="pl-pds">"</span>2048000<span class="pl-pds">"</span></span> 
+   <span class="pl-e">formdataUploadLimitInKB</span>=<span class="pl-s"><span class="pl-pds">"</span>2048<span class="pl-pds">"</span></span> 
+   <span class="pl-e">addHttpRequestToContext</span>=<span class="pl-s"><span class="pl-pds">"</span>true<span class="pl-pds">"</span></span>/&gt;</pre></div>
+<p>The <em>addHttpRequestToContext</em> in the snippet above, which is absent (i.e. false) in a default Solr installation, causes the <em>HttpServletRequest</em> to be inserted in the Solr (Request) Context. Later, it can be retrieved using the "httpRequest" key:</p>
+<div class="highlight highlight-source-java"><pre><span class="pl-c"><span class="pl-c">//</span> request is an instance of SolrQueryRequest</span>
+<span class="pl-k">Map&lt;<span class="pl-smi">Object</span>,<span class="pl-smi">Object</span>&gt;</span> ctx <span class="pl-k">=</span> request<span class="pl-k">.</span>getContext();
+<span class="pl-smi">HttpServletRequest</span> httpRequest <span class="pl-k">=</span> (<span class="pl-smi">HttpServletRequest</span>) ctx<span class="pl-k">.</span>get(<span class="pl-s"><span class="pl-pds">"</span>httpRequest<span class="pl-pds">"</span></span>);
+<span class="pl-smi">String</span> accept <span class="pl-k">=</span> httpRequest<span class="pl-k">.</span>getHeader(<span class="pl-smi">HttpHeaders</span><span class="pl-c1"><span class="pl-k">.</span>ACCEPT</span>);</pre></div>
+<h1>
+<a aria-hidden="true" class="anchor" href="#standard-searchhandler" id="user-content-standard-searchhandler"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Standard SearchHandler</h1>
+<p>This is a <em>solr.SearchHandler</em> that enables standard (e.g. lucene, dismax, edismax) queries on Solr. It isn't actually used in SolRDF components but I found it useful for debugging purposes (see issue #25 [3]).</p>
+<div class="highlight highlight-text-xml"><pre>&lt;<span class="pl-ent">requestHandler</span> <span class="pl-e">name</span>=<span class="pl-s"><span class="pl-pds">"</span>/solr-query<span class="pl-pds">"</span></span> <span class="pl-e">class</span>=<span class="pl-s"><span class="pl-pds">"</span>solr.SearchHandler<span class="pl-pds">"</span></span>&gt;
+   &lt;<span class="pl-ent">lst</span> <span class="pl-e">name</span>=<span class="pl-s"><span class="pl-pds">"</span>defaults<span class="pl-pds">"</span></span>&gt;
+      &lt;<span class="pl-ent">str</span> <span class="pl-e">name</span>=<span class="pl-s"><span class="pl-pds">"</span>echoParams<span class="pl-pds">"</span></span>&gt;none&lt;/<span class="pl-ent">str</span>&gt;
+      &lt;<span class="pl-ent">int</span> <span class="pl-e">name</span>=<span class="pl-s"><span class="pl-pds">"</span>rows<span class="pl-pds">"</span></span>&gt;10&lt;/<span class="pl-ent">int</span>&gt;
+      &lt;<span class="pl-ent">str</span> <span class="pl-e">name</span>=<span class="pl-s"><span class="pl-pds">"</span>wt<span class="pl-pds">"</span></span>&gt;xml&lt;/<span class="pl-ent">str</span>&gt;
+   &lt;/<span class="pl-ent">lst</span>&gt;
+&lt;/<span class="pl-ent">requestHandler</span>&gt;</pre></div>
+<h1>
+<a aria-hidden="true" class="anchor" href="#sparql-11-query-searchhandler" id="user-content-sparql-11-query-searchhandler"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>SPARQL 1.1 Query SearchHandler</h1>
+<p>The <em>/sparql-query</em> is a <em>solr.SearchHandler</em> that accepts and executes SPARQL 1.1 queries [4].
+A couple of things about this handler:</p>
+<ul>
+<li>Note that the most part of parameters are defined as invariants: that means SolRDF needs those settings. Specifically:
+<ul>
+<li>the <em>sort</em> parameter is needed for internally using a deep paging iterator over search results [5]</li>
+<li>the <em>defType</em> parameter must be "sparql" as it indicates the SparqlQParser (described later)</li>
+<li>the "hybrid" value of <em>wt</em> parameter instantiates a specific <em>QueryResponseWriter</em> that writes pure or hybrid SPARQL results</li>
+</ul>
+</li>
+<li>There's a <em>SearchComponent</em> (under the "components" array) that is also called "sparql-query". This has nothing to do with this search handler, as it is the "Query" SearchComponent which is responsible to materially execute the SPARQL Query. Maybe one day I will call this component in a different way ;)</li>
+<li>The <em>facet</em> component operates only in hybrid mode (SPARQL + Solr features). This is not the default <em>FacetComponent</em> but instead a custom subclass</li>
+</ul>
+<div class="highlight highlight-text-xml"><pre>&lt;<span class="pl-ent">requestHandler</span> <span class="pl-e">name</span>=<span class="pl-s"><span class="pl-pds">"</span>/sparql-query<span class="pl-pds">"</span></span> <span class="pl-e">class</span>=<span class="pl-s"><span class="pl-pds">"</span>solr.SearchHandler<span class="pl-pds">"</span></span>&gt;
+	&lt;<span class="pl-ent">lst</span> <span class="pl-e">name</span>=<span class="pl-s"><span class="pl-pds">"</span>invariants<span class="pl-pds">"</span></span>&gt;
+		&lt;<span class="pl-ent">str</span> <span class="pl-e">name</span>=<span class="pl-s"><span class="pl-pds">"</span>echoParams<span class="pl-pds">"</span></span>&gt;none&lt;/<span class="pl-ent">str</span>&gt;
+		&lt;<span class="pl-ent">str</span> <span class="pl-e">name</span>=<span class="pl-s"><span class="pl-pds">"</span>defType<span class="pl-pds">"</span></span>&gt;sparql&lt;/<span class="pl-ent">str</span>&gt;
+		&lt;<span class="pl-ent">str</span> <span class="pl-e">name</span>=<span class="pl-s"><span class="pl-pds">"</span>sort<span class="pl-pds">"</span></span>&gt;id asc&lt;/<span class="pl-ent">str</span>&gt;
+		&lt;<span class="pl-ent">str</span> <span class="pl-e">name</span>=<span class="pl-s"><span class="pl-pds">"</span>wt<span class="pl-pds">"</span></span>&gt;hybrid&lt;/<span class="pl-ent">str</span>&gt;
+	&lt;/<span class="pl-ent">lst</span>&gt;
+        &lt;<span class="pl-ent">lst</span> <span class="pl-e">name</span>=<span class="pl-s"><span class="pl-pds">"</span>defaults<span class="pl-pds">"</span></span>&gt;
+	   <span class="pl-c"><span class="pl-c">&lt;!--</span>  </span>
+<span class="pl-c">             Default query value for Hybrid mode.</span>
+<span class="pl-c">           <span class="pl-c">--&gt;</span></span>
+           &lt;<span class="pl-ent">str</span> <span class="pl-e">name</span>=<span class="pl-s"><span class="pl-pds">"</span>dfhq<span class="pl-pds">"</span></span>&gt;SELECT * WHERE { ?s ?p ?o }&lt;/<span class="pl-ent">str</span>&gt;
+        &lt;/<span class="pl-ent">lst</span>&gt;		
+	&lt;<span class="pl-ent">arr</span> <span class="pl-e">name</span>=<span class="pl-s"><span class="pl-pds">"</span>components<span class="pl-pds">"</span></span>&gt;
+		&lt;<span class="pl-ent">str</span>&gt;sparql-query&lt;/<span class="pl-ent">str</span>&gt;
+		&lt;<span class="pl-ent">str</span>&gt;facet&lt;/<span class="pl-ent">str</span>&gt;
+	&lt;/<span class="pl-ent">arr</span>&gt;		
+&lt;/<span class="pl-ent">requestHandler</span>&gt;</pre></div>
+<p>As you can see a new parameter called <em>dfhq</em> has been introduced for declaring a default query when SolRDF is running in hybrid mode. Although the standard parameter "q" (or "query") can be used, keep in mind that it will act as a default query for both modes (RDF and Hybrid), and depending on the context, that couldn't be what you want: for instance, imagine a default "q" value of</p>
+<pre><code>SELECT * WHERE {?s ?p ?o }
+</code></pre>
+<p>There won't be any problem at all with the Hybrid mode, as the query results are paginated. Instead, with plain RDF mode that will end in a huge result-set. While this could be an expected result, remember that this "select all" query will be executed also if a client simply forgets the query in the HTTP request.</p>
+<h1>
+<a aria-hidden="true" class="anchor" href="#sparql-11-update" id="user-content-sparql-11-update"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>SPARQL 1.1 Update</h1>
+<p>The <em>/sparql-update</em> is an <em>UpdateRequestHandler</em> subclass that accepts and executes SPARQL 1.1 update commands [6].<br/>
+Note the update chain has been customized with a dedupe <em>UpdateRequestProcessor</em>, as explained in the Schema [7] section.</p>
+<div class="highlight highlight-text-xml"><pre>&lt;<span class="pl-ent">requestHandler</span> <span class="pl-e">name</span>=<span class="pl-s"><span class="pl-pds">"</span>/sparql-update<span class="pl-pds">"</span></span> <span class="pl-e">class</span>=<span class="pl-s"><span class="pl-pds">"</span>org...RdfUpdateRequestHandler<span class="pl-pds">"</span></span>&gt;
+  &lt;<span class="pl-ent">lst</span> <span class="pl-e">name</span>=<span class="pl-s"><span class="pl-pds">"</span>defaults<span class="pl-pds">"</span></span>&gt;
+     &lt;<span class="pl-ent">str</span> <span class="pl-e">name</span>=<span class="pl-s"><span class="pl-pds">"</span>update.chain<span class="pl-pds">"</span></span>&gt;dedupe&lt;/<span class="pl-ent">str</span>&gt;
+  &lt;/<span class="pl-ent">lst</span>&gt;
+&lt;/<span class="pl-ent">requestHandler</span>&gt; </pre></div>
+<h1>
+<a aria-hidden="true" class="anchor" href="#sparql-11-endpoint-searchhandler" id="user-content-sparql-11-endpoint-searchhandler"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>SPARQL 1.1 Endpoint SearchHandler</h1>
+<p>The <em>/sparql</em> is a custom <em>SearchHandler</em> that acts as a SPARQL 1.1 endpoint. It acts as a single endpoint facade, accepts SPARQL 1.1 requests and dispatches them among the two handlers described above (<em>/sparql-query</em> and <em>/sparql-update</em>).</p>
+<div class="highlight highlight-text-xml"><pre>&lt;<span class="pl-ent">requestHandler</span> <span class="pl-e">name</span>=<span class="pl-s"><span class="pl-pds">"</span>/sparql<span class="pl-pds">"</span></span> <span class="pl-e">class</span>=<span class="pl-s"><span class="pl-pds">"</span>org...Sparql11SearchHandler<span class="pl-pds">"</span></span>&gt;
+   &lt;<span class="pl-ent">lst</span> <span class="pl-e">name</span>=<span class="pl-s"><span class="pl-pds">"</span>invariants<span class="pl-pds">"</span></span>&gt;
+      &lt;<span class="pl-ent">str</span> <span class="pl-e">name</span>=<span class="pl-s"><span class="pl-pds">"</span>s<span class="pl-pds">"</span></span>&gt;/sparql-query&lt;/<span class="pl-ent">str</span>&gt;
+      &lt;<span class="pl-ent">str</span> <span class="pl-e">name</span>=<span class="pl-s"><span class="pl-pds">"</span>u<span class="pl-pds">"</span></span>&gt;/sparql-update&lt;/<span class="pl-ent">str</span>&gt;
+   &lt;/<span class="pl-ent">lst</span>&gt;
+&lt;/<span class="pl-ent">requestHandler</span>&gt;</pre></div>
+<h1>
+<a aria-hidden="true" class="anchor" href="#sparql-searchcomponent" id="user-content-sparql-searchcomponent"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>SPARQL SearchComponent</h1>
+<p>A subclass of SearchComponent for executing SPARQL 1.1 query (and update) requests. No special configuration needs to be done on this component, as it acts as a bridge / adapter between Jena and Solr worlds.</p>
+<div class="highlight highlight-text-xml"><pre>&lt;<span class="pl-ent">searchComponent</span> <span class="pl-e">name</span>=<span class="pl-s"><span class="pl-pds">"</span>sparql-query<span class="pl-pds">"</span></span> <span class="pl-e">class</span>=<span class="pl-s"><span class="pl-pds">"</span>org...SparqlSearchComponent<span class="pl-pds">"</span></span>/&gt;</pre></div>
+<h1>
+<a aria-hidden="true" class="anchor" href="#facet-searchcomponent" id="user-content-facet-searchcomponent"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Facet SearchComponent</h1>
+<p>In Hybrid mode, SolRDF mixes plain SPARQL results with Solr features, including pagination and faceted search. The standard FacetComponent has been subclassed in order to provide special features described in the Faceted Search section [8].</p>
+<div class="highlight highlight-text-xml"><pre>&lt;<span class="pl-ent">searchComponent</span> <span class="pl-e">name</span>=<span class="pl-s"><span class="pl-pds">"</span>facet<span class="pl-pds">"</span></span> <span class="pl-e">class</span>=<span class="pl-s"><span class="pl-pds">"</span>org...RDFacetComponent<span class="pl-pds">"</span></span>/&gt;</pre></div>
+<h1>
+<a aria-hidden="true" class="anchor" href="#query-parser" id="user-content-query-parser"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Query parser</h1>
+<p>The <em>sparql-query</em> is a custom <em>QParserPlugin</em>: a factory that creates a query parser which is able to understand SPARQL 1.1. No special configuration needs to be done on this component, as it acts as a bridge / adapter between Jena and Solr worlds.</p>
+<div class="highlight highlight-text-xml"><pre>&lt;<span class="pl-ent">queryParser</span> <span class="pl-e">name</span>=<span class="pl-s"><span class="pl-pds">"</span>sparql<span class="pl-pds">"</span></span> <span class="pl-e">class</span>=<span class="pl-s"><span class="pl-pds">"</span>org...SparqlQParserPlugin<span class="pl-pds">"</span></span>/&gt;</pre></div>
+<h1>
+<a aria-hidden="true" class="anchor" href="#query-response-writer" id="user-content-query-response-writer"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Query response writer</h1>
+<p>This is probably the most complex component in SolRDF. It manages the output of a given query execution, both in:</p>
+<ul>
+<li>RDF mode, where it outputs standard SPARQL results [e.g. 9, 10]</li>
+<li>Hybrid mode, where Solr features like faceting and pagination are mixed with SPARQL results [11]</li>
+</ul>
+<p>The configuration allows to associate content-types with specific SPARQL query type (SELECT, CONSTRUCT, ASK).</p>
+<div class="highlight highlight-text-xml"><pre>&lt;<span class="pl-ent">queryResponseWriter</span> <span class="pl-e">name</span>=<span class="pl-s"><span class="pl-pds">"</span>hybrid<span class="pl-pds">"</span></span> <span class="pl-e">class</span>=<span class="pl-s"><span class="pl-pds">"</span>org.gazzax.labs.solrdf.response.HybridResponseWriter<span class="pl-pds">"</span></span>&gt;
+	&lt;<span class="pl-ent">lst</span> <span class="pl-e">name</span>=<span class="pl-s"><span class="pl-pds">"</span>content-types<span class="pl-pds">"</span></span>&gt;
+		<span class="pl-c"><span class="pl-c">&lt;!--</span> SELECT <span class="pl-c">--&gt;</span></span>
+		&lt;<span class="pl-ent">str</span> <span class="pl-e">name</span>=<span class="pl-s"><span class="pl-pds">"</span>111<span class="pl-pds">"</span></span>&gt;
+                   application/sparql-results+xml,
+                   application/sparql-results+json,
+                   text/csv,
+                   text/plain,
+                   text/tab-separated-values
+                &lt;/<span class="pl-ent">str</span>&gt;
+		<span class="pl-c"><span class="pl-c">&lt;!--</span> CONSTRUCT <span class="pl-c">--&gt;</span></span>
+		&lt;<span class="pl-ent">str</span> <span class="pl-e">name</span>=<span class="pl-s"><span class="pl-pds">"</span>222<span class="pl-pds">"</span></span>&gt;
+                   application/rdf+xml,
+                   application/n-triples,
+                   text/turtles
+                &lt;/<span class="pl-ent">str</span>&gt;
+		<span class="pl-c"><span class="pl-c">&lt;!--</span> DESCRIBE <span class="pl-c">--&gt;</span></span>
+		&lt;<span class="pl-ent">str</span> <span class="pl-e">name</span>=<span class="pl-s"><span class="pl-pds">"</span>333<span class="pl-pds">"</span></span>&gt;
+                   application/rdf+xml,
+                   application/n-triples, 
+                   text/turtles&lt;/<span class="pl-ent">str</span>&gt;
+		<span class="pl-c"><span class="pl-c">&lt;!--</span> ASK <span class="pl-c">--&gt;</span></span>
+		&lt;<span class="pl-ent">str</span> <span class="pl-e">name</span>=<span class="pl-s"><span class="pl-pds">"</span>444<span class="pl-pds">"</span></span>&gt;
+                   text/csv,
+                   text/plain,
+                   text/tab-separated-values,
+                   application/sparql-results+xml,
+                   application/sparql-results+json
+                &lt;/<span class="pl-ent">str</span>&gt;
+	&lt;/<span class="pl-ent">lst</span>&gt;		
+&lt;/<span class="pl-ent">queryResponseWriter</span>&gt;</pre></div>
+<hr/>
+<p>[1] <a href="https://github.com/agazzarini/SolRDF/blob/master/solrdf/src/solr-home/store/conf/solrconfig.xml">solconfig.xml</a><br/>
+[2] <a href="https://wiki.apache.org/solr/SolrConfigXml" rel="nofollow">https://wiki.apache.org/solr/SolrConfigXml</a><br/>
+[3] <a href="https://github.com/agazzarini/SolRDF/issues/25">https://github.com/agazzarini/SolRDF/issues/25</a><br/>
+[4] <a href="http://www.w3.org/TR/sparql11-query" rel="nofollow">http://www.w3.org/TR/sparql11-query</a><br/>
+[5] <a href="http://yonik.com/solr/paging-and-deep-paging" rel="nofollow">http://yonik.com/solr/paging-and-deep-paging</a><br/>
+[6] <a href="http://www.w3.org/TR/sparql11-update" rel="nofollow">http://www.w3.org/TR/sparql11-update</a><br/>
+[7] <a href="https://github.com/agazzarini/SolRDF/wiki/Schema#identity">https://github.com/agazzarini/SolRDF/wiki/Schema#identity</a><br/>
+[8] <a href="https://github.com/agazzarini/SolRDF/wiki/Faceted%20search">https://github.com/agazzarini/SolRDF/wiki/Faceted%20search</a><br/>
+[9] <a href="http://www.w3.org/TR/rdf-sparql-XMLres" rel="nofollow">http://www.w3.org/TR/rdf-sparql-XMLres</a><br/>
+[10] <a href="http://www.w3.org/TR/sparql11-results-json" rel="nofollow">http://www.w3.org/TR/sparql11-results-json</a><br/>
+[11] <a href="https://github.com/agazzarini/SolRDF/wiki/User%20Guide#hybrid-mode">https://github.com/agazzarini/SolRDF/wiki/User%20Guide#hybrid-mode</a></p>
+
+        </div>
+
+    </div>]

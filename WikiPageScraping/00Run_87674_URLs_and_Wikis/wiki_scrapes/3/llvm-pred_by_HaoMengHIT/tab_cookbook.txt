@@ -1,0 +1,1887 @@
+[<div class="wiki-body gollum-rest-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <h1>
+<a aria-hidden="true" class="anchor" href="#llvm-cookbook" id="user-content-llvm-cookbook"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>llvm cookbook</h1>
+<table frame="void" rules="none">
+<colgroup><col/>
+<col/>
+</colgroup><tbody valign="top">
+<tr>
+<th>Author:</th>
+<td>xiehuc &lt;<a href="mailto:xiehuc@gmai.com">xiehuc@gmai.com</a>&gt;</td>
+</tr>
+</tbody>
+</table>
+<div>
+<p>Contents</p>
+<ul>
+<li>
+<a class="internal" href="#id1" id="user-content-id77">语言篇</a><ul>
+<li><a class="internal" href="#q-llvmvalue" id="user-content-id78">Q: 如何理解LLVM的Value</a></li>
+<li><a class="internal" href="#q" id="user-content-id79">Q: 如何追溯源代码?</a></li>
+</ul>
+</li>
+<li>
+<a class="internal" href="#id2" id="user-content-id80">代码篇</a><ul>
+<li><a class="internal" href="#q-instruction" id="user-content-id81">Q: 如何创建一条指令(Instruction)？</a></li>
+<li><a class="internal" href="#id4" id="user-content-id82">Q: 如何插入一条指令?</a></li>
+<li><a class="internal" href="#q-analysis-pass" id="user-content-id83">Q: 如何创建自己的Analysis Pass?</a></li>
+<li><a class="internal" href="#q-statistic" id="user-content-id84">Q: 什么是Statistic类?</a></li>
+<li><a class="internal" href="#q-llvmc-libprofile-rtc" id="user-content-id85">Q: 为何LLVM都使用c++而libprofile_rt要使用c?</a></li>
+</ul>
+</li>
+<li>
+<a class="internal" href="#id5" id="user-content-id86">实现篇</a><ul>
+<li><a class="internal" href="#q-loopcyclevalueprofiling" id="user-content-id87">Q: LoopCycle的ValueProfiling实现</a></li>
+<li><a class="internal" href="#q-pretty-print" id="user-content-id88">Q: pretty_print的实现</a></li>
+<li><a class="internal" href="#q-resolver" id="user-content-id89">Q: Resolver的实现</a></li>
+<li><a class="internal" href="#id6" id="user-content-id90">Q: 使用Resolver的数据</a></li>
+<li><a class="internal" href="#q-resolverpass-passresolver" id="user-content-id91">Q: ResolverPass: 跨Pass缓存Resolver</a></li>
+<li><a class="internal" href="#q-resolverset" id="user-content-id92">Q: ResolverSet: 连续依赖分析</a></li>
+<li><a class="internal" href="#q-mdaresolve" id="user-content-id93">Q: MDAResolve的实现</a></li>
+<li><a class="internal" href="#q-markpreserve" id="user-content-id94">Q: MarkPreserve的实现</a></li>
+<li><a class="internal" href="#q-loopcyclesimplify" id="user-content-id95">Q: LoopCycleSimplify的作用</a></li>
+<li><a class="internal" href="#q-slash-shrink-minicore" id="user-content-id96">Q: Slash &amp; Shrink 与 minicore</a></li>
+<li><a class="internal" href="#id7" id="user-content-id97">Q: 数据依赖图</a></li>
+<li><a class="internal" href="#q-ddgraph-expr" id="user-content-id98">Q: DDGraph::expr()</a></li>
+<li><a class="internal" href="#q-gvinfo" id="user-content-id99">Q: 全局变量解析: GVInfo</a></li>
+<li><a class="internal" href="#id8" id="user-content-id100">Q: GVInfo的内存组织</a></li>
+<li><a class="internal" href="#id9" id="user-content-id101">Q: 静态分支预测基本块频率</a></li>
+<li><a class="internal" href="#q-performance-predication" id="user-content-id102">Q: Performance Predication</a></li>
+</ul>
+</li>
+<li>
+<a class="internal" href="#id10" id="user-content-id103">工具篇</a><ul>
+<li><a class="internal" href="#q-opt-ox" id="user-content-id104">Q: 如何获取opt -Ox 实际上执行的详细优化条目？</a></li>
+<li><a class="internal" href="#q-opt-o3" id="user-content-id105">Q: opt -O3 执行了哪些优化？</a></li>
+<li><a class="internal" href="#q-o3loop-vectorize" id="user-content-id106">Q: 如何在O3优化时关闭loop-vectorize优化</a></li>
+<li><a class="internal" href="#q-backend" id="user-content-id107">Q: 如何查看支持的后端( <em>backend</em> )?</a></li>
+<li><a class="internal" href="#q-pass" id="user-content-id108">Q: 如何进行简单的pass执行顺序的输出？</a></li>
+<li><a class="internal" href="#q-llvm-3-4-profiling" id="user-content-id109">Q: 如何在 LLVM 3.4 版本中使用 profiling 功能?</a></li>
+<li><a class="internal" href="#q-bitcode" id="user-content-id110">Q: 如何手工将插桩后的bitcode编译为可执行文件?</a></li>
+<li><a class="internal" href="#q-llvmedge-profiling" id="user-content-id111">Q: 如何正确的使用LLVM的edge profiling?</a></li>
+<li><a class="internal" href="#q-profilingbasicblock" id="user-content-id112">Q: 如何列出profiling所有basicblock的执行频数?</a></li>
+<li><a class="internal" href="#q-value-profiling" id="user-content-id113">Q: 如何打印出value profiling的具体内容?</a></li>
+<li><a class="internal" href="#id17" id="user-content-id114">Q: 如何绘制value profiling值变化曲线?</a></li>
+<li><a class="internal" href="#q-llvmanalysis" id="user-content-id115">Q: LLVM支持的所有Analysis的作用?</a></li>
+<li><a class="internal" href="#q-optmemorydependenceanalysis" id="user-content-id116">Q: 为何opt使用MemoryDependenceAnalysis的输出结果那么糟糕?</a></li>
+</ul>
+</li>
+<li>
+<a class="internal" href="#id45" id="user-content-id117">编译篇</a><ul>
+<li><a class="internal" href="#q-cgpopbitcode" id="user-content-id118">Q: 如何编译cgpop的bitcode?</a></li>
+<li><a class="internal" href="#q-npbbitcode" id="user-content-id119">Q: 如何编译NPB的bitcode?</a></li>
+</ul>
+</li>
+<li>
+<a class="internal" href="#id46" id="user-content-id120">定义篇</a><ul>
+<li><a class="internal" href="#q-mpi" id="user-content-id121">Q: MPI 操作原语定义</a></li>
+<li><a class="internal" href="#q-dominator" id="user-content-id122">Q: 什么是必经节点 <em>Dominator</em> ?</a></li>
+<li><a class="internal" href="#q-interval-analysis" id="user-content-id123">Q: 什么是区间分析 <em>Interval Analysis</em> ?</a></li>
+<li><a class="internal" href="#q-interprocedural-optimize" id="user-content-id124">Q: 什么是过程间优化 <em>interprocedural optimize</em>?</a></li>
+<li><a class="internal" href="#q-datalayout" id="user-content-id125">Q: 什么是 <em>DataLayout</em> ?</a></li>
+<li><a class="internal" href="#q-critical-edge" id="user-content-id126">Q: 什么是关键边 <em>Critical Edge</em> ?</a></li>
+<li><a class="internal" href="#q-loopinvariant" id="user-content-id127">Q: 什么是循环不变量 <em>LoopInvariant</em> ?</a></li>
+<li><a class="internal" href="#id58" id="user-content-id128">Q: 什么是循环不变量的提升?</a></li>
+<li><a class="internal" href="#q-latch" id="user-content-id129">Q: 什么是循环的回边 <em>latch</em> ?</a></li>
+<li><a class="internal" href="#q-loop-trip-count" id="user-content-id130">Q: 什么是Loop的 <em>trip count</em> ?</a></li>
+<li><a class="internal" href="#q-looppreheader-looppredecessor" id="user-content-id131">Q: 什么是 <em>LoopPreheader</em> 和 <em>LoopPredecessor</em> ?</a></li>
+<li><a class="internal" href="#q-loopsimplifyform" id="user-content-id132">Q: 什么是 <em>LoopSimplifyForm</em> ?</a></li>
+<li><a class="internal" href="#q-true-exit-alias-for-loop-exit" id="user-content-id133">Q: 什么是真退出( <cite>True Exit</cite> alias <cite>For Loop Exit</cite> )</a></li>
+</ul>
+</li>
+</ul>
+</div>
+<a name="user-content-id1"></a>
+<h2>
+<a aria-hidden="true" class="anchor" href="#%E8%AF%AD%E8%A8%80%E7%AF%87" id="user-content-语言篇"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><a href="#id77">语言篇</a>
+</h2>
+<a name="user-content-q-llvmvalue"></a>
+<h3>
+<a aria-hidden="true" class="anchor" href="#q-%E5%A6%82%E4%BD%95%E7%90%86%E8%A7%A3llvm%E7%9A%84value" id="user-content-q-如何理解llvm的value"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><a href="#id78">Q: 如何理解LLVM的Value</a>
+</h3>
+<blockquote>
+<p>A: LLVM的变量Value 是SSA形式的。因此一个Value的值就是赋值的那条语句。例如:</p>
+<pre>%i1 = 1
+%i2 = add %i1, 2
+</pre>
+<p>那么%i1变量的名字叫做i1,%i1变量的值为1,并且其它使用%i1的地方都可以直接替换
+为1。%i2变量的名字叫做i2,%i2变量的值为add %i1,2 是一条指令。同时它也可以表
+述为 add 1,2 也就是 3 。</p>
+</blockquote>
+<a name="user-content-q"></a>
+<h3>
+<a aria-hidden="true" class="anchor" href="#q-%E5%A6%82%E4%BD%95%E8%BF%BD%E6%BA%AF%E6%BA%90%E4%BB%A3%E7%A0%81" id="user-content-q-如何追溯源代码"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><a href="#id79">Q: 如何追溯源代码?</a>
+</h3>
+<blockquote>
+<p>A: 需要编译的时候编译debug符号信息(<code>-g</code>),之后,llvm每行后面都会有一些
+<code>!dbg !&lt;num&gt;</code> 的元数据(metadata), LLVM的 <a href="http://llvm.org/docs/SourceLevelDebugging.html" rel="nofollow">debug</a> 信息格式比较复杂,大概
+debug元数据如下:</p>
+<pre>!837 = metadata !{i32 250, i32 0, metadata !65, null}
+</pre>
+<p>记录了 local information , 其含义分别为 <em>line number, column number,
+scope, and original scope</em> . 重要的是行数, scope又是一个元数据节点,记录了更
+详细的信息,并且根据记录的种类不同,其格式也不同.反正我是没看懂了.(拿到行号就
+万事OK了,其它的都是渣渣).</p>
+</blockquote>
+<a name="user-content-id2"></a>
+<h2>
+<a aria-hidden="true" class="anchor" href="#%E4%BB%A3%E7%A0%81%E7%AF%87" id="user-content-代码篇"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><a href="#id80">代码篇</a>
+</h2>
+<a name="user-content-q-instruction"></a>
+<h3>
+<a aria-hidden="true" class="anchor" href="#q-%E5%A6%82%E4%BD%95%E5%88%9B%E5%BB%BA%E4%B8%80%E6%9D%A1%E6%8C%87%E4%BB%A4instruction" id="user-content-q-如何创建一条指令instruction"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><a href="#id81">Q: 如何创建一条指令(Instruction)？</a>
+</h3>
+<blockquote>
+<p>A: 创建指令的方法比较多 [<a href="http://llvm.org/docs/ProgrammersManual.html#creating-and-inserting-new-instructions" rel="nofollow">url</a>] ,从上到下越来越高级</p>
+<blockquote>
+<ul>
+<li>可以使用 <code>new Instruction(...)</code> ，对于所有的类型都能创建。</li>
+<li>可以使用 <code>Instruction::Create(...)</code> ，一些指令集合(如CastInst)有
+创建的类函数，但通常第一个参数是Type(如BitCastInst)，用于表示创建的
+具体的指令。</li>
+<li>可以使用 <code>IRBuilder::CreateInstruction(...)</code>,对于所有的类型都能够
+创建,IRBuilder主要是做了一些额外的常数优化,即自动计算常数表达式.如
+果是想插入自己写的指令的话,常常会因为把指令优化成常数了而插入不成功
+,这个时候就需要用上面的2种方法手动创建.</li>
+</ul>
+</blockquote>
+</blockquote>
+<a name="user-content-id4"></a>
+<h3>
+<a aria-hidden="true" class="anchor" href="#q-%E5%A6%82%E4%BD%95%E6%8F%92%E5%85%A5%E4%B8%80%E6%9D%A1%E6%8C%87%E4%BB%A4" id="user-content-q-如何插入一条指令"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><a href="#id82">Q: 如何插入一条指令?</a>
+</h3>
+<blockquote>
+<p>A:  插入指令的方法比较多,基本上可以分为显式插入和隐式插入</p>
+<blockquote>
+<ul>
+<li>在某条指令后插入: <code>basicblock-&gt;getInstList().insert(inst,newInst);</code>
+</li>
+<li>在某个BasicBlock的末尾插入: <code>basicblock-&gt;getInstList().push_back(newInst);</code>
+通常,为了简化,在创建的时候最后一个参数传入某个BasicBlock,则是表明在
+在BasicBlock的末尾插入,但是由于经常修改的是已经建立好的BB,最后一条
+指令是结束语句,所以插入的指令都是不可到达的.所以这个不太常用.</li>
+<li>在某个指令前插入: <code>new Instruction(...,inst);</code> 最后一个参数传入的
+是指令,只有创建的第一种方法有这个原型,其它的方法只能传入BasicBlock,
+故只能在末尾插入.</li>
+<li>IRBuilder专门可以使用 <code>IRBuilder::setInsertPoint</code> 来控制插入点.</li>
+</ul>
+</blockquote>
+</blockquote>
+<a name="user-content-q-analysis-pass"></a>
+<h3>
+<a aria-hidden="true" class="anchor" href="#q-%E5%A6%82%E4%BD%95%E5%88%9B%E5%BB%BA%E8%87%AA%E5%B7%B1%E7%9A%84analysis-pass" id="user-content-q-如何创建自己的analysis-pass"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><a href="#id83">Q: 如何创建自己的Analysis Pass?</a>
+</h3>
+<blockquote>
+<p>A: 根据使用方式的不同, 注册Analysis Pass的方法有些差异. 一般而言我们可以写出
+来了之后用 <code>opt -load</code> 来加载so,并扩展其功能,这种方法比较好,另外一种是直接
+作为头文件提供给使用者调用.</p>
+<p>前者在写完了pass class之后,需要使用 <code>static RegisterPass&lt;PassType&gt;
+X(ArgName,ArgDesc,...)</code> 它实际上是创建了一个全局变量,并且在创建的时候执行了
+额外的一些代码(构造函数),并把注册Pass的代码加入其中.因此是自动注册的.特别适
+合 <code>opt -load</code> 方式(因为此时没有其它的时机执行注册代码),如果还需要把它加入
+某个AliasGroup中.则完整代码是:</p>
+<pre>static RegisterPass&lt;PassType&gt; X(...);
+static RegisterAliasGroup&lt;AGType&gt; Y(X);
+</pre>
+<p>表示把刚注册了的X加入到AGType(如 <em>AliasAnalysis</em> )中.</p>
+<p>后者使用 <code>INITIAL_AG_PASS(PassType,AGType,...)</code> ,这类代码常见于llvm的源代
+码中. 但是这个宏展开出来之后只是定义了两个函数,没有调用,调用的地方在llvm源码
+的一个初始化函数中统一执行的. 由于初始化函数编译的时候已经确定了,没有办法再
+追加,所以需要手工调用一下展开的函数.这种适合头文件方式,也就是main函数是我们
+写的,因此可以执行初始化代码.</p>
+<p>总的说来,推荐第一种方式.</p>
+</blockquote>
+<a name="user-content-q-statistic"></a>
+<h3>
+<a aria-hidden="true" class="anchor" href="#q-%E4%BB%80%E4%B9%88%E6%98%AFstatistic%E7%B1%BB" id="user-content-q-什么是statistic类"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><a href="#id84">Q: 什么是Statistic类?</a>
+</h3>
+<blockquote>
+A: <a href="http://llvm.org/docs/ProgrammersManual.html#the-statistic-class-stats-option" rel="nofollow">Statistic</a> 类是用于提供一种途径,来输出LLVM编译期间的一些数据,如指令的统
+计信息.也就是说在编译的时候就可以确定所有的数据了.和 profiling 概念还是不一
+样的.</blockquote>
+<a name="user-content-q-llvmc-libprofile-rtc"></a>
+<h3>
+<a aria-hidden="true" class="anchor" href="#q-%E4%B8%BA%E4%BD%95llvm%E9%83%BD%E4%BD%BF%E7%94%A8c%E8%80%8Clibprofile_rt%E8%A6%81%E4%BD%BF%E7%94%A8c" id="user-content-q-为何llvm都使用c而libprofile_rt要使用c"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><a href="#id85">Q: 为何LLVM都使用c++而libprofile_rt要使用c?</a>
+</h3>
+<blockquote>
+A: 主要是为了增强适用性,如果libprofile_rt用c++,对于c++程序而言自然没有问题,
+对于c程序,由于动态链接libprofile_rt,会间接依赖libstdc++,本来程序是c的还要强
+制链接c++的库,不是有些本末倒置么!</blockquote>
+<a name="user-content-id5"></a>
+<h2>
+<a aria-hidden="true" class="anchor" href="#%E5%AE%9E%E7%8E%B0%E7%AF%87" id="user-content-实现篇"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><a href="#id86">实现篇</a>
+</h2>
+<a name="user-content-q-loopcyclevalueprofiling"></a>
+<h3>
+<a aria-hidden="true" class="anchor" href="#q-loopcycle%E7%9A%84valueprofiling%E5%AE%9E%E7%8E%B0" id="user-content-q-loopcycle的valueprofiling实现"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><a href="#id87">Q: LoopCycle的ValueProfiling实现</a>
+</h3>
+<blockquote>
+<ol>
+<li>
+<p><strong>识别loop cycle</strong></p>
+<p>cycle也就是循环次数的那个量(抱歉表意不准),这个量的值也就是标识这循环的次
+数,其表达式是 <tt>\frac {end-start} {step}</tt>.</p>
+<p>识别cycle的方法是从特殊到一般,首先通过尽可能的处理cgpop中的各种循环,一个
+一个的调试错误,从而尽可能的覆盖更多种类的循环.具体的调错过程在 <em>loop
+cycle analysis</em> 文档中. 不过比较分散,这里整合起来完整的描述一次.</p>
+<p>首先需要使用-O3级别的优化对代码进行优化,主要的是和循环相关的几个优化,因为
+这些优化可以简化循环的结构,从而减小分析的工作难度.</p>
+<p>首先分析的起点是寻找到循环的出口,实践证明逆向分析更容易一些.如果循环只有
+一个出口,那很自然的就确定下来了. 但是循环有多个出口的情况下,我们需要选定
+唯一一个用于分析的出口,我们称为真退出,因为大多数循环的设计还是for loop,是
+有一个既定的循环次数的.其它出口的情况一般都是 <code>if(quit) break;</code> 这类判
+断,提前结束循环的. 如果是while循环那种不定长的循环会怎么样呢?答案是那很快
+就会分析失败了. 确定真退出的方法,我们使用了一种不太稳定的断言:</p>
+<blockquote>
+<p><em>“如果退出在回边上,那么就断定它是真退出”</em></p>
+</blockquote>
+<p>目前而言是足够了.因为大部分情况真退出是和步进i++在一起的,也就是:
+<code>i++;if(i==end) goto quit; else goto header</code> 所以这里会涉及到回边.</p>
+<p>下一步是找到真退出的终止指令(最后一条指令),大部分情况下,它是一个 <code>br</code>
+指令.我们取它的第一个参数,它是一个icmp的计算指令,通过比较返回true或false,
+从而控制跳转的方向.</p>
+<blockquote>
+<div>
+<div><em>“终止指令应该是一条条件比较指令”</em></div>
+<div><em>“条件比较指令应该是整数比较(icmp)”</em></div>
+<div><em>“比较方式应该是等于或者是符号大于(signed great)”</em></div>
+</div>
+</blockquote>
+<p>事实上,优化器会将各种比较情况优化成上面的等于或者符号大于,并且是条件满足
+的话转到循环退出,目前还没有遇到其它种类,要是遇到的话,就要修改断言了.所以
+是从特殊到一般的.如果是符号大于的话,那么就需要多加一个步进.例如 <code>i&gt;5 -&gt;
+quit</code> 那么实际上是在i=6的时候退出的.</p>
+<blockquote>
+<div>
+<div><em>“比较指令的第二个参数应该是终止变量”</em></div>
+<div><em>“终止变量应该是一个循环不变量”</em></div>
+<div><em>“比较指令的第一个参数应该是归纳变量(Induction)或者是步进之后的归纳变量(Next)”</em></div>
+</div>
+</blockquote>
+<p>终止变量的断言比较容易理解,要是它随着循环每次都在变的话,那么我们会很为难
+的.归纳变量和步进之后的归纳变量是什么意思?实际上递增的那条指令 <code>i++</code> 正
+确的表达是 <code>i=i+1</code>.而LLVM的SSA形式使得之前的表达是不合法的.正确的表达应
+该是 <code>%i2=%i1+1</code> %i2和%i1都是以前的i的前后两个状态,也就是对应这归纳变量
+和步进之后的归纳变量. 回到header之后,会有一个 <code>%i1 = phi [%start,
+preheader] [%i2, latch]</code> 又将%i2重命名为%i1. 下面就要确定出到底是
+Induction还是Next.</p>
+<blockquote>
+<p><em>“比较指令的第一个参数只能是Load指令或者PHI指令或者Add指令”</em></p>
+</blockquote>
+<p>首先通过上面的断言把情况限制到这三种指令中,减小分析压力.首先如果它是一个
+Add指令,那么我们就能断定:</p>
+<blockquote>
+<p><em>“如果比较指令的第一个参数Add指令，那么它是Next”</em></p>
+</blockquote>
+<p>这种情况下应该减小一个步进,比如 <code>%i2=%i1+1,if(%i2=5) goto quit</code> 当
+start=0时,%i1=4时循环就退出了.实际涉及循环体的是%i1,所以循环次数应该是
+4-0=4次,而不是5-0=5次.</p>
+<p>如果它是一个PHI指令,那就可以初步判断它是一个Induction了.</p>
+<p>至于实际情况,还需要判断这个PhiNode的第一个参数和第二个参数实际指向的是不
+是相等的Value,这种情况是由于循环内部立即跟了一个if造成的,循环可以选择执行
+计算复杂的一边,也可能执行计算量小的一边.于是两边的归纳变量实际上都是指向
+Header中最原始的归纳变量的两个别名.</p>
+<blockquote>
+<div>
+<div><em>“如果比较指令的第一个参数是Phi指令，那么它是Induction”</em></div>
+<div><em>“如果Induction不在Header内,并且它的两个入口指向的同一个值,认为这个值才是真的Induction”</em></div>
+</div>
+</blockquote>
+<p>找到了Next或者Induction之后,要继续把另外一个缺的找出来.方法是对Header中的
+所有PhiNode遍历,</p>
+<blockquote>
+<div>
+<div><em>“如果找出了Induction,并且PhiNode==Induction,那么Next等于PhiNode的从回边来的值”</em></div>
+<div><em>“如果找出了Next,并且PhiNode从回边来的值==Next,那么Induction=PhiNode”</em></div>
+</div>
+</blockquote>
+<p>实际上,对于Induction的情况的断言稍显得不必要,应为已经确定出了Induction,它
+的入口的某个值就是Next,这里只是形式上统一,代码上写在同一个循环内的.</p>
+<p>对于Start值:</p>
+<blockquote>
+<div>
+<div><em>“如果是有Predecessor,那么Induction从Predecessor来的值就一定是Start了”</em></div>
+<div><em>“如果没有,那么PhiNode的所有从循环外部来的值应该相等,并且是Start”</em></div>
+</div>
+</blockquote>
+<p>这个断言应该没有什么问题,比较容易理解.要是从外部来的多个值都不相等,那怎么
+知道实际是从哪里来的.有一点是不知道是不是该做castoff,目前还没有遇到需要
+castoff的情况.</p>
+<p>如果它是Load指令,也就是实际的和内存打交道,已经涉及使用到了栈或者堆空间了.
+需要的分析是简单的内存依赖分析了.Load的参数是读写的地址,我们要研究的对象
+则是这个地址(PSi),是一个指针类型. 首先,对PSi的读取操作不用管,关键是对PSi
+的写入操作,应该只有两条指令.第一条是把初始值写入,第二条是把Next值写入.</p>
+<p>实际上,PSi的写指令多余2条,因为会有多个循环都共用一个PSi的情况,所以一条是
+在循环前面,离循环最近的写指令,一条是在循环内部的写指令.</p>
+<blockquote>
+<div>
+<div><em>“如果写入的值是循环不变量,并且写指令在LoopPredecessor或者LoopPredecessor的Predecessor中,那么认为它是Start值”</em></div>
+<div><em>“如果写指令在循环内,并且写入的值是一个Add指令,那么认为它是Next值”</em></div>
+<div><em>“比较指令的第一个参数是Induction”</em></div>
+<div><em>“找到的Start值和Next值应该都只有一个”</em></div>
+</div>
+</blockquote>
+<p>可以看到,“离循环最近的写指令”是通过限定Predecessor和Predecessor的
+Predecessor来实现的,也就是搜索深度为2,这是一个不完全的实现.</p>
+<p>现在，Start,Next,End都找到了.就该找步进量(Step了).Step的断言也非常简单:</p>
+<blockquote>
+<p><em>“Next是Add指令,第一个参数是Induction,第二个参数是常量,那么第二个参数就
+是Step了”</em></p>
+</blockquote>
+<p>常量的断言是不完全实现,不过也足够了.本来该大结局了.但是有一些特殊情况是
+Next是一个PhiNode.这种情况的出现也是由于循环内有一个if判断,两个分支上都有
+Next.所以增加下面的断言:</p>
+<blockquote>
+<p><em>“Next是PhiNode,并且对于每个入口而言,都满足上面的断言,并且第二个参数都
+相等,那么任意一个入口的第二个参数就是Step了”</em></p>
+</blockquote>
+<p>所有的条件都找到之后,下面可以生成cycle的计算指令了.首先就是Start和End类型
+不一致的问题,需要插入cast指令,使用断言:</p>
+<blockquote>
+<p><em>“Start的类型和End的类型都是Integer类型”</em></p>
+</blockquote>
+<p>然后,对于 <em>“Start类型和End类型的长度不等的情况”</em> , 插入 <code>start = cast
+Start to type(End)</code> .最后根据公式:</p>
+<pre>cycle = \frac {End-Start+OneStep*Step} {Step}
+</pre>
+<p>生成计算指令.OneStep是前面提到的,多加一个步进的情况.有效的值是 [-1,1] 的
+整数.在实际代码中,为了生成紧凑的代码,还使用了一些额外的小技巧.</p>
+<p>最后将cycle计算指令,插入到代码的Loop的Predecessor中,如果没有Predecessor就
+插入到start值所在的BasicBlock中.如果是一个常数的话会使用``ConstantFold``
+来计算指令得到一个常数,由于常数不能直接插到代码中,所以它是临时的,需要调用
+者及时处理,要是不手动直接或间接插入这个常数的话,那么这次的运算结果就会丢失.</p>
+</li>
+<li>
+<p><strong>进行插桩</strong></p>
+<p>寻找loop的循环并且插装的代码在 <code>loop.cpp</code> 中,</p>
+<p>在LoopCycle中得到了cycle的Value变量,并且如果开启了
+<code>-insert-value-trap</code> 和 <code>-insert-value-profiling</code> 之后,会把那个循环变
+量进行插装. 插装地点在Preheader, 必须要在Preheader中插, 如果没有Preheader
+则创建一个. 因为Preheader能够满足一定会转入循环,其它任何地方都不能满足这
+个条件.</p>
+<p>由于识别的只是真退出,也是循环正常运行完成时退出的那个出口,如果循环有多个
+退出的话,可能会在其它地方提前退出.那么这个时候循环的实际执行次数就小雨我
+们插装的那个值.我们可以简单的定义我们的查找目标是上界来规避这个问题.</p>
+</li>
+</ol>
+</blockquote>
+<a name="user-content-q-pretty-print"></a>
+<h3>
+<a aria-hidden="true" class="anchor" href="#q-pretty_print%E7%9A%84%E5%AE%9E%E7%8E%B0" id="user-content-q-pretty_print的实现"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><a href="#id88">Q: pretty_print的实现</a>
+</h3>
+<p>pretty_print的代码在 <em>llvm-pred</em> 的 display.cpp 中,主要用于打印人类可读的
+llvm::Value的表示,例如 <code>i32(i64*(@global_[0][1][0]))-2-1</code> 实际上是由好几条语
+句完成的工作.</p>
+<p>pretty_print被设计为可以打印任意的Value量,但是目前使用最多的还是用于打印循环次
+数,其实现原理是由于llvm的SSA表达形式,例如</p>
+<img alt="graph/llvm-ssa" src="graph/llvm-ssa"/>
+<p>是一个ssa表达,通过递归遍历,加上符号翻译,就能够转化为 <code>%1 = *@global+i32(-1)</code> 的可
+读形式表达式.下面是翻译时使用到的符号约定(类C语言):</p>
+<ul>
+<li>
+<p>括号: 按照C语言符号优先级打印</p>
+</li>
+<li>
+<p>双目运算符: 按照C语言定义翻译,(对于加上一个负数,加号省略)</p>
+</li>
+<li>
+<p>比较运算符: 按照C语言定义翻译</p>
+</li>
+<li>
+<p>常数: 直接打印其值. 如果是全局变量, 打印'@'+变量名称, 同llvm的ir表达.</p>
+</li>
+<li>
+<p>函数参数: 打印'%'+变量名</p>
+</li>
+<li>
+<p>Instruction:</p>
+<ul>
+<li>
+<p>load: 打印'*'+递归翻译,表明是读取指针内容.</p>
+</li>
+<li>
+<p>alloca: 打印'%'+变量名,表明可能是中间值,源代码中定位不到.</p>
+</li>
+<li>
+<p>select: 打印 '(' ... ') ?' ... ':' ... ,C语言选择风格</p>
+</li>
+<li>
+<p>cast: 打印 '('+type+')(' ... ')' 类型,C语言强制转换风格,两边加括号是为了可读性.</p>
+</li>
+<li>
+<p>getelementptr: 打印 ... '[' idx1 ']' '[' ... ']' ... ,C语言数组访问风格</p>
+</li>
+<li>
+<p>phinode: 打印 '{'+...+'}||{'+...+'}'+... ,C语言的或风格,表明这个值可能是
+第一部分,可能是第二部分.具体是哪个部分是由运行时决定的.一种特殊情况是每
+个入口实际上都是一样的内容,此时则不必打印'||',直接打印出来即可.</p>
+<p>实现上通过创建一个字符串流,然后递归收集每个入口的文本表达,然后使用一个
+set来过滤重复的内容,如果最后set大小为1,说明所有入口值相等,否则按照原始的
+语法打印出来.</p>
+<p>另外一种特殊情况是,phinode迭代展开的时候出现了无限递归,有一个phinode自身
+包含了自己. 实现上在递归的时候使用一个栈来记录访问的次序,如果某次展开
+phinode发现在stack中已经有了.则说明出现了自身引用,此时返回一个魔术字符串
+"<a href="#id63"><span>|Delta|</span></a>", 用于表明是自身引用,由于它太特殊了,所以使用希腊字母来表达. 其
+引用范围是由'#'后数字表明 '||' 的个数所匹配的表达式.例如
+<tt>\Delta:=1||\{\Delta\#1+1\}</tt> 是一个自身引用,其表达的含义是这个值可
+能是1,可能是自身加1.因此实际上它表达了一个线性增长的序列:
+<tt>(1,2,3,...)</tt>. <tt>\Delta:=1||\{2||\{\Delta\#2+1\}\}</tt> 则是深度
+为2. <a href="#id65"><span>|Delta|</span></a> 还有一条运算法则,即 <tt>\Delta||X=X</tt> 即如果|Delta| 出现
+在一个phinode中,那么它自己可以省略.明显的: <tt>\Delta:=\Delta</tt> 是隐含
+一定成立的, 所以再写出来是没有必要的.根据这条规则,可以简化一些表达式. 实
+现上是通过在phinode的展开中比较某个入口的表达式等于 <a href="#id67"><span>|Delta|</span></a> 的话,则忽略
+这个入口.</p>
+</li>
+</ul>
+</li>
+</ul>
+<p>最后的结果,会一直逆向追溯到访问内存的语句. 有可能最后结果是常量,喜闻乐见.有可能
+是全局变量,可以在源代码中定位出来的,那么我们的(循环次数)变量表达式就给出来了.还
+有可能是中间变量, 还需要更加深入的分析. 或者是分析失败.</p>
+<p>鉴于实现上的原因,pretty_print无法实现结构化简,使得生成的表达式会有很多冗余的部
+分,对于出现多次的同一表达式也不能够判断其间是否发生了读写操作.例如:
+<code>{{*%X||*%Y}||*%Y}||*%Y</code> 其间出现了3次读取中间变量指针 <code>%Y</code> 操作, 但是并不
+能简单的说这三个 <code>*%Y</code> 的值是一样的.因为实际上这些读取指令可能分散在多个基本
+块中,中间可能夹杂有store指令改变其值. 至于这个表达式是否应该简化为 <code>*%X||*%Y</code>
+还不太清楚,从含义上是可以的.从和ir结构对应的角度上是不应该简化的.反正现在实现方
+式决定了实现不了简化.就只有把这个问题先放到一边了.</p>
+<a name="user-content-q-resolver"></a>
+<h3>
+<a aria-hidden="true" class="anchor" href="#q-resolver%E7%9A%84%E5%AE%9E%E7%8E%B0" id="user-content-q-resolver的实现"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><a href="#id89">Q: Resolver的实现</a>
+</h3>
+<p>Resolver这个类提供了统一方便的依赖分析途径. 它是一个模板类, 也就是说可以通过模
+板参数来控制到底是使用何种途径来进行依赖分析:</p>
+<pre>Resolver&lt;NoResolve&gt; R
+R.resolve(Target, callback);
+</pre>
+<p>依赖分析分为两个部分, 一个是直接分析 <em>direct_solve</em>, 另一个是深入分析 <em>deep_solve</em>.</p>
+<ol>
+<li>
+<em>direct_solve</em> : 该分析是直接分析IR的SSA的依赖关系, 对于寄存器变量, 它们的
+数据依赖就隐含的包含在SSA形式中. 所以可以直接获得. 例如 <code>%i = add i32 %a,
+i32 %b</code> , 那么 <code>%i</code> 则直接依赖 <code>%a</code> 和 <code>%b</code>.当分析到了内存访问指令的
+时候, 诸如loadInst,storeInst,callInst等, 因为此时参数是指针类型,不再是直接
+依赖问题而是内存依赖问题了就不能够再继续分析, 并将这些指令作为 <code>unsolved</code>
+返回出来. 给下一个阶段继续分析.</li>
+<li>
+<em>deep_solve</em> : 该分析是用于分析内存分析指令, 输入是在上一步中没有分析出来的
+内存指令如LoadInst, 输出是对应的内存指令, 如StoreInst, 是写入内存的那条指令.
+deep_solve是一个抽象函数, 其实现又模板参数来指定. 输出的那条指令继续丢给
+direct_solve分析, 一直到不能够分析出结果为止.</li>
+</ol>
+<p>direct_solve的分析的计算比较轻松, 但是deep_solve的计算则比较耗能, <strong>所以Resolver
+提供了统一的Cache</strong> . 只要一次分析, 下次查询同一条指令的时候能够直接从Cache中拿出
+结果. Resolver提供三种不同的 deep_solve 实现. 分别是:</p>
+<ol>
+<li>
+<p><em>NoResolve</em> : 不提供有价值的依赖分析, 输入什么直接输出出去. 由于输出的被
+Resolver直接作为已经解析出来的结果. 认为它是solved了, 就会继续分析下去. 实
+际上是实现了最大化依赖(全依赖)的结果, 将内存分析指令当做普通的SSA指令分析,
+因此不会有 unsolved 指令产生. 通常作为其它分析之后的封尾之用, 将其它分析的
+unsolved指令封闭.</p>
+</li>
+<li>
+<p><em>UseOnlyResolve</em> : 是使用LLVM的User和Use来进行分析, 也就是不进行别名分析.
+例如分析 Load %a, %a的Use列表则表示所有使用了%a的指令的集合:</p>
+<pre>Store %a
+Sub %a
+Load %a &lt;---
+Add %a
+Store %a
+</pre>
+<p>似乎在代码的位置上先于分析的指令的, 在Use列表中都在该指令之后. 因此, 我们通
+过扫描分析的指令之后的位置, 找出第一条Store语句, 就是所依赖的结果了. 但是这
+个断言并不是绝对成立的, 只是经验上似乎是如此. 所以可能会引起错误.</p>
+</li>
+<li>
+<p><em>SLGResolve</em> : 使用 SLGProfiling信息来分析, 能够提供一些全局变量的读写依赖分析</p>
+</li>
+<li>
+<p><em>MDAResolve</em> : 使用 <em>MemoryDependenciesAnalysis</em> 框架的分析方法. 由于它的初
+始化需要显示的传递MDA进去, 所以调用上有些不同:</p>
+<pre>Resolver&lt;MDAResolve&gt; R;
+R.get_impl().initial(this);
+R.resolve(...);
+</pre>
+<p>注意, 由于MDA的分析结果并不是我们想象的那么好, 并且它的分析速度实在是一般般
+( <em>O(n)</em>), 而且代码实现质量不太好. 所以实际上不推荐使用. 大部分情况下
+UseOnlyResolve就能够满足需求.</p>
+</li>
+</ol>
+<a name="user-content-id6"></a>
+<h3>
+<a aria-hidden="true" class="anchor" href="#q-%E4%BD%BF%E7%94%A8resolver%E7%9A%84%E6%95%B0%E6%8D%AE" id="user-content-q-使用resolver的数据"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><a href="#id90">Q: 使用Resolver的数据</a>
+</h3>
+<p>Resolver进行一次数据分析后会返回一个 <code>ResolveResult</code> 的元祖数据,利用该数据能
+够还原出来完整的遍历路径, 该元祖的成分比较复杂.需要特别说明一下.</p>
+<p>第一个部分是已经解析出来的列表(resolved).每一个元素是Value*的类型. 第二个部分是
+未能够解析的列表(unsolved).每个元素也是Value*类型. 第三个部分是隐式依赖映射表.
+每个元素的类型是Value*-&gt;Use*的映射.</p>
+<p>Use是一个非常有用的结构,能够建立使用与被使用者之间的关系,它包含两个部分
+:getUser---就是使用该值的指令.get---就是使用的哪个值. 例如 <code>%1 = add %2, %3</code>
+. 这里有两个Use关系:{%1,%2}, 使用者是%1, 被使用者是%2.  {%1,%3} 使用者是%1, 被
+使用者是%3.</p>
+<p>ResolveResult结构的遍历过程就是建立DDGraph的过程. 所以可以直接使用
+ResolveResult, 也可以使用DDGraph来遍历. 但是两者还是有细微的差别. 在后面会具体说道.</p>
+<p>resolved和unsolved的成份都比较简单. 容易理解. 关键是映射表, 可以认为是杂乱地存
+放了许多单一的映射关系. 这些关系单独拿出来看没有用, 但是如果选择了一个根节点,
+可以将这些映射一条一条地串成一个树. 也就是数据依赖图:</p>
+<pre>a ---&gt; c;                c   b - d
+b ---&gt; d;   ======&gt;       \ /
+a ---&gt; b;                  a
+</pre>
+<p>首先选定一个根节点,然后根据SSA进行递归. 这些递归经过的节点都已经在resolved列表
+中的话就说明它是已经被解析的了. 如果遍历到的节点发现在unsolved中, 那说明已经结
+束了. 该节点是没有被解析出来的. 如果在resolved列表中,并且发现它还在隐式依赖映射
+表中. 说明这里不是SSA依赖类型, 例如UseOnlyResolve会给出:</p>
+<pre>%2 = load %3 ---&gt; {store %4, %3; %3}
+</pre>
+<p>这条依赖就不是SSA, 而是内存依赖分析结果分析出来的. 而NoResolve会给出:</p>
+<pre>%2 = load %3 ---&gt; {%3 = alloc 8; }
+</pre>
+<p>这个就是SSA依赖. 由于NoResolve没有进行内存依赖分析, 所以直接粗暴地给出的SSA形式.
+但是也有比较复杂的情况如隐式依赖函数调用. 是说一个指针传给函数,然后在函数内修改
+指针的内容的情况. 例如在隐式映射中会有两个条目:</p>
+<pre>%2 = load %3  ---&gt; {call get_param(%3,%4); %3} ;函数外
+%4(Argument*) ---&gt; {store %5, %1; %5} ;函数内
+
+define get_param( %1, %2 ) {
+  ....
+  store %5 %1
+}
+</pre>
+<p>解释为%3依赖函数 <code>get_param</code> 的第一个参数, 然后在在函数内部, 第一个参数不叫
+<code>%3</code> , 而是 <code>%1</code> 了. 而 <code>%1</code> 最后有一条 <code>store</code> 指令. 也就是经过两层映
+射关系, <code>%3</code> 实际上真正依赖的是store指令的 <code>%5</code>. 在数据结构上也是两条映射,
+先是load依赖后面的整个Use(包含call指令和参数). 为了能够正确的进行遍历, 需要先吧
+Use拿出来,发现是CallInst,然后经过一个变换findCallInstArgument, 会找到对应的函数
+的参数(Argument类型). 这个时候在映射表中, 会储存Argument真正的依赖的store指令.
+实际上第二条映射关系已经跨函数了, 是在另外一个函数中的内容!!</p>
+<p>还有一种相反的情况是更常见的, 函数里面的load依赖函数的传入参数. 在数据结构上则
+是一层映射:</p>
+<pre>%2 = load %3 ---&gt; {call get_param(%4, %5); %4} ; load在函数内, call在函数外
+define get_param(%3, %6) {
+  ...
+  %2 = load %3
+}
+</pre>
+<p>这里直接绕过Argument,指向了call指令的Parameter.(因为设计的时候无法把Argument存
+放在右边, 只能进一步的找出相关的指令存进去). 这里都没有出现什么问题, 下一步就来
+了. 现在找到了Parameter了有两种情况:</p>
+<pre>;  situation 1
+%4 = cast %7, i32
+call get_param(%4, %5)
+;  situation 2
+%4 = alloc i32
+store %7 %4
+call get_param(%4, %5)
+</pre>
+<p>解释是, 第一种情况, Parameter紧接着一个直接依赖, 这里没有问题, 可以直接把整个%4
+作为迭代地查找. 第二种情况是 Parameter紧接着一个间接依赖. 如果这里直接取%4, 也
+就是alloc, 则什么也分析不出来. 在算法中此处用了非常dirty的方法, 也就是继续遍历
+Use, 如果是call指令, 强制检查下是否满足上面刚说的隐式依赖函数调用的情况,不是的
+话就继续找出第一条load和store指令. 用它来继续分析. 如果是load, 会调用各种Resolve来
+分析, 如果是store, 直接可以去到数值. 这里是破坏了分析的层级, 本来分析应该交给具
+体的Resolve来做, 但是这里框架也在分析隐式依赖函数调用. 因为Resolve的输入只能是
+Instruction, 但不能直接把callinst丢给它, 因为callinst的参数很多, 不知道是哪个.
+如果这里设计为输入是Use, 或者输入参数不止一个, 那么这个问题都能比较好的解决. 这
+是当初设计的缺陷导致的现在的困难.</p>
+<p>接下来, 就算上面用了dirty的方式勉勉强强的分析出来的, 在数据结构上还有dirty的地
+方. 对于第二种情况, 具体的储存格式是这样的:</p>
+<pre>load %3 ---&gt; {call get_param(%4, %5); %4}
+%4 = alloc i32 ---&gt; {store %7 %4; %7}
+</pre>
+<p>上面的问题在于, 依赖分析使用了alloc, 明显的, 如果在%4上有多次store, 则上面的结
+构将造成数据丢失. 这个问题是由于映射表的左边是用Value来储存的, 足够松的一个条件
+了. 但是这里不能直接储存call指令, 因为同样的不知道是哪个参数. 如果这里用Use来储
+存Key, 同样的会出现问题. 因为这样就无法储存Argument等等的情况了. 所以要么用两个
+指针, 分别储存Value或者Use. 要么就用更加复杂的技术. 例如LLVM 3.5有一个ErrorOr的
+模板. 无论如何, 也是当初设计数据结构的时候没有设计好.</p>
+<p>上面的查找过程是这样的, 获取了call指令的Use之后, 看是否是Alloc指令, 是的话则找
+到第二条映射.</p>
+<p>而在DDGraph中, 储存的关系没有Use结构, 只是Instruction. 所以不能够获取到关联的具
+体参数. 实际上, 隐式依赖Call指令的情况被翻译成了多条Load指令指向1条Call指令(实
+际上是不同的参数, 但是没有体现出来), 然后这条Call指令又依赖了复数的store指令(实
+际上是不同的参数,但是没有体现出来). 由于这个原因. 直接使用DDGraph遍历在遍历到
+Call指令的时候需要手工查询一下依赖的到底是具体的哪个参数.</p>
+<a name="user-content-q-resolverpass-passresolver"></a>
+<h3>
+<a aria-hidden="true" class="anchor" href="#q-resolverpass-%E8%B7%A8pass%E7%BC%93%E5%AD%98resolver" id="user-content-q-resolverpass-跨pass缓存resolver"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><a href="#id91">Q: ResolverPass: 跨Pass缓存Resolver</a>
+</h3>
+<p>虽然Resolver提供了缓存能力, 但是它主要是使用栈变量方式储存, 本身会随着作用域的
+结束而释放.所以为了能在不同的Pass中保持Resolver的缓存数据, 使用ResolverPass. 它
+是一个空Pass, 本身不会进行任何优化. 需要使用Resolver的只需要将它作为依赖加入到
+AU中即可.</p>
+<p>它提供 <code>getResolver&lt;T&gt;()</code> 方法, 可以取得某一种类型的Resolver. ResolverPass的
+内存设计为不同类型的Resolver只有一份, 持有自己的缓存. 互相不交换. 也就是无论何
+时, 调用getResolver&lt;T&gt;()两次, 获取的是同一个对象. 又由于Resolver自身的缓存机制,
+所以说能够在Pass间保持缓存.</p>
+<a name="user-content-q-resolverset"></a>
+<h3>
+<a aria-hidden="true" class="anchor" href="#q-resolverset-%E8%BF%9E%E7%BB%AD%E4%BE%9D%E8%B5%96%E5%88%86%E6%9E%90" id="user-content-q-resolverset-连续依赖分析"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><a href="#id92">Q: ResolverSet: 连续依赖分析</a>
+</h3>
+<p>为了能够同时使用复数个分析. 有两种方法. 一种是先用 <code>getResolver&lt;T1&gt;()</code> 分析一
+遍. 然后把所有unsolved的结果用 <code>getResolver&lt;T2&gt;()</code> 再分析一遍. 但是这种方法的
+交叉性不是很好. 也许用T2分析不出来的再用T1就能够分析出来. 或者反之. 而这种做法
+就不能够回炉分析.</p>
+<p>所以又单独设计出来ResolverSet, 名字上是一个Resolver的集合. 它能够同时使用T1和T2
+进行分析. 通过 <code>ResolverPass::getResolverSet&lt;T1,T2,...&gt;()</code> 来获取一个实例(使
+用c++11的变参模板,十分高级的哟). 注意它是一个栈变量. 用完就丢弃的. 它保持着各个
+Resolver&lt;T&gt;的一个引用. 又因为各个Resolver来自ResolverPass, 也就是说它们的缓存数
+据还能共用! 它的使用和普通的Resolver类似. 每次进行deep_resolve的时候会先用T1分
+析, 没有结果就继续用T2分析, 依次进行.</p>
+<p>ResolverSet实际上和AnalysisGroup的定位有些类似. 不同的是AnalysisGroup是使用隐式
+的指定实现, 在opt中调用一些特别的Pass来提供AnalysisGroup. 而ResolverSet是显示的
+指定. 在编码的时候就指定先用UseOnlyResolve. 再用SLGResolve等等. 因为我们的
+SlashShrink设计需要指定最后必须用NoResolve来进行封闭. 而其它情况下很难用到
+NoResolve.</p>
+<p>因为一些分析需要用特殊的initial方法来初始化一下. 而ResolverSet无法再访问单个的
+成员了. 所以需要先用getResolver&lt;T&gt;()去访问它的实现, 并先初始化好.再用
+ResolverSet:</p>
+<pre>ResolverPass&amp; RP;
+ProfileInfo&amp; PI;
+RP.getResolver&lt;SLGResolve&gt;().get_impl().initial(PI);
+RP.getResolverSet&lt;UseOnlyResolve,SLGResolve&gt;().resolve(...);
+</pre>
+<a name="user-content-q-mdaresolve"></a>
+<h3>
+<a aria-hidden="true" class="anchor" href="#q-mdaresolve%E7%9A%84%E5%AE%9E%E7%8E%B0" id="user-content-q-mdaresolve的实现"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><a href="#id93">Q: MDAResolve的实现</a>
+</h3>
+<p>find_dependencies过程的目标则是去寻找这部分指令的内存依赖.内部使用MDA来实现,给
+定一条内存操作指令(load,store),MDA查询能够返回出一个查询结果和一条关联指令.
+<em>Def</em> 表示确定存在依赖, <em>Clobber</em> 表示可能存在依赖,直译过来是冲突,表示对于找到
+的指令不知道是存在依赖还是不存在,其结果基本上无法用. <em>NonLocal</em> 表示在本基本块
+内找不到结果.  <em>NonFuncLocal</em> 表示在本函数内找不到结果. 前两者附带了一条所依赖
+的指令, 后两者则不提供.</p>
+<p>一条指令可能会和多条语句冲突,只和1条直接依赖.所以find_dependencies使用迭代的方
+式进行多次查询:先使用MDA的getPointerDependencyFrom可以寻找一个基本块内的依赖,如
+果找到的是Def则直接返回,如果找到的是Clobber则继续扫描,直到该基本块完全扫描完,返
+回NonLocal,然后MDA提供一个getNonLocalPointerDependency的方法可以在其他基本块中
+继续查询依赖,返回的结果还额外包括一个BasicBlock*,该结果只是在其它基本块中依赖的
+第一条,还需要使用getPointerDependencyFrom继续扫描完该基本块剩下的依赖.通过这样
+迭代进行,则能够成功的找出那条Def依赖,并且是store指令,于是我们成功的完成了内存依
+赖分析,找出了写该指针的时候的指令.因此指针的内容就自然而然的知道了.或者会找到
+NonFuncLocal,表明该指针实际上是依赖函数的参数的.这种情况下就需要找到调用该函数
+的所有call指令,调用的时候传入的实参则是依赖的内容.</p>
+<p>对于全局变量,虽然也可以向上面一样处理,但是全局变量存值的指令可能会和实际分析的
+指令离得很远,而且大部分情况下都是属于NonFuncLocal的.所以我们直接使用全局变量的
+use列表(储存了所有使用该值的指令),也就是不再进行别名分析了.从该列表中找出store
+指令,则是写入全局变量时候的指令.但是如果找出两条以上的store指令则要格外小心了.
+需要使用callgraph找出离分析的指令更近的store.</p>
+<a name="user-content-q-markpreserve"></a>
+<h3>
+<a aria-hidden="true" class="anchor" href="#q-markpreserve%E7%9A%84%E5%AE%9E%E7%8E%B0" id="user-content-q-markpreserve的实现"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><a href="#id94">Q: MarkPreserve的实现</a>
+</h3>
+<p>MarkPreserve的作用是对代码进行标记, 使用LLVM的Metadata, 虽然标记之后想怎么做都
+行, 但是本来是设计为标记的为保留的, 所以名字中含有Preserve. 提供标记单条指令的
+<code>mark</code> 和递归标记所有依赖的 <code>mark_all</code>. mark_all 也是一个模板函数, 可以使用
+Resolver的所有方法: <code>mark_all&lt;NoResolve&gt;(V)</code></p>
+<a name="user-content-q-loopcyclesimplify"></a>
+<h3>
+<a aria-hidden="true" class="anchor" href="#q-loopcyclesimplify%E7%9A%84%E4%BD%9C%E7%94%A8" id="user-content-q-loopcyclesimplify的作用"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><a href="#id95">Q: LoopCycleSimplify的作用</a>
+</h3>
+<p>LoopCycleSimplify只是一个Wrapper的类, 实际上它做的事情就是那些对LoopCycle进行的
+所有的如内存依赖分析, 插桩, 标记等等的工作. 因为LoopCycle 过程用于找出循环次数
+变量, 为了保持它的实现的干净纯洁, 它只分析不做事情. 因此做事情的脏活就只能够统
+统丢给LoopCycleSimplify来完成了. 总的说来, 它干的事情是: 找出循环次数, 然后使用
+Resolver分析循环依赖, 并递归的把所有的依赖都进行标记.</p>
+<a name="user-content-q-slash-shrink-minicore"></a>
+<h3>
+<a aria-hidden="true" class="anchor" href="#q-slash--shrink-%E4%B8%8E-minicore" id="user-content-q-slash--shrink-与-minicore"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><a href="#id96">Q: Slash &amp; Shrink 与 minicore</a>
+</h3>
+<p>minicore(小核), 是一个常见的概念. 虽然其它很多地方都在使用这个名字, 但是这里我
+们独创(wish)的将它引入进来作为我们分析的一种实现思路. 其思想十分简单, 就是对于
+分析出来的循环次数指令连同它的所有依赖进行标记. 然后再把其它所有代码都删除, 这
+样就能够生成一个小核. 理论上这个小核的运行速度会非常的快. 并且它在我们标记的指
+令上的表现是与原始程序是一致的. 因为我们将它的所有依赖都标记了. 然后我们还能够
+在小核上进行ValueProfiling, 就能够把所有的循环次数都拿出来. 该次数和原始程序的
+次数是一致的. 因此我们使用该次数再乘以原始程序的循环内的指令数, 就能够进行时间
+估算了.</p>
+<p>小核无疑是使用方便的, 因为它的表现和原始程序一样, 我们怎么调用原始程序的, 保留
+同样的输入文件, 同样的运行时参数, 调用小核, 就能够获得循环的次数. 无疑是非常的
+具有吸引力的.</p>
+<p>基于该思想, SlashShrink 过程就是切削代码生成小核的过程. Slash和Shrink两个词都是
+切,削的含义. 所以这里加强了语义. 基本上它的工作有以下重点:</p>
+<ol>
+<li>标记call指令, 如果检查到某条call指令调用的函数是程序内定义的函数, 那么这个
+call指令是整个callgraph的一个节点, 十分的重要, 所以我们标记它, 就能尽量保持
+callgraph不变.</li>
+<li>验证标记是否封闭, 也就是说不能够一条指令标记了, 但是它的依赖没有标记. 这样
+切削过后就切坏了. 这个是对所有的已经标记的再使用 <code>mark_all&lt;NoResolve&gt;</code> 再
+进行补充标记, 因为NoResolve是封闭的, 所以能够实现我们要的效果.</li>
+<li>进行切削, 当需要删除某条指令的时候, 首先把它的操作数置空, 解除引用. 然后就
+可以删除了.</li>
+<li>保留main函数, 因为main函数中有很多初始化代码, 并且不容易识别, 所以我们整个
+保留. 事实上这个是人工的结果, 要是能够让机器决定是否保留自动化程度就更高了.</li>
+</ol>
+<p>并且SlashShrink还通过不同的 <em>切削工艺</em> 能够控制小核的大小,在不破坏结果的前提下
+缩减小核, 就能够进一步的加快执行速度.  它正是通过环境变量 <code>SHRINK_LEVEL</code> 来实
+现的:</p>
+<ol>
+<li>
+<code>SHRINK_LEVEL=0</code> : 表示不切削, 保留所有指令, 这样我们可以看到哪些指令标记
+了, 方便的检查错误.</li>
+<li>
+<code>SHRINK_LEVEL=1</code> : 保留所有的cfg, 进行切削. 这是一个稳重的做法. 保留cfg就
+是保留整个程序的结构不变, 这个是通过标记每个基本块的转移指令及其依赖来实现
+的.</li>
+<li>未来, 还有保留整个callgraph, 等等不同的,更加细致的等级分类.</li>
+<li>未来还能够不标记那些常数的循环次数等, 因为它们能够静态分析出来.</li>
+<li>未来还能够不标记循环次数的那条指令, 而是标记它们的哪些unsolved的指令, 然后
+剩下的计算再推倒出来. 此时minicore有一个更加合适的名字: loader, 表示它是一
+个引导, 只获取了前面部分静态分析不了的代码. 可以说loader是我们的最终目标.</li>
+<li>未来还能够不标记那些循环次数比较小,影响比较小的循环. 也就是变成一种近似结果
+. 至于这个是否有必要可以再作商议.</li>
+</ol>
+<a name="user-content-id7"></a>
+<h3>
+<a aria-hidden="true" class="anchor" href="#q-%E6%95%B0%E6%8D%AE%E4%BE%9D%E8%B5%96%E5%9B%BE" id="user-content-q-数据依赖图"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><a href="#id97">Q: 数据依赖图</a>
+</h3>
+<p>数据依赖图( <em>DDGraph</em> )的一些数据组织在 [使用Resolver的数据] 一节中有描述. 它的
+实现主要是两个LLVM的模板类:GraphTraits和DOTGraphTraits. Traits是C++模板编程中的
+一个概念,如果不理解Traints的出发点的话,比较难理解为什么LLVM会这样设计. 简单说来
+就是利用模板的特化性质, 能够提供特定的类的一些属性. 例如GraphTraits的Function特
+化 <code>GraphTraits&lt;Function*&gt;</code> 定义了child_begin和child_end两个迭代器范围函数是
+Function的BasicBlock的begin和end. 也就是说它表明了Function这个类如果是看做一个
+图的话,它的子节点就是它里面的基本块. 我们定义好了GraphTraits的特化, 我们就定义
+好了一个图. 然后LLVM会统一的对待这些图, 并把它们绘制出来.</p>
+<p>DOTGraphTraits也是同样的, 但是它的目的是提供把这个图, 转化成dot文件的时候所需要
+的细节. 例如图的名称, 节点的文字样式, 边的文字样式, 等等细节. 通过它, 我们能够
+掌控输出的dot的每个细节.</p>
+<a name="user-content-q-ddgraph-expr"></a>
+<h3>
+<a aria-hidden="true" class="anchor" href="#q-ddgraphexpr" id="user-content-q-ddgraphexpr"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><a href="#id98">Q: DDGraph::expr()</a>
+</h3>
+<p>这个是用于生成线性的数据依赖表达式, 和pretty_print的目的是一致的. 但是不同的是,
+pretty_print是基于递归地输出流(ostream)的直接翻译, 如果需要进行一些修改, 十分的
+麻烦. 在它基础上实现的括号系统,简直复杂得要死,十分难以调教.不利于以后的深入发展
+.在制定pretty_print的时候就已经规划好了基于结构化翻译的expr.现在这里正是它的实
+现. pretty_print作为轻量级的表达式输出, 使用的是类似NoResolve的规则. 实际上表达
+不太准确. 看看就行.</p>
+<p>正如上所述, expr()是结构化的表达式翻译, 它先从根节点开始转化成文字, 然后向上直
+到到达根节点. 父节点能够取得所有子节点的对应的表达式, 然后再组合成自己的表达式.
+在这个过程中, 父节点能够修改子节点的表达式. 并且影响到所有相关的节点. 由于
+DDGraph完全的具有这样的结构, 所以在其基础上实现expr是十分合理的选择.</p>
+<p>由于DDGraph是使用Resolver制作出来的,Resolver在创建的时候能够指定何种解析规则.
+所以expr()能够完全实现pretty_print的功能, 还能够提供很多自由方便的能力.</p>
+<p>例如expr提供引用的能力, 也就是如果一个节点被三个以上的父节点所引用, 那么可以用
+一个代号( <code>#?</code> )来表达它, 这样就可以避免重复啰嗦的表达式将实际的核心所掩盖了.</p>
+<p>但是expr()的实现使用了LLVM的Twine. 一方面提高了性能, 减少了字符串函数的使用的频
+率. 另一方面使得代码十分的复杂, 不宜阅读. Twine的一大特点就是它本身并不保持内存
+, 只是指向一个外部的内存. 所以很多地方如果表达式太复杂. 需要先将它转化为字符串
+放到expr_buf中, 然后再用Twine指向它. 另外Twine只能表达两个字符串相连的概念. 如
+果是三个字符串相连就必须使用复数的Twine, 或者直接固化为string. Twine的优势在于
+它是延迟计算. 这样延迟下来, 总能减少几次十分消耗内存和CPU的字符串连接运算, 特别
+是在每个节点都需要多次连接的情况下.</p>
+<a name="user-content-q-gvinfo"></a>
+<h3>
+<a aria-hidden="true" class="anchor" href="#q-%E5%85%A8%E5%B1%80%E5%8F%98%E9%87%8F%E8%A7%A3%E6%9E%90-gvinfo" id="user-content-q-全局变量解析-gvinfo"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><a href="#id99">Q: 全局变量解析: GVInfo</a>
+</h3>
+<p>使用GVInfo类来提供全局变量的解析能力. 该Pass的计算过程和Resolver是相反的,
+Resolver是自底向上的, 给定结果, 反向查找输入. GVInfo是给定输入, 即全局变量. 寻
+找更改全局变量的Store语句.</p>
+<p>在这个问题上, 关键的一点是别名问题的出现. 即可能不是直接通过store 全局变量来修
+改的. 而是先获取指向全局变量的指针. 然后通过指针来修改全局变量. 在这个问题上,
+解决的方案还是只有不断递归的去搜索. 下面列举几种修改全局变量 <code>@gv</code> 的可能情况:</p>
+<ol>
+<li>直接修改: <code>store %val, @gv</code>,</li>
+<li>调用函数修改: <code>call @func(@gv); define func(%arg) { store %val, %arg }</code>
+</li>
+<li>cast 别名: <code>%cst = cast @gv, type; store %val, %cst</code>
+</li>
+<li>获取全局结构体成员指针修改: <code>%gep = getelementptr @gv, 0, 1; store %val, %gep</code>
+</li>
+</ol>
+<p>对于以上4种情况, 除了直接查询 <code>@gv</code> 的所有use之外, 还需要递归的查询别名的所有
+use. 找到 storeinst 则是我们的目标.</p>
+<p>更加复杂的情况还有动态全局数组变量. 也就是: <code>@gv = {i8 * ptr}; ptr = call
+@malloc(%size)</code>. 全局变量只储存了一个指针. 这个指针是在动态期间创建的长度未定
+的结构. 虽然全局变量多种多样(如全局字典变量, 全局hash变量, 等等复杂的数据结构.)
+. 但是我们还是认为动态全局数组的这种情况出现的几率远远大于其它的. 在这种情况下,
+我们能够通过上面的递归方式找到赋值数组指针的语句. 如 <code>store i8* %ptr,
+getelementptr @gv, 0, 1</code>. 此时需要下面的算法判断 <code>%ptr</code> 是一个数组:</p>
+<pre>如果是 ConstantArray, ConstantVector. 返回 True
+如果不是 CallInst, 返回 False
+如果CallInst的Function是@malloc或者是@calloc, 返回 True
+其它情况返回 False
+</pre>
+<p>然后继续递归的搜索写入 <code>%ptr</code> 变量的Store语句. 需要注意的是, 如果此时没有搜索
+到. 并不能表示没有储存. 因为会有以下的特殊情况:</p>
+<pre>%alias = load getelementptr @gv, 0, 1 // alias for %ptr
+store %val, %alias
+</pre>
+<p>所以还要继续递归的搜索该指针一次, 才能确定的确查找失败.</p>
+<a name="user-content-id8"></a>
+<h3>
+<a aria-hidden="true" class="anchor" href="#q-gvinfo%E7%9A%84%E5%86%85%E5%AD%98%E7%BB%84%E7%BB%87" id="user-content-q-gvinfo的内存组织"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><a href="#id100">Q: GVInfo的内存组织</a>
+</h3>
+<p>GVInfo使用一个字典来缓存查询到的结果. Key是一个Constant类型. 这里需要注意的是,
+并不仅仅将全局变量GlobalVariable作为Key. 还有它的ConstantExpr, 如GetElementPtr.
+这能够更加详细的区分全局变量结构体的储存. 简单而言:</p>
+<pre>@gv_1                 ---&gt; store 1
+getelementptr @gv2, 0 ---&gt; store 2
+getelementptr @gv2, 1 ---&gt; store 3
+</pre>
+<p>Value类型包括了是否只有一次写入. StoreInst语句, 解析结果链表.</p>
+<p>因为GetElementPtr有Instruction和ConstantExpr两种类型. 所以需要在查找的时候, 将
+Instruction转化为ConstantExpr. 转换失败则返回NULL.</p>
+<a name="user-content-id9"></a>
+<h3>
+<a aria-hidden="true" class="anchor" href="#q-%E9%9D%99%E6%80%81%E5%88%86%E6%94%AF%E9%A2%84%E6%B5%8B%E5%9F%BA%E6%9C%AC%E5%9D%97%E9%A2%91%E7%8E%87" id="user-content-q-静态分支预测基本块频率"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><a href="#id101">Q: 静态分支预测基本块频率</a>
+</h3>
+<p>首先要理解LLVM的静态分支技术, 通过论文, LLVM给出了一个BranchProbability的结构体
+来描述分支概率, 它是一个结构体{n,d}, 标志了n/d这样一个分数. 那么为什么不用float
+呢? 这是为了精度, 例如2/3, 在float中会表示成0.6666...7, 实际上是丢了精度的. 如
+果保留 1/3 的结构, 有点符号计算的意味, 实际上是最精确的. 在这之上实现乘法除法问
+题也不大. 翻译成IR的时候就可以直接翻译成:</p>
+<pre>%b = mul %a, 1
+%c = sdiv %b, 3
+</pre>
+<p>这样两条指令, 实际上掉精度也只是在结果的小数点上, 是比较好的, 不过需要注意乘法
+部分可能会overflow. 后面会讲怎么防爆处理.</p>
+<p>最后了解了BranchProbability的实质之后, LLVM计算的分支概率会保证底一样, 也容易理
+解了.</p>
+<p>之上有BlockFrequency, 用于表示基本块的执行频率. 它只有一个frequency一个数值, 不
+过其实质还是一样的. 它计算出来的基本块频率是相对Entry块的, 在实际使用的时候需要
+除以Entry块的频率. 至于为什么Entry块的频率有时候不为1, 实际上也是保证除法整除的
+思想, 并没有过多的含义. 一个函数的所有基本块都以Entry基本块为低, 所以LLVM会进行
+一个缩放(Scale)以保证所有的frequency都是整数的. BlockFrequency的代码异常复杂,
+以至于看了一遍也不得要领.</p>
+<p>最后, 要将LLVM的静态分支预测结合我们分析出来的循环次数, 根据Notebook, 仅仅需要
+将 基本块频率除以所在循环Header的频率再乘以TripCount 即可, 非常简单方便. 即:</p>
+<p>$text{bfreq} N=frac{N text{bfreq}_{text{LLVM}}}{H text{bfreq}_{text{LLVM}}}times psi$</p>
+<p>BlockFreqExpr就是做的这件事情, 使用它会返回提升后的频率(目前的实现还比较分裂).
+我们重载了BlockFrequency的除法来保留精度.</p>
+<a name="user-content-q-performance-predication"></a>
+<h3>
+<a aria-hidden="true" class="anchor" href="#q-performance-predication" id="user-content-q-performance-predication"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><a href="#id102">Q: Performance Predication</a>
+</h3>
+<p>PerfPred有两种模式, <code>block_freq</code> 和 <code>exec_time</code> 两种模式, 在新的架构中,后者
+会被废弃, 前者先只考虑基本块频率能够暂时不考虑预测指令执行时间的误差. 预测指令
+的时候的误差被交给llvm-prof和TimingSource去优化了.</p>
+<p>PrefPred主要目的就是把创建的各个时间求和, 当然加法的overflow问题肯定是会有的.
+但是 block_freq 为了比较各个基本块的频率差距, 是不能够加和的, 而是直接把频率拿
+去做一个特殊的PredBlockProfiling. 具体的可以参见 llvm-prof 的文档.</p>
+<p>PrefPred 把所有基本块频率分成 <em>静态基本块预测</em>, <em>静态循环基本块预测</em>, <em>识别循环预
+测为常量</em> , <em>识别循环预测为变量</em> 四种. 它会把所有静态预测和识别循环预测常数插入在
+Entry块中, 识别循环预测非常数由于有数据依赖, 无法插入到基本块中. 首先
+LoopTripCount会插入到Loop的Preheader中, 但是这样有一个问题是, 如果分支跳转的时
+候没有经过循环, 那么就无法经过LoopTripCount, 就无法实现对循环的估计. 因此这里需
+要 <strong>提升</strong> , 将LoopTripCount提升到尽量高的地方, 增加访问的几率. 不过硬限制是数
+据依赖, 不可能提升到依赖的数据之前.</p>
+<p>提升的算法见Notebook. 如果是 exec_time, 在创建加法指令的时候还需要降档, 因为多
+了一个SumLhs依赖, 需要考虑. block_freq 就简化了许多了.</p>
+<p>在 block_freq 涉及的技术含量比较少, 主要是创建 freq*LoopTripCount 的乘法指令,
+这里需要处理overflow的问题, 也就是防爆处理. 现在乘以频率是用分步乘除法:</p>
+<pre>%Ret = mul %TripCount freq.n
+sdiv %Ret freq.d
+</pre>
+<p>防爆处理是检查freq.n 是否大于 <code>sqrt(INT32_MAX)</code> . 如果是大于的话, 就用double
+运算, 再转回整型. 当然要是%TripCount很大, freq.n很小的话, 就只有呵呵了. 不过这
+样的防爆处理还是能应对大部分小分数的计算了. 为什么选用INT32而不用INT64是为了兼
+容32位的机器. 虽然集群上应该都是64位的, 但可能实验机上有32位的. 反正最后要升级
+到64位的也比较容易. overflow通过升级64位只是指标不治本, 更大的乘法也要进行防爆
+处理. 为什么全部不用double来计算, 只是感觉比较费事. 要创建更多的指令. 大部分小
+分数乘法还是分布乘除法比较好. 以后有必要的话可以改.</p>
+<a name="user-content-id10"></a>
+<h2>
+<a aria-hidden="true" class="anchor" href="#%E5%B7%A5%E5%85%B7%E7%AF%87" id="user-content-工具篇"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><a href="#id103">工具篇</a>
+</h2>
+<a name="user-content-q-opt-ox"></a>
+<h3>
+<a aria-hidden="true" class="anchor" href="#q-%E5%A6%82%E4%BD%95%E8%8E%B7%E5%8F%96opt--ox-%E5%AE%9E%E9%99%85%E4%B8%8A%E6%89%A7%E8%A1%8C%E7%9A%84%E8%AF%A6%E7%BB%86%E4%BC%98%E5%8C%96%E6%9D%A1%E7%9B%AE" id="user-content-q-如何获取opt--ox-实际上执行的详细优化条目"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><a href="#id104">Q: 如何获取opt -Ox 实际上执行的详细优化条目？</a>
+</h3>
+<blockquote>
+A: 使用 <code>-debug--debug-pass=Arguments</code> 参数，如: <code>opt
+-debug-pass=Arguments -O3 bt.A.bc -o bt.A.opt3.bc</code> [<a href="http://stackoverflow.com/questions/7656156/which-optimization-does-llvm-perform" rel="nofollow">url</a>]</blockquote>
+<a name="user-content-q-opt-o3"></a>
+<h3>
+<a aria-hidden="true" class="anchor" href="#q-opt--o3-%E6%89%A7%E8%A1%8C%E4%BA%86%E5%93%AA%E4%BA%9B%E4%BC%98%E5%8C%96" id="user-content-q-opt--o3-执行了哪些优化"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><a href="#id105">Q: opt -O3 执行了哪些优化？</a>
+</h3>
+<blockquote>
+<dl>
+<dt>A:</dt>
+<dd>
+<ul>
+<li>Pass Arguments:  -datalayout -notti -basictti -x86tti -no-aa -tbaa
+-targetlibinfo -basicaa -preverify -domtree -verify -simplifycfg
+-domtree -sroa -early-cse -lower-expect</li>
+<li>Pass Arguments:  -targetlibinfo -datalayout -notti -basictti -x86tti
+-no-aa -tbaa -basicaa -globalopt -ipsccp -deadargelim -instcombine
+-simplifycfg -basiccg -prune-eh -inline-cost -inline -functionattrs
+-argpromotion -sroa -domtree -early-cse -lazy-value-info
+-jump-threading -correlated-propagation -simplifycfg -instcombine
+-tailcallelim -simplifycfg -reassociate -domtree -loops
+-loop-simplify -lcssa -loop-rotate -licm -lcssa -loop-unswitch
+-instcombine -scalar-evolution -loop-simplify -lcssa -indvars
+-loop-idiom -loop-deletion -loop-unroll -memdep -gvn -memdep
+-memcpyopt -sccp -instcombine -lazy-value-info -jump-threading
+-correlated-propagation -domtree -memdep -dse -loops
+-scalar-evolution -slp-vectorizer -adce -simplifycfg -instcombine
+-barrier -domtree -loops -loop-simplify -lcssa -scalar-evolution
+-loop-simplify -lcssa -loop-vectorize -instcombine -simplifycfg
+-strip-dead-prototypes -globaldce -constmerge -preverify -domtree
+-verify</li>
+</ul>
+</dd>
+</dl>
+</blockquote>
+<a name="user-content-q-o3loop-vectorize"></a>
+<h3>
+<a aria-hidden="true" class="anchor" href="#q-%E5%A6%82%E4%BD%95%E5%9C%A8o3%E4%BC%98%E5%8C%96%E6%97%B6%E5%85%B3%E9%97%ADloop-vectorize%E4%BC%98%E5%8C%96" id="user-content-q-如何在o3优化时关闭loop-vectorize优化"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><a href="#id106">Q: 如何在O3优化时关闭loop-vectorize优化</a>
+</h3>
+<blockquote>
+<p>A: 现阶段还不能很好的分析loop-vectorize,所以在优化的时候关闭它是一个很好的
+选择,只需要使用:</p>
+<pre>opt -O3 -disable-loop-vectorization source.bc -o output.bc
+</pre>
+<p>即可</p>
+</blockquote>
+<a name="user-content-q-backend"></a>
+<h3>
+<a aria-hidden="true" class="anchor" href="#q-%E5%A6%82%E4%BD%95%E6%9F%A5%E7%9C%8B%E6%94%AF%E6%8C%81%E7%9A%84%E5%90%8E%E7%AB%AF-backend-" id="user-content-q-如何查看支持的后端-backend-"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><a href="#id107">Q: 如何查看支持的后端( <em>backend</em> )?</a>
+</h3>
+<blockquote>
+A: 使用 <code>llvm-config --targets-buil</code> 查看即可</blockquote>
+<a name="user-content-q-pass"></a>
+<h3>
+<a aria-hidden="true" class="anchor" href="#q-%E5%A6%82%E4%BD%95%E8%BF%9B%E8%A1%8C%E7%AE%80%E5%8D%95%E7%9A%84pass%E6%89%A7%E8%A1%8C%E9%A1%BA%E5%BA%8F%E7%9A%84%E8%BE%93%E5%87%BA" id="user-content-q-如何进行简单的pass执行顺序的输出"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><a href="#id108">Q: 如何进行简单的pass执行顺序的输出？</a>
+</h3>
+<blockquote>
+<p>A: opt 的 <code>-debug-pass</code> 有这样的功能,如 <code>opt -scev-aa -basicaa
+-libcall-aa -print-memdeps -debug-pass=Structure -disable-output
+bt.A.opt3.bc</code> . 其中disable-output能够禁止写入优化后的bitcode文件,最后的输
+入格式如下:</p>
+<pre>Pass Arguments:  -targetlibinfo -datalayout -notti -basictti -x86tti
+   -no-aa -basicaa -domtree -loops -scalar-evolution -scev-aa -libcall-aa
+   -memdep -print-memdeps -preverify -verify
+Target Library Information
+Data Layout
+No target information
+Target independent code generator's TTI
+X86 Target Transform Info
+No Alias Analysis (always returns 'may' alias)
+Basic Alias Analysis (stateless AA impl)
+  ModulePass Manager
+    FunctionPass Manager
+      Dominator Tree Construction
+      Natural Loop Information
+      Scalar Evolution Analysis
+      ScalarEvolution-based Alias Analysis
+      LibCall Alias Analysis
+      Memory Dependence Analysis
+      Print MemDeps of function
+      Preliminary module verification
+      Module Verifier
+</pre>
+<p>可以看出print memdeps的计算是在两个aa分析之后才完成的,因此能够使用两个aa的分
+析结果.</p>
+</blockquote>
+<a name="user-content-q-llvm-3-4-profiling"></a>
+<h3>
+<a aria-hidden="true" class="anchor" href="#q-%E5%A6%82%E4%BD%95%E5%9C%A8-llvm-34-%E7%89%88%E6%9C%AC%E4%B8%AD%E4%BD%BF%E7%94%A8-profiling-%E5%8A%9F%E8%83%BD" id="user-content-q-如何在-llvm-34-版本中使用-profiling-功能"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><a href="#id109">Q: 如何在 LLVM 3.4 版本中使用 profiling 功能?</a>
+</h3>
+<blockquote>
+<p>A: 由于一些原因,LLVM在3.4版本中完全移除了对profiling功能的支持,认为这个
+profiling功能有缺陷,在想新的架构但是还没有想出来. 但是对于做项目的我们总不
+能等着它不知道什么时候才能拿出新架构出来.为此我们只能通过一些额外途径把这个
+功能补回来.(当然,降级也是一个可用手段).</p>
+<ul>
+<li>
+<p>在 <a href="https://github.com/xiehuc/llvm-prof">github</a> 下载从LLVM 3.3 版本中抽取出来的profiling库,根据README中的
+说明安装.</p>
+</li>
+<li>
+<p>默认会安装到 <em>/usr/local/lib/libLLVMProfiling.so</em> 路径中,该库具有插桩和
+读取生成数据的能力. 使用:</p>
+<pre>opt -load libLLVMProfiling.so -insert-edge-profiling input.bc -o output.bc
+</pre>
+<p>来完成插桩. 同时可以使用 <code>opt -load libLLVMProfiling.so -help</code> 来查看
+所有(额外)支持的功能.</p>
+</li>
+<li>
+<p>其它的则和LLVM 3.3 的使用没有区别.</p>
+</li>
+</ul>
+</blockquote>
+<a name="user-content-q-bitcode"></a>
+<h3>
+<a aria-hidden="true" class="anchor" href="#q-%E5%A6%82%E4%BD%95%E6%89%8B%E5%B7%A5%E5%B0%86%E6%8F%92%E6%A1%A9%E5%90%8E%E7%9A%84bitcode%E7%BC%96%E8%AF%91%E4%B8%BA%E5%8F%AF%E6%89%A7%E8%A1%8C%E6%96%87%E4%BB%B6" id="user-content-q-如何手工将插桩后的bitcode编译为可执行文件"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><a href="#id110">Q: 如何手工将插桩后的bitcode编译为可执行文件?</a>
+</h3>
+<blockquote>
+<p>A:大概思路是 .bc <a href="#id69"><span>|srarr|</span></a> .o <a href="#id71"><span>|srarr|</span></a> elf 其中第二步是关键.因为我们需要用原来
+的编译器去正确且自动的链接最根本的那些库,比如说libstdc++等等,而那些编译器明
+显不支持bitcode,只支持obj格式的.所以我们需要使用:</p>
+<pre>llc -filetype=obj input.bc -o output.o
+</pre>
+<p>转化为obj格式,之后再用gfortran,gcc,g++或者是clang,clang++去链接非常基础的库
+.如果是使用了MPI,则需要用mpicc去链接mpi的库,并且还有一些是依赖的外部库,看以
+前编译的是怎么编译的.需要在makefile中开启显式输出命令功能(就是使用的命令显
+式输出出来,该命令前面加上@符号),不过bt.A不需要就不管了.</p>
+<p>最后是profiling使用的profile_rt库.全部链接好就能正确编译了.例如:</p>
+<pre>gfortran bt.A.o -lprofile_rt -o bt.A
+mpif90 cgpop_db.o -lprofile_rt -lnetcdff -o cgpop_db
+</pre>
+</blockquote>
+<a name="user-content-q-llvmedge-profiling"></a>
+<h3>
+<a aria-hidden="true" class="anchor" href="#q-%E5%A6%82%E4%BD%95%E6%AD%A3%E7%A1%AE%E7%9A%84%E4%BD%BF%E7%94%A8llvm%E7%9A%84edge-profiling" id="user-content-q-如何正确的使用llvm的edge-profiling"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><a href="#id111">Q: 如何正确的使用LLVM的edge profiling?</a>
+</h3>
+<blockquote>
+<p>A: 虽然llvm-prof工具的edge profiling使用起来非常简单,但是还是有一些 <strong>陷阱</strong>
+十分值得注意!!</p>
+<p>插桩过程如同一般的理解一样,使用 <a class="internal" href="#using-profiling">动态加载libLLVMProfiling.so</a> 的方法插桩即可.</p>
+<p>但是在使用 <code>llvm-prof</code> 读取的时候,第一个参数是bitcode文件,要使用 <a href="#id13"><span>:red:`插
+桩前`</span></a> 的bitcode.考虑到edge profiling是使用顺序来建立index和计数器之间的关系
+的. 所以插桩和读取两次访问需要使用相同的输入bitcode</p>
+<p>不过ValueProfiling是使用 <a href="#id15"><span>:red:`插桩后`</span></a> 的bitcode.</p>
+</blockquote>
+<a name="user-content-q-profilingbasicblock"></a>
+<h3>
+<a aria-hidden="true" class="anchor" href="#q-%E5%A6%82%E4%BD%95%E5%88%97%E5%87%BAprofiling%E6%89%80%E6%9C%89basicblock%E7%9A%84%E6%89%A7%E8%A1%8C%E9%A2%91%E6%95%B0" id="user-content-q-如何列出profiling所有basicblock的执行频数"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><a href="#id112">Q: 如何列出profiling所有basicblock的执行频数?</a>
+</h3>
+<blockquote>
+A: 使用github提供的llvm-prof <code>llvm-prof -list-all bitcode.bc prof.out</code>
+</blockquote>
+<a name="user-content-q-value-profiling"></a>
+<h3>
+<a aria-hidden="true" class="anchor" href="#q-%E5%A6%82%E4%BD%95%E6%89%93%E5%8D%B0%E5%87%BAvalue-profiling%E7%9A%84%E5%85%B7%E4%BD%93%E5%86%85%E5%AE%B9" id="user-content-q-如何打印出value-profiling的具体内容"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><a href="#id113">Q: 如何打印出value profiling的具体内容?</a>
+</h3>
+<blockquote>
+A: 使用github提供的llvm-prof <code>llvm-prof -value-content bitcode.bc
+prof.out</code>. 需要注意的是,不加入 <code>-value-content</code> 打印出来的是report模式.
+Value Profile部分是经过排序后的输出,第一列是捕获时设置的id, 加入
+<code>-value-content</code> 打印出来的是具体的内容,是没有经过排序的,第几行就表明了id
+是多少,这样的设计是因为report模式主要是给人看的,后者是为了进一步方便程序处
+理的.</blockquote>
+<a name="user-content-id17"></a>
+<h3>
+<a aria-hidden="true" class="anchor" href="#q-%E5%A6%82%E4%BD%95%E7%BB%98%E5%88%B6value-profiling%E5%80%BC%E5%8F%98%E5%8C%96%E6%9B%B2%E7%BA%BF" id="user-content-q-如何绘制value-profiling值变化曲线"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><a href="#id114">Q: 如何绘制value profiling值变化曲线?</a>
+</h3>
+<blockquote>
+A: 在源码的scripts目录下提供了一个 <code>drawline.py</code> 的脚本,直接使用
+<code>./drawline.py value.log outdir</code> 即可在 <em>outdir</em> 目录下生成所有值的变化曲
+线.value.log 是在上一个问题中用 <code>-value-content</code> 生成出来的文件.</blockquote>
+<a name="user-content-q-llvmanalysis"></a>
+<h3>
+<a aria-hidden="true" class="anchor" href="#q-llvm%E6%94%AF%E6%8C%81%E7%9A%84%E6%89%80%E6%9C%89analysis%E7%9A%84%E4%BD%9C%E7%94%A8" id="user-content-q-llvm支持的所有analysis的作用"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><a href="#id115">Q: LLVM支持的所有Analysis的作用?</a>
+</h3>
+<blockquote>
+<p>A: 首先,LLVM具有Analysis和Transform两种, 一个是获取各种分析信息,并不改变代码
+结构. 一种是执行某个具体变换,用于优化.它们可能都是Pass,FunctionPass之类的.就
+两种来说哪个对于编程更重要,应该是前者. 因为后者提供的头文件更少. 很多情况下
+都只是cpp文件. 并且opt -O3 优化实际上已经执行了大部分Transform了. 所以不需要
+直接的调用. 而Analysis则相反. 很多情况下使用LLVM的Analysis都有助于我们完成我
+们的需求.</p>
+<p>截至 3.4 版本的Analysis有如下几种 <a href="#analysis" id="user-content-id18">[1]</a> , 下面的主要内容来自 llvm 官方文档的翻译.</p>
+<ul>
+<li>
+<p><a href="#id19"><span>:redi:`AliasAnalysis`</span></a> <a href="#alias" id="user-content-id21">[2]</a> : <em>别名分析</em> (又称指针分析) 是一类尝试决定两个
+指针是否指向同一个内存对象的技术. 别名分析的实现有许多不同的算法, 有不同
+的分类方式: <a href="#alias-classify" id="user-content-id22">[3]</a> :</p>
+<ul>
+<li>是否与控制流相关: flow-sensitive and flow-insensitive</li>
+<li>是否与上下文相关: context-sensitive and context-insensitive</li>
+<li>是否与特定领域相关: field-sensitive and field-insensitive</li>
+<li>实现方式分类: unification-based and subset-based</li>
+</ul>
+<p>在进行别名分析时，需要提出查询是 Must, May 还是 No alias才能得到结果,表
+明两个指针是一直指向同一个对象,还是可能指向同一个对象,还是绝不会指向同一
+个对象。由于判定任意变量在运行时是否真的相关的问题，是一个不可判定问题，
+它等价于图灵机停机问题，所以编译人员无论是对程序进行静态还是动态别名分析
+，总是存在无法确定的情况。</p>
+<p><em>AliasAnalysis</em> 类是一个基础的抽象接口,用于程序和LLVM系统的别名分析实现. 被
+设计为支持广泛的实现方式和程序(但假设现在程序只是flow-insensitive的).</p>
+</li>
+</ul>
+<table frame="void" rules="none">
+<colgroup>
+<col/>
+<col/>
+</colgroup>
+<tbody valign="top">
+<tr>
+<td><a href="#id18">[1]</a></td>
+<td><a href="http://llvm.org/docs/Passes.html" rel="nofollow">http://llvm.org/docs/Passes.html</a></td>
+</tr>
+</tbody>
+</table>
+<table frame="void" rules="none">
+<colgroup>
+<col/>
+<col/>
+</colgroup>
+<tbody valign="top">
+<tr>
+<td><a href="#id21">[2]</a></td>
+<td><a href="http://llvm.org/docs/AliasAnalysis.html" rel="nofollow">http://llvm.org/docs/AliasAnalysis.html</a></td>
+</tr>
+</tbody>
+</table>
+<table frame="void" rules="none">
+<colgroup>
+<col/>
+<col/>
+</colgroup>
+<tbody valign="top">
+<tr>
+<td><a href="#id22">[3]</a></td>
+<td><a href="http://blog.csdn.net/slowboy2008/article/details/2737580" rel="nofollow">http://blog.csdn.net/slowboy2008/article/details/2737580</a></td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li>
+<p><em>AliasSetTracker</em> : 许多Transform需要一组别名是否在某个作用域内有效的信
+息,而不是两个指针是否(成对)满足别名. 因此该类用于有效的从成对的别名分析
+结果中计算出别名集合的信息.</p>
+</li>
+<li>
+<p><em>BlockFrequencyInfo</em> : 用于估算ir基本块的频率</p>
+</li>
+<li>
+<p><em>BranchProbabilityInfo</em> : 用于估算分支概率, 提供函数的CFG中每 <em>边</em> 的相
+对概率, 边由前趋基本块和后继索引定义(PredBlock and index in the
+successors). 从一个Block出发的边的概率总是相对于从该Block出发的边的概率.
+从一个Block出发的所有边的概率和严格等于1(100%). 我们可能有从源到目的的多
+条边, 所以我们使用一个pair (PredBlock和后继的索引)来唯一的区分一条边. 例
+如: 我们可以使用一个0到10的值来切换选择边.</p>
+</li>
+<li>
+<p><em>CallGraph</em> : 该接口用于建立和操作call graph, 对于过程间优化十分有用.</p>
+<p>每个函数被表示为 callgraph 的一个节点. callgraph 节点保持追踪了哪个函数
+调用了哪个函数的关系. 一个call graph可能包含了没有对应函数的空节点. 这些
+'外部'节点用于表达控制流不能表达(或不可分析). 例如:</p>
+<ol>
+<li>所有的非内连接(internal linkage)的函数都有来自一个外部节点的边. 表示
+他们可能在模块外被调用</li>
+<li>所有函数的地址被用于非直接调用(例如先储存到内存再调用)也会有个外部节
+点.表明他们不知道什么时候会被不知道什么东西调用.</li>
+</ol>
+<p>在调用离开模块的时候也可能加入从函数到外部节点的出边,如果:</p>
+<ol start="3">
+<li>函数是外部的(external) 反映了他们可能调用非内连接的任何东西或是地址.</li>
+<li>函数有一个非直接调用</li>
+</ol>
+<p>为了扩展性,可能会加入多个外部节点.当以后能够证明这些非直接调用只是和某几
+个特定的函数关联,再填入信息. 因此其结果是一个上界</p>
+<p>callgraph还尝试支持调用的根节点.可能是查找名为main的函数.要是找不到,就用
+外部节点作为入口节点.表明任何非内连接函数都可能被调用(常见于库函数)</p>
+</li>
+<li>
+<p><em>CallGraphSCCPass</em> : 提供自底向上遍历callgraph的方式.因为callgraph中可能
+会有回路.</p>
+</li>
+<li>
+<p><em>CaptureTracking</em> : 检查指针是否可能被闭包函数捕获,该过程十分的expensive
+,所以考虑缓存其结果. 鉴于c/c++ 98 都不提供函数闭包这么高级的主题,所以可
+以不用深入了.</p>
+</li>
+<li>
+<p><em>CFG</em> : 提供一些和CFG相关的分析过程.</p>
+</li>
+<li>
+<p><em>CodeMetrics</em> : 提供一些测量代码权重(weight)的方法,用于决定是否需要内联
+(inline)</p>
+</li>
+<li>
+<p><em>ConstantFolding</em> : 提供一些把操作数都是常数的指令折叠为常数的方法(编译
+时常数运算).例如 "sub i32 1, 0" -&gt; "1". 也用于补充基本的VMCore常数表达式
+简化,这里提供一些额外的使用DataLayout信息的折叠方法</p>
+</li>
+<li>
+<p><em>ConstantsScanner</em> : 提供遍历函数访问的所有常数的迭代器,用于BitCode
+writer来建立常数池(相同常数只存1份).</p>
+</li>
+<li>
+<p><em>DependenceAnalysis</em> : <em>依赖分析</em> ,一看名字就很高大上.
+用于分析内存访问间的依赖. 现在使用:</p>
+<pre>Practical Dependence Testing
+Goff, Kennedy, Tseng
+PLDI 1991
+</pre>
+<p>作为实现依据. There's a single entry point that analyzes the dependence
+between a pair of memory references in a function, 没有依赖返回NULL,或者
+一个 more-or-less detailed 描述.</p>
+<p>该Pass用于支持 <em>DependenceGraph</em> Pass. 有两个不同的Pass因为有一些有用的
+概念定义有区别. 一个依赖存在如果满足两个条件:</p>
+<ol>
+<li>两个指令引用相同的内存地址,并且</li>
+<li>有从一条指令到另外一条的控制流.</li>
+</ol>
+<p>DependenceAnalysis 着重第一个条件; DependenceGraph 着重后一个(目前还没有
+实现完)</p>
+<p>请注意, 这个工作正在进行,接口可能会变动. 可能的变动: 返回一个更精确的依
+赖集合而不是一个简单的描述.</p>
+</li>
+<li>
+<p><em>DominanceFrontier</em> : 考虑被废弃,所以不要用.</p>
+</li>
+<li>
+<p><em>DominatorInternals</em> : 该Pass为流图构建即时的dominator信息,使用下面的算
+法:</p>
+<pre>A Fast Algorithm for Finding Dominators in a Flowgraph
+I. Lengauer &amp; R. Tarjan, ACM TOPLAS July 1979, pgs 121-141.
+</pre>
+<p>该方法实现了 <tt>O(n \log(n))</tt> 版本的 EVAL 和 LINK, 因为它证明出了理
+论上更慢的 <tt>O(n \log(n))</tt> 实现实际上要快于 似线性 <tt>O(n \cdot
+\alpha(n))</tt> 实现.即使对于大型的CFG.</p>
+</li>
+<li>
+<p><em>Dominators</em> : 提供 DominatorTree 的数据结构,和快速高效的 <em>支配</em> 查询.</p>
+</li>
+<li>
+<p><em>FindUsedTypes</em> : 用于找出一个程序中使用到了的所有的类型.</p>
+</li>
+<li>
+<p><em>InlineCost</em> : 提供启发式的内联决策</p>
+</li>
+<li>
+<p><a href="#id23"><span>:redi:`InstructionSimplify`</span></a> : 提供折叠指令的途径.不要求创建新指令. 可以进行常
+数折叠 <code>("add i32 1, 1" -&gt; "2")</code> 也可以对非常数折叠,返回常数 <code>("and
+i32 %x, 0" -&gt; "0")</code> 或者是某个存在的Value <code>("and i32 %x, %x" -&gt;
+"%x")</code> .</p>
+</li>
+<li>
+<p><em>Interval</em> : 直觉上看, 一个 <em>interval</em> (以下简称 <em>区间</em> )是一个(可能没有
+出口)循环,它的“尾巴”后面是一个非循环节点. 表示一组CFG节点也即一个 <em>区间划
+分</em> (Interval Partition) 的一部分. 形式定义为一组节点满足除了Header的所
+有的前趋都在本区间内.  区间具有一些有趣有用的性质, 比如: 区间的头节点支
+配了整个区间.</p>
+</li>
+<li>
+<p><em>IntervalIterator</em>  : 定义了一种迭代器,以深度优先的顺序来遍历CFG并返回区
+间对象. 迭代器是偏特化的,支持迭代一下几种图:</p>
+<ol>
+<li>一个Function*指针,有BasicBlock节点组成.</li>
+<li>一个IntervalPartition&amp; 对象引用,由区间节点组成.</li>
+</ol>
+</li>
+<li>
+<p><em>IntervalPartition</em> : 表达一个函数的区间划分. 划分将函数的CFG分成最大量
+的区间集合. 通常用于简化CFG到单节点的区间划分(除非他是不可简化的),</p>
+</li>
+<li>
+<p><em>IVUsers</em> : (<em>InductionVariableUsers</em>)表示一些"有趣的"使用循环归纳变量的
+表达式. 也就是会跟踪一些使用了归纳变量的Value.</p>
+</li>
+<li>
+<p><em>LazyValueInfo</em> : 定义了值约束的 <em>懒惰求值</em> 信息.它的目的是要最小化计算
+机要做的工作。除可以得到性能的提升外，惰性计算的最重要的好处是它可以构造
+一个无限的数据类型。 <a href="#id26" id="user-content-id25">[4]</a></p>
+<table frame="void" rules="none">
+<colgroup>
+<col/>
+<col/>
+</colgroup>
+<tbody valign="top">
+<tr>
+<td><a href="#id25">[4]</a></td>
+<td>
+<p><a href="http://zh.wikipedia.org/wiki/%E6%83%B0%E6%80%A7%E6%B1%82%E5%80%BC" rel="nofollow">http://zh.wikipedia.org/wiki/%E6%83%B0%E6%80%A7%E6%B1%82%E5%80%BC</a></p>
+</td>
+</tr>
+</tbody>
+</table>
+</li>
+<li>
+<p><em>LibCallAliasAnalysis</em> : 顾名思义,就是对于库函数调用的别名分析.</p>
+</li>
+<li>
+<p><em>LibCallSemantics</em> :  定义用于描述特定语言的运行时库到LLVM优化器的接口..</p>
+</li>
+<li>
+<p><em>Lint</em> : lint <a href="#id29" id="user-content-id27">[5]</a> 是一种工具程序的名称，它用来标记源代码中，某些可疑的
+、不具结构性（可能造成bug）的段落。定义了用于系统输入的 <em>完整性检查</em>
+(<em>sanity check</em> <a href="#id30" id="user-content-id28">[6]</a>) 的接口. 同时检查变换是否导致了一些破坏. 对比
+Verifier, Lint检查未定义行为或者无意识行为导致的构造</p>
+<table frame="void" rules="none">
+<colgroup>
+<col/>
+<col/>
+</colgroup>
+<tbody valign="top">
+<tr>
+<td><a href="#id27">[5]</a></td>
+<td>
+<p><a href="http://zh.wikipedia.org/wiki/Lint" rel="nofollow">http://zh.wikipedia.org/wiki/Lint</a></p>
+</td>
+</tr>
+</tbody>
+</table>
+<table frame="void" rules="none">
+<colgroup>
+<col/>
+<col/>
+</colgroup>
+<tbody valign="top">
+<tr>
+<td><a href="#id28">[6]</a></td>
+<td>
+<p><a href="http://www.ichacha.net/sanity%20check.html" rel="nofollow">http://www.ichacha.net/sanity%20check.html</a></p>
+</td>
+</tr>
+</tbody>
+</table>
+</li>
+<li>
+<p><a href="#id31"><span>:redi:`Loads`</span></a> : 提供简单的load指令的本地分析.</p>
+</li>
+<li>
+<p><a href="#id33"><span>:redi:`LoopInfo`</span></a> : 提供Loop类型定义.</p>
+</li>
+<li>
+<p><em>LoopIterator</em> : 定义了访问一个loop内的基本块的迭代器. 现迭代器也会访问
+子循环. 但是残念的是还没有有效的方式在遍历时判断循环的出口是否会导致跳过
+子循环. 这个类本来是设计为能够工作于异常形态(<em>ill-form</em>)的循环(回边被删
+除了). 仅有的前提条件是在之前用LoopInfo分析出来的循环内的所有基本块能从
+Header访问到.</p>
+</li>
+<li>
+<p><em>LoopPass</em> : 定义LoopPass,用于以Loop为单位的的Pass</p>
+</li>
+<li>
+<p><em>MemoryBuiltins</em> : 提供识别内建申请释放内存的函数(malloc,free)的方法</p>
+</li>
+<li>
+<p><a href="#id35"><span>:redi:`MemoryDependenceAnalysis`</span></a> : 该分析决定,对于一个给定的内存操作,它
+依赖的之前的内存操作是什么. 它在别名分析信息的基础上构建,尝试提供懒惰的,
+缓存的接口用于一些常见种类的别名信息查询.</p>
+<p>返回的依赖信息则有点不同寻常. 但是是高效实用的. 如果查询一个store或call
+指令,可能修改内存. 分析会返回可能从此处读取的load指令或写入此处的store指
+令. 如果查询load或call不会改变内存的, 分析会返回可能修改指针的call和
+store指令. 但是一般不会返回load指令,除非 a) 它们是不稳定的. 或者 b) 他们
+从一个确定别名(<em>must-aliased</em>)的指针读取. 返回确定别名的指针依赖而不是所
+有互相影响的指针.</p>
+</li>
+<li>
+<p><em>PHITransAddr</em> : 一个追踪和处理 <a href="#id73"><span>|phi|</span></a> 时候的地址值的翻译. 当我们通过前趋
+遍历CFG时, 我们需要保证我们跟踪的地址是即时更新的.例如,人哦过我们正在分
+析一个 <code>&amp;A[i]</code> 的地址然后迭代到 <code>i</code> 的定义,是一个PHI节点,我们
+<strong>必须</strong> <a href="#id75"><span>|phi|</span></a> 翻译i来得到 <code>&amp;A[j]</code> 或者其它什么的前趋节点中正确的指针</p>
+<p>类设计为相对小的在栈区的对象,可以复制.</p>
+</li>
+<li>
+<p><em>PostDominators</em> : 后向支配树, 是支配树的反方向构建的.</p>
+</li>
+<li>
+<p><em>PtrUseVisitor</em> : 提供一系列的 <em>visitor</em> (设计模式 <a href="#id38" id="user-content-id37">[7]</a> ),用于遍历一个指
+针的使用者(Instruction)的时候, visitor 使用基于模板的灵活的实现策略来作
+为InstVisitor提供了相似的基本行为</p>
+<p>例如,可以被用于快速分析alloca,全局变量或者函数参数的使用者.</p>
+<table frame="void" rules="none">
+<colgroup>
+<col/>
+<col/>
+</colgroup>
+<tbody valign="top">
+<tr>
+<td><a href="#id37">[7]</a></td>
+<td>
+<p><a href="http://zh.wikipedia.org/wiki/%E8%AE%BF%E9%97%AE%E8%80%85%E6%A8%A1%E5%BC%8F" rel="nofollow">http://zh.wikipedia.org/wiki/%E8%AE%BF%E9%97%AE%E8%80%85%E6%A8%A1%E5%BC%8F</a></p>
+</td>
+</tr>
+</tbody>
+</table>
+</li>
+<li>
+<p><em>RegionInfo</em> : 计算一个程序的结构树生成一个入口一个出口的区域. 基本思想
+来自 <code>The Program Structure Tree - Richard Johnson, David Pearson,
+Keshav Pingali - 1994</code> , 然而更详细的思想来自 <code>The Refined Process
+Structure Tree - Jussi Vanhatalo, Hagen Voelyer, Jana Koehler - 2009</code> .
+然而计算这些数据结构的算法完全不同.</p>
+</li>
+<li>
+<p><em>RegionIterator</em> : 用来遍历区域结构的迭代器</p>
+</li>
+<li>
+<p><em>RegionPass</em> : 基于区域的Pass</p>
+</li>
+<li>
+<p><a href="#id39"><span>:redi:`ScalarEvolution`</span></a> : 用于分析和分类循环中的标量表达式. 它专门识别一般的归
+纳变量,用抽象透明的SCEV类来表示. 通过分析, trip 循环的总数和其他重要的可
+获取的性质. 这个分析对于归纳变量的替换和强度减弱十分有用.</p>
+</li>
+<li>
+<p><em>ScalarEvolutionExpander</em> : 用于从标量表达式生成代码.</p>
+</li>
+<li>
+<p><em>ScalarEvolutionExpression</em> : 用于表达和构建标量表达式.</p>
+</li>
+<li>
+<p><em>ScalarEvolutionNormalization</em> : 用于规范 'post-incremented' 标量演化表
+达式. 下面的例子展示了如何规范表达式:</p>
+<pre>for (i=0; i!=n; ++i) {
+  ...
+}
+use(i);
+</pre>
+<p>当在loop内部中使用的i是 {0,+,1}&lt;%L&gt;, 在循环外面使用的i是 {1,+,1}&lt;%L&gt;, 因
+为i是在循环体结束后还加了一次. 这个很不方便, 因为它表示我们需要使用两个
+不同的归纳变量. 一个从0开始,一个从1开始. 我们更愿意吧这两个看成一个统一
+的归纳变量. 在循环内部使用 <em>pre-incremented</em> 值,在循环之后使用
+<em>post-incremented</em> 值.</p>
+</li>
+<li>
+<p><em>SparsePropagation</em> : 实现了一个抽象的 <em>稀疏有条件传播</em> (<em>Sparse Conditional
+Propagation</em>) 算法. 从 SCCP(<em>Sparse Conditoinal Constant Propagation</em>
+<a href="#id42" id="user-content-id41">[8]</a> ) 中拿过来的模型,但是提供了一个自定义的 <em>格</em> (<em>lattice</em>) 函数.</p>
+<table frame="void" rules="none">
+<colgroup>
+<col/>
+<col/>
+</colgroup>
+<tbody valign="top">
+<tr>
+<td><a href="#id41">[8]</a></td>
+<td>
+<p><a href="http://zh.wikipedia.org/wiki/%E7%A8%80%E7%96%8F%E6%9C%89%E6%A2%9D%E4%BB%B6%E7%9A%84%E5%B8%B8%E6%95%B8%E5%82%B3%E6%92%AD" rel="nofollow">http://zh.wikipedia.org/wiki/%E7%A8%80%E7%96%8F%E6%9C%89%E6%A2%9D%E4%BB%B6%E7%9A%84%E5%B8%B8%E6%95%B8%E5%82%B3%E6%92%AD</a></p>
+</td>
+</tr>
+</tbody>
+</table>
+</li>
+<li>
+<p><a href="#id43"><span>:redi:`TargetTransformInfo`</span></a> : 该Pass暴露了代码生成信息给IR-level的Pass. 每个使
+用代码生成信息的变换被分为三个部分:</p>
+<ol>
+<li>IR-level分析Pass</li>
+<li>提供所需信息的IR-level变换接口.</li>
+<li>使用和机器平台相关的钩子的代码生成阶段的实现</li>
+</ol>
+<p>本类提供了#2,也就是查询代码生成的IR-level变换的接口.</p>
+</li>
+<li>
+<p><em>Trace</em> : 本类表示一个LLVM基本块的single trace. 一个trace是一个单入口,多
+出口,执行频率比较高(hot)的代码区域. 基于Trace的优化基本上把Trace看作一个大的,
+特殊的基本块: 因为trace路径被认为是执行频率高的.  optimizations for the
+fall-through path are made at the expense of the non-fall-through paths.</p>
+</li>
+<li>
+<p><em>ValueTracking</em> : 提供帮助分析一系列计算的属性</p>
+</li>
+<li>
+<p><em>Verifier</em> : 定义了函数验证接口. 可以用于一些完整性检查, 然后检查变换是
+否破坏了什么. 注意这个不提供全面的 java 风格的安全和验证, 它只是检查代码
+是良好的形式.</p>
+</li>
+</ul>
+</blockquote>
+<a name="user-content-q-optmemorydependenceanalysis"></a>
+<h3>
+<a aria-hidden="true" class="anchor" href="#q-%E4%B8%BA%E4%BD%95opt%E4%BD%BF%E7%94%A8memorydependenceanalysis%E7%9A%84%E8%BE%93%E5%87%BA%E7%BB%93%E6%9E%9C%E9%82%A3%E4%B9%88%E7%B3%9F%E7%B3%95" id="user-content-q-为何opt使用memorydependenceanalysis的输出结果那么糟糕"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><a href="#id116">Q: 为何opt使用MemoryDependenceAnalysis的输出结果那么糟糕?</a>
+</h3>
+<blockquote>
+<p>A: 首先,MemoryDependenceAnalysis依赖AliasAnalysis,后者是一个AnalysisGroup,意
+味着它是一个 <em>抽象</em> 的,默认是使用BasicAliasAnalysis来分析,但是AA可以叠加,从
+而改善结果. 如: <code>opt -analyze -basicaa -scev-aa -libcall-aa -print-memdeps</code></p>
+<p>其次,分析过程中可能会出现很多 <code>Clobber from call</code> 的结果,由于 Memory
+Dependence Analysis 分析过程中遇到了函数,但是不知道函数的具体细节.导致它只能
+假设MayAlias,也就是野指针,然后分析就返回可能冲突. libcall-aa 正式提供一些库
+函数的信息的 AA. 不过在opt中加入了 <code>-libcall-aa</code> 也没有什么效果,因为
+LibCallAliasAnalysis中使用了LibCallInfo来提供具体的信息(数组),但是直接使用参
+数会使用默认的构造函数,也就是LibCallInfo* LCI = 0, 也就是说llvm提供了这个框
+架,但是没有提供填充的内容. 需要我们自己去填写.</p>
+<p>最后就是 <code>-print-memdeps</code> 作为一个简单的打印结果的测试的类,有些地方逻辑写
+得并不是太好. 比如用Memory Dependence Analysis分析出来了Clobber之后,它就结束
+了,然后打印结果字符串.但是一般而言我们自己实现的话还可以继续分析,采用一种激
+进的方式来尝试获取更有意义但可能错误的结果.另外返回NonLocal之后它就打印
+<code>Unknow</code> 但是我们会还想继续分析前趋基本块.</p>
+</blockquote>
+<a name="user-content-id45"></a>
+<h2>
+<a aria-hidden="true" class="anchor" href="#%E7%BC%96%E8%AF%91%E7%AF%87" id="user-content-编译篇"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><a href="#id117">编译篇</a>
+</h2>
+<a name="user-content-q-cgpopbitcode"></a>
+<h3>
+<a aria-hidden="true" class="anchor" href="#q-%E5%A6%82%E4%BD%95%E7%BC%96%E8%AF%91cgpop%E7%9A%84bitcode" id="user-content-q-如何编译cgpop的bitcode"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><a href="#id118">Q: 如何编译cgpop的bitcode?</a>
+</h3>
+<blockquote>
+<p>A: 以mpi1s1D为例,做以下的修改:</p>
+<ol>
+<li>
+<p>&lt;GNUmakefile&gt;  OPTIMIZE 改为 no --- 编译debug版的cgpop</p>
+</li>
+<li>
+<p>&lt;linux.gnu&gt;    77 行改为 <code>FFLAGS = $(FBASE) -O0 -g -fcray-pointer</code> 禁
+用优化(使用llvm自己的优化)</p>
+</li>
+<li>
+<p>&lt;linux.gnu&gt;    FBASE 改为 <code>$(ABI) $(NETCDFINC) -I$(ObjDepDir) -g -S
+-fplugin=&lt;path of dragonegg.so&gt; -fplugin-arg-dragonegg-emit-ir</code></p>
+</li>
+<li>
+<p>&lt;linux.gnu&gt;    <code>%.o: %.f90</code> 规则下的 <code>@$(FC) $(FFLAGS) -c $&lt;</code> 追加
+<code>-o $@</code> 这是为了导出llvm的ir文件(后缀为o,伪装一下)</p>
+</li>
+<li>
+<p>&lt;GNUmakefile&gt; <code>$(TARGETX): $(OBJS)</code> 一段改为:</p>
+<pre>$(TARGETX): $(OBJS)
+    @echo "  GNUmakefile is making target '$(TARGETX)'"
+    @llvm-link $(OBJS) -o $@.bc
+    @llc -filetype=obj $@.bc -o $@.o
+    @$(LD) -o $(TARGETX) $(LDFLAGS) $@.o $(LDLIBS)
+</pre>
+<p>这里是先用llvm-link把所有的.o合并为一个bc文件,因为.o实际上是纯文本的ir
+格式,所以没有问题,然后为了交给连接器,将bc编译为.o格式(现在是真正的obj内
+容了),最后交给链接器链接为可执行文件.</p>
+</li>
+</ol>
+</blockquote>
+<a name="user-content-q-npbbitcode"></a>
+<h3>
+<a aria-hidden="true" class="anchor" href="#q-%E5%A6%82%E4%BD%95%E7%BC%96%E8%AF%91npb%E7%9A%84bitcode" id="user-content-q-如何编译npb的bitcode"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><a href="#id119">Q: 如何编译NPB的bitcode?</a>
+</h3>
+<blockquote>
+<p>A: 打开NPB3.3的MPI目录, 以bt.A为例,做以下的修改,因为NPB混编了fortran和c,导致了修改比较复杂:</p>
+<ol>
+<li>
+<p>cp config/make.def.template config/make.def # 复制一份makefile</p>
+</li>
+<li>
+<p>&lt;config/make.def&gt; F77 = f90 , CC = clang  #gfortran的最新版本没有f77程序了.</p>
+</li>
+<li>
+<p>&lt;config/make.def&gt;</p>
+<pre>CFLAGS = -g -O0 -emit-llvm
+FFLAG  = -g -O0 -S -fplugin=&lt;path to dragonegg.so&gt; -fplugin-arg-dragonegg-emit-ir
+</pre>
+</li>
+<li>
+<p>&lt;BT/Makefile&gt; 的 .f.o 规则改为 <code>${FCOMPILE} $&lt; -o $@</code></p>
+</li>
+<li>
+<p>&lt;sys/make.common&gt; 所有的.f都加上 <code>-o $@</code></p>
+</li>
+<li>
+<p>必要的时候需要用 <code>mkdir bin</code> 手工创建bin目录</p>
+</li>
+<li>
+<p>&lt;BT/Makefile&gt; 的 bt-bt 规则(其它规则类似):</p>
+<pre>bt-bt: ${OBJS} btio.o
+    llvm-link $(OBJS) btio.o -o $(PROGRAM).bc
+    llc -filetype=obj $(PROGRAM).bc -o $(PROGRAM).o
+    ${FLINK} ${FLINKFLAGS} -o ${PROGRAM} ${PROGRAM}.o ${FMPI_LIB}
+</pre>
+</li>
+</ol>
+</blockquote>
+<a name="user-content-id46"></a>
+<h2>
+<a aria-hidden="true" class="anchor" href="#%E5%AE%9A%E4%B9%89%E7%AF%87" id="user-content-定义篇"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><a href="#id120">定义篇</a>
+</h2>
+<a name="user-content-q-mpi"></a>
+<h3>
+<a aria-hidden="true" class="anchor" href="#q-mpi-%E6%93%8D%E4%BD%9C%E5%8E%9F%E8%AF%AD%E5%AE%9A%E4%B9%89" id="user-content-q-mpi-操作原语定义"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><a href="#id121">Q: MPI 操作原语定义</a>
+</h3>
+<p>mpi 原语是指的IR层的mpi函数, 其定义比语言级别的MPI函数要更加低级一些. 这里是
+fortran的opemmpi的原语 <a href="#id48" id="user-content-id47">[9]</a> .</p>
+<table frame="void" rules="none">
+<colgroup>
+<col/>
+<col/>
+</colgroup>
+<tbody valign="top">
+<tr>
+<td><a href="#id47">[9]</a></td>
+<td><a href="http://www.mpich.org/static/docs/v3.1/www3/" rel="nofollow">http://www.mpich.org/static/docs/v3.1/www3/</a></td>
+</tr>
+</tbody>
+</table>
+<ol>
+<li>
+<code>mpi_init_(i32* err)</code> : 初始化mpi环境, <em>从此处开始分离出进程?</em> . fortran
+版本的只返回一个错误号.</li>
+<li>
+<code>mpi_finalize_(i32* err)</code> : 释放mpi环境.</li>
+<li>
+<code>mpi_comm_size_(i32* comm, i32* [out] size, i32* [out] err)</code> :
+返回通信子(comm)中的进程数(size)</li>
+<li>
+<code>mpi_comm_rank_(i32* comm, i32* [out] rank, i32* [out] err)</code> :
+返回当前进程在通信子中的进程号(rank)</li>
+<li>
+<code>mpi_isend_(i32* buf, i32* count, i32* datatype, i32* dest, i32* tag, i32*
+comm, i32* [out] request, i32* [out] err)</code> : 开始一个非阻塞的p2p地发送数据
+,mpi_send是阻塞的. 这里buf的i32*类型实际上是不必要的. 实际上是LLVM通过函数
+调用的参数来反推出来的函数类型.</li>
+<li>
+<code>mpi_irecv_(i32* buf, i32* count, i32* datatype, i32* source, i32* tag,
+i32* comm i32* [out] request, i32* [out] err)</code> : 开始非阻塞的p2p接受数据,
+写入buf. 注意和recv不同的是,没有status参数. source可以为MPI_ANY_SOURCE(-1).
+tag可以为MPI_ANY_TAG(-1)</li>
+<li>
+<code>mpi_allreduce_(i8* sendbuf, i8* [out] recvbuf, i32* count, i32* datatype,
+i32* op, i32* comm)</code> : 将所有进程的值组合起来并将结果分发到所有进程.</li>
+<li>
+<code>mpi_bcast_(i8* [in|out] buffer, i32* count, i32* datatype, i32* root,
+i32* comm, i32* err)</code> <em>IR编译出来有两种格式!</em> , 将一个进程的数据扩散到其它
+所有进程.</li>
+<li>
+<code>MPI_Scatter</code> : 散射, 将每个进程需要的不同的数据分分别发出去. cgpop中没有
+使用该函数.</li>
+<li>
+<code>MPI_Gather</code> : 聚集, 和散射相反, 将每个进程分散的数据收集起来. cgpop中没
+有使用该函数.</li>
+<li>
+<code>MPI_Allgather</code> : 全局聚集, 将每个进程的数据搜集起来, 并广播到每个进程中去.</li>
+<li>
+<code>MPI_Type_create_struct</code> : 创建一个新的派生数据类型, cgpop未使用.</li>
+<li>
+<code>MPI_Get_address</code> : 获取内存单元地址, cgpop未使用.</li>
+<li>
+<code>MPI_Type_commit</code> : 将派生数据类型注册到MPI系统中, 需要先用Bcast分发到所
+有进程.</li>
+<li>
+<code>MPI_Type_free</code> : 将注册了的派生类型释放掉.</li>
+<li>
+<code>MPI_Wtime</code> : 返回World时间, 即从过去某一时刻开始经过的秒数.</li>
+<li>
+<code>mpi_barrier_(i32* comm, i32* [out] err)</code> : 阻塞所有进程直到它们都到达同一路障.</li>
+<li>
+<code>mpi_abort_(i32* comm, i32* [out] err)</code> : 终止MPI执行环境并退出程序.</li>
+<li>
+<code>mpi_error_string_(i32* errno, i8* [out] buf, i32* [out] err_len, i32*
+[out] err, i32 buf_len)</code> : 返回errno的字符串表达.</li>
+<li>
+<code>mpi_waitall_(i32* count, i8* request, i8* [out] status, i32* [out] err)</code>
+: 等待所有的request都完成了. 和isend,irecv是配套的.</li>
+<li>
+<code>mpi_win_create_(i8* base, i64* size, i32* disp_unit, i32* info, i32*
+comm, i32* win, i32* err)</code> : 创建一个MPI Window对象. 是一个所有进程执行的
+集合调用, 用于RMA( <em>Remote Memory Access</em> )操作. 每个进程指定一块存在的内存
+空间暴露给RMA供该组的其它进程访问. Window包含窗口大小, 开始地址.</li>
+<li>
+<code>mpi_win_fence_(i32* assert, i32* win, i32* err)</code> : 在一个MPI window上执
+行fence同步. <em>什么是fence同步?</em>
+</li>
+<li>
+<code>mpi_get_(i32* origin_addr, i32* origin_count, i32* origin_datatype, i32*
+target_rank, i64* target_disp, i32* target_count, i32* target_datatype,
+i32* win, i32* err)</code> : 从一个远程进程的内存窗口获取数据. origin是本地的地
+址空间, target是远程的地址空间. 数据方向是从target到origin. disp是window开
+始到buffer的偏移量.</li>
+<li>
+<code>mpi_put_(i32* origin_addr, i32* origin_count, i32* origin_datatype, i32*
+target_rank, i64* target_disp, i32* target_count, i32* target_datatype,
+i32* win, i32* err)</code> : 将数据推送到远程进程的内存窗口.数据方向是从origin到
+target.</li>
+<li>
+<code>mpi_comm_group_(i32* comm, i32* [out] group, i32* [out] err)</code> : 访问给定
+通讯子所关联的组. (<em>什么是group?</em>)</li>
+<li>
+<code>mpi_group_incl_(i32* group, i32* n, i8* ranks, i32* newgroup, i32* err)</code>
+: 通过只在一个已经存在的组中抽取列出的成员并重新排序来创建新的组. (<em>incl是
+什么意思?</em>)</li>
+<li>
+<code>mpi_win_post_(i32* group, i32* assert, i32* win, i32* err)</code> : 开始一个
+RMA暴露周期. (<em>需要详细信息</em>)</li>
+<li>
+<code>mpi_win_start_(i32* group, i32* assert, i32* win, i32* err)</code> : 开始一个
+RMA访问周期. (<em>需要详细信息</em>)</li>
+<li>
+<code>mpi_win_complete_(i32* win, i32* err)</code> : 结束一个RMA操作, 和
+mpi_win_start_对应. (<em>需要详细信息</em>)</li>
+<li>
+<code>mpi_win_wait_(i32* win, i32* err)</code> : 结束一个RMA暴露周期, 和
+mpi_win_post_对应. (<em>需要详细信息</em>)</li>
+</ol>
+<div>
+<p>Note</p>
+<p>本章内容首先通过搜索文字版的英文DragonBook书,然后找到中文版的对应章节的具体位置
+,来达到准确可靠的信息源的保障.</p>
+<p>另外更好的方法使用书后的索引表.</p>
+</div>
+<a name="user-content-q-dominator"></a>
+<h3>
+<a aria-hidden="true" class="anchor" href="#q-%E4%BB%80%E4%B9%88%E6%98%AF%E5%BF%85%E7%BB%8F%E8%8A%82%E7%82%B9-dominator-" id="user-content-q-什么是必经节点-dominator-"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><a href="#id122">Q: 什么是必经节点 <em>Dominator</em> ?</a>
+</h3>
+<blockquote>
+<p>A: 如果从entry到B的每一条路径都包含A,则流图中的节点A是节点B的必经节点. <a href="#id51" id="user-content-id49">[10]</a>
+由必经节点构成的树称为 <em>必经节点树</em> (<em>DominatorTree</em>). 从节点i到节点exit的每
+一条可能的执行路径都包含节点p, 称节点p是i的 <em>后必经节点</em> <a href="#id52" id="user-content-id50">[11]</a>
+(<em>postdominator</em>)</p>
+<table frame="void" rules="none">
+<colgroup>
+<col/>
+<col/>
+</colgroup>
+<tbody valign="top">
+<tr>
+<td><a href="#id49">[10]</a></td>
+<td>高级编译器设计与实现 P124, 龙书中称为支配节点 P419</td>
+</tr>
+</tbody>
+</table>
+<table frame="void" rules="none">
+<colgroup>
+<col/>
+<col/>
+</colgroup>
+<tbody valign="top">
+<tr>
+<td><a href="#id50">[11]</a></td>
+<td>高级编译器设计与实现 P132</td>
+</tr>
+</tbody>
+</table>
+</blockquote>
+<a name="user-content-q-interval-analysis"></a>
+<h3>
+<a aria-hidden="true" class="anchor" href="#q-%E4%BB%80%E4%B9%88%E6%98%AF%E5%8C%BA%E9%97%B4%E5%88%86%E6%9E%90-interval-analysis-" id="user-content-q-什么是区间分析-interval-analysis-"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><a href="#id123">Q: 什么是区间分析 <em>Interval Analysis</em> ?</a>
+</h3>
+<blockquote>
+<p>A: 将流图划分为各种类型的区域,使得每个区域蜕化成一个新的节点, 常称为 <em>抽象节
+点</em> (<em>abstract node</em>), 并用进入或离开对应抽象节点的边替换进入或离开区域的边</p>
+<table frame="void" rules="none">
+<colgroup>
+<col/>
+<col/>
+</colgroup>
+<tbody valign="top">
+<tr>
+<td><a href="#id54">[12]</a></td>
+<td>高级编译器设计与实现 P125 P144</td>
+</tr>
+</tbody>
+</table>
+</blockquote>
+<a name="user-content-q-interprocedural-optimize"></a>
+<h3>
+<a aria-hidden="true" class="anchor" href="#q-%E4%BB%80%E4%B9%88%E6%98%AF%E8%BF%87%E7%A8%8B%E9%97%B4%E4%BC%98%E5%8C%96-interprocedural-optimize" id="user-content-q-什么是过程间优化-interprocedural-optimize"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><a href="#id124">Q: 什么是过程间优化 <em>interprocedural optimize</em>?</a>
+</h3>
+<blockquote>
+<p>A: 利用过程集合之间的调用关系, 对其中的一至多个过程,或按照他们的相互之间的关
+系来驱动优化的一些优化. <a href="#id53" id="user-content-id54">[12]</a></p>
+<table frame="void" rules="none">
+<colgroup>
+<col/>
+<col/>
+</colgroup>
+<tbody valign="top">
+<tr>
+<td><a href="#id56">[13]</a></td>
+<td>高级编译器设计与实现 P437</td>
+</tr>
+</tbody>
+</table>
+</blockquote>
+<a name="user-content-q-datalayout"></a>
+<h3>
+<a aria-hidden="true" class="anchor" href="#q-%E4%BB%80%E4%B9%88%E6%98%AF-datalayout-" id="user-content-q-什么是-datalayout-"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><a href="#id125">Q: 什么是 <em>DataLayout</em> ?</a>
+</h3>
+<blockquote>
+A: 定义和数据类型大小,偏移量,对齐相关的layout属性信息.</blockquote>
+<a name="user-content-q-critical-edge"></a>
+<h3>
+<a aria-hidden="true" class="anchor" href="#q-%E4%BB%80%E4%B9%88%E6%98%AF%E5%85%B3%E9%94%AE%E8%BE%B9-critical-edge-" id="user-content-q-什么是关键边-critical-edge-"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><a href="#id126">Q: 什么是关键边 <em>Critical Edge</em> ?</a>
+</h3>
+<blockquote>
+<blockquote>
+A: 我们把所有从一个具有多个后继的节点到达另一个具有多个前趋节点的边定义为
+流图的关键边. 通过在关键边上引入新的基本块,我们总是可以找到一个基本块作为放
+置表达式的适当位置. <a href="#id55" id="user-content-id56">[13]</a>
+</blockquote>
+<table frame="void" rules="none">
+<colgroup>
+<col/>
+<col/>
+</colgroup>
+<tbody valign="top">
+<tr>
+<td><a href="#id59">[14]</a></td>
+<td>DragonBook第9章5.2小节 P410</td>
+</tr>
+</tbody>
+</table>
+</blockquote>
+<a name="user-content-q-loopinvariant"></a>
+<h3>
+<a aria-hidden="true" class="anchor" href="#q-%E4%BB%80%E4%B9%88%E6%98%AF%E5%BE%AA%E7%8E%AF%E4%B8%8D%E5%8F%98%E9%87%8F-loopinvariant-" id="user-content-q-什么是循环不变量-loopinvariant-"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><a href="#id127">Q: 什么是循环不变量 <em>LoopInvariant</em> ?</a>
+</h3>
+<blockquote>
+<p>A:查看一个变量是否是循环不变量，循环不变量的概念似乎和我们学的概念有些不同,
+这里仅仅指的一个变量，在Loop里面是不变的。所以可以把它的计算移到循环之外,从
+而减少计算量。</p>
+<p>LLVM实现：如果Value不是指令（其它可能有常量等），则它是不变的。如果它是一个
+指令，但是定义不在循环之内，则也是不变的。</p>
+</blockquote>
+<a name="user-content-id58"></a>
+<h3>
+<a aria-hidden="true" class="anchor" href="#q-%E4%BB%80%E4%B9%88%E6%98%AF%E5%BE%AA%E7%8E%AF%E4%B8%8D%E5%8F%98%E9%87%8F%E7%9A%84%E6%8F%90%E5%8D%87" id="user-content-q-什么是循环不变量的提升"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><a href="#id128">Q: 什么是循环不变量的提升?</a>
+</h3>
+<blockquote>
+<p>A: 如果参数是一个指令，并且是可提升的，于是提升它到指定的插入点或者是
+PreHeader，然后返回提升后的结果是不是循环不变的。该函数可以被认为是强化版的
+isLoopInvariant。</p>
+<p>提升是循环优化的方法，称为 loop-invariant-code-motion <a href="#id57" id="user-content-id59">[14]</a></p>
+<p>LLVM实现：如果该指令已经是不变的了，跳过，排除一些特殊的指令，跳过，首先提
+升指令的操作数，如果提升后不是不变的，则失败。否则继续提升本指令，并返回提
+升后的结果是否是不变的。</p>
+<p>提升仅仅是简单的移动指令即可。</p>
+</blockquote>
+<table frame="void" rules="none">
+<colgroup>
+<col/>
+<col/>
+</colgroup>
+<tbody valign="top">
+<tr>
+<td>[15]</td>
+<td>高级编译器设计与实现 13章2节 P284</td>
+</tr>
+</tbody>
+</table>
+<a name="user-content-q-latch"></a>
+<h3>
+<a aria-hidden="true" class="anchor" href="#q-%E4%BB%80%E4%B9%88%E6%98%AF%E5%BE%AA%E7%8E%AF%E7%9A%84%E5%9B%9E%E8%BE%B9-latch-" id="user-content-q-什么是循环的回边-latch-"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><a href="#id129">Q: 什么是循环的回边 <em>latch</em> ?</a>
+</h3>
+<blockquote>
+A: 回边是一个指向 <em>header</em> 的 BasicBlock，虽然形式定义是 <em>边</em> 但是在LLVM中
+是一个 BB</blockquote>
+<a name="user-content-q-loop-trip-count"></a>
+<h3>
+<a aria-hidden="true" class="anchor" href="#q-%E4%BB%80%E4%B9%88%E6%98%AFloop%E7%9A%84-trip-count-" id="user-content-q-什么是loop的-trip-count-"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><a href="#id130">Q: 什么是Loop的 <em>trip count</em> ?</a>
+</h3>
+<blockquote>
+A: 循环的次数</blockquote>
+<a name="user-content-q-looppreheader-looppredecessor"></a>
+<h3>
+<a aria-hidden="true" class="anchor" href="#q-%E4%BB%80%E4%B9%88%E6%98%AF-looppreheader-%E5%92%8C-looppredecessor-" id="user-content-q-什么是-looppreheader-和-looppredecessor-"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><a href="#id131">Q: 什么是 <em>LoopPreheader</em> 和 <em>LoopPredecessor</em> ?</a>
+</h3>
+<blockquote>
+<p>A: 两者都是指向header的前趋，不同的是 Predecessor&gt; Preheader, 其中
+Predecessor [<a href="http://llvm.org/docs/doxygen/html/classllvm_1_1LoopBase.html#a02a06d6c159b20080dda392b96c98b40" rel="nofollow">url</a>]  是指的只有一个前趋指向Header，但是这个前趋有可能还指向
+了其它节点。即是一对多的关系，但是PreHeader [<a href="http://llvm.org/docs/doxygen/html/classllvm_1_1LoopBase.html#a1bc74c76b876ad387293ecde0f21ed45" rel="nofollow">url</a>] 要求这个前趋有且只有指
+向Header，即是一对一的关系。</p>
+<p>需要注意的是两者在优化中是不对等的。明显的，looppredecessor可能会跳过循环，而preheader是安全的。</p>
+</blockquote>
+<a name="user-content-q-loopsimplifyform"></a>
+<h3>
+<a aria-hidden="true" class="anchor" href="#q-%E4%BB%80%E4%B9%88%E6%98%AF-loopsimplifyform-" id="user-content-q-什么是-loopsimplifyform-"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><a href="#id132">Q: 什么是 <em>LoopSimplifyForm</em> ?</a>
+</h3>
+<blockquote>
+A: 有一个 <cite>preheader</cite> , 一个 <cite>latch</cite> 和所有的 <cite>exit</cite> 退出节点(循环外)的前趋也都在循环内部。</blockquote>
+<div>
+<p>Note</p>
+<p>下面的定义是开发程序中使用到的定义，非常的不准确，不稳定，将可能变动</p>
+</div>
+<a name="user-content-q-true-exit-alias-for-loop-exit"></a>
+<h3>
+<a aria-hidden="true" class="anchor" href="#q-%E4%BB%80%E4%B9%88%E6%98%AF%E7%9C%9F%E9%80%80%E5%87%BA-true-exit-alias-for-loop-exit-" id="user-content-q-什么是真退出-true-exit-alias-for-loop-exit-"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><a href="#id133">Q: 什么是真退出( <cite>True Exit</cite> alias <cite>For Loop Exit</cite> )</a>
+</h3>
+<blockquote>
+<p>A: 对于有多个退出的循环而言，有一个退出是主要的退出，就像是For循环结束时候
+的自然退出，而其它退出可能是由于 break 造成的，也可能是如 <code>if(quit) quit</code>
+这样的代码，它们都没有直接或间接的使用归纳变量(i)，并且循环退出时执行次数小
+于真退出时执行的次数。</p>
+<p>为了简化编程，定义当退出只有一个的时候,这个退出自动成为真退出,否则循环回边(
+<cite>latch</cite> )的出发点的退出是真退出。当然这个定义非常的不准确，以至于完全不能表
+达真退出的实际含义，所以将来有很大的几率变动。</p>
+</blockquote>
+
+
+        </div>
+
+    </div>]

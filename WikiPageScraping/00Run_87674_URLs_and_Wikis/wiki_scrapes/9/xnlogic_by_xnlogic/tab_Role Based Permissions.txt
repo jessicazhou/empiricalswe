@@ -1,0 +1,125 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>Role-based permissions allow you to define who (user or group) is allowed to do
+what (create/read/update/delete/action) with elements of a given part.</p>
+<p>Role-based permissions work as follows:</p>
+<ol>
+<li>Define part groups
+<ul>
+<li>Group related parts, and give them a meaningful name</li>
+</ul>
+</li>
+<li>Define role groups (aka security groups)
+<ul>
+<li>Users can be associated with these groups.</li>
+</ul>
+</li>
+<li>Associate role groups with part groups.
+That is, define which permissions (create/read/update/delete/action) a role group has to which parts.</li>
+</ol>
+<p>The various groups and the association between them are all defined in <code>APP-HOME/lib/APP-NAME/permissions.rb</code>.
+These concepts are best explained using a simple example ...</p>
+<h4>
+<a aria-hidden="true" class="anchor" href="#step-1---define-part-groups" id="user-content-step-1---define-part-groups"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Step 1 - Define Part Groups</h4>
+<div class="highlight highlight-source-ruby"><pre><span class="pl-c"><span class="pl-c">#</span> ...</span>
+
+<span class="pl-k">module</span> <span class="pl-en">PartGroups</span>
+
+    <span class="pl-k">def</span> <span class="pl-en">free_content</span>
+      <span class="pl-c1">Set</span> [<span class="pl-c1">MyApp</span>::<span class="pl-c1">ArticleSummary</span>, <span class="pl-c1">MyApp</span>::<span class="pl-c1">UserComment</span>]
+    <span class="pl-k">end</span>
+
+    <span class="pl-k">def</span> <span class="pl-en">paid_content</span>
+      <span class="pl-c1">Set</span> [<span class="pl-c1">MyApp</span>::<span class="pl-c1">FullArticle</span>]
+    <span class="pl-k">end</span>
+
+    <span class="pl-k">def</span> <span class="pl-en">confidential</span>
+      <span class="pl-c1">Set</span> [<span class="pl-c1">MyApp</span>::<span class="pl-c1">UserPersonalInfo</span>]
+    <span class="pl-k">end</span>
+
+    <span class="pl-c"><span class="pl-c">#</span> ...</span>
+<span class="pl-k">end</span></pre></div>
+<h4>
+<a aria-hidden="true" class="anchor" href="#step-2---define-role-groups" id="user-content-step-2---define-role-groups"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Step 2 - Define Role Groups</h4>
+<div class="highlight highlight-source-ruby"><pre><span class="pl-c"><span class="pl-c">#</span> ...</span>
+<span class="pl-k">class</span> <span class="pl-en">RoleBasedPermissions</span>
+    <span class="pl-c"><span class="pl-c">#</span> ...</span>
+
+    <span class="pl-k">def</span> <span class="pl-en">groups</span>
+      <span class="pl-c"><span class="pl-c">#</span> Map group name to human-readable group name.</span>
+      {
+        <span class="pl-c1">guest:</span>  <span class="pl-s"><span class="pl-pds">'</span>Guest<span class="pl-pds">'</span></span>,
+        <span class="pl-c1">user:</span>   <span class="pl-s"><span class="pl-pds">'</span>Registered User<span class="pl-pds">'</span></span>,
+        <span class="pl-c1">author:</span> <span class="pl-s"><span class="pl-pds">'</span>Author<span class="pl-pds">'</span></span>,
+        <span class="pl-c1">admin:</span>  <span class="pl-s"><span class="pl-pds">'</span>Site Admin<span class="pl-pds">'</span></span>
+      }
+    <span class="pl-k">end</span>
+
+    <span class="pl-c"><span class="pl-c">#</span> ...</span>
+</pre></div>
+<h4>
+<a aria-hidden="true" class="anchor" href="#step-3---associate-roles-groups-with-part-groups" id="user-content-step-3---associate-roles-groups-with-part-groups"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Step 3 - Associate Roles Groups With Part Groups</h4>
+<div class="highlight highlight-source-ruby"><pre><span class="pl-c"><span class="pl-c">#</span> ...</span>
+<span class="pl-k">class</span> <span class="pl-en">RoleBasedPermissions</span>
+    <span class="pl-c"><span class="pl-c">#</span> ...</span>
+
+    <span class="pl-c"><span class="pl-c">#</span> Guests can read free content, but nothing else</span>
+    <span class="pl-k">def</span> <span class="pl-en">guest</span>(<span class="pl-smi">access</span>)
+      <span class="pl-k">if</span> access <span class="pl-k">==</span> <span class="pl-c1">:read_access</span>
+        free_content                 <span class="pl-c"><span class="pl-c">#</span> `free_content` is one of the part group we defined</span>
+      <span class="pl-k">else</span>
+        []
+      <span class="pl-k">end</span>
+    <span class="pl-k">end</span>
+
+    <span class="pl-c"><span class="pl-c">#</span> Registered users can read free and paid content.</span>
+    <span class="pl-k">def</span> <span class="pl-en">user</span>(<span class="pl-smi">access</span>)
+      <span class="pl-k">if</span> access <span class="pl-k">==</span> <span class="pl-c1">:read_access</span>
+        free_content <span class="pl-k">+</span> paid_content
+      <span class="pl-k">else</span>
+        []
+      <span class="pl-k">end</span>
+    <span class="pl-k">end</span>
+
+    <span class="pl-c"><span class="pl-c">#</span> Authors can create, read and update both types of content, free and paid.</span>
+    <span class="pl-k">def</span> <span class="pl-en">author</span>(<span class="pl-smi">access</span>)
+      <span class="pl-k">case</span> access
+      <span class="pl-k">when</span> <span class="pl-c1">:read_access</span>, <span class="pl-c1">:create_access</span>, <span class="pl-c1">:update_access</span>
+        free_content <span class="pl-k">+</span> paid_content
+      <span class="pl-k">else</span>
+        []
+      <span class="pl-k">end</span>
+    <span class="pl-k">end</span>
+
+    <span class="pl-c"><span class="pl-c">#</span> Admins have all permissions to free, paid and confidential content.</span>
+    <span class="pl-k">def</span> <span class="pl-en">admin</span>(<span class="pl-smi">access</span>)
+      free_content <span class="pl-k">+</span> paid_content <span class="pl-k">+</span> confidential
+    <span class="pl-k">end</span>
+
+<span class="pl-k">end</span></pre></div>
+<p>Let's break it down:</p>
+<p>For each role group, we created a method that defines its permission.</p>
+<ul>
+<li>The method has the same name as the group</li>
+<li>It takes 1 argument, <code>access</code>.
+<ul>
+<li>The <code>access</code> argument is a symbol, can be one of <code>:create_access</code>, <code>:read_access</code>, <code>:update_access</code>, <code>:delete_access</code> and <code>:action_access</code>.</li>
+</ul>
+</li>
+<li>It returns a set of parts.</li>
+</ul>
+<h4>
+<a aria-hidden="true" class="anchor" href="#additional-tips" id="user-content-additional-tips"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Additional Tips</h4>
+<ul>
+<li>Permissions are additive - A user can be associated with multiple role groups.
+<ul>
+<li>The user inherits all permissions of all groups.</li>
+<li>If you run into many cases where a user needs only a subset of a certain role group, it is a sign that this role group should be broken into multiple, more granular role groups.</li>
+</ul>
+</li>
+<li>Groups can inherit permissions from one another.</li>
+</ul>
+
+        </div>
+
+    </div>]

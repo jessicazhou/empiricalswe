@@ -1,0 +1,40 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>"Blend modes" are rules which describe how multiple images layered on top of each other are combined into one final picture (in Frogatto, any sprite being drawn onto the screen is of course being layered on top of any tiles or background images behind it).  Setting a special blending mode is often used for special lighting/shadowing effects, or to make a graphic that represents a partly translucent material (like glass or liquid) appear to <em>be</em> that material by changing how the things seen through it appear.  These are a fairly common concept in digital imaging, which are also seen in programs like Photoshop et al; in Anura, we're able to do this in realtime using hardware accelerated OpenGL.  General principles behind this is are described in a wikipedia article here:  <a href="http://en.wikipedia.org/wiki/Blend_modes" rel="nofollow">http://en.wikipedia.org/wiki/Blend_modes</a></p>
+<p>Within an animation frame of a custom_object, you can have fields variously containing named blend rules such as the following:</p>
+<p><code>blend: "add", blend: "alpha_blend", blend:["src_alpha","one_minus_src_alpha"],</code></p>
+<p>Or you can change the blend equation:</p>
+<p><code>blend_equation: "add", or blend_equation: "subtract", or if you want different rgb and alpha equations do blend_equation:["add","subtract"]</code></p>
+<p>You can also choose the rules for texture address modes.  A texture address mode specifies what to do when you access the texture outside the co-ordinate range of the texture. So the options are <code>clamp</code> - use the value at the edge of the texture. <code>wrap</code> - use the value modulo the texture size, <code>border</code> - use the given border_color (defaults to white) and <code>mirror</code> - reflect the co-ordinate back across the appropriate axis.  In place of simply <code>image: "some_file.png",</code> you can have:</p>
+<p><code>image: {image:"some_file.png", address_mode:"border", border_color:"red", mipmaps:4, filtering:["linear","linear","none"]}</code></p>
+<p>The above "texture address mode" feature was used to solve some nasty artifacting seen during development of a digital card game written in Anura, called Argentum Age.  Cards had anti-aliased edges, but the anti-aliasing didn't look smooth until we applied the following rule: "border mode with a color value of 255,255,255,1 and bi-linear filtering" to the darker textures used on the backs of the cards.</p>
+<p>You can load multiple images with <code>image: [{image:"xx1.png"}, {image:"xx1_depth_map.png}],</code>  This is commonly used to provide separate textures to separate "texture units" on the graphics card.</p>
+<p>The following is an excerpt from IRC explaining what texture units are:</p>
+<pre><code>[17:10:04]  &lt;Jetrel_laptop&gt;	KristaS:  what's the significance of loading multiple images in one "image" tag?
+[17:12:39]  &lt;KristaS&gt;	Jetrel_laptop: When the texture is bound, it makes all the images available on different texture units. This is thing that makes doing dynamic lighting easy. We just need to go image:[{image:"some_name.png},{image:"some_name_normal_map.png}] then by using a shader with lighting (and setting the lights) then we get everything nicely ready to go.
+[17:13:06]  &lt;Jetrel_laptop&gt;	texture units?
+[17:14:40]  &lt;KristaS&gt;	A GPU has these things called texture units. They are what you bind textures to then they're available to use in the shader.
+[17:14:56]  &lt;KristaS&gt;	Most modern GPU's support up to 32 texture units.
+[17:26:08]  &lt;Jetrel_laptop&gt;	...   uhm
+[17:26:12]  &lt;Jetrel_laptop&gt;	gee
+[17:26:27]  &lt;Jetrel_laptop&gt;	So are these basically like "pointers" to the texture?
+[17:26:58]  &lt;KristaS&gt;	kind of
+[17:27:00]  &lt;Jetrel_laptop&gt;	Or are these actually some sort of really large "local storage" to the gpu that caches a texture for immediate use?
+[17:27:28]  &lt;KristaS&gt;	At this point the texture is already loaded into the GPU, that's done when you create a texture.
+[17:27:41]  &lt;KristaS&gt;	That operation returns and internal handle to the texture.
+[17:28:43]  &lt;KristaS&gt;	This operation is more akin to saying i want texture X bound to texture unit 0, i want texture Y bound to texture unit 1. Then in the sahder code the textures are available to use.
+[17:34:17]  &lt;Jetrel_laptop&gt;	Okay..
+[17:34:41]  &lt;Jetrel_laptop&gt;	So really it's that the shader language needs to use a limited set of really tight references like that?
+[17:36:06]  &lt;Jetrel_laptop&gt;	It either can't use, or is much slower to just use, texture X, Y [... and some arbitrary &gt;32 number more] textures directly?
+[17:37:37]  &lt;KristaS&gt;	It's inherent in the design of OpenGL unforunately. Multiple textures go all the way back to GL 1.1. Hopefully Vulkan will alleviate a lot of this management overhead.
+</code></pre>
+
+        </div>
+
+        <div class="wiki-footer gollum-markdown-content boxed-group" id="wiki-footer">
+          <div class="boxed-group-inner wiki-auxiliary-content markdown-body">
+            <p>More help can be found via IRC, <a href="irc://irc.freenode.net/#frogatto" rel="nofollow">#Frogatto</a> on freenode.net. This wiki is not a complete reference.</p>
+
+          </div>
+        </div>
+    </div>]

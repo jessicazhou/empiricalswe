@@ -1,0 +1,624 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>This page is intended to cover the basic-day-to-day usage of JSqsh.  It assumes that you have already performed the steps covered in <a class="internal present" href="/scgray/jsqsh/wiki/Installing">Installing</a> and <a class="internal present" href="/scgray/jsqsh/wiki/Getting-Started">Getting Started</a>.</p>
+<p><strong>Table of Contents</strong></p>
+<ul>
+<li>
+<a class="internal present" href="/scgray/jsqsh/wiki/Users-Guide#commands">Commands</a>
+<ul>
+<li><a class="internal present" href="/scgray/jsqsh/wiki/Users-Guide#getting-command-help">Getting help</a></li>
+<li><a class="internal present" href="/scgray/jsqsh/wiki/Users-Guide#command-options">Command options</a></li>
+<li><a class="internal present" href="/scgray/jsqsh/wiki/Users-Guide#command-aliases">Command aliases</a></li>
+<li><a class="internal present" href="/scgray/jsqsh/wiki/Users-Guide#redirection">Redirection</a></li>
+<li><a class="internal present" href="/scgray/jsqsh/wiki/Users-Guide#pipes">Pipes</a></li>
+</ul>
+</li>
+<li>
+<a class="internal present" href="/scgray/jsqsh/wiki/Users-Guide#variables">Variables</a>
+<ul>
+<li><a class="internal present" href="/scgray/jsqsh/wiki/Users-Guide#setting-variables-at-startup">Setting variables at startup</a></li>
+<li><a class="internal present" href="/scgray/jsqsh/wiki/Users-Guide#variable-expansion">Variable expansion</a></li>
+<li><a class="internal present" href="/scgray/jsqsh/wiki/Users-Guide#macros">Macros</a></li>
+<li><a class="internal present" href="/scgray/jsqsh/wiki/Users-Guide#variables-in-queries">Variables in queries</a></li>
+</ul>
+</li>
+<li>
+<a class="internal present" href="/scgray/jsqsh/wiki/Users-Guide#editing">Editing</a>
+<ul>
+<li><a class="internal present" href="/scgray/jsqsh/wiki/Users-Guide#editing-the-sql-buffer">Editing the SQL Buffer</a></li>
+<li><a class="internal present" href="/scgray/jsqsh/wiki/Users-Guide#buffer-history">Buffer history</a></li>
+<li><a class="internal present" href="/scgray/jsqsh/wiki/Users-Guide#buffer-commands">Buffer commands</a></li>
+<li><a class="internal present" href="/scgray/jsqsh/wiki/Users-Guide#command-line-editing">Command line editing</a></li>
+</ul>
+</li>
+<li>
+<a class="internal present" href="/scgray/jsqsh/wiki/Users-Guide#connections-and-sessions">Connections and sessions</a>
+<ul>
+<li><a class="internal present" href="/scgray/jsqsh/wiki/Users-Guide#session-management">Session management</a></li>
+<li><a class="internal present" href="/scgray/jsqsh/wiki/Users-Guide#connecting-without-named-connections">Connecting without named connections</a></li>
+<li><a class="internal present" href="/scgray/jsqsh/wiki/Users-Guide#named-connections-on-the-command-line">Named connections on the command line</a></li>
+</ul>
+</li>
+<li>
+<a class="internal present" href="/scgray/jsqsh/wiki/Users-Guide#configuration-files">Configuration files</a>
+<ul>
+<li><a class="internal present" href="/scgray/jsqsh/wiki/Users-Guide#the-sqshrc-file">The sqshrc file</a></li>
+<li><a class="internal present" href="/scgray/jsqsh/wiki/Users-Guide#the-drivers.xml-file">The drivers.xml file</a></li>
+<li><a class="internal present" href="/scgray/jsqsh/wiki/Users-Guide#the-connections.xml-file">The connections.xml file</a></li>
+</ul>
+</li>
+</ul>
+<h2>
+<a aria-hidden="true" class="anchor" href="#commands" id="user-content-commands"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Commands</h2>
+<p>When you start up jsqsh it will drop you straight into its prompt (well, the first time, it will enter a setup wizard and <em>then</em> drop you into a prompt):</p>
+<pre><code>JSqsh Release 2.1.0, Copyright (C) 2007-2015
+Type \help for available help topics. Using JLine.
+1&gt; 
+</code></pre>
+<p>each time you type something into the prompt, jsqsh looks at the line you just entered and does the following:</p>
+<ul>
+<li>It looks at the first word you entered on the line to see if it is a command that it recognizes, if it is then it executes the command</li>
+<li>It looks at the end of the line you just entered to see if it ends with the statement terminator (a semicolon by default), if it is and if you are connected to a database, then the statement is executed (this behavior is covered in detail <a class="internal present" href="/scgray/jsqsh/wiki/Getting-Started#the-statement-terminator">here</a>).</li>
+<li>If neither of the above is true, then jsqsh assumes that you are in the middle of typing a statement that will eventually be sent to the database server and sticks the line you just entered into its current SQL Buffer (this is covered in the next section, <a class="internal present" href="/scgray/jsqsh/wiki/Users-Guide#the-sql-buffer">The SQL Buffer</a>).</li>
+</ul>
+<p>An interesting thing to note is that <em>jsqsh doesn't understand SQL at all</em>! In fact, frankly, it doesn't even know or care if the thing you are connected to speaks SQL or some other language.  As a result, jsqsh tries to take care that most of its commands start with a leading backslash (\) to try to make sure that it doesn't try to interpret something that you intended to send to the database.</p>
+<p>For example, jsqsh has a command called <a class="internal present" href="/scgray/jsqsh/wiki/set">\set</a> used to set a jsqsh configuration variable (see <a class="internal present" href="/scgray/jsqsh/wiki/Users-Guide#variables">Variables</a>, below), like so:</p>
+<pre><code>1&gt; \set prompt='hi $lineno&gt; '
+hi 1&gt; 
+</code></pre>
+<p>many database SQL dialects have a statement called SET, so it would have been a problem if jsqsh had a command with the same name.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#getting-command-help" id="user-content-getting-command-help"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Getting command help</h3>
+<p>To see a list of commands supported by jsqsh, use <code>\help commands</code> (see <a class="internal present" href="/scgray/jsqsh/wiki/help">\help</a>):</p>
+<pre><code>1&gt; \help commands
+Available commands. Use "\help &lt;command&gt;" to display detailed help for a given command
++--------------+----------------------------------------------------------------------+
+| Command      | Description                                                          |
++--------------+----------------------------------------------------------------------+
+| \alias       | Creates an alias                                                     |
+| \buf-append  | Appends the contents of one SQL buffer into another                  |
+| \buf-copy    | Copies the contents of one SQL buffer into another                   |
+| \buf-edit    | Edits a SQL buffer                                                   |
+| \buf-load    | Loads an external file into a SQL buffer                             |
+...
+</code></pre>
+<p>And, each command has detailed built-in help as well:</p>
+<pre><code>1&gt; \help \set
+SYNOPSIS
+   \set [[-x] [-l] name=value]
+              
+DESCRIPTION
+   Sets a variable or displays all variables.
+           
+OPTIONS:
+   If arguments are provided to \set, then the value of 
+   all variables is displayed.
+          
+   -x, --export Will cause the variable to be exported to the environment
+                of any processes that are spawned by jsqsh during its
+                execution.
+   -l, --local  Sets the value of the variable local to the current session
+                only. No other sessions will see it and it will mask 
+                similarly named variables in other session.
+</code></pre>
+<h3>
+<a aria-hidden="true" class="anchor" href="#command-options" id="user-content-command-options"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Command options</h3>
+<p>All jsqsh commands take one or more command line options. Besides using <code>\help &lt;command&gt;</code> to see the detailed help for a given command, you can see the options a given command accepts by passing the <strong>-h</strong> or <strong>--help</strong> option to the command:</p>
+<pre><code>1&gt; \set --help
+Use: \set [-x] [-l] [var=value]
+   -x, --export               Export the variable
+   -g, --gui                  Send all command output to a graphical window
+   -h, --help                 Display help for command line usage
+   -l, --local                Define the variable locally to this session
+</code></pre>
+<p>All command options take either a short form (e.g. <strong>-l</strong>) or a long form (e.g. <strong>--local</strong>).  In addition all commands take a <strong>--gui</strong> (or <strong>-g</strong>) option, that causes a window to pop up, displaying the output of the command in a separate graphical window instead of in the current terminal window.   This is useful if you want to retain the output of one command while you are working, for example to keep a list of jsqsh commands handy, you can do:</p>
+<pre><code>1&gt; \help --gui commands
+</code></pre>
+<p>will pop up a window containing the output:</p>
+<p><img alt="help --gui commands " src="https://cloud.githubusercontent.com/assets/1461324/4969375/6d25bb82-685e-11e4-99dd-e61c3e405d21.jpg"/></p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#command-aliases" id="user-content-command-aliases"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Command aliases</h3>
+<p>Sometimes the command names in jsqsh can be rather verbose (like <a class="internal present" href="/scgray/jsqsh/wiki/buf_edit">\buf-edit</a>) or typing the backslash character can be anger some people.  To alleviate the such anxieties, jsqsh allows an <a class="internal present" href="/scgray/jsqsh/wiki/alias">alias</a> to be established for a given command.  For example:</p>
+<pre><code>1&gt; \alias sayonara=\quit
+</code></pre>
+<p>establishes an alias for the <a class="internal present" href="/scgray/jsqsh/wiki/quit">\quit</a> command called "sayonara". So, now to quit out of jsqsh, you can do:</p>
+<pre><code>1&gt; sayonara
+shell $
+</code></pre>
+<p>An alias can also include command line options for the original command, so if you wanted to have a simple way to run a query but display the output in CSV format, you could do something like:</p>
+<pre><code> 1&gt; \alias cgo='\go -m csv'
+ 1&gt; select 1, 2 from sysibm.dual
+ 2&gt; cgo
+ 1,2
+</code></pre>
+<p>JSqsh comes pre-wired with a number of convenience aliases:</p>
+<pre><code>1&gt; \alias
++-------+---------+------------+
+| Alias | Global? | Text       |
++-------+---------+------------+
+| :e    | N       | \eval      |
+| :r    | N       | \buf-load  |
+| \dbs  | N       | \databases |
+| \edit | N       | \buf-edit  |
+| \s    | N       | \session   |
+| emacs | N       | \buf-edit  |
+| go    | N       | \go        |
+| quit  | N       | \quit      |
+| vi    | N       | \buf-edit  |
++-------+---------+------------+
+</code></pre>
+<p>Alias definitions are not remembered after you query out of jsqsh, so you typically would add them to your <a class="internal present" href="/scgray/jsqsh/wiki/Users-Guide#the-sqshrc-file">sqshrc file</a>.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#redirection" id="user-content-redirection"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Redirection</h3>
+<p>The "sh" in jsqsh is short for shell.  This is because jsqsh likes to pretend that it is like a unix shell, supporting the two big features that all good shells provide: the ability to <a class="internal present" href="/scgray/jsqsh/wiki/redirection">redirect</a> the output of a command to a file, or to pipe the output of a command to another program.</p>
+<p>For example, if you want to run a query and send its output to a file, rather than to your screen, you can do:</p>
+<pre><code>1&gt; select * from sysibm.systables
+2&gt; go -m csv &gt; systables.csv
+</code></pre>
+<p>The <a class="internal present" href="/scgray/jsqsh/wiki/go">go</a> command will execute the select select, the <code>-m csv</code> option to "go" will cause the output to be rendered in comma separated value format, and the <code>&gt; systables.csv</code> will send all output to a file called <strong>systables.csv</strong>.</p>
+<p>As with a unix shell, all programs send most of their output to stdout ("standard output", the "normal" place to send output), and errors go to stderr (the "error output"), so if you did the above but, say, your SQL contained syntax errors you'd see:</p>
+<pre><code>[localhost][gray] 1&gt; select select * from sysibm.systables
+[localhost][gray] 2&gt; go -m csv &gt; systables.csv
+SQL Exception(s) Encountered: 
+[State: 42601][Code: -104]: An unexpected token "." was found following "select * from sysibm".  Expected tokens may include:  "FROM".. SQLCODE=-104, SQLSTATE=42601, DRIVER=3.67.33
+[State: 56098][Code: -727]: An error occurred during implicit system action type "2". Information returned for the error includes SQLCODE "-104", SQLSTATE "42601" and message tokens ".|select * from sysibm|FROM".. SQLCODE=-727, SQLSTATE=56098, DRIVER=3.67.33
+</code></pre>
+<p>You'll note that even though the output of the command was redirected to a file, the errors were still sent to the screen.  This is because only the stdout was redirected to the file.  If you wanted to capture both the output <em>and</em> the errors to the same file, you'd do the same thing you'd do in a unix shell and use "2&gt;&amp;1" (which means: send stderr to stdout), like so:</p>
+<pre><code>[localhost][gray] 1&gt; select select * from sysibm.systables
+[localhost][gray] 2&gt; go -m csv &gt; systables.csv 2&gt;&amp;1
+</code></pre>
+<p>For detailed help on how such redirection works, run <code>\help redirection</code> (or click <a class="internal present" href="/scgray/jsqsh/wiki/redirection">here</a>).</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#pipes" id="user-content-pipes"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Pipes</h3>
+<p>Along with the ability to redirect the output of a command to a file, jsqsh can instead send that output off to an external program to process using a pipe ("|").  So, for example, let's say you wanted to send the results of a query to a file off on another system, you could do something like:</p>
+<pre><code>[localhost][gray] 1&gt; select select * from sysibm.systables
+[localhost][gray] 2&gt; go -m csv | ssh user@othersystem.com 'cat &gt; systables.csv'
+</code></pre>
+<p>or if you are like me and cannot always be bothered with typing those pesky WHERE clauses, you can do:</p>
+<pre><code>[localhost][gray] 1&gt; select select * from sysibm.systables
+[localhost][gray] 2&gt; go | grep SYSIBM
+</code></pre>
+<h2>
+<a aria-hidden="true" class="anchor" href="#variables" id="user-content-variables"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Variables</h2>
+<p>Much of jsqsh's behavior can be altered by changing configuration variables using the <a class="internal present" href="/scgray/jsqsh/wiki/set">\set</a> command. For example, to change how jsqsh represents the value for NULL, you can set the <a class="internal present" href="/scgray/jsqsh/wiki/null">null</a> variable:</p>
+<pre><code>[localhost][gray] 1&gt; select NULL as "NULL" from sysibm.dual;
++--------+
+| NULL   |
++--------+
+| [NULL] |
++--------+
+[localhost][gray] 1&gt; \set null='N/A'
+[localhost][gray] 1&gt; select NULL as "NULL" from sysibm.dual;
++------+
+| NULL |
++------+
+| N/A  |
++------+
+</code></pre>
+<p>You can get a list of configuration variables using <code>\help vars</code>:</p>
+<pre><code>[localhost][gray] 1&gt; \help vars
+Available configuration variables. Use "\help &lt;variable&gt;" to display detailed help for a given variable
++---------------------+------------------------------------------------------------+
+| Variable            | Description                                                |
++---------------------+------------------------------------------------------------+
+| SID                 | Oracle instance to which connection is established         |
+| autocommit          | Contains the connection's current auto-commit status       |
+| binstr_fmt          | Changes the manner in which binary values are displayed    |
+| build_date          | The jsqsh build date                                       |
+| classpath           | Defines JDBC driver locations                              |
+| connected           | Indicates whether or not the current session is connected  |
+| database            | Contains the connection's current database                 |
+...
+</code></pre>
+<p>And, detailed help is available for each configuration value using <code>\help &lt;variable&gt;</code> or you can use the <a class="internal present" href="/scgray/jsqsh/wiki/Variables-Reference">Variables Reference</a>:</p>
+<pre><code>[localhost][gray] 1&gt; \help null
+VARIABLE
+   null - Controls the visual representation of nulls
+
+DESCRIPTION
+   The ${null} variable is used when displaying null values. The default
+   value is "[NULL]", which will be shown whenever a null value is 
+   encountered.
+</code></pre>
+<p>To view the value of a jsqsh variable use the <a class="internal present" href="/scgray/jsqsh/wiki/echo">\echo</a> command:</p>
+<pre><code>[localhost][gray] 1&gt; \echo $null
+N/A
+</code></pre>
+<h3>
+<a aria-hidden="true" class="anchor" href="#setting-variables-at-startup" id="user-content-setting-variables-at-startup"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Setting variables at startup</h3>
+<p>JSqsh does not retain the value of variables you have set between executions. To have variables set each time jsqsh starts, place calls to <a class="internal present" href="/scgray/jsqsh/wiki/set">\set</a> in your <code>$HOME/.jsqsh/sqshrc</code> file, covered <a class="internal present" href="/scgray/jsqsh/wiki/Users-Guide#the-sqshrc-file">below</a>.</p>
+<p>In addition, you can set variables during startup via the jsqsh command line option <strong>-v</strong> (or <strong>--var</strong>), like so:</p>
+<pre><code>shell$ jsqsh -vnull="N/A"
+</code></pre>
+<p>the complete set of jsqsh command line arguments can be found <a class="internal present" href="/scgray/jsqsh/wiki/jsqsh">here</a>.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#variable-expansion" id="user-content-variable-expansion"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Variable expansion</h3>
+<p>When variables are used inside of a command execution, the rules for variable expansion are very much like a regular UNIX shell; a dollar sign (<code>$</code>) followed by the name of a variable will be replaced with its value:</p>
+<pre><code>1&gt; \set x=20
+1&gt; \echo $x
+20
+</code></pre>
+<p>And you can use curly braces to clearly delimit the beginning and end of the variable name:</p>
+<pre><code>1&gt; \echo xx${x}xx
+xx20xx
+</code></pre>
+<p>Also, as with a shell, the types of quotes that you provide to an argument of a command determine whether or not variable expansion occurs.  Within double quotes variables will be expanded:</p>
+<pre><code>1&gt; \set who=Scott
+1&gt; \echo "Hello, $who"
+Hello, Scott
+</code></pre>
+<p>however, single quotes prevent variable expansion:</p>
+<pre><code>1&gt; \echo 'Hello, $who'
+Hello, $who
+</code></pre>
+<h3>
+<a aria-hidden="true" class="anchor" href="#macros" id="user-content-macros"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Macros</h3>
+<p>JSqsh performs variable expansion using a tool called <a href="http://velocity.apache.org/engine/devel/user-guide.html" rel="nofollow">Velocity</a>. Velocity doesn't just do simple variable expansion but is a full "macro" language, meaning that it allows for conditional expressions and a whole variety of other features.  This can allow you to do all sorts of interesting (if not difficult to read!) things like:</p>
+<pre><code>1&gt; set current schema #if($schema) $schema #else sysibm #end;
+</code></pre>
+<p>This uses Velocity's <a href="http://velocity.apache.org/engine/devel/user-guide.html#Conditionals" rel="nofollow">IF/ELSE</a> syntax so that if the <code>$schema</code> variable has been set, then that schema will become the current working schema, otherwise the SYSIBM schema will be used.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#variables-in-queries" id="user-content-variables-in-queries"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Variables in queries</h3>
+<p>By default jsqsh will <strong>not</strong> expand variables within queries this is primarily because jsqsh does not know if the '$' character was already part of the language of the server you are currently connected too, and the use of variable expansion can lead to security issues if not carefully utilized.   You can, however, enable variable expansion within queries using the $<a class="internal present" href="/scgray/jsqsh/wiki/expand">expand</a> variable:</p>
+<pre><code>1&gt; \set expand=true
+1&gt; \set who=Scott
+1&gt; select '$who' from sysibm.dual;
++-------+
+| 1     |
++-------+
+| Scott |
++-------+
+</code></pre>
+<h2>
+<a aria-hidden="true" class="anchor" href="#editing" id="user-content-editing"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Editing</h2>
+<p>As you type text at the prompt of jsqsh, each line you type is accumulated into a <a class="internal present" href="/scgray/jsqsh/wiki/buffers">SQL buffer</a> (strictly speaking JSqsh has no idea that you are even typing SQL) until one of the following conditions occurs:</p>
+<ul>
+<li>It looks at the first word you entered on the line to see if it is a command that it recognizes, like <a class="internal present" href="/scgray/jsqsh/wiki/go">go</a> or <a class="internal present" href="/scgray/jsqsh/wiki/help">\help</a>, if it is then it executes the command (run <code>\help commands</code> to see a list of all available jsqsh commands).</li>
+<li>It looks at the end of the line you just entered to see if it ends with the statement terminator (a semicolon by default), if it is then the statement is executed (this behavior is covered in detail <a class="internal present" href="/scgray/jsqsh/wiki/Getting-Started#the-statement-terminator">here</a>).</li>
+</ul>
+<p>For example, in the following:</p>
+<pre><code>1&gt; select count(*)
+2&gt; from sysibm.systables
+3&gt; go
++--------+
+|      1 |
++--------+
+|    236 |
++--------+
+1 row in results(first row: 0.0s; total: 0.0s)
+</code></pre>
+<p>The first two lines were accumulated into the <a class="internal present" href="/scgray/jsqsh/wiki/buffers">SQL buffer</a> until the <code>go</code> command was executed.  The <code>go</code> command takes whatever was in the buffer and executes it through the current database connection.</p>
+<p>It is important to note that jsqsh <em>tries</em> to be pretty smart about what you are doing, and does attempt to recognize if you in the middle of a comment or a quoted string and will not recognize commands or the statement terminator while within them, for example:</p>
+<pre><code>1&gt; select 'in an open string
+2&gt; go
+3&gt; 
+</code></pre>
+<p>the <code>go</code> will not execute the statement because you are currently inside of a string literal, similarly,</p>
+<pre><code>1&gt; select count(*) from sysibm.systables /*
+2&gt; go
+3&gt; 
+</code></pre>
+<p>the <code>go</code> will not run because you are inside of a comment.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#editing-the-sql-buffer" id="user-content-editing-the-sql-buffer"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Editing the SQL Buffer</h3>
+<p>While jsqsh supports command line <a class="internal present" href="/scgray/jsqsh/wiki/editing">editing</a> (using the arrow keys to move around the current line or to recall previous lines), sometimes you want to edit the entire query that you are in the middle of entering.  For this you can use the jsqsh <a class="internal present" href="/scgray/jsqsh/wiki/buf_edit">\buf-edit</a> command to pull up the current buffer in an external editor:</p>
+<pre><code>1&gt; CREATE PROCEDURE P1 (IN V1 INT, OUT V2 INT)
+2&gt;   LANGUAGE SQL
+3&gt; BEGIN
+4&gt;   SET V2 = V5 * 2;  -- Oops, "V5" isn't a valid variable
+5&gt; \buf-edit
+</code></pre>
+<p>The <a class="internal present" href="/scgray/jsqsh/wiki/buf_edit">\buf-edit</a> command figures out which editor to launch with your SQL by:</p>
+<ul>
+<li>It looks at the environment variable called <strong>EDITOR</strong>
+</li>
+<li>It that isn't set, it looks at the environment variable <strong>VISUAL</strong>
+</li>
+<li>If that isn't set, it runs "notepad.exe" on windows, or "vi" on all other systems</li>
+</ul>
+<p>The editor will then be pulled up with the contents of the current SQL buffer, like so:</p>
+<p><img alt="\buf-edit" src="https://cloud.githubusercontent.com/assets/1461324/4968863/2c33c73c-684e-11e4-8db8-a4a9f5ca6b6f.jpg"/></p>
+<p>At which point you can edit and even finish your statement and save and quit out of the editor, at which point you will find yourself back at the jsqsh prompt, with the current SQL Buffer reflecting the change you just made:</p>
+<pre><code>1&gt; CREATE PROCEDURE P1 (IN V1 INT, OUT V2 INT)
+2&gt;   LANGUAGE SQL
+3&gt; BEGIN
+4&gt;   SET V2 = V1 * 2;  -- All better now
+5&gt; 
+</code></pre>
+<p>Because <a class="internal present" href="/scgray/jsqsh/wiki/buf_edit">\buf-edit</a>  it is a bit of a handful to type, jsqsh comes in with two built-in <a class="internal present" href="/scgray/jsqsh/wiki/alias">aliases</a> for the command called <code>vi</code> and <code>emacs</code>:</p>
+<pre><code>1&gt; select kount(*) from
+2&gt; vi
+</code></pre>
+<p>note that whether or not you use <code>vi</code> or <code>emacs</code> you are really calling <a class="internal present" href="/scgray/jsqsh/wiki/buf_edit">\buf-edit</a> and it is going through the steps described above to figure out which editor to launch!</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#buffer-history" id="user-content-buffer-history"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Buffer history</h3>
+<p>Every time a statement is executed via the <a class="internal present" href="/scgray/jsqsh/wiki/go">go</a> command or via the statement terminator, jsqsh saves that statement away, remembering the last 50 statements executes (by default).  You can view these previously executed statements using the <a class="internal present" href="/scgray/jsqsh/wiki/history">\history</a> command:</p>
+<pre><code>1&gt; \history
+(1) { call test_inout(?='scott is here') }
+(2) { call test_inout(?='scott') }
+(3) drop procedure test_inout
+(4) create procedure test_mixed (IN i1 INT, OUT i2 DOUBLE, INOUT i3 varchar(30))
+      result sets 1
+      language sql
+    begin
+      declare c1 cursor with return to client 
+        for select 'result set', i1, i3 from sysibm.dual; 
+
+      set i2 = 34.2;
+      set i3 = 'fred was here';
+      open c1;
+    ...
+(5) { call test_mixed (5, ?, ?='blah') }
+</code></pre>
+<p>Note that for very long statements, like statement <strong>(4)</strong>, above, jsqsh will only show the first 10 lines in order to keep the output of getting huge.</p>
+<p>At any point, you can recall a previously executed statement into the current SQL buffer, using jsqsh's history recall syntax.  For example, to retrieve statement #4 above, you can enter <strong>!4</strong>, like so:</p>
+<pre><code>1&gt; !4
+1&gt; create procedure test_mixed (IN i1 INT, OUT i2 DOUBLE, INOUT i3 varchar(30))
+2&gt;   result sets 1
+3&gt;   language sql
+4&gt; begin
+5&gt;   declare c1 cursor with return to client 
+6&gt;     for select 'result set', i1, i3 from sysibm.dual; 
+7&gt; 
+8&gt;   set i2 = 34.2;
+9&gt;   set i3 = 'fred was here';
+10&gt;   open c1;
+11&gt; end
+12&gt; 
+</code></pre>
+<p>JSqsh's history syntax recall syntax is:</p>
+<ul>
+<li>
+<strong>!<em>N</em></strong>: Recalls statement #<strong>N</strong> as listed in the output of the <code>\history</code> command</li>
+<li>
+<strong>!-<em>N</em></strong>: Recalls the <strong>N</strong>'th previously executed buffer</li>
+<li>
+<strong>!..</strong>: Recalls the previously executed buffer. Additional dots may be provided to go further back</li>
+<li>
+<strong>!.</strong>: Refers to the current SQL buffer (examples of where this is useful below)</li>
+</ul>
+<p>see <a class="internal present" href="/scgray/jsqsh/wiki/buffers">buffers</a> for more details.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#buffer-commands" id="user-content-buffer-commands"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Buffer commands</h3>
+<p>A number of jsqsh commands work with SQL buffers.  The following table provides a brief summary of these commands and how they interact with buffers.</p>
+<table>
+<thead>
+<tr>
+<th>Command</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a class="internal present" href="/scgray/jsqsh/wiki/go">go</a></td>
+<td>Executes the statement in the current SQL buffer, then moves that buffer into the history list</td>
+</tr>
+<tr>
+<td>[[\buf-append</td>
+<td>buf_append]]</td>
+</tr>
+<tr>
+<td>[[\buf-copy</td>
+<td>buf_copy]]</td>
+</tr>
+<tr>
+<td>[[\buf-edit</td>
+<td>buf_edit]]</td>
+</tr>
+<tr>
+<td>[[\buf-load</td>
+<td>buf_load]]</td>
+</tr>
+<tr>
+<td>[[\history</td>
+<td>history]]</td>
+</tr>
+<tr>
+<td>[[\reset</td>
+<td>reset]]</td>
+</tr>
+</tbody>
+</table>
+<p>Many of these commands take argument that is a form of the history recall syntax.  For example, to load a file into the current buffer, you can do:</p>
+<pre><code>1&gt; \buf-load myquery.sql !.
+1&gt; select * from sysibm.systables
+2&gt; 
+</code></pre>
+<p>or, if you wanted to copy the contents of that file to the last SQL buffer:</p>
+<pre><code>1&gt; \buf-load myquery.sql !-1
+1&gt; 
+</code></pre>
+<p>As usual, use <a class="internal present" href="/scgray/jsqsh/wiki/Command-Reference">\help command</a> to get detailed help and examples on these commands.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#command-line-editing" id="user-content-command-line-editing"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Command line editing</h3>
+<p>On supported platforms jsqsh provides the ability to edit the current line of text and to scroll up and down through previously entered lines of text using arrow keys.  This facility is provided by a library called <a href="https://github.com/jline/jline2/wiki/JLine-2.x-Wiki">JLine2</a>.  JLine emulates many of the features of the popular <a href="http://cnswww.cns.cwru.edu/php/chet/readline/rltop.html" rel="nofollow">GNU Readline</a> library (this library provides command line editing for most linux shells).</p>
+<p>I won't cover much about JLine2 since you should read about it from the project web site, however there are a few things that you should be aware of:</p>
+<ul>
+<li>
+<p>The library will automatically read your <a href="http://cnswww.cns.cwru.edu/php/chet/readline/readline.html#SEC9" rel="nofollow">.inputrc</a> file if it is present, so it <strong>should</strong> honor the style of editing that you have defined for your other shells.</p>
+</li>
+<li>
+<p>You can change the editing mode from within jsqsh using the <a class="internal present" href="/scgray/jsqsh/wiki/editing_mode">editing_mode</a> variable:</p>
+<p>1&gt; \set editing_mode=vi</p>
+</li>
+</ul>
+<h2>
+<a aria-hidden="true" class="anchor" href="#connections-and-sessions" id="user-content-connections-and-sessions"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Connections and sessions</h2>
+<p>The <a class="internal present" href="/scgray/jsqsh/wiki/Getting-Started">Getting Started</a> page covers the process of setting up a <em>named</em> connection using the JSqsh setup wizard.  This section covers additional details about managing multiple concurrent connections (called sessions) and how to connect to a data source without the need to create a named connection.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#session-management" id="user-content-session-management"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Session management</h3>
+<p>When you establish a connection in jsqsh, you have started a <em>session</em>, for example:</p>
+<pre><code>1&gt; \connect db2
+Password: *******
+[mydb2.mydomain.com][gray] 1&gt; 
+</code></pre>
+<p>I am now working in a session with the "db2" named connection.  However, jsqsh supports the ability to work with multiple concurrent sessions using the <strong>-n</strong> (or <strong>--new-session</strong>) flag to <a class="internal present" href="/scgray/jsqsh/wiki/connect">\connect</a>, like so:</p>
+<pre><code>1&gt; \connect -n bigsql
+Password: *******
+Current session: 2 (jdbc:bigsql://mybigsql.mydomain.com:7052/default)
+[mybigsql.mydomain.com][gray] 1&gt; 
+</code></pre>
+<p>And you can view your currently active sessions with the <a class="internal present" href="/scgray/jsqsh/wiki/session">\session</a> command:</p>
+<pre><code>[mybigsql.mydomain.com][gray] 1&gt; \session
++-----+----------+--------------------------------------------------+
+| Id  | Username | URL                                              |
++-----+----------+--------------------------------------------------+
+|   1 | gray     | jdbc:db2://mydb2.mydomain.com:51000/MYDB         |
+| * 2 | gray     | jdbc:bigsql://mybigsql.mydomain.com:7052/default |
++-----+----------+--------------------------------------------------+
+</code></pre>
+<p>And you can switch between sessions using the <a class="internal present" href="/scgray/jsqsh/wiki/session">\session</a> command as well</p>
+<pre><code>[mybigsql.mydomain.com][gray] 1&gt; \session 1
+Current session: 1 (jdbc:db2://mydb2.mydomain.com:51000/MYDB)
+</code></pre>
+<p>and you can end a session (closing the connection) without quitting jsqsh with the <a class="internal present" href="/scgray/jsqsh/wiki/end">\end</a> command:</p>
+<pre><code>[mydb2.mydomain.com][gray] 1&gt; \end
+Current session: 2 (jdbc:bigsql://mybigsql.mydomain.com:7052/default)
+[mybigsql.mydomain.com][gray] 1&gt; 
+</code></pre>
+<h3>
+<a aria-hidden="true" class="anchor" href="#connecting-without-named-connections" id="user-content-connecting-without-named-connections"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Connecting without named connections</h3>
+<p>The <a class="internal present" href="/scgray/jsqsh/wiki/Getting-Started">Getting Started</a> section covers in detail how to set up a <em>named connection</em> in jsqsh, which is a process that, once complete, makes it trivial to connect to a data source, however it does not work well in all situations, for example if you wanted to write a script that can be run anywhere with jsqsh, you do not want to require that connections be pre-defined in order to run the script.</p>
+<p>JSqsh also allows connections to be established by providing all connection information directly via command line options--these are options that can be provided either when launching jsqsh or via the <a class="internal present" href="/scgray/jsqsh/wiki/connect">\connect</a> command.  Before I got into these command line options, though, it is important to understand how JDBC URL's work in jsqsh.</p>
+<p>If you run the <a class="internal present" href="/scgray/jsqsh/wiki/drivers">\drivers</a> command, it will show a list of available JDBC drivers and their URL's:</p>
+<pre><code>1&gt; \drivers
++-----------------------+----------+----------------------------------------------------+----------------------------------------------+
+| Target                | Name     | URL                                                | Class                                        |
++-----------------------+----------+----------------------------------------------------+----------------------------------------------+
+|   IBM Big SQL v1      | bigsql   | jdbc:bigsql://${server}:${port}#if($db)/${db}#end  | com.ibm.biginsights.bigsql.jdbc.BigSQLDriver |
+| * IBM DB2             | db2      | jdbc:db2://${server}:${port}/${db}                 | com.ibm.db2.jcc.DB2Driver                    |
+|   Apache Derby Server | derby    | jdbc:derby://${server}:${port}/${db}               | org.apache.derby.jdbc.ClientDriver           |
+| * Apache Hive         | hive2    | jdbc:hive2://${server}:${port}#if($db)/${db}#end   | org.apache.hive.jdbc.HiveDriver              |
+|   MS SQL Server       | mssql    | jdbc:microsoft:sqlserver://${server}:${port}       | com.microsoft.jdbc.sqlserver.SQLServerDriver |
+| * MySQL               | mysql    | jdbc:mysql://${server}:${port}#if($db)/${db}#end   | com.mysql.jdbc.Driver                        |
+|   Oracle              | oracle   | jdbc:oracle:thin:@${server}:${port}:${SID}         | oracle.jdbc.OracleDriver                     |
+...
+</code></pre>
+<p>You'll note that JDBC URL's refer to certain variable names, for example the "db2" driver is defined like so:</p>
+<pre><code>jdbc:db2://${server}:${port}/${db}
+</code></pre>
+<p>These variables need to be provided in order to establish a connection, and it is via command line options that they can be set.  The following table lists command line options that are used for connecting and what variables they correspond to:</p>
+<table>
+<thead>
+<tr>
+<th>Short Option</th>
+<th>Long Option</th>
+<th>Variable</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>-d</strong></td>
+<td><strong>--driver</strong></td>
+<td>${<a class="internal present" href="/scgray/jsqsh/wiki/driver">driver</a>}</td>
+<td>The logical name of the JDBC driver to use</td>
+</tr>
+<tr>
+<td><strong>-S</strong></td>
+<td><strong>--server</strong></td>
+<td>${<a class="internal present" href="/scgray/jsqsh/wiki/server">server</a>}</td>
+<td>The hostname, ip address, or identifier for the server to connect to</td>
+</tr>
+<tr>
+<td><strong>-p</strong></td>
+<td><strong>--port</strong></td>
+<td>${<a class="internal present" href="/scgray/jsqsh/wiki/port">port</a>}</td>
+<td>The that the server is listening on</td>
+</tr>
+<tr>
+<td><strong>-U</strong></td>
+<td><strong>--user</strong></td>
+<td>${<a class="internal present" href="/scgray/jsqsh/wiki/user">user</a>}</td>
+<td>Provides the username to connect with. If not provided you will be prompted for it</td>
+</tr>
+<tr>
+<td><strong>-P</strong></td>
+<td><strong>--password</strong></td>
+<td>${<a class="internal absent" href="/scgray/jsqsh/wiki/password">password</a>}</td>
+<td>Provides the password to connect with. If not provided you will be prompted for it</td>
+</tr>
+<tr>
+<td><strong>-D</strong></td>
+<td><strong>--database</strong></td>
+<td>${<a class="internal absent" href="/scgray/jsqsh/wiki/db">db</a>}</td>
+<td>Specifies the name of the database to connect to</td>
+</tr>
+<tr>
+<td><strong>-s</strong></td>
+<td><strong>--SID</strong></td>
+<td>${<a class="internal present" href="/scgray/jsqsh/wiki/SID">SID</a>}</td>
+<td>Specifies the SID to use (typically used for Oracle)</td>
+</tr>
+<tr>
+<td><strong>-w</strong></td>
+<td><strong>--domain</strong></td>
+<td>${<a class="internal present" href="/scgray/jsqsh/wiki/domain">domain</a>}</td>
+<td>The authentication domain to use</td>
+</tr>
+</tbody>
+</table>
+<p>So, since the DB2 driver, needs the ${server}, ${port}, and ${db} to connect with, I can connect directly via the jsqsh command line with:</p>
+<pre><code>$ jsqsh -d db2 -U gray -S mydb2.mydomain.com -p 51000 -D MYDB
+</code></pre>
+<p>or, using long options:</p>
+<pre><code>$ jsqsh --driver db2 --user gray --server mydb2.mydomain.com --port 51000 -database MYDB
+</code></pre>
+<p>Similarly, you may also provide the same arguments to the <a class="internal present" href="/scgray/jsqsh/wiki/connect">\connect</a> command when already at the jsqsh prompt:</p>
+<pre><code>1&gt; \connect -d db2 -U gray -S mydb2.mydomain.com -p 51000 -D MYDB
+</code></pre>
+<p>In addition, you can use command line options to override values provided by a named connection.  For example, the following:</p>
+<pre><code>$ jsqsh --database OTHERDB mydb2
+</code></pre>
+<p>will use the "mydb2" named connection to connect, but it will ignore whatever database was defined for the named connection and instead use OTHERDB.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#named-connections-on-the-command-line" id="user-content-named-connections-on-the-command-line"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Named connections on the command line</h3>
+<p>The setup wizard is generally the preferred way to work with named connections, but because it is easier than remembering a whole pile of command line options.  But the options are there, none the less!</p>
+<p>Picking up from the example in the previous section, once you have determined the correct set of options necessary to connect to your favorite database, you can then add that as a named connection with the <strong>--add</strong> option to <code>\connect</code>, like so:</p>
+<pre><code>1&gt; \connect -d db2 -U gray -S mydb2.mydomain.com -p 51000 -D MYDB --add mydb2
+1&gt;
+</code></pre>
+<p>Note that with <strong>--add</strong> a connection will <strong>not</strong> be established, just saved away in your named connections.  You can view the current set of named connections with the <strong>--list</strong> option:</p>
+<pre><code>1&gt; \connect --list
++-----------+--------+----------------------------+--------+-----------+----------+----------+--------+--------+--------+------------+
+| Name      | Driver | Server                     | Port   | SID       | Username | Password | Domain | Class  | URL    | Properties |
++-----------+--------+----------------------------+--------+-----------+----------+----------+--------+--------+--------+------------+
+| bigsql    | bigsql | [NULL]                     | 7052   | [NULL]    | gray     | *******  | [NULL] | [NULL] | [NULL] | [NULL]     |
+| db2       | db2    | localhost                  | 50003  | [NULL]    | db2inst1 | *******  | [NULL] | [NULL] | [NULL] | [NULL]     |
+| deepdb    | db2    | larry.fred.com             | [NULL] | [NULL]    | db2inst1 | *******  | [NULL] | [NULL] | [NULL] | [NULL]     |
+| oracle    | oracle | ora.cle.com                | [NULL] | O12c2UTF8 | DBCERT   | *******  | [NULL] | [NULL] | [NULL] | [NULL]     |
++-----------+--------+----------------------------+--------+-----------+----------+----------+--------+--------+--------+------------+
+</code></pre>
+<p>Similarly, the <code>\connect</code> command has options to <strong>--remove</strong> and <strong>--update</strong> existing connections. See <code>\help \connect</code> for details.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#configuration-files" id="user-content-configuration-files"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Configuration files</h2>
+<p>By and large jsqsh should be usable without having to resort to peeking into its seedy underbelly and poking around into configurations files...but, sometimes it may be necessary or possibly easier.</p>
+<p>All configuration files listed below live in:</p>
+<pre><code>$HOME/.jsqsh
+</code></pre>
+<p>(or your whatever your home directory is called on Windows).</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#the-sqshrc-file" id="user-content-the-sqshrc-file"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>The sqshrc file</h3>
+<p>The <code>$HOME/.jsqsh/sqshrc</code> is read each time jsqsh is started. The contents of this file are process just as if you had typed them in at the jsqsh prompt, so you can set any jsqsh variable, or execute any command from this file.  The typical use case for this file is to set jsqsh configuration variables to your liking.  For example, here's the contents of my file:</p>
+<pre><code>## The editor to use during \buf-edit, "vi", or "emacs" commands
+\set EDITOR=/usr/bin/vi
+## The character to use to execute commands
+\set terminator=';'
+## Allow variable expansion within SQL statements
+\set expand=true
+## Show a visual timer during query execution
+\set timer=true
+</code></pre>
+<p>The double hash (##) is jsqsh's form of comment. Any line starting with this is ignored</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#the-driversxml-file" id="user-content-the-driversxml-file"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>The drivers.xml file</h3>
+<p>The <code>$HOME/.jsqsh/drivers.xml</code> file contains customized driver definitions, after jsqsh launches and loads its internal database of driver definitions it then reads the contents of this file, which may define new drivers or override jsqsh's own definition of the driver.</p>
+<p>When you edit a driver with the jsqsh setup wizard (<code>jsqsh --setup</code>), then you will find the new definition of the driver in this file.  Unfortunately, I don't yet have proper documentation for the format of this file, so your best bet is to use the setup wizard to at least populate the file before editing.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#the-connectionsxml-file" id="user-content-the-connectionsxml-file"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>The connections.xml file</h3>
+<p>The <code>$HOME/.jsqsh/connections.xml</code> file contains your named connection definitions. This file is edited each time you run the jsqsh setup wizard, or use one of the connection management options to the <code>\connect</code> command (as discussed <a class="internal present" href="/scgray/jsqsh/wiki/Users-Guide#named-connections-on-the-command-line">here</a>).</p>
+<p>As with drivers.xml, the format of this file isn't yet properly documented, so it is recommended that you use the setup wizard to at least create an initial entry in this file, then you can edit by hand freely.</p>
+
+        </div>
+
+    </div>]

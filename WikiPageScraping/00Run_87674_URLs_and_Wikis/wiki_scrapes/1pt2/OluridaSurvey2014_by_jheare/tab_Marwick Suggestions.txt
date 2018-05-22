@@ -1,0 +1,99 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p><em>Below are @benmarwick suggestions via issues</em><br/>
+<em>I moved here so we can systematically go through while making notes</em></p>
+<hr/>
+<p>This was really interesting to have a look at, thanks for sharing it. I was able to reproduce everything with minimal edits (changing my wd, commenting out some of the interactive bits, <code>View</code>, etc). I'll email my output since I'm not sure how to get at <a href="https://dl.dropboxusercontent.com/u/115356/html/marwick.html" rel="nofollow">html file</a> on here quickly, I've also found an easy place to put it online: <a href="http://rpubs.com/benmarwick/zenodo_13201" rel="nofollow">http://rpubs.com/benmarwick/zenodo_13201</a> A few quick thoughts...</p>
+<p>On the code...</p>
+<ul class="contains-task-list">
+<li class="task-list-item">
+<input class="task-list-item-checkbox" disabled="" id="" type="checkbox"/> The scripts could be prefixed with a number like 001-xxxx.R to indicate what the correct order should be</li>
+<li class="task-list-item">
+<input class="task-list-item-checkbox" disabled="" id="" type="checkbox"/> The entire ms. could be a R markdown file that sources the R scripts (I see you explored this with e temp plots, see below for another approach)</li>
+<li class="task-list-item">
+<input class="task-list-item-checkbox" disabled="" id="" type="checkbox"/> Most current style guides for R recommend spaces around operators to improve readability (=, +, etc)</li>
+<li class="task-list-item">
+<input class="task-list-item-checkbox" disabled="" id="" type="checkbox"/> Try <code>dplyr</code> instead of <code>plyr</code>, it feels a million times faster and has more intuitive syntax</li>
+<li class="task-list-item">
+<input class="task-list-item-checkbox" disabled="" id="" type="checkbox"/> Add package version numbers to the ms. and readme.md, I usually just paste in the output from <code>sessionInfo</code>
+</li>
+<li class="task-list-item">
+<input class="task-list-item-checkbox" disabled="" id="" type="checkbox"/> add a <strong>clickable</strong> DOI to the preprint into the readme.md to close the loop between paper and code. I see you've linked the title, but a DOI is more recognisable as a citable thing. Related, I'd specifically say "Cite as:..." before the citation, so people can see easy see how to give you credit for these things</li>
+</ul>
+<p>On the figures...</p>
+<ul class="contains-task-list">
+<li class="task-list-item">
+<input class="task-list-item-checkbox" disabled="" id="" type="checkbox"/> Be more explicit about what code generates which figure, since the code generates more figs than are in the ms.</li>
+<li class="task-list-item">
+<input class="task-list-item-checkbox" disabled="" id="" type="checkbox"/> looks like fig 4 has had some post-processing to get labels on the plots, this could be done with R, like you did for fig 5</li>
+<li class="task-list-item">
+<input class="task-list-item-checkbox" disabled="" id="" type="checkbox"/> the code for figs 5-6-7 makes the plots appear in the reverse order to how they appear in the paper, which had me puzzled for a little while :)</li>
+<li class="task-list-item">
+<input class="task-list-item-checkbox" disabled="" id="" type="checkbox"/> looks like some post-processing on figs 8-9-10 to get the secondary y-axis title. But I'm not even sure if that's possible without a great deal of fiddling. I'm amazed you even got a second y-axis on there!</li>
+</ul>
+<p>On the stats...</p>
+<ul class="contains-task-list">
+<li class="task-list-item">
+<input class="task-list-item-checkbox" disabled="" id="" type="checkbox"/> all the chi-sq tests match my output</li>
+<li class="task-list-item">
+<input class="task-list-item-checkbox" disabled="" id="" type="checkbox"/> I couldn't find any of the metric data or stats  (SE, SD, CI) in the output. Can they be included in the scripts?</li>
+</ul>
+<p>Below is a more self-contained approach, using an R Markdown file that sources the scripts (the scripts could simply be copy and pasted into the chunks). You wouldn't need to <code>setwd</code> for each script because the knitting process sets the wd to the location of the Rmd file (which is great for isolating the code execution from contaminating objects, etc).</p>
+<p>This Rmd file works for me with your scripts with minor edits (I had to comment out a few lines here and there), and I can knit it to get all your figs at once. To make that possible, I'd have</p>
+<ul class="contains-task-list">
+<li class="task-list-item">
+<input class="task-list-item-checkbox" disabled="" id="" type="checkbox"/> a chuck at the top that sets all the chunk options so that <code>echo=FALSE</code> to suppress the code, <code>cache=TRUE</code> to keep things fast while iterating over it, and a few other tweaks to keep it tidy</li>
+<li class="task-list-item">
+<input class="task-list-item-checkbox" disabled="" id="" type="checkbox"/> a chunk that gets the wd to be one dir up so we can find the data files,  In this case I changed my wd in each script file because I ran the scripts separately before making this Rmd file</li>
+<li class="task-list-item">
+<input class="task-list-item-checkbox" disabled="" id="" type="checkbox"/> a chunk to get numbered fig captions and cross-refs in the text.\</li>
+<li class="task-list-item">
+<input class="task-list-item-checkbox" disabled="" id="" type="checkbox"/> a chunk to check to see if the required packages were installed, and if not, get them without asking. I use this <a href="https://gist.github.com/benmarwick/5054846">https://gist.github.com/benmarwick/5054846</a>
+</li>
+</ul>
+<hr/>
+<pre><code>		---
+	date: "Tuesday, December 16, 2014"
+	output: html_document
+	---
+
+	The narrative text can go in here and between the code chunks. Then you can knit the paper to PDF (or use `make`) and you've got a (more) easily reproducible paper.
+
+	```{r fig_2_and_3}
+	source("temperature-plots.R", print.eval = TRUE, echo = TRUE)
+	```
+
+	```{r fig_4}
+	source("Kaplan-meier-stats-plot-all.R", print.eval = TRUE, echo = TRUE)
+	```
+
+	```{r figs_5_6_7}
+	source("sizedist-stats-plot.R", print.eval = TRUE, echo = TRUE)
+	```
+
+	```{r fig_8}
+	source("percbrood-temp-plot-OysterBay.R", print.eval = TRUE, echo = TRUE)
+	```
+
+	```{r fig_9}
+	source("percbrood-temp-plot-Fidalgo.R", print.eval = TRUE,echo = TRUE)
+	```
+
+	```{r fig_10}
+	source("percbrood-temp-plot-Manchester.R", print.eval = TRUE, echo = TRUE)
+	```
+
+
+	Dependencies within R:
+
+	```{r}
+	# show package names and version numbers (not given in the paper)
+	sessionInfo()
+	```
+
+</code></pre>
+<hr/>
+
+        </div>
+
+    </div>]

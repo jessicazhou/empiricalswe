@@ -1,0 +1,52 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>@TODO Clean this up</p>
+<p>Every public field is associated with an object implementing <code>ResourceFieldInterface</code>. All public field logic is defined by these resource field objects, with the help of the associated data provider.</p>
+<p>Most of the time, RESTful will detect the best resource field class based on the field definition (e.g. ResourceFieldEntityReference for an entityreference field). If it doesn't find a specific class to use, it will default to using <code>ResourceFieldEntity</code>, as defined in ResourceEntity::processPublicFields().</p>
+<p>If RESTful cannot find information it needs to choose the class, or you want to provide a custom class for a custom field type, use the new key <code>class</code> to specify the class to be used. For example:</p>
+<div class="highlight highlight-text-html-php"><pre><span class="pl-s1">    <span class="pl-smi">$public_fields</span>[<span class="pl-s"><span class="pl-pds">'</span>location<span class="pl-pds">'</span></span>] <span class="pl-k">=</span> <span class="pl-c1">array</span>(</span>
+<span class="pl-s1">      <span class="pl-s"><span class="pl-pds">'</span>property<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-s"><span class="pl-pds">'</span>field_location<span class="pl-pds">'</span></span>,</span>
+<span class="pl-s1">      <span class="pl-s"><span class="pl-pds">'</span>class<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-s"><span class="pl-pds">'</span>\Drupal\casa_rest\Plugin\resource\fields\ResourceFieldEntityGeofield<span class="pl-pds">'</span></span>,</span>
+<span class="pl-s1">    );</span></pre></div>
+<p>That would create an object using the following example custom class:</p>
+<div class="highlight highlight-text-html-php"><pre><span class="pl-pse">&lt;?php</span><span class="pl-s1"></span>
+<span class="pl-s1"></span>
+<span class="pl-s1"><span class="pl-c"><span class="pl-c">/**</span></span></span>
+<span class="pl-s1"><span class="pl-c"> * @file</span></span>
+<span class="pl-s1"><span class="pl-c"> * Contains \Drupal\restful\Plugin\resource\fields\ResourceFieldEntityGeofield.</span></span>
+<span class="pl-s1"><span class="pl-c"> <span class="pl-c">*/</span></span></span>
+<span class="pl-s1"></span>
+<span class="pl-s1"><span class="pl-k">namespace</span> <span class="pl-en">Drupal\casa_rest\Plugin\resource\fields</span>;</span>
+<span class="pl-s1"></span>
+<span class="pl-s1"><span class="pl-k">use</span> <span class="pl-c1">Drupal\restful\Plugin\resource\Field\ResourceFieldEntity</span>;</span>
+<span class="pl-s1"><span class="pl-k">use</span> <span class="pl-c1">Drupal\restful\Plugin\resource\Field\ResourceFieldEntityInterface</span>;</span>
+<span class="pl-s1"></span>
+<span class="pl-s1"><span class="pl-k">class</span> <span class="pl-en">ResourceFieldEntityGeofield</span> <span class="pl-k">extends</span> <span class="pl-e">ResourceFieldEntity</span> <span class="pl-k">implements</span> <span class="pl-e">ResourceFieldEntityInterface</span> {</span>
+<span class="pl-s1"></span>
+<span class="pl-s1">  <span class="pl-c"><span class="pl-c">/**</span></span></span>
+<span class="pl-s1"><span class="pl-c">   * {@inheritdoc}</span></span>
+<span class="pl-s1"><span class="pl-c">   <span class="pl-c">*/</span></span></span>
+<span class="pl-s1">  <span class="pl-k">public</span> <span class="pl-k">function</span> <span class="pl-en">preprocess</span>(<span class="pl-smi">$value</span>) {</span>
+<span class="pl-s1">    <span class="pl-c"><span class="pl-c">//</span> dpm($value, 'preprocess $value');</span></span>
+<span class="pl-s1"></span>
+<span class="pl-s1">    <span class="pl-smi">$valueOut</span> <span class="pl-k">=</span> <span class="pl-smi">$value</span>;</span>
+<span class="pl-s1"></span>
+<span class="pl-s1">    <span class="pl-c"><span class="pl-c">//</span> Change 'latitude' and 'longitude' to their accepted forms</span></span>
+<span class="pl-s1">    <span class="pl-k">if</span> (<span class="pl-c1">isset</span>(<span class="pl-smi">$value</span>[<span class="pl-s"><span class="pl-pds">'</span>longitude<span class="pl-pds">'</span></span>])) {</span>
+<span class="pl-s1">      <span class="pl-smi">$valueOut</span>[<span class="pl-s"><span class="pl-pds">'</span>lon<span class="pl-pds">'</span></span>] <span class="pl-k">=</span> <span class="pl-smi">$value</span>[<span class="pl-s"><span class="pl-pds">'</span>longitude<span class="pl-pds">'</span></span>];</span>
+<span class="pl-s1">      <span class="pl-c1">unset</span>(<span class="pl-smi">$valueOut</span>[<span class="pl-s"><span class="pl-pds">'</span>longitude<span class="pl-pds">'</span></span>]);</span>
+<span class="pl-s1">    }</span>
+<span class="pl-s1">    <span class="pl-k">if</span> (<span class="pl-c1">isset</span>(<span class="pl-smi">$value</span>[<span class="pl-s"><span class="pl-pds">'</span>latitude<span class="pl-pds">'</span></span>])) {</span>
+<span class="pl-s1">      <span class="pl-smi">$valueOut</span>[<span class="pl-s"><span class="pl-pds">'</span>lat<span class="pl-pds">'</span></span>] <span class="pl-k">=</span> <span class="pl-smi">$value</span>[<span class="pl-s"><span class="pl-pds">'</span>latitude<span class="pl-pds">'</span></span>];</span>
+<span class="pl-s1">      <span class="pl-c1">unset</span>(<span class="pl-smi">$valueOut</span>[<span class="pl-s"><span class="pl-pds">'</span>latitude<span class="pl-pds">'</span></span>]);</span>
+<span class="pl-s1">    }</span>
+<span class="pl-s1"></span>
+<span class="pl-s1">    <span class="pl-c"><span class="pl-c">//</span> dpm($valueOut, '$valueOut');</span></span>
+<span class="pl-s1">    <span class="pl-k">return</span> <span class="pl-smi">$valueOut</span>;</span>
+<span class="pl-s1">  }</span>
+<span class="pl-s1"></span>
+<span class="pl-s1">}</span></pre></div>
+
+        </div>
+
+    </div>]

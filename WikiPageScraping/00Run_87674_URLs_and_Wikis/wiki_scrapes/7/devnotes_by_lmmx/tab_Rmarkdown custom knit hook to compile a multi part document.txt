@@ -1,0 +1,131 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <blockquote>
+<p><em>The following notes accompany a blog post I've written on this undocumented RStudio/<a href="https://github.com/rstudio/rmarkdown"><code>rmarkdown</code></a> feature which may be more explanatory:</em></p>
+<ul>
+<li><em><a href="http://biochemistri.es/one-weird-rmd-trick" rel="nofollow">One weird trick to compile multipartite dynamic documents with Rmarkdown</a></em></li>
+</ul>
+<p><em>...and another on my current 'modular' code notebook:</em></p>
+<ul>
+<li><a href="http://biochemistri.es/modular-workbook" rel="nofollow"><em>A modular Rmarkdown workbook in action</em></a></li>
+</ul>
+</blockquote>
+<p>An example of an Rmarkdown YAML header which threads together a document from component Rmarkdown subsections:</p>
+<div class="highlight highlight-source-yaml"><pre>---
+<span class="pl-ent">title</span>: <span class="pl-s"><span class="pl-pds">"</span>Multi-part analysis<span class="pl-pds">"</span></span>
+<span class="pl-ent">knit</span>: <span class="pl-s">(function(inputFile, encoding) { for (section in list.files(pattern="analysis-part-.*?.Rmd")) { rmarkdown::render(section, encoding = encoding, quiet=TRUE) }; rmarkdown::render(inputFile, encoding = encoding, output_file = paste0(dirname(inputFile),'/README.md')) })</span>
+<span class="pl-ent">output</span>:
+  <span class="pl-ent">md_document</span>:
+    <span class="pl-ent">variant</span>: <span class="pl-s">markdown_github</span>
+    <span class="pl-ent">includes</span>:
+      <span class="pl-ent">after_body</span>: <span class="pl-s">[</span>
+        <span class="pl-s">analysis-part-i.md,</span>
+        <span class="pl-s">analysis-part-ii.md,</span>
+        <span class="pl-s">analysis-part-iii.md</span>
+      <span class="pl-s">]</span>
+---</pre></div>
+<ul>
+<li>
+<p>The <code>title:</code> field becomes a top-level header (<code>#</code>) in the output markdown</p>
+</li>
+<li>
+<p>The <code>knit:</code> field (<a href="https://github.com/rstudio/rmarkdown/issues/277">a currently undocumented hook</a>) replaces <code>rmarkdown::render</code> with a custom function specifying parameters for the rendering.</p>
+<p>Yes, unfortunately it has to be a huge one-liner unless you have your own R package [with the function exported to the namespace] to source it from (as <code>package::function</code>). Here's the above more clearly laid out:</p>
+<div class="highlight highlight-source-r"><pre></pre></div>
+</li>
+</ul>
+<p>(
+function(inputFile, encoding) {
+for (section in list.files(pattern="analysis-part-.*?.Rmd")) {
+rmarkdown::render(section, encoding = encoding, quiet=TRUE)
+};
+rmarkdown::render(inputFile, encoding = encoding,
+output_file = paste0(dirname(inputFile),'/README.md'))
+})</p>
+<pre><code>
+  * Firstly, every section's Rmarkdown file is rendered into markdown [with the [same name by default](https://github.com/rstudio/rmarkdown/blob/4c8b860f276bcceb9fe10722544ee189d1ae7548/R/render.R#L160-L162)]
+    * Each of these files are 'included' after the 'body' (*cf.* the header) of this README, if they're in the `includes: after_body:[...]` list.
+    * The `quiet=TRUE` parameter silences the standard "Output created: ..." message following `render()` which would trigger the RStudio file preview — presumably not wanting to see intermediate markdown.
+  * After component files are processed in the for loop, the final README markdown is rendered ('includes' appends their processed markdown contents), and this full document is previewed.
+* All Rmd files here contain a YAML headers, the constituent files having only the `output:md_document:variant` field:
+  ```YAML
+---
+output:
+  md_document:
+    variant: markdown_github
+---
+</code></pre>
+<p>...before their sub-section contents:</p>
+<pre><code>## Part 1: Comparison of cancer types surveyed
+
+Comparing cancer types in this paper to CRUK's most up to date prevalence statistics ([February 4th 2015](http://dx.doi.org/10.1038/bjc.2014.606)).
+</code></pre>
+<h2>
+<a aria-hidden="true" class="anchor" href="#alternative-modular-setup" id="user-content-alternative-modular-setup"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Alternative modular setup</h2>
+<p>One of the problems custom knit functions can also solve is the time it takes for large manuscripts to compile.</p>
+<p><em>E.g.</em>, if using <a href="https://github.com/cboettig/knitcitations"><code>knitcitations</code></a>, each reference is downloaded even if the bibliographic metadata has already been obtained. Along with generating individual figures etc., the time to 'compile' an Rmarkdown document can therefore scale exorbitantly when writing a moderately sized document, breaking the proper flow of writing and review.</p>
+<p>A modular structure is the only rational way of doing this, but isn't described anywhere for Rmarkdown's dynamic documents.</p>
+<p>A 'main' knit function as above would lack the first step of compiling each <code>.Rmd</code> ⇒ <code>.md</code>), so that <code>.md</code> files would just be <code>included</code> (instantly):</p>
+<div class="highlight highlight-source-yaml"><pre><span class="pl-ent">knit</span>: <span class="pl-s">rmarkdown::render(inputFile, encoding = encoding, output_file = paste0(dirname(inputFile),'/README.md')) })</span></pre></div>
+<p>Much more sensibly, the edited Rmarkdown component files (subsections) wouldn't need to be re-processed, <em>e.g.</em> have all references and figures generated - this would be done per file, each one with custom <code>knit:</code> hooks:</p>
+<div class="highlight highlight-source-yaml"><pre>---
+<span class="pl-ent">knit</span>: <span class="pl-s">(function(inputFile, encoding) { rmarkdown::render(inputFile, encoding = encoding, quiet=TRUE) })</span>
+<span class="pl-ent">output</span>:
+  <span class="pl-ent">md_document</span>:
+    <span class="pl-ent">variant</span>: <span class="pl-s">markdown_github</span>
+---</pre></div>
+<p>The idea would be to follow what <a href="http://youtu.be/Kfv12q28bQM?t=2m32s" rel="nofollow">this Software Carpentry video</a> describes re: makefiles for reproducible research papers.</p>
+<p>The example above creates a <code>README.md</code> file suitable for display in a standard GitHub repo (though it's not really a good idea to have sprawling READMEs). It could just as easily be tweaked to give a <code>paper.pdf</code>, using a PDF YAML header instead for the final <code>.md</code> ⇒ <code>.pdf</code> step.</p>
+<p><img alt="" data-canonical-src="https://pbs.twimg.com/media/Bt8dgH-CQAEYNzy.png" src="https://camo.githubusercontent.com/00c3c6575412ea416f02424b6aea2bfff5eaca00/68747470733a2f2f7062732e7477696d672e636f6d2f6d656469612f4274386467482d43514145594e7a792e706e67"/></p>
+<blockquote>
+<p><a href="http://youtu.be/Kfv12q28bQM?t=2m32s" rel="nofollow">via Software Carpentry</a></p>
+</blockquote>
+<p>For what it's worth, my current YAML header for a manuscript in PDF is:</p>
+<div class="highlight highlight-source-yaml"><pre>---
+<span class="pl-ent">bibliography</span>: <span class="pl-s">references.bib</span>
+<span class="pl-ent">mainfont</span>: <span class="pl-s">Arial</span>
+<span class="pl-ent">output</span>:
+  <span class="pl-ent">pdf_document</span>:
+    <span class="pl-ent">latex_engine</span>: <span class="pl-s">xelatex</span>
+---</pre></div>
+<p>... and in the top matter (after the YAML, before the markdown, for the LaTeX engine &amp; R):</p>
+<div class="highlight highlight-text-tex"><pre>`<span class="pl-c1">\fontsize</span>{10}{16}`
+`r library(knitr)`
+`r library(knitcitations)`
+`r options("citation_format" = "pandoc")`</pre></div>
+<p>The way to provide titles programmatically for primary and secondary level headings is to put these at the top of the Rmarkdown body:</p>
+<p>The way to provide titles programmatically for primary and secondary level headings is to put these at the top of the Rmarkdown body:</p>
+<pre>```{r echo=FALSE, results='asis', comment=''}
+cat("#", rmarkdown::metadata$title)
+```</pre>
+<pre>```{r echo=FALSE, results='asis', comment=''}
+cat("##", rmarkdown::metadata$title)
+```</pre>
+<p><em>etc.</em></p>
+<ul>
+<li>
+<p>A little proof of concept one-click-knit Rmarkdown repo I've made from this is <a href="https://github.com/lmmx/tomasetti-vogelstein-2015">here</a>. All code is self-contained in the documents, and all the documents get sewn together when the main 'Analysis.Rmd' is 'knitted' (from within the documents sub-directory until I start using Konrad Rudolph's <a href="https://github.com/klmr/modules/">modules</a> package).</p>
+<p>The analysis is a brief first time use of <code>dplyr</code>, and cross-references cancers in the recent Tomasetti &amp; Vogelstein 'bad luck' paper in <em>Science</em> against Cancer Research UK's published prevalence statistics.</p>
+</li>
+<li>
+<p>One further thing you can do here is pre-process the Rmarkdown with <code>brew</code>, as in <a href="http://stackoverflow.com/a/23458768/2668831" rel="nofollow">this example</a>, to programmatically set YAML headers, <em>e.g.</em> to dynamically pass a list of files to the <code>include: after_body:</code> field with something like</p>
+<div class="highlight highlight-source-yaml"><pre><span class="pl-ent">includes</span>: 
+  <span class="pl-ent">after_body</span>: <span class="pl-s">&lt;%= paste('[',paste(list.files(pattern = "analysis-part-*.md"), collapse=','),']') %&gt;</span></pre></div>
+<p>(or something similar to generate the expected format). A commenter on my GitHub wiki has suggested ending the 'main' document with a code chunk <code>{r child: list.files(...)}</code> as an alternative to <code>brew</code> - see <a href="https://github.com/lmmx/devnotes/issues/1">here</a>.</p>
+</li>
+<li>
+<p>See also: <a href="http://biochemistri.es/modular-workbook" rel="nofollow">this post describing my current workbook</a> (not currently shareable in its entirety), which writes a fresh YAML header for the final HTML output programmatically, and compiles this one last time as Rmarkdown.</p>
+</li>
+</ul>
+<p><a href="http://biochemistri.es/modular-workbook" rel="nofollow"><img alt="" data-canonical-src="https://40.media.tumblr.com/fc1546c324aadf70c858c25fa7a88fdb/tumblr_nkp46iGOTm1styhl4o4_r1_1280.png" src="https://camo.githubusercontent.com/30d1914b46f826812e3920526451b349c06e5165/68747470733a2f2f34302e6d656469612e74756d626c722e636f6d2f66633135343663333234616164663730633835386332356661376138386664622f74756d626c725f6e6b70343669474f546d31737479686c346f345f72315f313238302e706e67"/></a>
+<a href="http://biochemistri.es/modular-workbook" rel="nofollow"><img alt="" data-canonical-src="http://40.media.tumblr.com/844f124310d8b3b05d6a64d4d8e2e04a/tumblr_nkp46iGOTm1styhl4o3_1280.png" src="https://camo.githubusercontent.com/22d89649ce00749bc7c2d7a15edd554bb21636b9/687474703a2f2f34302e6d656469612e74756d626c722e636f6d2f38343466313234333130643862336230356436613634643464386532653034612f74756d626c725f6e6b70343669474f546d31737479686c346f335f313238302e706e67"/></a></p>
+
+        </div>
+
+        <div class="wiki-footer gollum-markdown-content boxed-group" id="wiki-footer">
+          <div class="boxed-group-inner wiki-auxiliary-content markdown-body">
+            <p><a href="https://github.com/lmmx/devnotes/wiki">Main page</a></p>
+
+          </div>
+        </div>
+    </div>]

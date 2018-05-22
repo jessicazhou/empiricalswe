@@ -1,0 +1,87 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>An array's "data format" is its dtype (e.g. <code>float32</code>), shape, and axis order. Currently, the only data format class is <code>simplelearn.formats.DenseFormat</code>, which stores the axis order as a tuple of axis names. These DenseFormat objects provide shape and order information because Theano symbols don't. They also reduce converting between N data formats to O(N) coding effort, rather than O(N^2). You just specify the axis order and shape.</p>
+<p>In this page we show how to specify a format, and how to easily convert between them. This is important in deep learning because such format changes happen all the time. For example, each inception module in GoogLeNet performs at least 9 format conversions.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#format-examples" id="user-content-format-examples"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Format examples</h2>
+<h3>
+<a aria-hidden="true" class="anchor" href="#mnist-images" id="user-content-mnist-images"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>MNIST images</h3>
+<p>The following <code>DenseFormat</code> describes the format that MNIST images are stored in: [batch, row, column] axis order, with 28 x 28 grayscale images.</p>
+<pre><code>mnist_image_format = DenseFormat(axes=('b', '0', '1'),
+                                 shape=(-1, 28, 28),
+                                 dtype='uint8')
+</code></pre>
+<p>The axis names (in the <code>axes</code> argument above) can be any string, except for the batch axis, which is expected to be <code>'b'</code> throughout simplelearn. The batch axis size can be fixed, but usually it is left unspecified, as indicated by the <code>-1</code> in the <code>shape</code> argument above. While <code>'0'</code> and <code>'1'</code> are often used to mean 'image row' and 'image column', this is just a convention, whereas using <code>'b'</code> for the batch axis is a rule.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#cudnn-images" id="user-content-cudnn-images"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>cuDNN images</h3>
+<p>NVidia's cuDNN library expects images to have [batch, channel, row, column] axis order, with <code>float32</code> dtype. The MNIST images would therefore have to be converted to this format:</p>
+<pre><code>cudnn_image_format = DenseFormat(axes=('b', 'c', '0', '1'),
+                                 shape=(-1, 1, 28, 28),
+                                 dtype='float32')
+</code></pre>
+<p>Note how we've introduced a color channel axis <code>'c'</code>, with size 1.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#feature-vectors" id="user-content-feature-vectors"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Feature vectors</h3>
+<p>At the top layers of an image classifier network, feature maps usually get converted to feature vectors. The following format describes a batch of vectors, stored as rows in a matrix:</p>
+<pre><code>vector_format = DenseFormat(axes=('b', 'f'),
+                            shape=(-1, vec_size),
+                            dtype='float32')
+</code></pre>
+<h2>
+<a aria-hidden="true" class="anchor" href="#converting-between-formats" id="user-content-converting-between-formats"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Converting between formats</h2>
+<p>You can use <code>DenseFormat.convert()</code> to convert both Theano variables and numpy arrays between formats. Here's an example of converting a batch of MNIST images to cuDNN format:</p>
+<pre><code>cudnn_images = mnist_image_format.convert(mnist_images, 
+                                          cudnn_image_format, 
+                                          axis_map={'b': 'b',
+                                                    '0': '0',
+                                                    '1': ('1', 'c')})
+</code></pre>
+<p>The <code>axis_map</code> argument is a <code>dict</code> that tells <code>convert</code> which input axes correspond to which output axes. Here it says that:</p>
+<ul>
+<li>Input <code>'b'</code> maps to output <code>'b'</code>.</li>
+<li>Input <code>'0'</code> maps to output <code>'0'</code>.</li>
+<li>Input <code>'1'</code> (shape: [28]) should be reshaped into two dimensions: output <code>'1'</code> and <code>'c'</code> (shape: [28, 1]).</li>
+</ul>
+<p>Under the hood, this call to <code>convert()</code> does the following:</p>
+<ul>
+<li>Start with MNIST images (axes = <code>['b', '0', '1']</code>, shape = <code>[batch_size, 28, 28]</code>).</li>
+<li>Add color axis (axes = <code>['b', '0', '1', 'c']</code>, shape = <code>[batch_size, 28, 28, 1]</code>).</li>
+<li>Change axis order (axes = <code>['b', 'c', '0', '1']</code>, shape = <code>[batch_size, 1, 28, 28]</code>)</li>
+</ul>
+<p>You can actually omit mappings between axes with the same name, like <code>'b': 'b'</code>, and they'll be assumed. So the following is equivalent to above:</p>
+<pre><code>cudnn_image = mnist_image_format.convert(mnist_image, 
+                                         cudnn_image_format, 
+                                         axis_map={'1': ('1', 'c')})
+</code></pre>
+<p>Collapsing multiple axes into a single axis is just as easy:</p>
+<pre><code>mnist_image = cudnn_image_format.convert(cudnn_image, 
+                                         mnist_image_format, 
+                                         axis_map={('1', 'c'): '1'})
+</code></pre>
+<p>After the convolutional layers, we'll need to convert the convolutional feature maps to feature vectors. We'll need to collapse the row, column, and channel axes into a single feature axis using the <code>axis_map</code> argument:</p>
+<pre><code>feature_vectors = cudnn_image_format.convert(feature_map,
+                                             vector_format,
+                                             axis_map={('0', '1', 'c'): 'f'})
+</code></pre>
+<p>Note that the order of the axes in <code>axis_map={('0', '1', 'c'): 'f'}</code> matters. What the above does is:</p>
+<ul>
+<li>Start with feature maps (axes = <code>['b', 'c', '0', '1']</code>, shape = <code>[batch_size, n_channels, n_rows, n_cols]</code>).</li>
+<li>Reorder input axes to line up with corresponding output axes <code>('b', 'f')</code>. This is where the <code>axis_map</code>'s <code>('0', '1', 'c')</code> ordering comes into play:
+<ul>
+<li><code>b -&gt; b</code></li>
+<li><code>0, 1, c -&gt; f</code></li>
+<li>So, axes = <code>['b', '0', '1', 'c']</code>, shape = <code>[batch_size, n_rows, n_cols, n_channels]</code>.</li>
+</ul>
+</li>
+<li>Reshape: (axes = <code>['b', 'f']</code>, shape = <code>[batch_size, n_rows * n_cols * n_channels]</code>)</li>
+</ul>
+
+        </div>
+
+        <div class="wiki-footer gollum-markdown-content boxed-group" id="wiki-footer">
+          <div class="boxed-group-inner wiki-auxiliary-content markdown-body">
+            <p>Copyright (c) 2015 Matthew Koichi Grimes</p>
+
+          </div>
+        </div>
+    </div>]

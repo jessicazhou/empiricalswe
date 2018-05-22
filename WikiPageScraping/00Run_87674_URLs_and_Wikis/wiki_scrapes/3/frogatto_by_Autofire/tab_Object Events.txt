@@ -1,0 +1,264 @@
+[<div class="wiki-body gollum-creole-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>Objects in Frogatto receive events based on certain conditions, which they can handle using an event handler. Events are easily one of the single most important concepts in frogatto - they, and the <a class="internal absent" href="/Autofire/frogatto/wiki/FrogattoFormulaLanguage">FFL</a> code inside them handle virtually all of the controls and game logic. Events typically are triggered in one of a few ways; either some game state automatically triggers them (such as two objects colliding, or an object being created), some periodic timer fires an event (such as <tt>on_process</tt>, or <tt>on_timer</tt>), or objects can explicitly fire events at themselves or another object via the <tt>fire_event()</tt> function. This page documents all the events that objects can receive and when they receive them. The vast majority of events will only be fired once their target object is active, although there are exceptions to this rule (such as `on_start_level`) - this means most events fired at a sleeping/inactive object will wait in a queue and be executed once the object is activated again. Typically, "being active" means an object needs to be on-screen, but it's also possible to set flags that make an object always active, or that make objects activate within a wide margin of the screen.</p><p>Some events have arguments. In non-strict mode, these are automatically inserted into scope. In strict mode, they are accessed through the <tt>arg</tt> variable. For example, in <tt>on_click</tt>, you could get the position of the mouse with <tt>[arg.mouse_x, arg.mouse_y]</tt>.</p><p>For an example of a basic event, <tt>on_create="debug('hi')"</tt> prints a 'hi' to screen when the object it is in is created. The code <tt>debug('hi')</tt>, between the double-quotes, is just an example; you can put any <a class="internal absent" href="/Autofire/frogatto/wiki/FrogattoFormulaLanguage">FFL</a> code in there.</p><h1>
+<a aria-hidden="true" class="anchor" href="#events" id="user-content-events"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Events</h1><table>
+<tbody><tr>
+<td>Event name </td>
+<td>Arguments </td>
+<td>Triggering Condition </td>
+</tr>
+<tr>
+<td>on_start_level </td>
+<td>(none) </td>
+<td>Triggered when the level starts its first cycle. Triggered for all objects in the level whether they are active or not. Not executed when loading a save. Not executed on spawned objects. This should generally be avoided for object setup, in favor of on_create, because if for some reason an object is not present on the first cycle of a level (perhaps being spawned a frame late for some reason), it will not receive this event.</td>
+</tr>
+<tr>
+<td>on_create </td>
+<td>(none) </td>
+<td>Triggered the cycle an object is created; for objects that are pre-placed on a level this works rather like on_start_level, except without the problematic need to be present on the level's first cycle. For objects that would be inactive, this will fire, execute its behavior, and then the object will go inactive. This event is generally ideal for object setup. This fires both for new levels, and spawning an object, but not for existing objects when loading a save.</td>
+</tr>
+<tr>
+<td>on_first_cycle </td>
+<td>(none) </td>
+<td>Differs from on_create in that it fires the moment an object is first <em>active</em>. If an object is on the other side of a level, this will not execute until you walk over and cause the object to activate by it coming on-screen. </td>
+</tr>
+<tr>
+<td>on_load </td>
+<td>(none) </td>
+<td>Differs from on_first_cycle in that whilst it similarly fires on new levels and being spawned, unlike them it does fire when an object is loaded from a save file (but <strong>not</strong> when reloading at checkpoints). This is useful for re-creating things that are not saved like ambient sound loops. (Typically such behavior should only be in on_load.) </td>
+</tr>
+<tr>
+<td>on_done_create </td>
+<td>(none) </td>
+<td>Triggered immediately after create. </td>
+</tr>
+<tr>
+<td>on_become_active </td>
+<td>(none) </td>
+<td>Triggered when an object becomes active after a period of inactivity. </td>
+</tr>
+<tr>
+<td>on_surface_damage </td>
+<td>(none) </td>
+<td>Triggered when the object is standing on a tile that causes damage. </td>
+</tr>
+<tr>
+<td>editor_added </td>
+<td>(none) </td>
+<td>Fired when an object is added, in the editor. </td>
+</tr>
+<tr>
+<td>editor_removed </td>
+<td>(none) </td>
+<td>See above. </td>
+</tr>
+<tr>
+<td>on_editor_changed_variable </td>
+<td>(none) </td>
+<td>Ran when an editor variable has been changed. This event's effects are non-transitory, unlike most other events. This event is only fired in the editor view.</td>
+</tr>
+<tr>
+<td>on_editor_changing_variable </td>
+<td>(none) </td>
+<td>Ran right before an editor variable is changed. See on_editor_changed_variable for more info.</td>
+</tr>
+<tr>
+<td>on_enter_anim </td>
+<td>(none) </td>
+<td>Triggered when the object enters a new animation </td>
+</tr>
+<tr>
+<td>on_enter`_(xxx)_`anim </td>
+<td>(none) </td>
+<td>Triggered when the object enters the animation '`xxx`' </td>
+</tr>
+<tr>
+<td>on_end_anim </td>
+<td>(none) </td>
+<td>Triggered when the object reaches the end of an animation. Only triggered if the object naturally reaches the end of an animation rather than terminating it early. </td>
+</tr>
+<tr>
+<td>on_end`_(xxx)_`anim </td>
+<td>(none) </td>
+<td>Triggered when the object reaches the end of '`xxx`' animation. </td>
+</tr>
+<tr>
+<td>on_leave_anim </td>
+<td>(none) </td>
+<td>Triggered when the object leaves an animation for any reason. </td>
+</tr>
+<tr>
+<td>on_leave`_(xxx)_`anim </td>
+<td>(none) </td>
+<td>Triggered when the objects leaves animation '`xxx`' for any reason. </td>
+</tr>
+<tr>
+<td>on_collide_object_(xxx) </td>
+<td></td>
+<td>Triggered when the named area (xxx) collides with another area of the same name. </td>
+</tr>
+<tr>
+<td>on_collide_level </td>
+<td>(none) </td>
+<td>Triggered when an object's non-solid area collides with part of a tile. </td>
+</tr>
+<tr>
+<td>on_collide_head </td>
+<td>area, collide_with, collide_with_area </td>
+<td>Triggered when the top of an object's solid area collides with a solid part of the level or another solid object. </td>
+</tr>
+<tr>
+<td>on_collide_feet </td>
+<td>area, collide_with, collide_with_area </td>
+<td>Triggered when the bottom of an object's solid area collides with a solid part of the level or another solid object. </td>
+</tr>
+<tr>
+<td>on_collide_side </td>
+<td>area, collide_with, collide_with_area </td>
+<td>Triggered when the side of an object's solid area collides with a solid part of the level or another solid object. </td>
+</tr>
+<tr>
+<td>on_collide_damage </td>
+<td>surface_damage </td>
+<td>Triggered when an object collides with a tile that does damage. </td>
+</tr>
+<tr>
+<td>on_stuck </td>
+<td>(none) </td>
+<td>Triggered when an object is 'stuck' in a small pit without its feet able to touch the ground. </td>
+</tr>
+<tr>
+<td>on_jumped_on </td>
+<td>jumped_on_by </td>
+<td>Triggered when an object is jumped on by another object. </td>
+</tr>
+<tr>
+<td>on_process </td>
+<td>(none) </td>
+<td>One of the two most-useful events - this is triggered every "cycle" (1/50 of a second), if an object is active. Unlike the similar `on_draw` event, this will fire even if the game skips frames for performance (that is, when the game starts skipping frames, it only skips drawing - it still calculates object behavior during those skipped frames. If you have stuff that's _purely_ visual, putting it in `on_draw` would be a manual optimization hint.). </td>
+</tr>
+<tr>
+<td>on_process`_(xxx)` </td>
+<td>(none) </td>
+<td>Triggered at the start of an active object's processing cycle if its current animation is '`xxx`' </td>
+</tr>
+<tr>
+<td>on_timer </td>
+<td>(none) </td>
+<td>Triggered at the start of every n processing cycles for an active object. n is given by the object's timer_frequency attribute. </td>
+</tr>
+<tr>
+<td>on_type_updated </td>
+<td>(none) </td>
+<td>Triggered when an object is reloaded in the live editor or with the command-line option <tt>--reload-modified-objects</tt>. This is useful for instantiated classes, where the reloading of the base class normally does not reload the instantiated class. For example, the grey gazer instantiates the motion_distort class with <tt>construct('motion_distort', {obj:me, squash:false})</tt>. If we wanted the motion distortion to reset to 'no distort' when the base class was reloaded, we could use on_type_updated to do so. </td>
+</tr>
+<tr>
+<td>on_enter_water </td>
+<td>(none) </td>
+<td>Triggered when an active object that wasn't previously in water enters water. </td>
+</tr>
+<tr>
+<td>on_exit_water </td>
+<td>(none) </td>
+<td>Triggered when an active object that was in water exists the water. </td>
+</tr>
+<tr>
+<td>on_change_solid_dimensions_fail </td>
+<td>collide_with </td>
+<td>Triggered when an attempt is made to change an object's solid dimensions, but this would cause a collision. </td>
+</tr>
+<tr>
+<td>on_add_object_fail </td>
+<td>(none) </td>
+<td>Triggered when an attempt is made to add an object but it can't be added due to there being no room and causing a solid collision. </td>
+</tr>
+<tr>
+<td>on_change_animation_failure </td>
+<td>previous_animation </td>
+<td>Triggered when an attempt is made to change an object's animation but the new animation has different solid area and would cause a collision. </td>
+</tr>
+<tr>
+<td>on_die </td>
+<td>(none) </td>
+<td>Triggered when an object's hitpoints are reduced to 0 or less, or when die() is called on the object. Not called when an object is removed using remove_object(). </td>
+</tr>
+<tr>
+<td>on_interact </td>
+<td>(none) </td>
+<td>Triggered when the player interacts with the object. </td>
+</tr>
+<tr>
+<td>on_child_spawned </td>
+<td>parent, child </td>
+<td>Triggered when an object successfully spawns a child object. <strong>Note:</strong> this is only fired in response to <tt>spawn()</tt>, not in response to <tt>add_object()</tt> or other means of creating an object.</td>
+</tr>
+<tr>
+<td>on_spawned </td>
+<td>spawner, child </td>
+<td>Triggered when an object is successfully spawned. <strong>Note:</strong> this is only fired in response to <tt>spawn()</tt>, not in response to <tt>add_object()</tt> or other means of creating an object. Unlike on_create, this has the special property of being fired immediately on the same frame as the spawn() function is called, and this will work recursively if it, in turn, spawns another child - all of them will immediately appear on the same frame. Thus, this is the event to use to set up 'trees' of related objects, such as platforms and ropes. Also unlike on_create, this offers convenient access to the parent.</td>
+</tr>
+<tr>
+<td>on_draw </td>
+<td>(none) </td>
+<td>Triggered during every cycle, nominally when an object is drawn. Naively, one might expect this to be identical to `on_process`; the key difference is that this is not fired during skipped frames (which would get skipped during heavy processing), whereas on_process is always fired even for skipped frames. Another big usage of this is that unlike `on_process`, the `level.camera_position` variable is updated to be correct by the time `on_draw` is fired; if you need to keep an object's position in synch with the camera, this is the event to do it in - on_process would have a frame's worth of lag.</td>
+</tr>
+<tr>
+<td>on_begin_dialog </td>
+<td>(none) </td>
+<td>Triggered whenever a dialog begins. </td>
+</tr>
+<tr>
+<td>on_ctrl`_(xxx)` </td>
+<td>(none) </td>
+<td>Triggered when a control key is pressed. `xxx` = (left/right/up/down/jump/attack/tongue)</td>
+</tr>
+<tr>
+<td>on_end_ctrl`_(xxx)` </td>
+<td>(none) </td>
+<td>Triggered when a control key stops being pressed. </td>
+</tr>
+<tr>
+<td>on_mouse_(xxx) </td>
+<td>mouse_x, mouse_y, mouse_index, mouse_button </td>
+<td>Triggered by mouse buttons being pressed/released or mouse motion over an active object at the mouse location. mouse_x, mouse_y are the current level x and y locations. mouse_index is a number, most useful in the case of touchscreen devices where every finger touch is a different mouse. mouse_button is a the mouse button being pressed, left=1, middle=2, right=3, mouse wheel up=4, mouse wheel down=5, 6&amp;7 are side buttons if the mouse supports them. mouse_button is not passed to the on_mouse_move event. </td>
+</tr>
+<tr>
+<td>on_click </td>
+<td>mouse_x, mouse_y, mouse_index, mouse_button </td>
+<td>Click event passed to the item at the top of the z-order when items are stacked together. The order of testing is z-order, then sub-z-order, then the item with the highest midpoint value of the z-order and sub-z-order are the same for multiple items. See <tt>on_mouse_(xxx)</tt> for a discussion regarding the arguments passed to the handler. </td>
+</tr>
+<tr>
+<td>on_mouse_(xxx)* </td>
+<td>mouse_x, mouse_y, mouse_index, mouse_button, handled </td>
+<td>Triggered by mouse buttons being pressed/released and mouse motion. The full set of names is on_mouse_up*, on_mouse_down*, on_mouse_move*. These events are given to *every* object on a level, though the expectation is that the number of objects actually implementing handlers would be small. The arguments to the function are interpreted in the same way as for the <tt>on_mouse_(xxx)</tt> handlers. The exception being the handled parameter which indicates that there was an active object under the mouse position that got the message first. </td>
+</tr>
+<tr>
+<td>on_level_tiles_refreshed </td>
+<td>(none) </td>
+<td>Triggered in the editor, when level tiles and their solidity are recalculated. This should be used by objects that use set_solid() to modify the normal solidity of a level to re-apply whatever changes they want to make. </td>
+</tr>
+<tr>
+<td>on_drag </td>
+<td>as in on_mouse_* </td>
+<td>Fired when the object is dragged. </td>
+</tr>
+<tr>
+<td>on_drag_end </td>
+<td>as in on_mouse_* </td>
+<td>See on_drag. </td>
+</tr>
+<tr>
+<td>on_drag_start </td>
+<td>as in on_mouse_* </td>
+<td>See on_drag. </td>
+</tr>
+</tbody></table>
+        </div>
+
+        <div class="wiki-footer gollum-markdown-content boxed-group" id="wiki-footer">
+          <div class="boxed-group-inner wiki-auxiliary-content markdown-body">
+            <p>More help can be found via IRC, <a href="irc://irc.freenode.net/#frogatto" rel="nofollow">#Frogatto</a> on freenode.net. This wiki is not a complete reference.</p>
+
+          </div>
+        </div>
+    </div>]

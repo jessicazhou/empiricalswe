@@ -1,0 +1,55 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <h1>
+<a aria-hidden="true" class="anchor" href="#issues-with-the-qlm" id="user-content-issues-with-the-qlm"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Issues with the QLM</h1>
+<h2>
+<a aria-hidden="true" class="anchor" href="#publish--subscribe-behaviour" id="user-content-publish--subscribe-behaviour"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Publish / subscribe behaviour</h2>
+<p>As stated by the properties and requirements:</p>
+<p>"Subscriptions can be made for deferred retrieval of data from other O-MI nodes."</p>
+<p>However, the method of passing this subscription data is too vaguely expressed in the documentation, as expressed by the following example:</p>
+<ul>
+<li>TTL = 0, <code>The value “0” signifies that a response must be provided while the connection is active</code>
+</li>
+<li>Callback: <code>Defines a URL to an O-MI node with a callback service where O-MI responses are received. SHALL NOT be present for immediate requests. MAY be present for subscription requests. For subscription requests, if no callback address is provided, then the requested data should be stored for subsequent retrieval using a read message with the corresponding requestID.</code>
+</li>
+<li>Interval <code>O-MI nodes SHALL answer value –1 subscriptions every time the subscribed target publishes/pushes a new value.</code>
+</li>
+</ul>
+<p>If we have set TTL = 0 and created a subscription with interval -1, how does one answer this, as there can't be a callback request because that's denied by the specification?</p>
+<p>Also, as stated by the specification, <code>The responding O-MI node SHALL NOT assume that the requesting O-MI node keeps track of placed requests.</code> so it would be impossible to just push the data, as the receiving node should not be expected to actually wait for anything.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#write-and-subscriptions" id="user-content-write-and-subscriptions"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Write and subscriptions</h3>
+<p><code>Write requests may be used to write various data to different systems</code> which would indicate that we could along with the subscription requests write data when it is available. It should also suite the needs of a publishing system as the documentation states:</p>
+<pre lang="While"><code>“client push” mechanism.```
+
+This is not however true, as there's a hidden gem regarding the lack of delete data source:
+
+```The removal of data sources using write requests is done by re-writing the containing XML data
+structure without the data source(s) to remove.```
+
+This means that we can't push data as we have it available, instead we have to push **ALL** the available data sources **EACH** time we have a single value to push to the requesting system. Otherwise we would delete all the other information from target system. This proves to be problematic with any system that generates data on different intervals.
+
+To further complicate the issue, as we need to send everything everytime, the receiving node might behave as it wishes with the data when it has no idea what is coming in. The possible combinations the receiving node are:
+
+1. ```Reject the write request, return an error response.```
+2. ```Accept the write request, accept and “publish” the new data source```
+3. One of the above per each datapoint based on the implementors wish. 
+
+Simplified: We need to write everything to prevent delete, yet the receiving node might not be willing to accept data is has not seen previously. We also do not know what data it has received previously, as that is not mandated by the specification. Avoiding writes is not however possible either.
+
+## Lack of agnostic protocol support
+
+The QLM specification states as the first goal:
+
+"O-MI messages can be transported using most “lower-level” protocols. This signifies that
+protocols such as HTTP, SOAP, SMTP, files on mass storage media such as USB sticks,
+text messages on mobile phones, etc. can be used for transporting O-MI messages."
+
+However, this is not strictly possible, as the QLM specification itself lacks the ability to do all the queries with the QLM messages. Datasource discovery is impossible to do without HTTP REST interface, as there's no message support for this sort of operation without reading all the available data at the same time.
+
+As our specification implemented a websocket support between the nodes, this was apparent that things would not work the way we envisioned in the beginning. As such, our core provides the support to use pushing methods, but they're now disabled to provide specified implementation. Websockets themselves were chosen for a good reason, they're lightweight socket connections that bypass firewalls easily as the connection is made with a normal HTTP request.
+</code></pre>
+
+        </div>
+
+    </div>]

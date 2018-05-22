@@ -1,0 +1,154 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>The plugin annotation may contain the following properties:</p>
+<ul>
+<li>
+<p><strong>description</strong>: The description of the resource. Defaults to empty string.</p>
+</li>
+<li>
+<p><strong>discoverable</strong>: Determines if the resource should be discoverable by the
+"discovery" resource. Defaults to TRUE.</p>
+</li>
+<li>
+<p><strong>dataProvider</strong>: An array of options specific to the data provider.
+For example the DB query data provider requires the table name in order to
+know which table to act upon.</p>
+<ul>
+<li>idField: Some formatters, like JSON API, need to know how to identify
+a resource item. Since RESTful is not opinionated, you can use any field as
+the ID. It will be your responsibility to choose a field that contains unique
+values. Defaults to 'id'.</li>
+</ul>
+<p>Notable options for the entity based resources:</p>
+<ul>
+<li>entityType: The entity type of the resource. Defaults to FALSE, which
+indicates the resource isn't connected to any entity type.</li>
+<li>bundles: The name of bundles the resource is connected to. Defaults
+to FALSE.</li>
+</ul>
+<p>Notable properties for the database table based resources:</p>
+<ul>
+<li>tableName: The name of the table to interact with.</li>
+<li>idColumn: The tables id column.</li>
+<li>primary: An string, or array of strings defining the primary field.</li>
+</ul>
+</li>
+<li>
+<p><strong>majorVersion</strong>: The major version of the resource. This will change the URL
+of the resource endpoint. For example setting major version to 2 for the
+"articles" resource will result with "api/v2/articles" as the URL.</p>
+</li>
+<li>
+<p><strong>minorVersion</strong>: The minor version of the resource.</p>
+</li>
+<li>
+<p><strong>options</strong>: Array of options needed for the plugin. Defaults to empty
+array.</p>
+</li>
+<li>
+<p><strong>authenticationTypes</strong>: TRUE or Array with name of authentication providers
+that should "protect" the resource, and ensure only authenticated users can
+use it. If set to TRUE, then all the existing authentication providers
+would be used until the user is authenticated. If user was not
+authenticated with any of the authentication providers, an
+<code>UnauthorizedException</code> exception would be thrown.
+Defaults to empty array, which means no authentication is done by default.</p>
+<p>If you need your endpoint to be protected by authentication, you must specify the <code>authenticationTypes</code> key. Either specify an array of auth types, or <code>TRUE</code> for any.</p>
+</li>
+</ul>
+<div class="highlight highlight-text-html-php"><pre><span class="pl-s1"><span class="pl-c"><span class="pl-c">/**</span></span></span>
+<span class="pl-s1"><span class="pl-c"> * Class CustomResource__1_0</span></span>
+<span class="pl-s1"><span class="pl-c"> * <span class="pl-k">@package</span> Drupal\restful_custom\Plugin\resource</span></span>
+<span class="pl-s1"><span class="pl-c"> *</span></span>
+<span class="pl-s1"><span class="pl-c"> * @Resource(</span></span>
+<span class="pl-s1"><span class="pl-c"> *   …</span></span>
+<span class="pl-s1"><span class="pl-c"> *   authenticationTypes = TRUE,</span></span>
+<span class="pl-s1"><span class="pl-c"> *   …</span></span>
+<span class="pl-s1"><span class="pl-c"> * )</span></span>
+<span class="pl-s1"><span class="pl-c"> <span class="pl-c">*/</span></span></span></pre></div>
+<ul>
+<li>
+<strong>authenticationOptional</strong>: If "authenticationTypes" is TRUE, <code>authenticationOptional</code> determines
+if the resource may be accessed by an anonymous user when no provider was
+able to authenticate the user. Otherwise an <code>UnauthorizedException</code>
+exception would be thrown.</li>
+<li>
+<strong>hookMenu</strong>: Determines if RESTful module should declare the resource in its
+own hook_menu(). If FALSE, it is up to the implementing module to declare
+it. Defaults to TRUE.</li>
+<li>
+<strong>menuItem</strong>: Determines the URL where the resource is going to live. All paths
+specified using this definition property will be nested under the API's prefix.
+Ex: using <code>menuItem: "my-resource"</code> will result in <code>https://example.org/api/my-resource</code>.</li>
+<li>
+<strong>renderCache</strong>: Stores the cache settings. An associative array with:
+<ul>
+<li>render: Set it to FALSE to disable the render cache completely
+Defaults to FALSE.</li>
+<li>class: The cache class for this resource. Defaults to NULL, which
+will probably end up resolving to 'DrupalDatabaseCache'.</li>
+<li>bin: The name of the bin. It is the developer's responsibility to
+create this bin in the cache backend if it does not exist. Defaults to
+'cache_restful'.</li>
+<li>expire: TTL for the cache records. See DrupalCacheInterface::set()
+for the allowed values. Defaults to CACHE_PERMANENT.</li>
+<li>simpleInvalidate: Set it to false to prevent the RESTful module to
+invalidate any cache it may have been generated. The developer will be
+responsible to invalidate caches in this scenario. Defaults to TRUE.</li>
+<li>granularity: DRUPAL_CACHE_PER_USER or DRUPAL_CACHE_PER_ROLE.</li>
+</ul>
+</li>
+<li>
+<strong>rateLimit</strong>: The configuration array for the rate limits. There is a special
+limit category called <code>'global'</code> that will not be limited to resource but
+will aggregate all request hits across all resources. To enable the global
+limit set the variable <code>'restful_global_rate_limit'</code> to the desired limit and
+<code>'restful_global_rate_period'</code> to the wanted period.
+<ul>
+<li>period: A <code>\DateInterval</code> object representing the period on which the rate
+limitations apply.</li>
+<li>event: The name of the event to limit as declared in the rate_limit
+plugin.</li>
+<li>limits: An associative array with the number of allowed requests in the
+selected period for every role.</li>
+</ul>
+</li>
+</ul>
+<div class="highlight highlight-text-html-php"><pre><span class="pl-s1"><span class="pl-k">public</span> <span class="pl-k">function</span> <span class="pl-c1">__construct</span>(…) {</span>
+<span class="pl-s1">  <span class="pl-c"><span class="pl-c">//</span> …</span></span>
+<span class="pl-s1">  <span class="pl-smi">$plugin_definition</span> <span class="pl-k">=</span> <span class="pl-smi">$this</span><span class="pl-k">-&gt;</span>getPluginDefinition();</span>
+<span class="pl-s1">  <span class="pl-smi">$plugin_definition</span>[<span class="pl-s"><span class="pl-pds">'</span>rateLimit<span class="pl-pds">'</span></span>] <span class="pl-k">=</span> <span class="pl-c1">array</span>(</span>
+<span class="pl-s1">    <span class="pl-s"><span class="pl-pds">'</span>request<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-c1">array</span>(</span>
+<span class="pl-s1">      <span class="pl-s"><span class="pl-pds">'</span>event<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-s"><span class="pl-pds">'</span>request<span class="pl-pds">'</span></span>,</span>
+<span class="pl-s1">      <span class="pl-s"><span class="pl-pds">'</span>period<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-k">new</span> <span class="pl-c1">\DateInterval</span>(<span class="pl-s"><span class="pl-pds">'</span>P1D<span class="pl-pds">'</span></span>),</span>
+<span class="pl-s1">      <span class="pl-s"><span class="pl-pds">'</span>limits<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-c1">array</span>(</span>
+<span class="pl-s1">        <span class="pl-s"><span class="pl-pds">'</span>authenticated user<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-c1">100</span>,</span>
+<span class="pl-s1">        <span class="pl-s"><span class="pl-pds">'</span>anonymous user<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-c1">10</span>,</span>
+<span class="pl-s1">        <span class="pl-s"><span class="pl-pds">'</span>administrator<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-c1">\Drupal\restful\RateLimit\</span><span class="pl-c1">RateLimitManager</span><span class="pl-k">::</span><span class="pl-c1">UNLIMITED_RATE_LIMIT</span>,</span>
+<span class="pl-s1">      ),</span>
+<span class="pl-s1">    ),</span>
+<span class="pl-s1">  );</span>
+<span class="pl-s1">  <span class="pl-smi">$this</span><span class="pl-k">-&gt;</span>setPluginDefinition(<span class="pl-smi">$plugin_definition</span>);</span>
+<span class="pl-s1">  <span class="pl-c"><span class="pl-c">//</span> …</span></span>
+<span class="pl-s1">}</span></pre></div>
+<ul>
+<li>
+<strong>autocomplete</strong>: Stores the autocomplete settings. An associative array with:
+<ul>
+<li>enable: Determines if the autocomplete functionality should be used.
+Defaults to TRUE.</li>
+<li>range: Determines how many matches should return on every query. Defaults
+to 10.</li>
+<li>operator: Determines the operator used to match the given string. Values
+can be 'STARTS_WITH' or 'CONTAINS'. Defaults to 'CONTAINS'.</li>
+</ul>
+</li>
+<li>
+<strong>formatter</strong>: The ID of the formatter plugin. It defaults to the contents of
+the variable 'restful_default_output_formatter'. If the variable is empty
+it defaults to 'json'. Recommended alternative is <code>json_api</code>.</li>
+</ul>
+
+        </div>
+
+    </div>]

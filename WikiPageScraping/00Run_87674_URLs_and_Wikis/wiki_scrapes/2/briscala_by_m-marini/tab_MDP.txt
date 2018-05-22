@@ -1,0 +1,76 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <h1>
+<a aria-hidden="true" class="anchor" href="#briscola-mdp" id="user-content-briscola-mdp"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Briscola MDP</h1>
+<p>Il gioco della briscola può essere descritto come un processo a stati finiti.
+Ogni partita inizia con un mazzo mescolato casualmente ma di cui il motore del gioco conosce lo stato.</p>
+<p>Si inizia dallo stato <code>s(1)</code> mano al giocatore 1 che gioca <code>a(1)</code> portando il gioco allo stato <code>s(2)</code>.<br/>
+Il giocatore 2 quindi risponde con l'azione <code>a(2)</code> portando il gioco allo stato <code>s(3)</code>.<br/>
+Il giocatore che ha la mano nello stato <code>s(3)</code> dipende dalle azioni <code>(a(1), a(2))</code>.<br/>
+La sequenza si ripete fino alla fine alla giocata dell'ultima carta in mano ai giocatori, in tutto sono
+40 passi di gioco (pari alle carte del mazzo).</p>
+<p>Notiamo che le ultime nelle ultime due mani i giocatori sono rimasti con una sola carta e quindi
+hanno solo una possibile scelta e il risultato del gioco è ormai determinato.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#premi-e-ritorno-aspettato" id="user-content-premi-e-ritorno-aspettato"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Premi e ritorno aspettato</h2>
+<p>Ad ogni passo del processo viene dato un premio <code>r(t)</code>, nel caso della briscola corrisponde a 1 per il
+passo finale <code>r(40) = 1</code> se il giocatore vince.</p>
+<p>Il ritorno aspettato del processo per un passo invece è la somma scontata dei premi sucessivi quindi:</p>
+<pre><code>R(t) = sum_i gamma^i R(i+t), i = 0 ... (40 - t)
+</code></pre>
+<p>Il coefficiente di sconto dei premi è <code>gamma</code>. Il gioco della briscola è un processo finito quindi
+consideriamo il ritorno non scontato (<code>gamma=1</code>).
+Il ritorno è quindi 1 se il giocatore vince e 0 in tutti gli altri casi.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#rappresentazione-dello-stato-secondo-i-giocatori" id="user-content-rappresentazione-dello-stato-secondo-i-giocatori"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Rappresentazione dello stato secondo i giocatori</h2>
+<p>Gli stati del gioco <code>s(t)</code> qui descritti sono ben determinati in quanto rappresentano esattamente
+lo stato delle singole carte e quindi l'evoluzione del gioco.
+Nella valutazione però delle strategie queste informazioni non sono disponibili ai giocatori che possono
+conoscere solo le proprie carte, la carta di briscola, le carte già giocate e quella giocata
+dall'avversario nel caso di risposta alla giocata avversaria.
+Da parte del giocatore il gioco deve essere descritto quindi come un processo decisionale di Markov (<a href="http://en.wikipedia.org/wiki/Markov_decision_process" rel="nofollow">MDP</a>).</p>
+<p>Per il giocatore che ha la mano di apertura <code>s(t), i = 1, 3, 4, 5, ...</code> lo stato di gioco successivo è
+completamente determinato per il fatto che l'unico cambiamento è quello di avere due carte e una carta
+in tavola.<br/>
+In questo caso è utile usare gli after-state <code>s(t+1)</code> per determinare la strategia di gioco.
+Lo stato di gioco successivo ancora della propria mano può essere <code>s(t+2)</code> se vince la mano o <code>s(t+3)</code>
+se perde la mano.
+Gli stati di gioco sono determinati dalla carta pescata da mazzo e quindi possono esserci n combinazioni
+determinate dal numero di carte nel mazzo più le carte dell'avversario.</p>
+<p>Nel caso invece di giocatore di seconda mano lo stato di gioco successivo è determinato dalla carta pescata
+dal mazzo anche qui con n possibilità.
+Lo stato di gioco ancora della propria mano successivo può essere <code>s(t+1)</code> se vince la mano o <code>s(t+2)</code>
+se perde la mano.</p>
+<p>Abbiamo quindi 4 possibili sequenze:</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#giocatore-di-prima-mano-che-vince-la-mano" id="user-content-giocatore-di-prima-mano-che-vince-la-mano"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Giocatore di prima mano che vince la mano</h3>
+<pre><code>player            opposite              player                opposite
+s(t) --&gt; a(t) --&gt; s(t+1) --&gt; a(t+1) --&gt; s(t+2) --&gt; a(t+2) --&gt; s(t+3)
+</code></pre>
+<p>Il giocatore sceglie l'azione <code>a(t)</code> che porta allo stato <code>s(t+1)</code> con
+<code>V(s(t+1)) = max V(s')</code></p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#giocatore-di-prima-mano-che-perde-la-mano" id="user-content-giocatore-di-prima-mano-che-perde-la-mano"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Giocatore di prima mano che perde la mano</h3>
+<pre><code>player            opposite              opposite              player
+s(t) --&gt; a(t) --&gt; s(t+1) --&gt; a(t+1) --&gt; s(t+2) --&gt; a(t+2) --&gt; s(t+3)
+</code></pre>
+<p>Il giocatore sceglie l'azione <code>a(t)</code> che porta allo stato <code>s(t+1)</code> con
+<code>V(s(t+1)) = max V(s')</code></p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#giocatore-di-seconda-mano-che-vince-la-mano" id="user-content-giocatore-di-seconda-mano-che-vince-la-mano"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Giocatore di seconda mano che vince la mano</h3>
+<pre><code>opposite              player            player                opposite
+s(t-1) --&gt; a(t-1) --&gt; s(t) --&gt; a(t) --&gt; s(t+1) --&gt; a(t+1) --&gt; s(t+2)
+</code></pre>
+<p>Il giocatore sceglie l'azione <code>a(t)</code> che porta allo stato <code>s(t+1)</code> con
+<code>Q(s(t),a(t)) = max Q(s,a')</code></p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#giocatore-di-seconda-mano-che-perde-la-mano" id="user-content-giocatore-di-seconda-mano-che-perde-la-mano"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Giocatore di seconda mano che perde la mano</h3>
+<pre><code>opposite              player            opposite              player
+s(t-1) --&gt; a(t-1) --&gt; s(t) --&gt; a(t) --&gt; s(t+1) --&gt; a(t+1) --&gt; s(t+2)
+</code></pre>
+<p>Il giocatore sceglie l'azione <code>a(t)</code> che porta allo stato <code>s(t+1)</code> con
+<code>Q(s(t),a(t)) = max Q(s,a')</code></p>
+
+        </div>
+
+    </div>]

@@ -1,0 +1,135 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <h2>
+<a aria-hidden="true" class="anchor" href="#notation" id="user-content-notation"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Notation</h2>
+<p>All queries are passed as JSON URL-encoded strings to q GET-parameter.
+The description below describes format for different query types by giving examples of JSON documents with several placeholders:</p>
+<ul>
+<li>
+<code>"value1" | "value2" | "value3"</code> — put here one of the values.</li>
+<li>
+<code>{{placeholderName}}</code> — placeholder for some arbitrary value, like object id, number or other query parameter, names usually describe meaning of the value. All values are usually strings, but sometimes type is denoted as suffix after colon (like {{interval:number}}).
+All such placeholders are required by default, optional placeholders are denoted with question mark (e.g. {{cubeId}}?), if such optional placeholder is omitted, whole field should be removed from a query.</li>
+<li>
+<code>RawCamelCaseName</code> — class name for some substructure to be put at the given place, see substructure description below.</li>
+<li>
+<code>[Placeholder, ...]</code> — the value in placeholder forms a JSON array, i.e. can be repeated several times in usual JSON-manner.</li>
+</ul>
+<p>There are several special cases, edge cases etc, they are described in plain text in Javascript-style comments (e.g. “// this field makes sense for some types only”).</p>
+<p>All the rest text in descriptions should be passed as is.</p>
+<p>Example (it's not a real query, I made it up for illustration only!):</p>
+<div class="highlight highlight-source-js"><pre>{
+    <span class="pl-s"><span class="pl-pds">"</span>type<span class="pl-pds">"</span></span><span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">"</span>sliceAndDice<span class="pl-pds">"</span></span> <span class="pl-k">|</span> <span class="pl-s"><span class="pl-pds">"</span>leftJoin<span class="pl-pds">"</span></span>,
+    <span class="pl-s"><span class="pl-pds">"</span>cubeId<span class="pl-pds">"</span></span><span class="pl-k">:</span> {{cubeId}},
+    <span class="pl-s"><span class="pl-pds">"</span>queries<span class="pl-pds">"</span></span><span class="pl-k">:</span> [Query, <span class="pl-k">...</span>], <span class="pl-c"><span class="pl-c">//</span> only for "type": "leftJoin"</span>
+    <span class="pl-s"><span class="pl-pds">"</span>alias<span class="pl-pds">"</span></span><span class="pl-k">:</span> {{alias}}<span class="pl-k">?</span>,
+    <span class="pl-s"><span class="pl-pds">"</span>interval<span class="pl-pds">"</span></span><span class="pl-k">:</span> {{interval<span class="pl-k">:</span>number}}
+}</pre></div>
+<p>means:</p>
+<ul>
+<li>"type" field can be one of "sliceAndDice" or "leftJoin" strings,</li>
+<li>"cubeId" is some arbitrary cube id string value and is required,</li>
+<li>"queries" field is a JSON array of objects of class Query, and makes sense only if "type" field has "leftJoin" value (according to comment),</li>
+<li>"alias" is an optional alias string, and "interval" is some number value and is required.</li>
+</ul>
+<p><strong>NB:</strong> There's currently one implementation detail: if ES collection behind the DP has document field names in <code>camelCase</code>, so must be named fields in queries, but in DP response these field names are reformatted to <code>snake_case</code>. So if your collection has fields named <code>someValue</code>, you should use this name in queries as is, but you will get it as <code>some_value</code> in responses.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#classes-description" id="user-content-classes-description"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Classes description</h2>
+<h3>
+<a aria-hidden="true" class="anchor" href="#sliceanddice-query" id="user-content-sliceanddice-query"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>SliceAndDice Query</h3>
+<div class="highlight highlight-source-js"><pre>{
+    <span class="pl-s"><span class="pl-pds">"</span>type<span class="pl-pds">"</span></span><span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">"</span>sliceAndDice<span class="pl-pds">"</span></span>,
+    <span class="pl-s"><span class="pl-pds">"</span>cube<span class="pl-pds">"</span></span><span class="pl-k">:</span> {{cubeId}},
+    <span class="pl-s"><span class="pl-pds">"</span>aggregations<span class="pl-pds">"</span></span><span class="pl-k">:</span> [Aggregation, <span class="pl-k">...</span>],
+    <span class="pl-s"><span class="pl-pds">"</span>measures<span class="pl-pds">"</span></span><span class="pl-k">:</span> [Measure, <span class="pl-k">...</span>],
+    <span class="pl-s"><span class="pl-pds">"</span>filters<span class="pl-pds">"</span></span><span class="pl-k">:</span> [Filter, <span class="pl-k">...</span>],
+    <span class="pl-s"><span class="pl-pds">"</span>parent_id<span class="pl-pds">"</span></span> {{parentId}}<span class="pl-k">?</span>,
+    <span class="pl-s"><span class="pl-pds">"</span>from<span class="pl-pds">"</span></span><span class="pl-k">:</span> {{from<span class="pl-k">:</span>int}}<span class="pl-k">?</span>,
+    <span class="pl-s"><span class="pl-pds">"</span>size<span class="pl-pds">"</span></span><span class="pl-k">:</span> {{size<span class="pl-k">:</span>int}}<span class="pl-k">?</span>,
+    <span class="pl-s"><span class="pl-pds">"</span>include_fields<span class="pl-pds">"</span></span><span class="pl-k">:</span> [{{fieldName}}, <span class="pl-k">...</span>]<span class="pl-k">?</span>,
+    <span class="pl-s"><span class="pl-pds">"</span>exclude_fields<span class="pl-pds">"</span></span><span class="pl-k">:</span> [{{fieldName}}, <span class="pl-k">...</span>]<span class="pl-k">?</span>,
+    <span class="pl-s"><span class="pl-pds">"</span>sort<span class="pl-pds">"</span></span><span class="pl-k">:</span> [
+        [{{fieldName}}, <span class="pl-s"><span class="pl-pds">"</span>asc<span class="pl-pds">"</span></span> <span class="pl-k">|</span> <span class="pl-s"><span class="pl-pds">"</span>desc<span class="pl-pds">"</span></span>], <span class="pl-k">...</span>
+    ]<span class="pl-k">?</span>
+}</pre></div>
+<h3>
+<a aria-hidden="true" class="anchor" href="#leftjoin-query" id="user-content-leftjoin-query"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>LeftJoin Query</h3>
+<div class="highlight highlight-source-js"><pre>{
+    <span class="pl-s"><span class="pl-pds">"</span>type<span class="pl-pds">"</span></span><span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">"</span>leftJoin<span class="pl-pds">"</span></span>,
+    <span class="pl-s"><span class="pl-pds">"</span>queries<span class="pl-pds">"</span></span><span class="pl-k">:</span> [Query, <span class="pl-k">...</span>],
+    <span class="pl-s"><span class="pl-pds">"</span>by<span class="pl-pds">"</span></span><span class="pl-k">:</span> [
+        {<span class="pl-s"><span class="pl-pds">"</span>dimensions<span class="pl-pds">"</span></span><span class="pl-k">:</span> [Dimension, <span class="pl-k">...</span>]}, <span class="pl-k">...</span>
+    ],
+    <span class="pl-s"><span class="pl-pds">"</span>measures<span class="pl-pds">"</span></span><span class="pl-k">:</span> [Measure, <span class="pl-k">...</span>] <span class="pl-c"><span class="pl-c">//</span> only "type": "derived" measures are allowed here</span>
+}</pre></div>
+<h3>
+<a aria-hidden="true" class="anchor" href="#aggregation" id="user-content-aggregation"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Aggregation</h3>
+<div class="highlight highlight-source-js"><pre>{
+    <span class="pl-s"><span class="pl-pds">"</span>dimension<span class="pl-pds">"</span></span><span class="pl-k">:</span> Dimension,
+    <span class="pl-s"><span class="pl-pds">"</span>aggregation<span class="pl-pds">"</span></span><span class="pl-k">:</span> AggregationType
+}</pre></div>
+<h3>
+<a aria-hidden="true" class="anchor" href="#dimension" id="user-content-dimension"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Dimension</h3>
+<div class="highlight highlight-source-js"><pre>{
+    <span class="pl-s"><span class="pl-pds">"</span>field<span class="pl-pds">"</span></span><span class="pl-k">:</span> {{fieldName}},
+    <span class="pl-s"><span class="pl-pds">"</span>cubeId<span class="pl-pds">"</span></span><span class="pl-k">:</span> {{cubeId}}<span class="pl-k">?</span>, <span class="pl-c"><span class="pl-c">//</span> required if used in "by" clause in "leftJoin" queries</span>
+    <span class="pl-s"><span class="pl-pds">"</span>alias<span class="pl-pds">"</span></span><span class="pl-k">:</span> {{alias}}<span class="pl-k">?</span>
+}</pre></div>
+<h3>
+<a aria-hidden="true" class="anchor" href="#aggregationtype" id="user-content-aggregationtype"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>AggregationType</h3>
+<div class="highlight highlight-source-js"><pre>{
+    <span class="pl-s"><span class="pl-pds">"</span>type<span class="pl-pds">"</span></span><span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">"</span>number<span class="pl-pds">"</span></span> <span class="pl-k">|</span> <span class="pl-s"><span class="pl-pds">"</span>date<span class="pl-pds">"</span></span> <span class="pl-k">|</span> <span class="pl-s"><span class="pl-pds">"</span>category<span class="pl-pds">"</span></span> <span class="pl-k">|</span> <span class="pl-s"><span class="pl-pds">"</span>missing<span class="pl-pds">"</span></span>,
+    <span class="pl-s"><span class="pl-pds">"</span>date_type<span class="pl-pds">"</span></span><span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">"</span>Day<span class="pl-pds">"</span></span> <span class="pl-k">|</span> <span class="pl-s"><span class="pl-pds">"</span>Week<span class="pl-pds">"</span></span> <span class="pl-k">|</span> <span class="pl-s"><span class="pl-pds">"</span>Month<span class="pl-pds">"</span></span> <span class="pl-k">|</span> <span class="pl-s"><span class="pl-pds">"</span>Quarter<span class="pl-pds">"</span></span> <span class="pl-k">|</span> <span class="pl-s"><span class="pl-pds">"</span>Year<span class="pl-pds">"</span></span>, <span class="pl-c"><span class="pl-c">//</span> for "type": "date"</span>
+    <span class="pl-s"><span class="pl-pds">"</span>interval<span class="pl-pds">"</span></span><span class="pl-k">:</span> {{interval<span class="pl-k">:</span>number}} <span class="pl-c"><span class="pl-c">//</span> for "type": "number"</span>
+}</pre></div>
+<h3>
+<a aria-hidden="true" class="anchor" href="#measure" id="user-content-measure"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Measure</h3>
+<p>There're three types of measure:</p>
+<div class="highlight highlight-source-js"><pre>{
+    <span class="pl-s"><span class="pl-pds">"</span>type<span class="pl-pds">"</span></span><span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">"</span>reference<span class="pl-pds">"</span></span>,
+    <span class="pl-s"><span class="pl-pds">"</span>alias<span class="pl-pds">"</span></span><span class="pl-k">:</span> {{alias}}
+}</pre></div>
+<div class="highlight highlight-source-js"><pre>{
+    <span class="pl-s"><span class="pl-pds">"</span>type<span class="pl-pds">"</span></span><span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">"</span>dimension<span class="pl-pds">"</span></span>,
+    <span class="pl-s"><span class="pl-pds">"</span>alias<span class="pl-pds">"</span></span><span class="pl-k">:</span> {{alias}}<span class="pl-k">?</span>,
+    <span class="pl-s"><span class="pl-pds">"</span>dimension<span class="pl-pds">"</span></span><span class="pl-k">:</span> Dimension,
+    <span class="pl-s"><span class="pl-pds">"</span>operation<span class="pl-pds">"</span></span><span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">"</span>countdistinct<span class="pl-pds">"</span></span> <span class="pl-k">|</span> <span class="pl-s"><span class="pl-pds">"</span>count<span class="pl-pds">"</span></span> <span class="pl-k">|</span> <span class="pl-s"><span class="pl-pds">"</span>sum<span class="pl-pds">"</span></span> <span class="pl-k">|</span> <span class="pl-s"><span class="pl-pds">"</span>avg<span class="pl-pds">"</span></span> <span class="pl-k">|</span> <span class="pl-s"><span class="pl-pds">"</span>max<span class="pl-pds">"</span></span> <span class="pl-k">|</span> <span class="pl-s"><span class="pl-pds">"</span>min<span class="pl-pds">"</span></span> <span class="pl-k">|</span> <span class="pl-s"><span class="pl-pds">"</span>categories<span class="pl-pds">"</span></span>
+}</pre></div>
+<div class="highlight highlight-source-js"><pre>{
+    <span class="pl-s"><span class="pl-pds">"</span>type<span class="pl-pds">"</span></span><span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">"</span>derived<span class="pl-pds">"</span></span>,
+    <span class="pl-s"><span class="pl-pds">"</span>alias<span class="pl-pds">"</span></span><span class="pl-k">:</span> {{alias}}<span class="pl-k">?</span>,
+    <span class="pl-s"><span class="pl-pds">"</span>operation<span class="pl-pds">"</span></span><span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">"</span>div<span class="pl-pds">"</span></span>,
+    <span class="pl-s"><span class="pl-pds">"</span>dim1<span class="pl-pds">"</span></span><span class="pl-k">:</span> Measure,
+    <span class="pl-s"><span class="pl-pds">"</span>dim2<span class="pl-pds">"</span></span><span class="pl-k">:</span> Measure
+}</pre></div>
+<h3>
+<a aria-hidden="true" class="anchor" href="#filter" id="user-content-filter"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Filter</h3>
+<p>Filters are the special case, as their structure highly depends on filter type, though they can be split up into several groups by their kind.</p>
+<h4>
+<a aria-hidden="true" class="anchor" href="#single-dimension-filters" id="user-content-single-dimension-filters"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Single dimension filters</h4>
+<div class="highlight highlight-source-js"><pre>{
+    <span class="pl-s"><span class="pl-pds">"</span>operation<span class="pl-pds">"</span></span><span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">"</span>eql<span class="pl-pds">"</span></span> <span class="pl-k">|</span> <span class="pl-s"><span class="pl-pds">"</span>neql<span class="pl-pds">"</span></span> <span class="pl-k">|</span> <span class="pl-s"><span class="pl-pds">"</span>gt<span class="pl-pds">"</span></span> <span class="pl-k">|</span> <span class="pl-s"><span class="pl-pds">"</span>gte<span class="pl-pds">"</span></span> <span class="pl-k">|</span> <span class="pl-s"><span class="pl-pds">"</span>lt<span class="pl-pds">"</span></span> <span class="pl-k">|</span> <span class="pl-s"><span class="pl-pds">"</span>lte<span class="pl-pds">"</span></span>, <span class="pl-c"><span class="pl-c">//</span> "dimension" equals (==), not equals (!=), greater than (&gt;), greater or equal than (&gt;=), less than (&lt;), less or equal than (&lt;=) "value"</span>
+    <span class="pl-s"><span class="pl-pds">"</span>dimension<span class="pl-pds">"</span></span><span class="pl-k">:</span> Dimension,
+    <span class="pl-s"><span class="pl-pds">"</span>value<span class="pl-pds">"</span></span><span class="pl-k">:</span> {{value}}
+}</pre></div>
+<div class="highlight highlight-source-js"><pre>{
+    <span class="pl-s"><span class="pl-pds">"</span>operation<span class="pl-pds">"</span></span><span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">"</span>in<span class="pl-pds">"</span></span>, <span class="pl-c"><span class="pl-c">//</span> "dimension" is equal to one of "value"s in the array</span>
+    <span class="pl-s"><span class="pl-pds">"</span>dimension<span class="pl-pds">"</span></span><span class="pl-k">:</span> Dimension,
+    <span class="pl-s"><span class="pl-pds">"</span>value<span class="pl-pds">"</span></span><span class="pl-k">:</span> [{{value}}, <span class="pl-k">...</span>]
+}</pre></div>
+<h4>
+<a aria-hidden="true" class="anchor" href="#multi-dimensional-filters" id="user-content-multi-dimensional-filters"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Multi-dimensional filters</h4>
+<div class="highlight highlight-source-js"><pre>{
+    <span class="pl-s"><span class="pl-pds">"</span>operation<span class="pl-pds">"</span></span><span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">"</span>and<span class="pl-pds">"</span></span> <span class="pl-k">|</span> <span class="pl-s"><span class="pl-pds">"</span>or<span class="pl-pds">"</span></span>, <span class="pl-c"><span class="pl-c">//</span> all (logical AND) / any (logic OR) "filters" are true</span>
+    <span class="pl-s"><span class="pl-pds">"</span>filters<span class="pl-pds">"</span></span> [Filter, <span class="pl-k">...</span>]
+}</pre></div>
+<h4>
+<a aria-hidden="true" class="anchor" href="#zero-dimension-filters" id="user-content-zero-dimension-filters"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Zero dimension filters</h4>
+<div class="highlight highlight-source-js"><pre>{
+    <span class="pl-s"><span class="pl-pds">"</span>operation<span class="pl-pds">"</span></span><span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">"</span>missing<span class="pl-pds">"</span></span> <span class="pl-k">|</span> <span class="pl-s"><span class="pl-pds">"</span>exists<span class="pl-pds">"</span></span>, <span class="pl-c"><span class="pl-c">//</span> "dimension" is missing / exists in a document</span>
+    <span class="pl-s"><span class="pl-pds">"</span>dimension<span class="pl-pds">"</span></span><span class="pl-k">:</span> Dimension
+}</pre></div>
+
+        </div>
+
+    </div>]

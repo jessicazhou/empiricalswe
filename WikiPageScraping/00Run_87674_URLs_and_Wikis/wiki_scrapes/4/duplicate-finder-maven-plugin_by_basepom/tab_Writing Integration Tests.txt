@@ -1,0 +1,184 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>The duplicate finder plugin comes with a comprehensive integration test suite to ensure its behavior.</p>
+<p>Integration tests are executed using the <a href="http://maven.apache.org/plugins/maven-invoker-plugin/integration-test-mojo.html" rel="nofollow">Maven Invoker Plugin</a>. The test suite comes with a set of tools that makes writing integration tests simple.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#writing-an-integration-test-for-the-duplicate-finder-plugin" id="user-content-writing-an-integration-test-for-the-duplicate-finder-plugin"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Writing an integration test for the duplicate finder plugin</h3>
+<p>Integration tests are located in the <a href="https://github.com/basepom/duplicate-finder-maven-plugin/tree/master/src/it"><code>src/it</code></a> folder of the source tree. Any directory that starts with <code>test-</code> contains an integration test. All integration tests are always executed as part of the plugin build process.</p>
+<p>Any integration test directory <strong>must</strong> contain at least three files:</p>
+<ul>
+<li>
+<code>pom.xml</code> - The project POM, which must inherit from the base POM</li>
+<li>
+<code>invoker.properties</code> - The goals to invoke and the expected outcome.</li>
+<li>
+<code>verify.groovy</code> - The result verification script. All integration tests use groovy.</li>
+</ul>
+<p>Tests that add code, compile classes etc. may have more files.</p>
+<h4>
+<a aria-hidden="true" class="anchor" href="#the-integration-test-pom" id="user-content-the-integration-test-pom"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>The integration test POM</h4>
+<p>Any integration test must inherit from the base POM which sets up the plugin correctly. That ensures that any global change in the future will be picked up by all unit tests.</p>
+<p>The POM for any integration test should look like this:</p>
+<div class="highlight highlight-text-xml"><pre>&lt;<span class="pl-ent">project</span> <span class="pl-e">xmlns</span>=<span class="pl-s"><span class="pl-pds">"</span>http://maven.apache.org/POM/4.0.0<span class="pl-pds">"</span></span> <span class="pl-e">xmlns</span><span class="pl-e">:</span><span class="pl-e">xsi</span>=<span class="pl-s"><span class="pl-pds">"</span>http://www.w3.org/2001/XMLSchema-instance<span class="pl-pds">"</span></span>
+         <span class="pl-e">xsi</span><span class="pl-e">:</span><span class="pl-e">schemaLocation</span>=<span class="pl-s"><span class="pl-pds">"</span>http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd<span class="pl-pds">"</span></span>&gt;
+
+    &lt;<span class="pl-ent">modelVersion</span>&gt;4.0.0&lt;/<span class="pl-ent">modelVersion</span>&gt;
+
+    &lt;<span class="pl-ent">parent</span>&gt;
+        &lt;<span class="pl-ent">groupId</span>&gt;@project.groupId@.@project.artifactId@&lt;/<span class="pl-ent">groupId</span>&gt;
+        &lt;<span class="pl-ent">artifactId</span>&gt;basepom&lt;/<span class="pl-ent">artifactId</span>&gt;
+        &lt;<span class="pl-ent">version</span>&gt;1.0.under-test&lt;/<span class="pl-ent">version</span>&gt;
+    &lt;/<span class="pl-ent">parent</span>&gt;
+
+    &lt;<span class="pl-ent">artifactId</span>&gt;... the artifact id of the test ...&lt;/<span class="pl-ent">artifactId</span>&gt;
+    &lt;<span class="pl-ent">description</span>&gt;... brief description what the test tries to accomplish ...&lt;/<span class="pl-ent">description</span>&gt;
+
+... additional POM elements ...
+&lt;/<span class="pl-ent">project</span>&gt;</pre></div>
+<p>Any integration test must use the name of its directory as the artifactId. As integration test directory names must start with <code>test-</code>, any integration test artifactId must be <code>test-....</code>.</p>
+<h4>
+<a aria-hidden="true" class="anchor" href="#the-invokerproperties-file" id="user-content-the-invokerproperties-file"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>The <code>invoker.properties</code> file</h4>
+<p>All integration tests should contain almost identical <code>invoker.properties</code> files:</p>
+<div class="highlight highlight-source-ini"><pre><span class="pl-k">invoker.goals</span>=clean verify
+<span class="pl-k">invoker.buildResult</span> = success</pre></div>
+<p>for a successful plugin execution</p>
+<div class="highlight highlight-source-ini"><pre><span class="pl-k">invoker.goals</span>=clean verify
+<span class="pl-k">invoker.buildResult</span> = failure</pre></div>
+<p>for an unsuccessful plugin execution.</p>
+<p>The integration test should still write a duplicate plugin result file which then is verified using the <code>verify.groovy</code> script</p>
+<h4>
+<a aria-hidden="true" class="anchor" href="#the-verifygroovy-script" id="user-content-the-verifygroovy-script"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>The <code>verify.groovy</code> script</h4>
+<p>Almost all integration tests will use the result file output after a plugin run to check the outcome. The integration test suite contains a library which makes these checks reasonably simple.</p>
+<p>The <code>ITools</code> library is based on the <a href="http://groovy.codehaus.org/Reading+XML+using+Groovy%27s+XmlSlurper" rel="nofollow">XmlSlurper</a> library; additional processing can be done with the tools listed there.</p>
+<p>The source code for the <code>ITools</code> library <a href="https://github.com/basepom/duplicate-finder-maven-plugin/blob/master/src/test/groovy/org/basepom/mojo/duplicatefinder/ITools.groovy">is in the main source tree</a>. Also, the existing integration tests serve as examples on how to write tests and verify plugin results.</p>
+<p>Any <code>verify.groovy</code> script should start with</p>
+<div class="highlight highlight-source-groovy"><pre><span class="pl-k">import static</span> <span class="pl-smi">org.basepom.mojo.duplicatefinder.groovy.ITools.*</span>
+
+<span class="pl-k">def</span> result <span class="pl-k">=</span> loadTestXml(basedir)
+<span class="pl-k">..</span>.</pre></div>
+<p>This loads the result file information for the <code>test</code> classpath scope into the <code>result</code> variable.</p>
+<p>Any test that needs to validate from a different scope or must access elements that are not enclosed by a <code>result</code> element need to use</p>
+<div class="highlight highlight-source-groovy"><pre><span class="pl-k">def</span> (result, xml) <span class="pl-k">=</span> loadXmlAndResult(basedir, <span class="pl-s"><span class="pl-pds">"</span>runtime<span class="pl-pds">"</span></span>)</pre></div>
+<p>Here the <code>xml</code> variable will contain the full result file element tree and <code>result</code> will contain the test result for the <code>runtime</code> scope.</p>
+<p>Checking the general outcome of an integration test:</p>
+<div class="highlight highlight-source-groovy"><pre>overallState(conflictState, count, failState, result)</pre></div>
+<ul>
+<li>
+<code>conflictState</code> can be <code>NO_CONFLICT</code>, <code>CONFLICT_EQUAL</code> or <code>CONFLICT_DIFF</code> (constants are defined in the <code>ITools</code> library)</li>
+<li>
+<code>failState</code> can be <code>FAILED</code> or <code>NOT_FAILED</code>  (constants are defined in the <code>ITools</code> library)</li>
+<li>
+<code>count</code> is the number of elements in conflict state. Note that multiple conflicts between the same elements (e.g. the <code>first-jar</code> and <code>second-jar</code>) only count as one.</li>
+<li>
+<code>result</code> is the value returned by <code>loadTestXml</code> or <code>loadXmlAndResult</code> or <code>loadXml</code>.</li>
+</ul>
+<p>Do a conflict check:</p>
+<div class="highlight highlight-source-groovy"><pre>checkConflictResult(conflictName, conflictType, conflictState, excepted, printed, failState, conflictResult)</pre></div>
+<ul>
+<li>
+<code>conflictName</code> is the class or resource name that is in conflict.</li>
+<li>
+<code>conflictType</code> can be <code>TYPE_CLASS</code> or <code>TYPE_RESOURCE</code> (constants are defined in the <code>ITools</code> library)</li>
+<li>
+<code>conflictState</code> can be <code>NO_CONFLICT</code>, <code>CONFLICT_EQUAL</code> or <code>CONFLICT_DIFF</code> (constants are defined in the <code>ITools</code> library)</li>
+<li>
+<code>excepted</code> can be <code>NOT_EXCEPTED</code> or <code>EXCEPTED</code> (constants are defined in the <code>ITools</code> library). An <code>excepted</code> conflict is covered by an <code>&lt;exception&gt;</code> element from the configuration.</li>
+<li>
+<code>printed</code> can be <code>NOT_PRINTED</code> or <code>PRINTED</code> (constants are defined in the <code>ITools</code> library). A <code>PRINTED</code> conflict was reported on the command line.</li>
+<li>
+<code>failState</code> can be <code>FAILED</code> or <code>NOT_FAILED</code>  (constants are defined in the <code>ITools</code> library). A <code>FAILED</code> conflict also failed the build.</li>
+</ul>
+<p>The following tools help build the <code>conflictResult</code> value:</p>
+<div class="highlight highlight-source-groovy"><pre>findConflictResult(result, <span class="pl-k">String</span> <span class="pl-k">..</span>. matches)
+
+findConflictResult(result, count, <span class="pl-k">String</span> <span class="pl-k">..</span>. matches)</pre></div>
+<ul>
+<li>
+<p><code>result</code> is the value returned by <code>loadTestXml</code> or <code>loadXmlAndResult</code> or <code>loadXml</code>.</p>
+</li>
+<li>
+<p><code>count</code> is the number of expected result elements that match all of the <code>matches</code> elements. If omitted, <em>1</em> is assumed.</p>
+</li>
+<li>
+<p><code>matches</code> A list of element names that match the test results.</p>
+</li>
+<li>
+<p>For the predefined jars, the <em>Match name</em> (see below) can be used.</p>
+</li>
+<li>
+<p>For a match from the local project, the <code>projectTargetFolder(basedir)</code> and <code>projectTargetTestFolder(basedir)</code> tools can be used.</p>
+</li>
+</ul>
+<h4>
+<a aria-hidden="true" class="anchor" href="#jars-for-duplication-checks" id="user-content-jars-for-duplication-checks"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Jars for duplication checks</h4>
+<p>As the duplicate finder plugin deals with a classpath elements, there are a number of pre-built jars that can be used in an integration test:</p>
+<table>
+<thead>
+<tr>
+<th>Maven GAV coordinates</th>
+<th>Contents</th>
+<th>Match name</th>
+<th>Usage</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>testjar:first-class-jar:1.0.under-test</code></td>
+<td>
+<code>diff.Demo</code> class</td>
+<td><code>FIRST_CLASS_JAR</code></td>
+<td>Use with <code>first-diff-jar</code> to find classpath class duplicates with different SHA</td>
+</tr>
+<tr>
+<td><code>testjar:second-class-jar:1.0.under-test</code></td>
+<td>
+<code>demo.Demo</code> class</td>
+<td><code>SECOND_CLASS_JAR</code></td>
+<td>Use with <code>second-equal-jar</code> to find classpath class duplicates with same SHA</td>
+</tr>
+<tr>
+<td><code>testjar:first-diff-jar:1.0.under-test</code></td>
+<td>
+<code>diff.Demo</code> class, different SHA from <code>first-class-jar</code>
+</td>
+<td><code>FIRST_DIFF_JAR</code></td>
+<td></td>
+</tr>
+<tr>
+<td><code>testjar:second-equal-jar:1.0.under-test</code></td>
+<td>
+<code>demo.Demo</code> class, same SHA as <code>second-class-jar</code>
+</td>
+<td><code>SECOND_EQUAL_JAR</code></td>
+<td></td>
+</tr>
+<tr>
+<td><code>testjar:first-jar:1.0.under-test</code></td>
+<td>
+<code>conflict-same-content</code> and <code>conflict-different-content</code> resources</td>
+<td><code>FIRST_JAR</code></td>
+<td>Use with <code>second-jar</code> to find classpath resource duplicates with the same or different SHA values.</td>
+</tr>
+<tr>
+<td><code>testjar:second-jar:1.0.under-test</code></td>
+<td>
+<code>conflict-same-content</code> with the same SHA and <code>conflict-different-content</code> with a different SHA from <code>first-jar</code>
+</td>
+<td><code>SECOND_JAR</code></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h3>
+<a aria-hidden="true" class="anchor" href="#debugging-an-integration-test" id="user-content-debugging-an-integration-test"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Debugging an integration test</h3>
+<p>As integration tests are intended to highlight an aspect of the plugin functionality, they are extremely useful for debugging / isolating of problems. To debug the plugin while executing an integration test, use the following steps:</p>
+<ul>
+<li>build and install the plugin locally, prepare the integration tests: <code>mvn -Dinvoker.test='setup*' clean install</code>. This step is required only once until the next time <code>mvn clean</code> is executed.</li>
+<li>now build and run the integration test to debug: <code>mvn -Dinvoker.mavenOpts='-Xdebug -Xnoagent -Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=8000' -Dinvoker.test='&lt;testname&gt;' invoker:integration-test</code>. This will execute the integration test and suspend the VM. A debugger can now attach to port 8000 to debug the plugin execution.</li>
+</ul>
+<p>If wildcards are given for the tests to run, a new JDK will be spawned for each integration test and the debugger must be attached multiple times.
+If the plugin code has changed, either combine the <code>test</code> goal with <code>invoker:integration-test</code> or use the proper <code>integration-test</code> lifecycle goal.</p>
+
+        </div>
+
+    </div>]

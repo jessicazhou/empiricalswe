@@ -1,0 +1,118 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>An Netbeast app is basically an npm node.js package. To run a minimalist app you need to create a <code>package.json</code> and an entry point, lets call it <code>server.js</code>.
+The entry point (<code>server.js</code> in this case) must be executable.</p>
+<pre><code>./myapp
+    |-- index.html
+    |-- server.js
+    |-- package.json
+    |-- node_modules/
+</code></pre>
+<p>In <code>package.json</code> you must specify the entry point at <code>main</code>field:</p>
+<pre><code>{
+  "name": "nb-get-started",
+  "version": "1.0.0",
+  "description": "A repo with code about how to make simple Netbeast apps.",
+  "main": "server.js",
+  "dependencies": {
+    "colors": "^1.0.3",
+    "minimist": "^1.1.0"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "node server.js --port 31416",
+    "start": "node server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/netbeast/get-started"
+  },
+  "keywords": [
+    "iot",
+    "netbeast",
+    "netbeast.co"
+  ],
+  "author": "jesus@netbeast.co",
+  "license": "GPL 2",
+  "bugs": {
+    "url": "https://github.com/netbeast/get-started/issues"
+  },
+  "homepage": "https://github.com/netbeast/get-started"
+}
+</code></pre>
+<p>To make <code>server.js</code> executable you must run:</p>
+<pre><code>    chmod +x server.js
+</code></pre>
+<p>And append a shebang at the very beginning of the file</p>
+<pre><code>#!/usr/bin/env node
+</code></pre>
+<p>Also if you want to run a service you may want to accept a port by parameters. You can find a sample app at <a href="https://github.com/netbeast/get-started">https://github.com/netbeast/get-started</a>, the code inside <code>server.js</code> looks like this:</p>
+<div class="highlight highlight-source-js"><pre><span class="pl-c">#!/usr/bin/env node</span>
+
+<span class="pl-c"><span class="pl-c">//</span> server.js</span>
+<span class="pl-c"><span class="pl-c">//</span>===========</span>
+
+<span class="pl-c"><span class="pl-c">/*</span></span>
+<span class="pl-c">* This is where all the magic happens.</span>
+<span class="pl-c">* The Netbeast dashboard calls this script as is</span>
+<span class="pl-c">* `node server.js --port &lt;free port number&gt;`</span>
+<span class="pl-c">* after that everyline here will be executed.</span>
+<span class="pl-c">*</span>
+<span class="pl-c">* You can install extra modules thanks to the work</span>
+<span class="pl-c">* of npm. Also you can create a shell script to</span>
+<span class="pl-c">* install any missing system package.</span>
+<span class="pl-c"><span class="pl-c">*/</span></span>
+
+<span class="pl-c"><span class="pl-c">/*</span> Requires node.js libraries <span class="pl-c">*/</span></span>
+<span class="pl-k">var</span> fs <span class="pl-k">=</span> <span class="pl-c1">require</span>(<span class="pl-s"><span class="pl-pds">'</span>fs<span class="pl-pds">'</span></span>);
+<span class="pl-k">var</span> express <span class="pl-k">=</span> <span class="pl-c1">require</span>(<span class="pl-s"><span class="pl-pds">'</span>express<span class="pl-pds">'</span></span>);
+<span class="pl-k">var</span> app <span class="pl-k">=</span> <span class="pl-en">express</span>();
+
+<span class="pl-k">function</span> <span class="pl-en">puts</span>(<span class="pl-smi">error</span>, <span class="pl-smi">stdout</span>, <span class="pl-smi">stderr</span>) { <span class="pl-smi">sys</span>.<span class="pl-en">puts</span>(stdout) }
+
+<span class="pl-k">var</span> argv <span class="pl-k">=</span> <span class="pl-c1">require</span>(<span class="pl-s"><span class="pl-pds">'</span>minimist<span class="pl-pds">'</span></span>)(<span class="pl-c1">process</span>.<span class="pl-smi">argv</span>.<span class="pl-c1">slice</span>(<span class="pl-c1">2</span>)); <span class="pl-c"><span class="pl-c">//</span> must-have package</span>
+
+<span class="pl-c"><span class="pl-c">/*</span> Netbeast os apps need to accept the port to be launched by parameters <span class="pl-c">*/</span></span>
+port <span class="pl-k">=</span> <span class="pl-smi">argv</span>.<span class="pl-c1">port</span>;
+
+<span class="pl-k">if</span>(<span class="pl-c1">isNaN</span>(port)) {
+	<span class="pl-en">console</span>.<span class="pl-c1">log</span>(<span class="pl-s"><span class="pl-pds">"</span>Port <span class="pl-cce">\"</span><span class="pl-pds">"</span></span> <span class="pl-k">+</span> port <span class="pl-k">+</span> <span class="pl-s"><span class="pl-pds">"</span><span class="pl-cce">\"</span> is not a number.<span class="pl-pds">"</span></span>);
+	<span class="pl-c1">process</span>.<span class="pl-en">kill</span>(<span class="pl-c1">1</span>);
+} <span class="pl-k">else</span> {
+	<span class="pl-en">console</span>.<span class="pl-c1">log</span>(<span class="pl-s"><span class="pl-pds">"</span>Listening on port <span class="pl-pds">"</span></span> <span class="pl-k">+</span> port);
+}
+
+<span class="pl-smi">app</span>.<span class="pl-en">use</span>(<span class="pl-smi">express</span>.<span class="pl-en">static</span>(<span class="pl-s"><span class="pl-pds">'</span>public<span class="pl-pds">'</span></span>));
+
+
+<span class="pl-k">var</span> server <span class="pl-k">=</span> <span class="pl-smi">app</span>.<span class="pl-en">listen</span>(port, <span class="pl-k">function</span> () {
+
+  <span class="pl-k">var</span> host <span class="pl-k">=</span> <span class="pl-smi">server</span>.<span class="pl-en">address</span>().<span class="pl-smi">address</span>;
+  <span class="pl-k">var</span> port <span class="pl-k">=</span> <span class="pl-smi">server</span>.<span class="pl-en">address</span>().<span class="pl-c1">port</span>;
+
+  <span class="pl-en">console</span>.<span class="pl-c1">log</span>(<span class="pl-s"><span class="pl-pds">'</span>Example app listening at http://%s:%s<span class="pl-pds">'</span></span>, host, port);
+
+});</pre></div>
+<p>The nb-dashboard will automatically find a free port and assign it to your application.</p>
+
+        </div>
+
+        <div class="wiki-footer gollum-markdown-content boxed-group" id="wiki-footer">
+          <div class="boxed-group-inner wiki-auxiliary-content markdown-body">
+            <p># <code>warning</code>: now our docs are being published in our gitbook and available on our website. Visit <a href="http://docs.netbeast.co/" rel="nofollow">http://docs.netbeast.co/</a></p>
+<h1>
+<a aria-hidden="true" class="anchor" href="#contact" id="user-content-contact"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Contact</h1>
+<ul>
+<li>Visit our site <a href="https://netbeast.co" rel="nofollow">https://netbeast.co</a>
+</li>
+<li>Mail us: staff [at] netbeast.co</li>
+<li>Report a bug or enter discussion at <a href="https://github.com/netbeast-co/docs/issues">issues</a>
+</li>
+<li>Other resources: <a href="https://github.com/netbeast-co/dashboard">Dashboard</a>, Netbeast <a href="https://github.com/netbeast-co/API">API</a>
+</li>
+</ul>
+<p><a href="https://gitter.im/netbeast-co/xway?utm_source=badge&amp;utm_medium=badge&amp;utm_campaign=pr-badge" rel="nofollow"><img alt="Gitter" data-canonical-src="https://badges.gitter.im/Join%20Chat.svg" src="https://camo.githubusercontent.com/da2edb525cde1455a622c58c0effc3a90b9a181c/68747470733a2f2f6261646765732e6769747465722e696d2f4a6f696e253230436861742e737667"/></a></p>
+
+          </div>
+        </div>
+    </div>]

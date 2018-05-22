@@ -1,0 +1,196 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <h1>
+<a aria-hidden="true" class="anchor" href="#deploying-staticd-api-and-http-services-on-heroku" id="user-content-deploying-staticd-api-and-http-services-on-heroku"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Deploying Staticd API and HTTP services on Heroku</h1>
+<h2>
+<a aria-hidden="true" class="anchor" href="#prerequisites" id="user-content-prerequisites"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Prerequisites</h2>
+<p>You will need:</p>
+<ul>
+<li>an <a href="https://www.heroku.com/" rel="nofollow">Heroku</a> account with the
+<a href="https://toolbelt.heroku.com/" rel="nofollow">heroku toolbelt</a> installed and configured</li>
+<li>a domain name supporting
+<a href="https://en.wikipedia.org/wiki/Wildcard_DNS_record" rel="nofollow">wildcard DNS records</a>
+</li>
+<li>a dedicated
+<a href="http://docs.aws.amazon.com/AmazonS3/latest/dev/UsingBucket.html" rel="nofollow">S3 bucket</a>
+with the associed
+<a href="http://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSGettingStartedGuide/AWSCredentials.html" rel="nofollow">Access Key ID and Secret Access Key</a>
+</li>
+</ul>
+<p><em><strong>Note</strong>: You can look at
+<a href="https://github.com/garnieretienne/s3build">this script</a> to create a bucket and
+a dedicated access ID and secret key using the <code>aws</code> tool from amazon.</em></p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#cloning-the-staticd-repository" id="user-content-cloning-the-staticd-repository"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Cloning the Staticd repository</h2>
+<pre><code>$ git clone https://github.com/garnieretienne/staticd.git
+Cloning into 'staticd'...
+remote: Counting objects: 1204, done.
+remote: Compressing objects: 100% (103/103), done.
+remote: Total 1204 (delta 47), reused 0 (delta 0)
+Receiving objects: 100% (1204/1204), 207.26 KiB, done.
+Resolving deltas: 100% (738/738), done.
+$ cd staticd
+</code></pre>
+<h2>
+<a aria-hidden="true" class="anchor" href="#creating-a-new-heroku-app" id="user-content-creating-a-new-heroku-app"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Creating a new Heroku app</h2>
+<pre><code>$ heroku apps:create
+Creating staticd-testing... done, stack is cedar-14
+https://staticd-testing.herokuapp.com/ | https://git.heroku.com/staticd-testing.git
+Git remote heroku added
+</code></pre>
+<h2>
+<a aria-hidden="true" class="anchor" href="#configuring-the-new-app" id="user-content-configuring-the-new-app"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Configuring the new app</h2>
+<p>Configure the app:</p>
+<pre><code>$ heroku config:set STATICD_DOMAIN=[YOUR_DOMAIN.TLD]
+Setting config vars and restarting staticd-testing... done, v3
+STATICD_DOMAIN: [YOUR_DOMAIN.TLD]
+</code></pre>
+<pre><code>$ heroku config:set STATICD_HTTP_CACHE=/tmp/staticd/cache
+Setting config vars and restarting staticd-testing... done, v4
+STATICD_HTTP_CACHE: /tmp/staticd/cache
+</code></pre>
+<pre><code>$ heroku config:set STATICD_ACCESS_ID=$RANDOM
+Setting config vars and restarting staticd-testing... done, v5
+STATICD_ACCESS_ID: 31121
+</code></pre>
+<pre><code>$ heroku config:set STATICD_SECRET_KEY=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 32 | head -n 1)
+Setting config vars and restarting staticd-testing... done, v6
+STATICD_SECRET_KEY: jUg6PBaFDqXW3s6b22CskrCATTJo1wK2
+</code></pre>
+<p>Configure the datastore:</p>
+<pre><code>$ heroku config:set DATASTORE_URL=s3://[YOUR_S3_BUCKET]
+Setting config vars and restarting staticd-testing... done, v7
+DATASTORE_URL: s3://[YOUR_S3_BUCKET]
+</code></pre>
+<pre><code>$ heroku config:set AWS_ACCESS_KEY_ID=[YOUR_AWS_ACCESS_KEY_ID]
+Setting config vars and restarting staticd-testing... done, v8
+AWS_ACCESS_KEY_ID: [YOUR_AWS_ACCESS_KEY_ID]
+</code></pre>
+<pre><code>$ heroku config:set AWS_SECRET_ACCESS_KEY=[YOUR_AWS_SECRET_ACCESS_KEY]
+Setting config vars and restarting staticd-testing... done, v9
+AWS_SECRET_ACCESS_KEY: [YOUR_AWS_SECRET_ACCESS_KEY]
+</code></pre>
+<p>The database is configured by the Heroku Postgres addon:</p>
+<pre><code>$ heroku addons:add heroku-postgresql
+Adding heroku-postgresql on staticd-testing... done, v13 (free)
+Attached as HEROKU_POSTGRESQL_CHARCOAL_URL
+Database has been created and is available
+ ! This database is empty. If upgrading, you can transfer
+ ! data from another database with pgbackups:restore.
+Use `heroku addons:docs heroku-postgresql` to view documentation.
+</code></pre>
+<h2>
+<a aria-hidden="true" class="anchor" href="#adding-your-domain-to-heroku" id="user-content-adding-your-domain-to-heroku"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Adding your domain to heroku</h2>
+<pre><code>$ heroku domains:add [YOUR_DOMAIN.TLD]
+Adding [YOUR_DOMAIN.TLD] to staticd-testing... done
+</code></pre>
+<pre><code>$ heroku domains:add *.[YOUR_DOMAIN.TLD]
+Adding *.[YOUR_DOMAIN.TLD] to staticd-testing... done
+</code></pre>
+<h2>
+<a aria-hidden="true" class="anchor" href="#deploying" id="user-content-deploying"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Deploying</h2>
+<pre><code>$ git push heroku master
+remote: Compressing source files... done.
+remote: Building source:
+remote:
+remote: -----&gt; Ruby app detected
+remote: -----&gt; Compiling Ruby/Rack
+remote: -----&gt; Using Ruby version: ruby-2.0.0
+remote: -----&gt; Installing dependencies using 1.6.3
+remote:        Old bundler cache detected. Clearing bundler cache.
+remote:        Running: bundle install --without development:test --path vendor/bundle --binstubs vendor/bundle/bin -j4 --deployment
+remote:        Fetching gem metadata from https://rubygems.org/.......
+remote:        Installing api-auth 1.2.6
+remote:        Installing addressable 2.3.6
+remote:        Installing rake 10.3.2
+remote:        Installing mini_portile 0.6.1
+remote:        Installing fastercsv 1.5.5
+remote:        Installing json_pure 1.8.1
+remote:        Installing multi_json 1.10.1
+remote:        Installing stringex 1.5.1
+remote:        Installing uuidtools 2.1.5
+remote:        Installing gli 2.12.2
+remote:        Installing tilt 1.4.1
+remote:        Installing netrc 0.7.9
+remote:        Installing rack 1.5.2
+remote:        Installing json 1.8.1
+remote:        Using bundler 1.6.3
+remote:        Installing dm-core 1.2.1
+remote:        Installing data_objects 0.10.14
+remote:        Installing bcrypt 3.1.9
+remote:        Installing haml 4.0.6
+remote:        Installing sendfile 1.2.2
+remote:        Installing rest_client 1.8.1
+remote:        Installing rack-protection 1.5.3
+remote:        Installing rack-test 0.6.2
+remote:        Installing dm-aggregates 1.2.0
+remote:        Installing dm-constraints 1.2.0
+remote:        Installing dm-migrations 1.2.0
+remote:        Installing dm-serializer 1.2.2
+remote:        Installing dm-timestamps 1.2.0
+remote:        Installing dm-transactions 1.2.0
+remote:        Installing dm-validations 1.2.0
+remote:        Installing dm-do-adapter 1.2.0
+remote:        Installing puma 2.9.2
+remote:        Installing bcrypt-ruby 3.1.5
+remote:        Using staticdctl 0.0.1 from source at .
+remote:        Installing sinatra 1.4.5
+remote:        Installing dm-types 1.2.2
+remote:        Installing data_mapper 1.2.0
+remote:        Installing do_postgres 0.10.14
+remote:        Installing dm-postgres-adapter 1.2.0
+remote:        Installing nokogiri 1.6.5
+remote:        Installing aws-sdk-v1 1.57.0
+remote:        Installing aws-sdk 1.57.0
+remote:        Using staticd 0.0.1 from source at .
+remote:        Your bundle is complete!
+remote:        Gems in the groups development and test were not installed.
+remote:        It was installed into ./vendor/bundle
+remote:        Post-install message from haml:
+remote:        HEADS UP! Haml 4.0 has many improvements, but also has changes that may break
+remote:        your application:
+remote:        * Support for Ruby 1.8.6 dropped
+remote:        * Support for Rails 2 dropped
+remote:        * Sass filter now always outputs &lt;style&gt; tags
+remote:        * Data attributes are now hyphenated, not underscored
+remote:        * html2haml utility moved to the html2haml gem
+remote:        * Textile and Maruku filters moved to the haml-contrib gem
+remote:        For more info see:
+remote:        http://rubydoc.info/github/haml/haml/file/CHANGELOG.md
+remote:        Post-install message from bcrypt-ruby:
+remote:        #######################################################
+remote:        The bcrypt-ruby gem has changed its name to just bcrypt.  Instead of
+remote:        installing `bcrypt-ruby`, you should install `bcrypt`.  Please update your
+remote:        dependencies accordingly.
+remote:        #######################################################
+remote:        Bundle completed (54.12s)
+remote:        Cleaning up the bundler cache.
+remote:
+remote: ###### WARNING:
+remote:        You have not declared a Ruby version in your Gemfile.
+remote:        To set your Ruby version add this line to your Gemfile:
+remote:        ruby '2.0.0'
+remote:        # See https://devcenter.heroku.com/articles/ruby-versions for more information.
+remote:
+remote: -----&gt; Discovering process types
+remote:        Procfile declares types -&gt; web
+remote:        Default types for Ruby  -&gt; console, rake
+remote:
+remote: -----&gt; Compressing... done, 20.7MB
+remote: -----&gt; Launching... done, v11
+remote:        https://staticd-testing.herokuapp.com/ deployed to Heroku
+remote:
+remote: Verifying deploy... done.
+To https://git.heroku.com/staticd-testing.git
+ * [new branch]      master -&gt; master
+</code></pre>
+<h2>
+<a aria-hidden="true" class="anchor" href="#finish-the-setup" id="user-content-finish-the-setup"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Finish the setup</h2>
+<p>Finish the setup visiting the <code>http://[YOUR_DOMAIN.TLD]/api/v1/welcome</code> page with
+your browser.</p>
+<p><strong>Don't forget clicking the "I'm done!" button to hide the
+sensitive informations present on this page.</strong></p>
+
+        </div>
+
+    </div>]

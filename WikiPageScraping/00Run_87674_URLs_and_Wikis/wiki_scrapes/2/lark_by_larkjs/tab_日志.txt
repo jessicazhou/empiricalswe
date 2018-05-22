@@ -1,0 +1,86 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>在lark.js中有3种不同的日志，分别有不同的功能。</p>
+<ul>
+<li>pv 日志。记录请求和返回的日志。系统默认集成</li>
+<li>自定义日志。包括捕获的warning日志，请求后端服务的 notice 日志，以及其它自定义日志。自定义日志用来记录服务请求后端服务的日志和系统的信息。自定义日志记录需要用户手工记录。</li>
+<li>错误日志。记录node.js系统抛出的错误，系统的错误日志以及其它不在pv和自定义日志中的日志。系统默认集成了系统错误日志, 用户需要自行添加业务的错误日志。</li>
+</ul>
+<h2>
+<a aria-hidden="true" class="anchor" href="#pv-%E6%97%A5%E5%BF%97" id="user-content-pv-日志"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>pv 日志</h2>
+<p>pv 日志主要用来计算用户pv和系统提供服务的成功率。pv日志分为 request 和 perform 两种。request 指用户请求日志，可用来计算用户pv. perform 指系统成功返回给用户结果的日志。可用来计算服务稳定性。 lark 默认在系统集成了该日志,不需手工添加.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#%E8%87%AA%E5%AE%9A%E4%B9%89%E6%97%A5%E5%BF%97" id="user-content-自定义日志"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>自定义日志</h2>
+<p>自定义日志用来记录用户需要的信息，有 notice, warn, info 等方法. 各方法使用场景如下：</p>
+<p>记录调用后端服务使用 notice 方法。例如:</p>
+<pre><code>require('lark/logging').notice({ 
+    'talkwith': 'redis',
+})
+</code></pre>
+<p>(注： require('lark/logging') 0.11 以前版本为 require('lark').logging, 下同)</p>
+<p>记录已知的系统警告信息（一般由不会引起系统崩溃的错误引起），使用 warn 方法。 例如:</p>
+<pre><code>require('lark/logging').warn({'message': 'Content is too long, which over the maxLength in configure.'})
+</code></pre>
+<p>对于其它自定义信息，推荐使用 info 方法。例如:</p>
+<pre><code>require('lark/logging').info({'message': 'App is started. Port: 80'})
+</code></pre>
+<h2>
+<a aria-hidden="true" class="anchor" href="#%E9%94%99%E8%AF%AF%E6%97%A5%E5%BF%97" id="user-content-错误日志"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>错误日志</h2>
+<p>错误日志用来记录系统错误，这些系统错误是一定需要修复的，超过一定数量还会报警。
+错误日志有 fatal, error 方法，还有 node.js 打的系统日志。
+lark 会把不属于pv, 自定义日志的其它所有日志归类为错误日志。</p>
+<p>错误日志的具体使用方法：</p>
+<p>对于捕获到的会引起系统出错的错误，使用 error 方法。</p>
+<pre><code>server.on("error", function(err){
+    require('lark/logging').error("error message" + err)
+})
+</code></pre>
+<p>捕获到的引起系统崩溃的信息，使用 fatal 方法。</p>
+<pre><code>try{
+} catch(err){
+    require('lark/logging').fatal("fatal message" + err)
+}
+</code></pre>
+<p>系统要尽量保证没有错误日志输出。如果有输出错误日志，表明有错误需要修复。</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#%E8%B0%83%E8%AF%95%E6%97%A5%E5%BF%97" id="user-content-调试日志"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>调试日志</h2>
+<p>调试日志是开发时用于调试的日志，日志直接输出到终端里，并且在 production 环境下不会生效。调试日志使用方法:</p>
+<pre><code>require('lark/logging').debug('debug message')
+require('lark/logging').log('dev message')
+require('lark/logging').trace('trace message')
+
+</code></pre>
+<h2>
+<a aria-hidden="true" class="anchor" href="#%E5%88%A9%E7%94%A8%E6%97%A5%E5%BF%97%E8%BF%9B%E8%A1%8Cdebug" id="user-content-利用日志进行debug"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>利用日志进行debug</h2>
+<ul>
+<li>命令行下查看流量</li>
+</ul>
+<pre><code>cat app.log  | grep REQUEST | awk '{print $3}' | awk 'BEGIN {FS=":"} {print $1$2}' | sort | uniq -c
+</code></pre>
+<ul>
+<li>使用命令行下查看请求后端服务流量</li>
+</ul>
+<pre><code>cat app.notice.log  | grep 'backend_name' | grep NOTICE |awk '{print $3}' | awk 'BEGIN {FS=":"} {print $1$2$3}' | sort | uniq -c
+</code></pre>
+<ul>
+<li>查看请求后端错误情况</li>
+</ul>
+<pre><code>cat app.notice.log   | grep 'backend_name' | grep WARN| awk '{print $3}' | awk 'BEGIN {FS=":"} {print $1$2$3}' | sort | uniq -c
+</code></pre>
+<ul>
+<li>系统上线时，查看node.log是否有日志出现。原则上 node.log 是不应该有日志的。</li>
+</ul>
+<pre><code>tail -f node.log
+</code></pre>
+<ul>
+<li>系统出问题时，通过logid串连进行debug。</li>
+</ul>
+<h3>
+<a aria-hidden="true" class="anchor" href="#%E9%85%8D%E7%BD%AE%E6%97%A5%E5%BF%97" id="user-content-配置日志"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>配置日志</h3>
+<p>可以通过lark.js的配置接口进行配置</p>
+<pre><code>var logging = require("lark/logging").configure({'logLevel':1})
+</code></pre>
+
+        </div>
+
+    </div>]

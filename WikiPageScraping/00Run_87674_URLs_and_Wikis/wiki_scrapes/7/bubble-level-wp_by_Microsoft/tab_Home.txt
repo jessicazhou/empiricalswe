@@ -1,0 +1,116 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p><img alt="Bubble Level running in emulator." src="https://raw.githubusercontent.com/Microsoft/bubble-level-wp/master/doc/BubbleLevelSilverlight.png"/></p>
+<p>This page describes the implementation of the application. For more information about the porting of the application can be found from the <a href="https://github.com/Microsoft/bubble-level-wp/wiki/Porting">porting story page</a>.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#reading-the-accelerometer-information" id="user-content-reading-the-accelerometer-information"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Reading the accelerometer information</h2>
+<p>The accelerometer is created on the member variable declaration:</p>
+<div class="highlight highlight-source-cs"><pre><span class="pl-k">protected</span> <span class="pl-en">Accelerometer</span> <span class="pl-smi">m_Accel</span> <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-en">Accelerometer</span>();</pre></div>
+<p>A handler for !AccelerometerReadingChanged event is added and the sensor is started in the constructor.</p>
+<div class="highlight highlight-source-cs"><pre><span class="pl-c"><span class="pl-c">//</span> Set up the handler for accelerometer sensor data.</span>
+<span class="pl-smi">m_Accel</span>.<span class="pl-smi">ReadingChanged</span> <span class="pl-k">+=</span> <span class="pl-k">new</span> <span class="pl-en">EventHandler</span>&lt;<span class="pl-en">AccelerometerReadingEventArgs</span>&gt;(<span class="pl-smi">AccelerometerReadingChanged</span>);
+
+<span class="pl-k">try</span>
+{
+    <span class="pl-c"><span class="pl-c">//</span> Start the accelerometer sensor.</span>
+    <span class="pl-smi">m_Accel</span>.<span class="pl-en">Start</span>();
+}
+<span class="pl-k">catch</span>(<span class="pl-en">AccelerometerFailedException</span> <span class="pl-smi">exception</span>)
+{
+    <span class="pl-smi">MessageBox</span>.<span class="pl-en">Show</span>(<span class="pl-s"><span class="pl-pds">"</span>Failed to start the accelerometer sensor: <span class="pl-pds">"</span></span> <span class="pl-k">+</span> <span class="pl-smi">exception</span>.<span class="pl-en">ToString</span>());
+}</pre></div>
+<p>In the event handler the event is dispatched for the UI thread and handled in the <code>UpdateBubble</code> method which calculates and updates the bubble position.</p>
+<div class="highlight highlight-source-cs"><pre><span class="pl-k">public</span> <span class="pl-k">void</span> <span class="pl-en">AccelerometerReadingChanged</span>(<span class="pl-k">object</span> <span class="pl-smi">sender</span>, <span class="pl-en">AccelerometerReadingEventArgs</span> <span class="pl-smi">e</span>)
+{
+    <span class="pl-c"><span class="pl-c">//</span> Dispatch the accelerometer reading to UI thread</span>
+    <span class="pl-smi">Deployment</span>.<span class="pl-smi">Current</span>.<span class="pl-smi">Dispatcher</span>.<span class="pl-en">BeginInvoke</span>(() <span class="pl-k">=&gt;</span> <span class="pl-en">UpdateBubble</span>(<span class="pl-smi">e</span>));
+}</pre></div>
+<h2>
+<a aria-hidden="true" class="anchor" href="#moving-the-bubble" id="user-content-moving-the-bubble"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Moving the bubble</h2>
+<p>In the XAML we define a <code>TranslateTransform</code> for the bubble image so that it will be easy to reference it on the C# code.</p>
+<div class="highlight highlight-text-xml"><pre><span class="pl-c"><span class="pl-c">&lt;!--</span> The Bubble image <span class="pl-c">--&gt;</span></span>
+&lt;<span class="pl-ent">Image</span> <span class="pl-e">Name</span>=<span class="pl-s"><span class="pl-pds">"</span>Bubble<span class="pl-pds">"</span></span> <span class="pl-e">Width</span>=<span class="pl-s"><span class="pl-pds">"</span>120<span class="pl-pds">"</span></span> <span class="pl-e">Height</span>=<span class="pl-s"><span class="pl-pds">"</span>60<span class="pl-pds">"</span></span>
+               <span class="pl-e">HorizontalAlignment</span>=<span class="pl-s"><span class="pl-pds">"</span>Center<span class="pl-pds">"</span></span> <span class="pl-e">VerticalAlignment</span>=<span class="pl-s"><span class="pl-pds">"</span>Top<span class="pl-pds">"</span></span>
+               <span class="pl-e">Stretch</span>=<span class="pl-s"><span class="pl-pds">"</span>Fill<span class="pl-pds">"</span></span>  <span class="pl-e">Source</span>=<span class="pl-s"><span class="pl-pds">"</span>/BubbleLevel;component/gfx/bubble.png<span class="pl-pds">"</span></span>&gt;
+    <span class="pl-c"><span class="pl-c">&lt;!--</span> We give a name to the transform to easily move the bubble in the C# code <span class="pl-c">--&gt;</span></span>
+    &lt;<span class="pl-ent">Image</span>.RenderTransform&gt;
+        &lt;<span class="pl-ent">TranslateTransform</span> <span class="pl-e">x</span><span class="pl-e">:</span><span class="pl-e">Name</span>=<span class="pl-s"><span class="pl-pds">"</span>BubbleTransform<span class="pl-pds">"</span></span> /&gt;
+    &lt;/<span class="pl-ent">Image</span>.RenderTransform&gt;
+&lt;/<span class="pl-ent">Image</span>&gt;</pre></div>
+<p>In the C# code the transform is updated. In this case the Reflection is used to get the glass tube width.</p>
+<div class="highlight highlight-source-cs"><pre><span class="pl-c"><span class="pl-c">//</span> Set the bubble position.</span>
+<span class="pl-smi">BubbleTransform</span>.<span class="pl-smi">X</span> <span class="pl-k">=</span> <span class="pl-smi">angle</span> <span class="pl-k">/</span> <span class="pl-smi">MAX_ANGLE</span> <span class="pl-k">*</span> (<span class="pl-smi">Reflection</span>.<span class="pl-smi">Width</span> <span class="pl-k">/</span> <span class="pl-c1">2</span> <span class="pl-k">-</span> <span class="pl-smi">Bubble</span>.<span class="pl-smi">Width</span> <span class="pl-k">/</span> <span class="pl-c1">2</span>);</pre></div>
+<h2>
+<a aria-hidden="true" class="anchor" href="#implementing-the-flip-animation" id="user-content-implementing-the-flip-animation"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Implementing the flip animation</h2>
+<p>The flip animation is implemented into XAML as two Storyboard elements.</p>
+<div class="highlight highlight-text-xml"><pre>&lt;<span class="pl-ent">Storyboard</span> <span class="pl-e">x</span><span class="pl-e">:</span><span class="pl-e">Name</span>=<span class="pl-s"><span class="pl-pds">"</span>SignFlipStoryBoard<span class="pl-pds">"</span></span>&gt;
+    &lt;<span class="pl-ent">DoubleAnimation</span> Storyboard.TargetName=<span class="pl-s"><span class="pl-pds">"</span>SignFrontProjection<span class="pl-pds">"</span></span>
+                        Storyboard.TargetProperty=<span class="pl-s"><span class="pl-pds">"</span>RotationX<span class="pl-pds">"</span></span>
+                        <span class="pl-e">To</span>=<span class="pl-s"><span class="pl-pds">"</span>90<span class="pl-pds">"</span></span> <span class="pl-e">Duration</span>=<span class="pl-s"><span class="pl-pds">"</span>0:0:0.125<span class="pl-pds">"</span></span> /&gt;
+    &lt;<span class="pl-ent">DoubleAnimation</span> Storyboard.TargetName=<span class="pl-s"><span class="pl-pds">"</span>SignBackProjection<span class="pl-pds">"</span></span>
+                        Storyboard.TargetProperty=<span class="pl-s"><span class="pl-pds">"</span>RotationX<span class="pl-pds">"</span></span>
+                        <span class="pl-e">To</span>=<span class="pl-s"><span class="pl-pds">"</span>0<span class="pl-pds">"</span></span> <span class="pl-e">Duration</span>=<span class="pl-s"><span class="pl-pds">"</span>0:0:0.125<span class="pl-pds">"</span></span>
+                        <span class="pl-e">BeginTime</span>=<span class="pl-s"><span class="pl-pds">"</span>0:0:0.125<span class="pl-pds">"</span></span> /&gt;
+&lt;/<span class="pl-ent">Storyboard</span>&gt;
+        
+&lt;<span class="pl-ent">Storyboard</span> <span class="pl-e">x</span><span class="pl-e">:</span><span class="pl-e">Name</span>=<span class="pl-s"><span class="pl-pds">"</span>SignResetStoryBoard<span class="pl-pds">"</span></span>&gt;
+    &lt;<span class="pl-ent">DoubleAnimation</span> Storyboard.TargetName=<span class="pl-s"><span class="pl-pds">"</span>SignBackProjection<span class="pl-pds">"</span></span>
+                        Storyboard.TargetProperty=<span class="pl-s"><span class="pl-pds">"</span>RotationX<span class="pl-pds">"</span></span>
+                        <span class="pl-e">To</span>=<span class="pl-s"><span class="pl-pds">"</span>-90<span class="pl-pds">"</span></span> <span class="pl-e">Duration</span>=<span class="pl-s"><span class="pl-pds">"</span>0:0:0.125<span class="pl-pds">"</span></span> /&gt;
+    &lt;<span class="pl-ent">DoubleAnimation</span> Storyboard.TargetName=<span class="pl-s"><span class="pl-pds">"</span>SignFrontProjection<span class="pl-pds">"</span></span>
+                        Storyboard.TargetProperty=<span class="pl-s"><span class="pl-pds">"</span>RotationX<span class="pl-pds">"</span></span>
+                        <span class="pl-e">To</span>=<span class="pl-s"><span class="pl-pds">"</span>0<span class="pl-pds">"</span></span> <span class="pl-e">Duration</span>=<span class="pl-s"><span class="pl-pds">"</span>0:0:0.125<span class="pl-pds">"</span></span>
+                        <span class="pl-e">BeginTime</span>=<span class="pl-s"><span class="pl-pds">"</span>0:0:0.125<span class="pl-pds">"</span></span>/&gt;
+&lt;/<span class="pl-ent">Storyboard</span>&gt;</pre></div>
+<p>The <code>SignFlipStoryBoard</code> will animate the the sign in two parts, first the front side of the sign is rotated by its x-axes for 90 degrees and continued by rotating the back side from its initial position -90 to 0. The Storyboard <code>SignResetStoryBoard</code> will animate the sign back by using just the opposite steps.</p>
+<p>The Storyboards will animate the <code>SignFrontProjection</code>'s and <code>SignBackProjection</code>'s <code>RotationX</code> property. The first of them is defined in the XAML like this:</p>
+<div class="highlight highlight-text-xml"><pre><span class="pl-c"><span class="pl-c">&lt;!--</span> The front side of the sign <span class="pl-c">--&gt;</span></span>
+&lt;<span class="pl-ent">Image</span> <span class="pl-e">Width</span>=<span class="pl-s"><span class="pl-pds">"</span>504<span class="pl-pds">"</span></span> <span class="pl-e">Height</span>=<span class="pl-s"><span class="pl-pds">"</span>126<span class="pl-pds">"</span></span>
+    <span class="pl-e">VerticalAlignment</span>=<span class="pl-s"><span class="pl-pds">"</span>Bottom<span class="pl-pds">"</span></span>
+    <span class="pl-e">Margin</span>=<span class="pl-s"><span class="pl-pds">"</span>0,0,0,34<span class="pl-pds">"</span></span> <span class="pl-e">Visibility</span>=<span class="pl-s"><span class="pl-pds">"</span>Visible<span class="pl-pds">"</span></span>
+    <span class="pl-e">MouseLeftButtonUp</span>=<span class="pl-s"><span class="pl-pds">"</span>FlipSign<span class="pl-pds">"</span></span>
+    <span class="pl-e">Source</span>=<span class="pl-s"><span class="pl-pds">"</span>/BubbleLevel;component/gfx/signwithtext.png<span class="pl-pds">"</span></span>&gt;
+        <span class="pl-c"><span class="pl-c">&lt;!--</span> For flipping the sign <span class="pl-c">--&gt;</span></span>
+        &lt;<span class="pl-ent">Image</span>.Projection&gt;
+            &lt;<span class="pl-ent">PlaneProjection</span> <span class="pl-e">x</span><span class="pl-e">:</span><span class="pl-e">Name</span>=<span class="pl-s"><span class="pl-pds">"</span>SignFrontProjection<span class="pl-pds">"</span></span> /&gt;
+        &lt;/<span class="pl-ent">Image</span>.Projection&gt;
+    &lt;/<span class="pl-ent">Image</span>&gt;</pre></div>
+<p>The starting of the animations are done in the C# code:</p>
+<div class="highlight highlight-source-cs"><pre><span class="pl-k">protected</span> <span class="pl-k">void</span> <span class="pl-en">ResetSign</span>(<span class="pl-k">object</span> <span class="pl-smi">sender</span>, <span class="pl-en">MouseButtonEventArgs</span> <span class="pl-smi">e</span>)
+{
+    <span class="pl-smi">SignResetStoryBoard</span>.<span class="pl-en">Begin</span>();
+}</pre></div>
+<h2>
+<a aria-hidden="true" class="anchor" href="#using-the-isolated-storage-to-store-calibration-factor" id="user-content-using-the-isolated-storage-to-store-calibration-factor"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Using the isolated storage to store calibration factor</h2>
+<p>The isolated storage is used to store the calibration factor when the Calibrate button is pressed. The calibration factor is restored on the application start.</p>
+<p>The isolated storage is initialized on the member variable declaration, also we define a const string for the key to access the application setting and a member variable to store the value.</p>
+<div class="highlight highlight-source-cs"><pre><span class="pl-k">protected</span> <span class="pl-k">double</span> <span class="pl-smi">m_CalibrationFactor</span> <span class="pl-k">=</span> <span class="pl-c1">0</span>;
+<span class="pl-k">protected</span> <span class="pl-en">IsolatedStorageSettings</span> <span class="pl-smi">m_Settings</span> <span class="pl-k">=</span> <span class="pl-smi">IsolatedStorageSettings</span>.<span class="pl-smi">ApplicationSettings</span>;
+<span class="pl-k">protected</span> <span class="pl-k">const</span> <span class="pl-k">string</span> <span class="pl-smi">CALIBRATION_SETTING_KEY</span> <span class="pl-k">=</span> <span class="pl-s"><span class="pl-pds">"</span>CalibrationFactor<span class="pl-pds">"</span></span>;</pre></div>
+<p>The retrieving of the value is made in constructor:</p>
+<div class="highlight highlight-source-cs"><pre><span class="pl-c"><span class="pl-c">//</span> Read the calibration factor from isolated storage settings</span>
+<span class="pl-k">try</span>
+{
+    <span class="pl-smi">m_CalibrationFactor</span> <span class="pl-k">=</span> (<span class="pl-k">double</span>)<span class="pl-smi">m_Settings</span>[<span class="pl-smi">CALIBRATION_SETTING_KEY</span>];
+}
+<span class="pl-k">catch</span> (<span class="pl-k">System</span>.<span class="pl-k">Collections</span>.<span class="pl-k">Generic</span>.<span class="pl-en">KeyNotFoundException</span>)
+{
+    <span class="pl-c"><span class="pl-c">//</span> There did not exist settings yet. This is the first time that the application</span>
+    <span class="pl-c"><span class="pl-c">//</span> is run on this device.</span>
+}</pre></div>
+<p>And the saving is done in the Calibrate button's Click handler:</p>
+<div class="highlight highlight-source-cs"><pre><span class="pl-c"><span class="pl-c">//</span> Store the calibration factor to the isolated storage.</span>
+<span class="pl-k">if</span> (<span class="pl-smi">m_Settings</span>.<span class="pl-en">Contains</span>(<span class="pl-smi">CALIBRATION_SETTING_KEY</span>))
+{
+    <span class="pl-c"><span class="pl-c">//</span> The setting already exists, just update the value</span>
+    <span class="pl-smi">m_Settings</span>[<span class="pl-smi">CALIBRATION_SETTING_KEY</span>] <span class="pl-k">=</span> <span class="pl-smi">m_CalibrationFactor</span>;
+}
+<span class="pl-k">else</span>
+{
+    <span class="pl-c"><span class="pl-c">//</span> The setting does not exist yet, create the setting</span>
+    <span class="pl-smi">m_Settings</span>.<span class="pl-en">Add</span>(<span class="pl-smi">CALIBRATION_SETTING_KEY</span>, <span class="pl-smi">m_CalibrationFactor</span>);
+}</pre></div>
+
+        </div>
+
+    </div>]

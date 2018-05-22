@@ -1,0 +1,131 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>Before we can go any further with our exploration of Mixin architecture, let's take a quick detour to cover an important topic: <em>Obfuscation</em> in the Minecraft codebase and how it is relevant to Mixins.</p>
+<blockquote>
+<p><em>Obfuscation</em> is the process of converting otherwise human-readable code symbols into obscure ones which make it hard to read (in fact the word <em>obfuscate</em> just means "<em>deliberately make obscure</em>").</p>
+</blockquote>
+<h3>
+<a aria-hidden="true" class="anchor" href="#1-the-development-lifecycle-in-the-age-of-obfuscation" id="user-content-1-the-development-lifecycle-in-the-age-of-obfuscation"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>1. The Development Lifecycle in the Age of Obfuscation</h3>
+<p>Because Minecraft is written in Java, it would be very easy to decompile to readable code if obfuscation techniques were not applied. Mojang applies obfuscation to Minecraft before releasing it, this presents a problem for modders for two reasons:</p>
+<ol>
+<li>the obfuscation applied places everything in the "default package", this makes it impossible to <code>import</code> classes from the codebase</li>
+<li>working with the obfuscated names would be a nightmare because the code is basically unreadable.</li>
+</ol>
+<p>This means that in order to be able to compile our code against Minecraft it is necessary to <strong>de</strong>-obfuscate the java classes beforehand, a community project known as the <em>Mod Coder Pack</em> (MCP for short) provides facilities for doing exactly this.</p>
+<p>Once we've written our code, we then need to <strong>re</strong>-obfuscate our mod code so that it can work with the original (obfuscated) codebase. The development lifecycle thus looks something like this:</p>
+<p><img alt="" src="https://raw.githubusercontent.com/SpongePowered/Mixin/master/docs/images/obfuscation_lifecycle.png"/></p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#2-resolving-the-identity-crisis---defining-the-obfuscation-boundary" id="user-content-2-resolving-the-identity-crisis---defining-the-obfuscation-boundary"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>2. Resolving the Identity Crisis - Defining the "Obfuscation Boundary"</h3>
+<p>Let's start with the basics:</p>
+<p>When working with Minecraft modding, fields and methods can have <strong>up to 3 names</strong></p>
+<ol>
+<li>
+<p>The <strong>obfuscated name</strong> - this is the name assigned by mojang as part of their <em>obfuscation</em> of the codebase, it will generally be only 1-2 letters long, for example an obfuscated method may be called <code>k</code></p>
+</li>
+<li>
+<p>The <strong>"Searge name"</strong> - this is a unique token assigned to the field or method in order to make decompilation possible. It consists of a prefix, a unique id number and the member's (original) name, for example <code>func_1234_k</code></p>
+</li>
+<li>
+<p>The <strong>"MCP name"</strong> - this is a more human-readable name, crowdsourced from the community in order to make the codebase more understandable. For example <code>getHealth</code></p>
+</li>
+</ol>
+<p>During decompilation, the field will be transformed from one type to another, ending up at the "friendly" <em>MCP name</em>. During reobfuscation, the reverse process is performed. In our example, the method <code>k</code> becomes <code>func_1234_k</code> and finally <code>getName</code>.</p>
+<p>During each stage <strong>all</strong> fields and methods are renamed, and thus each set of obfuscations forms a discrete obfuscation <em>environment</em>, with all fields and methods having a name corresponding to that environment:</p>
+<p><img alt="Obfuscation Environments" src="https://raw.githubusercontent.com/SpongePowered/Mixin/master/docs/images/obfuscation_environments.png"/></p>
+<p>We will also refer to the the notional boundary between these hypothetical environments an <em>"obfuscation boundary"</em>, since it should then be clear that <em>crossing</em> the boundary can be problematic. For example the method <code>getHealth</code> (MCP name) will always expect the <code>takeDamage</code> method to also have its MCP name during any particular execution cycle, if names from different environments are present at one time, then problems are likey to occur.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#3-how-the-process-works" id="user-content-3-how-the-process-works"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>3. How the Process Works</h3>
+<p>Transitioning between obfuscation environments has to happen "all at once", and is facilitated by <em>mapping files</em> which contain a mapping of one name to another. These mapping files contain an entry for <em>every single</em> field, method, argument and class in the codebase.</p>
+<blockquote>
+<p>This is not strictly true, since the MCP name is crowd-sourced there are quite a few members with no defined MCP name, but we'll pretend for now that all obfuscations are present all of the time because this exception to the rule isn't important right now. Let's just imagine that un-mapped MCP names are effectively the same as if the MCP and SRG name were the same.</p>
+</blockquote>
+<p>In order to ensure that not just the declaration of a symbol is renamed, but also all references to that symbol, the remapping phases must be applied to the entire codebase at once. Whilst SRG names are unique and can be remapped deterministically, other symbols are not so lucky and thus the remapping tools need to load and understand the entire codebase at once in order to perform effective remapping.</p>
+<p>Because the tools work this way, and <em>do</em> have a rudimentary understanding of the code structure and the relationship of - for example - a method with an overridden method in a derived class, the remapper is able to remap references to obfuscated classes even in classes which aren't part of the original codebase. In this way, derived classes (for example ones we add in a mod) and classes with calls to remapped methods (like ones we might add in a mod) will <em>also</em> have these method calls and field accesses remapped!</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#4-relationship-with-mixins" id="user-content-4-relationship-with-mixins"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>4. Relationship with Mixins</h3>
+<p>You may be wondering why you need to know all this, what does it have to do with mixins? Well, by now the following things should be clear:</p>
+<ol>
+<li>
+<strong>Everything</strong> which is going to interact in some way with game classes <strong>must</strong> pass through the obfuscator before it can be used in production</li>
+<li>Anything which <strong>directly refers to</strong> a field, method or class in the game, will be handled automatically by the remapper, since the remapper "understands" these relationships already.</li>
+</ol>
+<p>However, this is not the case with mixins, because we can create fields and methods in mixins which <strong>do not directly reference</strong> their counterparts - shadows!</p>
+<h4>
+<a aria-hidden="true" class="anchor" href="#41-handling-obfuscation-of-shadow-fields-and-methods" id="user-content-41-handling-obfuscation-of-shadow-fields-and-methods"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>4.1 Handling Obfuscation of Shadow Fields and Methods</h4>
+<p>As you may recall from <a href="https://github.com/SpongePowered/Mixin/wiki/Introduction-to-Mixins---Understanding-Mixin-Architecture#5-to-light-a-candle-is-to-cast-a-shadow">part 1</a> of this series, it is possible to add <em>shadow</em> members to our mixin to indicate that a particular method or field <em>will</em> exist in the target class at runtime. The main problem this causes is that the obfuscator has no built-in understanding of these members, and thus will be unable to automatically obfuscate them.</p>
+<p>Mixins tackle this problem by parsing the <code>@Shadow</code> annotations at compile time and adding appropriate obfuscation entries for the shadow members to the obfuscation tables directly. This is handled by an <a href="https://github.com/SpongePowered/Mixin/wiki/Using-the-Mixin-Annotation-Processor">Annotation Processor</a> which plugs into the java compiler.</p>
+<p>As we know, the obfuscator is already capable of understanding references to fields and methods in derived classes, and thus we only need to add obfuscation table entries for the shadow members themselves, references to those members in our mixins are then handled automatically. The mixin can then safely traverse the obfuscation boundary.</p>
+<h4>
+<a aria-hidden="true" class="anchor" href="#42-obfuscation-of-other-mixin-features" id="user-content-42-obfuscation-of-other-mixin-features"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>4.2 Obfuscation of Other Mixin Features</h4>
+<p>Later in this series you will be introduced to other mixin features which require this special handling to traverse the obfuscation boundary. The key things to remember at this point are:</p>
+<ul>
+<li>
+<p>Any <strong>direct references</strong> in your mixins to classes in the game codebase will be handled automatically, for example:</p>
+</li>
+<li>
+<p>References to superclass methods when the mixin is derived from a game class.</p>
+</li>
+<li>
+<p>Any <code>@Override</code> methods in your mixin which override methods in game classes or interfaces.</p>
+</li>
+<li>
+<p>Any external references in your mixin code to game classes or members.</p>
+</li>
+<li>
+<p>Any <strong>mixin-specific mechanisms</strong>, such as <em>Shadows</em>, <em>Overwrites</em> (introduced in the next section) and <em>Injectors</em> (introduced later) will always be decorated with some kind of annotation. This makes them visible to the <a href="https://github.com/SpongePowered/Mixin/wiki/Using-the-Mixin-Annotation-Processor">Mixin Annotation Processor</a> which will handle their obfuscation traversal.</p>
+</li>
+</ul>
+<h3>
+<a aria-hidden="true" class="anchor" href="#5-the-nitty-gritty" id="user-content-5-the-nitty-gritty"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>5. The Nitty Gritty</h3>
+<p>If you're reading this series as an introduction, you should stop here. The following sections provide some more technical detail and are included for completeness only, they will be referred to in later sections. They are not intended as introductory reading, you have been warned.</p>
+<h4>
+<a aria-hidden="true" class="anchor" href="#51-hard-and-soft-obfuscated-references" id="user-content-51-hard-and-soft-obfuscated-references"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>5.1 "Hard" and "Soft" Obfuscated References</h4>
+<p>Symbol references passed into SpecialSource will of course be reobfuscated as we expect, and the symbols in the underlying bytecode will be reobfuscated as a result. This "hard" re-obfuscation applies to the following member types:</p>
+<ul>
+<li>Class references (when obfuscating to "notch names" only, not applicable with Forge)</li>
+<li>Method names</li>
+<li>Field names</li>
+</ul>
+<p>However some member references are specified as strings inside annotations, in particular</p>
+<ul>
+<li>Injector declarations</li>
+<li>Rerouter declarations</li>
+</ul>
+<p>Since SpecialSource cannot remap these "soft" references, a different mechanism is used.</p>
+<h5>
+<a aria-hidden="true" class="anchor" href="#511-the-mixin-reference-map-refmap" id="user-content-511-the-mixin-reference-map-refmap"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>5.1.1 The Mixin Reference Map ("refmap")</h5>
+<p>In order to allow "soft" references to be obfuscated, the <a href="https://github.com/SpongePowered/Mixin/wiki/Using-the-Mixin-Annotation-Processor">Annotation Processor</a> bakes a mapping file which is included into the production jar and specified in the <a href="https://github.com/SpongePowered/Mixin/wiki/Introduction-to-Mixins---The-Mixin-Environment#mixin-configuration-files">configuration file</a> for the mixin set. This <em>Reference Map</em> (or "refmap") contains a mapping of all soft references in the mixin set to their obfuscated counterparts.</p>
+<p>A single reference map is emitted for each compile stage, and thus each mixin set which is compiled during a particular pass should use the same refmap for that pass. A unique name for the refmap should be chosen to avoid conflicts.</p>
+<p>For example, let's assume we define the following mixin sets in our mod:</p>
+<pre><code>mixins.myproject.core.json
+mixins.myproject.extra.json
+</code></pre>
+<p>We may define a refmap file for both sets and name it <code>mixins.myproject.refmap.json</code> for consistency.</p>
+<p>Note that it is absolutely vital to include the refmap file in your production jar, and specify it in your mixin configuration. Failing to do so will result in errors at mixin application time since the obfuscated references will not be resolved by the mixin processor without it.</p>
+<p>You can omit the refmap file under the following circumstances:</p>
+<ul>
+<li>You are not using injectors or rerouters in your mixins</li>
+</ul>
+<h4>
+<a aria-hidden="true" class="anchor" href="#52--runtime-deobfuscation-and-mixins" id="user-content-52--runtime-deobfuscation-and-mixins"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>5.2  Runtime Deobfuscation and Mixins</h4>
+<p>Some target environments use partial runtime deobfuscation. That is, they de-obfuscate symbols to intermediate names (SRG names) at runtime, while others do not. This partial translation is done so that mods can have a more stable obfuscation environment to target across multiple versions of the game.</p>
+<p>It is obviously important that mixin bytecode being blended with the target class is applied after the runtime deobfuscation is applied, so that the obfuscation mappings in the environment match those in the mixin. Let's revisit the diagram from the previous artice which shows the overview of mixins in the transformer chain:</p>
+<p><img alt="" src="https://raw.githubusercontent.com/SpongePowered/Mixin/master/docs/images/mixin_transformer_chain.png"/></p>
+<p>When we consider where the runtime deobfuscation is applied in this picture (in the upstream transformer chain) we can see how the deobfuscation transformer itself represents the obfuscation boundary, and why mixins must be applied downstream of this transformer:</p>
+<p><img alt="" src="https://raw.githubusercontent.com/SpongePowered/Mixin/master/docs/images/mixin_transformer_chain_obf.png"/></p>
+<h4>
+<a aria-hidden="true" class="anchor" href="#53--unpredictable-member-names---the-curse-of-synthetic-shenanigans" id="user-content-53--unpredictable-member-names---the-curse-of-synthetic-shenanigans"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>5.3  Unpredictable Member Names - The Curse of Synthetic Shenanigans</h4>
+<p>The exception to the deterministic rule of OBF -&gt; SRG -&gt; MCP arises due to synthetic members in target classes. Whilst synthetic members in the obfuscated codebase also have obfuscated names just like their first-class brethren, a problem arises in development because the re-establishment of inner class relationships causes these synthetic members to be stripped and then re-created by the compiler.</p>
+<p>For example, let's consider a non-static inner class's reference to its outer class, typically named "<code>this$0</code>" in classes generated by <code>javac</code>. When obfuscated this member recieves the catchy name of "<code>a</code>", and as it passes through the decompilation process is alternately renamed to "<code>field_999_a</code>" before finally recieving the catchy MCP name of "<code>myOuter</code>". However, as the final stage of setting up the development workspace is to re-integrate the inner class with its outer class in the source, the synthetic field is finally stripped and allowed to be recreated by the compiler, giving it a name in the development workspace of the original "<code>this$0</code>".</p>
+<p>This presents a problem, because if we wish to shadow the field we must name it <code>myOuter</code> (as the value which appears in the mapping files is named as such), but if we do this then the shadow won't work at development time because no field named <code>myOuter</code> actually exists!</p>
+<h5>
+<a aria-hidden="true" class="anchor" href="#531-aliases" id="user-content-531-aliases"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>5.3.1 Aliases</h5>
+<p>It is possible to overcome this problem by specifying an <em>alias</em> for the shadow field. The alias exists as a resolver of last resort for the mixin processor when attempting to locate a shadow field's target. If the mixin processor is unable to locate the desired field in the target class, it first inspects the aliases list before failing with an error.</p>
+<p>To specify aliases for a Shadow or Overwrite annotation, simply specify the <code>aliases</code> value on the annotation:</p>
+<div class="highlight highlight-source-java"><pre><span class="pl-k">@Shadow</span>(<span class="pl-c1">aliases</span> <span class="pl-k">=</span> {<span class="pl-s"><span class="pl-pds">"</span>this$0<span class="pl-pds">"</span></span>})
+<span class="pl-k">private</span> <span class="pl-smi">MyOuterClassType</span> myOuter;</pre></div>
+<p>Note that aliases can only be used on <code>private</code> fields and methods. This is because the alias can only be resolved at mixin application time and thus the rename of the field can only be propagated to the containing class and no further (because derived class mixins or other referring classes may already have been loaded and applied by this time). This is not generally a problem however, since the synthetic fields which are the reason for the alias mechanism in the first place are almost always private or package-private.</p>
+
+        </div>
+
+    </div>]

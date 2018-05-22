@@ -1,0 +1,84 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>That sounds great - at this point to get something up and running I’m less interested in filling the implementation of the details of sharing - we can fill that in later.</p>
+<p>On Dec 9, 2014, at 12:20 PM, Christopher Henry <a href="mailto:chrisshenry@gmail.com">chrisshenry@gmail.com</a> wrote:</p>
+<p>So it’s in the database, and I could give it to you. But if you’re not the one who created it, then you won’t have permission to access it.</p>
+<p>Note, again, the get objects call will download the node for you, although I understand this is not ideal for massive objects because we’d pull the whole thing into memory on the server then pass it along.</p>
+<p>Here’s what I could do. I can add a call:</p>
+<p>list access_shock_nodes(list);</p>
+<p>This call will always return a list of the node IDs associated with the requested objects (if they’re shock objects). HOWEVER, if you are not the owner of the node ID, it will ALSO automatically give the requesting user READ permissions on the nodes.</p>
+<p>IF we do this, it means that any time you remove a user from permissions to a WS, we would ideally strip out these extra read permissions we put on the shock nodes. This would be somewhat tricky to implement, but we don’t need to worry about implementing this part of the system right away. Frankly, I’d be fine with never removing the extra permissions… I find the notion of sharing data… then unsharing data to be silly...</p>
+<p>I could add the access_shock_nodes API call very easily. If we are in agreement on this, I’ll just go ahead and do it.</p>
+<p>Chris</p>
+<p>On Dec 9, 2014, at 12:04 PM, Olson, Robert D. <a href="mailto:olson@mcs.anl.gov">olson@mcs.anl.gov</a> wrote:</p>
+<p>How can I get the raw shock node in order to download it? For example FangFang will need that to hand to the assembly service. I think this is the thing that smacks into the issues with sharing, right? However we need to support this.</p>
+<p>—bob</p>
+<p>On Dec 8, 2014, at 8:23 PM, Christopher Henry <a href="mailto:chrisshenry@gmail.com">chrisshenry@gmail.com</a> wrote:</p>
+<p>Bob,</p>
+<p>The order of events is:</p>
+<p>1.) Create and empty upload node using the workspace API</p>
+<pre><code>$output = $ws-&gt;create_upload_node({
+	objects =&gt; [["/$testuserone/TestWorkspace/testdir/testdir2/testdir3/","shockobj","String",{"Description" =&gt; "My first shock object!"}]]
+});
+ok defined($output-&gt;[0]), "Successfully ran create_upload_node action!";
+print "create_upload_node output:\n".Data::Dumper-&gt;Dump($output)."\n\n”;
+</code></pre>
+<p>This operation creates an empty node in shock and a corresponding object in the workspace, which contains the shock node ID.</p>
+<p>2.) Upload your file using the shock API</p>
+<pre><code>print "Filename:".$Bin."/testdata.txt\n";
+my $req = HTTP::Request::Common::POST($output-&gt;[0],Authorization =&gt; "OAuth ".$ctxone-&gt;{token},Content_Type =&gt; 'multipart/form-data',Content =&gt; [upload =&gt; [$Bin."/testdata.txt"]]);
+$req-&gt;method('PUT');
+my $ua = LWP::UserAgent-&gt;new();
+my $res = $ua-&gt;request($req);
+print "File uploaded:\n".Data::Dumper-&gt;Dump([$res])."\n\n”;
+</code></pre>
+<p>This operation loads your file to the empty shock node, completing the upload process.</p>
+<p>3.) Now you can download your object using the workspace API if you wish</p>
+<pre><code>$output = $ws-&gt;get_objects({
+	objects =&gt; [["/$testuserone/TestWorkspace/testdir/testdir2/testdir3","shockobj"]]
+});
+ok defined($output-&gt;[0]-&gt;{data}), "Successfully ran get_objects function!";
+print "get_objects output:\n".Data::Dumper-&gt;Dump($output)."\n\n”;
+</code></pre>
+<p>So “get_objects” automatically downloads the object from SHOCK and returns it to the user… I don’t know how else to give the user the object based on WS ACLs. Seems fine to me. I know for large objects this is not ideal, and I’m sure we can offer an improved mechanism later, but this seems workable for now.
+This is my test code, which worked flawlessly for me, so it should work for you too. Let me know if you have questions.</p>
+<p>Chris</p>
+<p>On Dec 8, 2014, at 4:16 PM, Olson, Robert D. <a href="mailto:olson@mcs.anl.gov">olson@mcs.anl.gov</a> wrote:</p>
+<p>Am I correct in thinking that create_upload_nodes doesn’t fill in the file data in the workspace - that that would be filled in by some agent after the shock upload has completed? If so I don’t think I see the call that does that (save_objects appears to overwrite completely).</p>
+<p>When I run this test:</p>
+<p>my $res = $obj1-&gt;create_upload_node({ objects =&gt; <a class="internal absent" href="/PATRIC3/Workspace/wiki/%24path%2C-%22genome1%22%2C-%22Genome%22">$path, "genome1", "Genome"</a> });
+print "created upload: " . Dumper($res);</p>
+<p>$res = $obj1-&gt;list_workspace_contents({directory =&gt; $path });
+print "After upload: " . Dumper($res);</p>
+<p>$res = $obj1-&gt;get_objects({objects =&gt; <a class="internal absent" href="/PATRIC3/Workspace/wiki/%24path%2C-%22genome1%22">$path, "genome1"</a>});
+print "Created: " . Dumper($res);</p>
+<p>I see the node created as expected, and a file created in the workspace (in the After upload section of output), but I cannot retrieve its contents - the get_file error. I have been assuming that the workspace object associated with an upload would store information about the node that holds the actual data.</p>
+<p>created upload: $VAR1 = [
+'http://p3.theseed.org/services/shock_api/node/f0e0731d-1228-4e15-bd1e-b16f2c19f13d'
+];
+After upload: $VAR1 = [
+[
+'07D144DE-7F26-11E4-9DED-B0FAE733BAF4',
+'genome1',
+'Genome',
+'2014-12-08T22:03:24',
+'http://kbase.us/services/P3workspace/objects/07D144DE-7F26-11E4-9DED-B0FAE733BAF4',
+'olson',
+'C92FC5DC-7F22-11E4-A470-C0D5E733BAF4',
+'olson',
+'/olson/olson',
+0,
+{},
+{}
+]
+];
+JSONRPC error:
+get_file failed: {"status":400,"data":null,"error":["Node has no file"]}
+JSONRPC error code: -32603
+JSONRPC error data:get_file failed: {"status":400,"data":null,"error":["Node has no file"]} at /scratch/olson/KB/dev_container/modules/Workspace/lib/Bio/P3/Workspace/WorkspaceImpl.pm line 221.</p>
+<p>Trace begun at /scratch/olson/KB/dev_container/modules/Workspace/lib/Bio/P3/Workspace/WorkspaceClient.pm line 626
+Bio::P3::Workspace::WorkspaceClient::get_objects('Bio::P3::Workspace::WorkspaceClient=HASH(0x1e4c448)', 'HASH(0x1e3d380)') called at tws line 39</p>
+
+        </div>
+
+    </div>]

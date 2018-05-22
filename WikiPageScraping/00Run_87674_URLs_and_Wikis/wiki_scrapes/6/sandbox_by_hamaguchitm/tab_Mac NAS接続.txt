@@ -1,0 +1,82 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>AppleScriptを作成してログイン項目に追加</p>
+<pre><code>-- 共通設定
+property HOME_SSID : "XXXXXXXXXXXXXXX" -- 家のネットワークのSSID
+property SERVER_IP : "xxx.xxx.xxx.xxx" -- NASのURLのベース
+property BASE_DIR : "/Volumes/" -- マウントポイントのベース
+property PUBLIC_DIR : "public"
+property SHARE_DIR : "share"
+
+-- ユーザ設定の取得
+set userName to do shell script "whoami"
+set userPass to do shell script "cat /Users/" &amp; userName &amp; "/.nas_password"
+
+-- マウント対象のNAS共有フォルダの設定
+set volList to {userName, SHARE_DIR, PUBLIC_DIR}
+
+-- メイン処理
+repeat 10 times
+	if ssid() of me is HOME_SSID then
+		repeat with volName in volList
+			set currentUser to mountUserOf(volName)
+			if currentUser is not userName then
+				if currentUser is not "" then
+					unmount(volName)
+				end if
+				mount(volName, userName, userPass)
+			end if
+		end repeat
+		exit repeat
+	else
+		delay 1
+	end if
+end repeat
+
+-- 接続しているネットワークのSSIDを取得する
+on ssid()
+	try
+		-- 接続しているネットワークのSSIDを取得
+		return (do shell script "/System/Library/PrivateFrameworks/Apple80211.framework/Resources/airport -I | /usr/bin/grep ' SSID' | /usr/bin/sed -e 's,.*SSID: ,,g'")
+	on error
+		return "" -- SSIDの取得に失敗したら空白を返す
+	end try
+end ssid
+
+-- 引数の共有フォルダをマウントしたユーザ名を取得する
+on mountUserOf(volName)
+	set mountPoint to BASE_DIR &amp; volName
+	try
+		return (do shell script "/sbin/mount -v | /usr/bin/grep " &amp; mountPoint &amp; " | /usr/bin/cut -d '/' -f 3 | /usr/bin/cut -d '@' -f 1")
+	on error
+		return "" -- 結果が取得できなかったら空白を返す
+	end try
+end mountUserOf
+
+-- 共有フォルダをアンマウントする
+on unmount(volName)
+	set mountPoint to BASE_DIR &amp; volName
+	try
+		do shell script "diskutil unmount " &amp; mountPoint
+	on error
+		display dialog "Error on unmount volume: " &amp; volName
+	end try
+end unmount
+
+-- 共有フォルダをマウントする
+on mount(volName, userName, userPass)
+	set serverUrl to "afp://" &amp; userName &amp; ":" &amp; userPass &amp; "@" &amp; SERVER_IP &amp; "/" &amp; volName
+	set mountPoint to BASE_DIR &amp; volName
+	try
+		do shell script "mkdir -p " &amp; mountPoint
+		do shell script "mount -t afp " &amp; serverUrl &amp; " " &amp; mountPoint
+	on error
+		display dialog "Error on mount volume: " &amp; volName
+	end try
+end mount
+</code></pre>
+<p>(2015.01.14 OS X 10.9.5)</p>
+
+        </div>
+
+    </div>]

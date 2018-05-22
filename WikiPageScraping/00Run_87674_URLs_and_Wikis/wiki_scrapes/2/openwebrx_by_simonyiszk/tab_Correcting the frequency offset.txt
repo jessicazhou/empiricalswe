@@ -1,0 +1,85 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <h2>
+<a aria-hidden="true" class="anchor" href="#if-you-already-know-the-frequency-offset" id="user-content-if-you-already-know-the-frequency-offset"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>If you already know the frequency offset</h2>
+<p>TBD</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#using-kalibrate-rtl" id="user-content-using-kalibrate-rtl"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Using kalibrate-rtl</h2>
+<h3>
+<a aria-hidden="true" class="anchor" href="#setting-up-kalibrate-rtl" id="user-content-setting-up-kalibrate-rtl"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Setting up kalibrate-rtl</h3>
+<pre><code>git clone https://github.com/steve-m/kalibrate-rtl
+cd kalibrate-rtl
+./bootstrap
+./configure
+make
+sudo make install
+</code></pre>
+<p>This will install the <code>kal</code> utility to your computer.</p>
+<p><strong>Step #1</strong> is to scan for GSM channels:</p>
+<pre><code>kal -g30 -sGSM900 -v
+</code></pre>
+<p><strong>Note #1:</strong> you may have to set the band (<code>-s</code>) regarding your location, country. Available bands: <code>GSM850, GSM-R, GSM900, EGSM, DCS, PCS</code></p>
+<p><strong>Note #2:</strong> you can use the stock antenna of the tuner.</p>
+<p>The output of this command should look like this:</p>
+<pre><code>$ kal -g30 -sGSM900  -v
+Found 1 device(s):
+  0:  Generic RTL2832U OEM
+
+Using device 0: Generic RTL2832U OEM
+Found Rafael Micro R820T tuner
+Exact sample rate is: 270833.002142 Hz
+Setting gain: 30.0 dB
+kal: Scanning for GSM-900 base stations.
+channel detect threshold: 177539.149349
+GSM-900:
+	chan: 17 (938.4MHz - 39.314kHz)	power: 206788.59
+	chan: 19 (938.8MHz - 20.338kHz)	power: 370862.81
+	chan: 23 (939.6MHz - 38.748kHz)	power: 655194.63
+	chan: 27 (940.4MHz - 39.563kHz)	power: 433641.10
+	chan: 31 (941.2MHz - 39.213kHz)	power: 787826.26
+	chan: 36 (942.2MHz + 25.174kHz)	power: 474684.41
+	chan: 60 (947.0MHz + 25.120kHz)	power: 298079.65
+	chan: 83 (951.6MHz - 24.438kHz)	power: 430946.94
+	chan: 112 (957.4MHz + 24.397kHz) power: 857829.53
+</code></pre>
+<p><strong>Step #2</strong> is to select the most powerful channel, and use it to calculate the PPM value:</p>
+<blockquote>
+<p>chan: <strong>112</strong> (957.4MHz + 24.397kHz) power: <strong>857829.53</strong></p>
+</blockquote>
+<p>...so we use channel 112:</p>
+<pre><code>kal -g30 -c112 -v
+</code></pre>
+<p>The output of this command should look like this:</p>
+<pre><code>$ kal -g30 -c112 -v
+Found 1 device(s):
+  0:  Generic RTL2832U OEM
+
+Using device 0: Generic RTL2832U OEM
+Found Rafael Micro R820T tuner
+Exact sample rate is: 270833.002142 Hz
+Setting gain: 30.0 dB
+kal: Calculating clock frequency offset.
+Using GSM-900 channel 112 (957.4MHz)
+	offset   1: 24292.79
+	offset   2: 24233.90
+	offset   3: 24300.03
+	offset   4: 24252.50
+	offset   5: 24212.21
+	offset   6: 24287.63
+	offset   7: 24237.00
+    (...)
+	offset  96: 24244.24
+	offset  97: 24327.92
+	offset  98: 24260.77
+	offset  99: 24314.49
+	offset 100: 24262.83
+average		[min, max]	(range, stddev)
++ 24.268kHz		[24218, 24319]	(100, 28.573065)
+overruns: 0
+not found: 0
+average absolute error: -25.348 ppm
+</code></pre>
+
+        </div>
+
+    </div>]

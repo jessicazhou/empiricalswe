@@ -1,0 +1,12 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p><img alt="Generic Search flowchart" src="https://github.com/thesgc/chembiohub_ws/raw/master/wiki-images/flow_chart_search_chemical.png"/></p>
+<p>The chemical search in ChemBio Hub is run using the RDKit chemical cartridge, alongside the in-built search API. They run separately but this allows each to run in the most efficient way possible.</p>
+<p>The manager function used is derived from the <a href="https://github.com/thesgc/chembl_core_db/blob/master/chembl_core_db/db/customManagers.py#L37">ChEMBL web services</a>. Chemical searches are run in the background each time that a user changes the searched for molecule. This processing is done using the django q background processing module <a href="https://github.com/thesgc/chembiohub_ws/search?utf8=%E2%9C%93&amp;q=async_iter">with the async_iter function</a>.</p>
+<p>Doing this allows a chemical search id to be sent to the front end and added to the URL for later reference. This means that the potentially large Molfile is not sent by a GET request.</p>
+<p>The <a href="https://github.com/thesgc/chembiohub_ws/blob/6f914817d9950244adb3f4a07f5923b23dcdf5d0/cbh_chem_api/tasks.py#L19">search is run in the background</a> and the results are then made available as a list of ids per project then <a href="https://github.com/thesgc/chembiohub_ws/blob/6f914817d9950244adb3f4a07f5923b23dcdf5d0/cbh_utils/elasticsearch_client.py#L298">searched as part of the final request to elasticsearch</a>.</p>
+<p>If the request for structure search <a href="https://github.com/thesgc/chembiohub_ws/blob/684330722f67ce3a34bdc75ac4660b1203cc791a/cbh_chem_api/resources.py#L404">times out or the django q service is not running</a> there will be a 503 error, this needs handling more specifically, currently you just get a <a href="https://github.com/thesgc/ng-chem/blob/master/app/scripts/controllers/compoundbatchv2.js#L552">standard error message</a>.</p>
+
+        </div>
+
+    </div>]

@@ -1,0 +1,91 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>Considering the following:</p>
+<blockquote>
+<p>I have a maven project A which I recently converted to Sass thanks to this plugin.
+I have another maven project B which has the core libraries of A as dependencies.
+In A, I define a set of "css constants" (colors, classes...) in a set of scss files.
+What is the (is there a) proper way to have an scss file import the reference scss files in module B so that it compiles properly?</p>
+</blockquote>
+<p>unpacking the core jar:</p>
+<div class="highlight highlight-text-xml"><pre>&lt;<span class="pl-ent">plugin</span>&gt;
+    &lt;<span class="pl-ent">groupId</span>&gt;org.apache.maven.plugins&lt;/<span class="pl-ent">groupId</span>&gt;
+    &lt;<span class="pl-ent">artifactId</span>&gt;maven-dependency-plugin&lt;/<span class="pl-ent">artifactId</span>&gt;
+    &lt;<span class="pl-ent">version</span>&gt;2.10&lt;/<span class="pl-ent">version</span>&gt;
+    &lt;<span class="pl-ent">executions</span>&gt;
+        &lt;<span class="pl-ent">execution</span>&gt;
+            &lt;<span class="pl-ent">id</span>&gt;unpack-commons-scss&lt;/<span class="pl-ent">id</span>&gt;
+            &lt;<span class="pl-ent">phase</span>&gt;generate-sources&lt;/<span class="pl-ent">phase</span>&gt;
+            &lt;<span class="pl-ent">goals</span>&gt;
+                &lt;<span class="pl-ent">goal</span>&gt;unpack-dependencies&lt;/<span class="pl-ent">goal</span>&gt;
+            &lt;/<span class="pl-ent">goals</span>&gt;
+            &lt;<span class="pl-ent">configuration</span>&gt;
+&lt;<span class="pl-ent">includeArtifactIds</span>&gt;artifactIdWhichIWantToUnpack&lt;/<span class="pl-ent">includeArtifactIds</span>&gt; <span class="pl-c"><span class="pl-c">&lt;!--</span> I wonder if there is a better way to specify this, including the groupId to avoid any naming conflict <span class="pl-c">--&gt;</span></span>
+                &lt;<span class="pl-ent">classifier</span>&gt;sources&lt;/<span class="pl-ent">classifier</span>&gt;
+                &lt;<span class="pl-ent">includes</span>&gt;**/_*.scss&lt;/<span class="pl-ent">includes</span>&gt; <span class="pl-c"><span class="pl-c">&lt;!--</span> I only need the</span>
+<span class="pl-c">"imported" files, not the root one, as I will use a different one in</span>
+<span class="pl-c">the including module <span class="pl-c">--&gt;</span></span>
+        &lt;<span class="pl-ent">outputDirectory</span>&gt;${project.build.directory}/sources-sass&lt;/<span class="pl-ent">outputDirectory</span>&gt;<span class="pl-c"><span class="pl-c">&lt;!--</span> A separate work  directory, to keep things clean and make investigating issues easier <span class="pl-c">--&gt;</span></span>
+            &lt;/<span class="pl-ent">configuration</span>&gt;
+        &lt;/<span class="pl-ent">execution</span>&gt;
+    &lt;/<span class="pl-ent">executions</span>&gt;
+&lt;/<span class="pl-ent">plugin</span>&gt;</pre></div>
+<p>then, I need to copy the scss resources into the work directory (couldn't
+figure out a clean way to have the @import work properly otherwise):</p>
+<div class="highlight highlight-text-xml"><pre>&lt;<span class="pl-ent">plugin</span>&gt;
+    &lt;<span class="pl-ent">groupId</span>&gt;org.apache.maven.plugins&lt;/<span class="pl-ent">groupId</span>&gt;
+    &lt;<span class="pl-ent">artifactId</span>&gt;maven-resources-plugin&lt;/<span class="pl-ent">artifactId</span>&gt;
+    &lt;<span class="pl-ent">version</span>&gt;3.0.1&lt;/<span class="pl-ent">version</span>&gt;
+    &lt;<span class="pl-ent">executions</span>&gt;
+        &lt;<span class="pl-ent">execution</span>&gt;
+            &lt;<span class="pl-ent">id</span>&gt;copy-sass&lt;/<span class="pl-ent">id</span>&gt;
+            &lt;<span class="pl-ent">phase</span>&gt;generate-sources&lt;/<span class="pl-ent">phase</span>&gt;
+            &lt;<span class="pl-ent">goals</span>&gt;
+                &lt;<span class="pl-ent">goal</span>&gt;copy-resources&lt;/<span class="pl-ent">goal</span>&gt;
+            &lt;/<span class="pl-ent">goals</span>&gt;
+            &lt;<span class="pl-ent">configuration</span>&gt;
+                &lt;<span class="pl-ent">resources</span>&gt;
+                    &lt;<span class="pl-ent">resource</span>&gt;
+                        &lt;<span class="pl-ent">directory</span>&gt;src/main/resources&lt;/<span class="pl-ent">directory</span>&gt;
+                        &lt;<span class="pl-ent">includes</span>&gt;
+                            &lt;<span class="pl-ent">include</span>&gt;**/*.scss&lt;/<span class="pl-ent">include</span>&gt;
+                        &lt;/<span class="pl-ent">includes</span>&gt;
+                    &lt;/<span class="pl-ent">resource</span>&gt;
+                &lt;/<span class="pl-ent">resources</span>&gt;
+                &lt;<span class="pl-ent">outputDirectory</span>&gt;${project.build.directory}/sources-sass&lt;/<span class="pl-ent">outputDirectory</span>&gt;
+            &lt;/<span class="pl-ent">configuration</span>&gt;
+        &lt;/<span class="pl-ent">execution</span>&gt;
+    &lt;/<span class="pl-ent">executions</span>&gt;
+&lt;/<span class="pl-ent">plugin</span>&gt;</pre></div>
+<p>finally, invoke the sass-maven-plugin:</p>
+<div class="highlight highlight-text-xml"><pre>&lt;<span class="pl-ent">plugin</span>&gt;
+    &lt;<span class="pl-ent">groupId</span>&gt;nl.geodienstencentrum.maven&lt;/<span class="pl-ent">groupId</span>&gt;
+    &lt;<span class="pl-ent">artifactId</span>&gt;sass-maven-plugin&lt;/<span class="pl-ent">artifactId</span>&gt;
+    &lt;<span class="pl-ent">version</span>&gt;2.20&lt;/<span class="pl-ent">version</span>&gt;
+    &lt;<span class="pl-ent">configuration</span>&gt;
+        &lt;<span class="pl-ent">resources</span>&gt;
+            &lt;<span class="pl-ent">resource</span>&gt;
+                &lt;<span class="pl-ent">source</span>&gt;
+                    &lt;<span class="pl-ent">directory</span>&gt;${project.build.directory}/sources-sass&lt;/<span class="pl-ent">directory</span>&gt;
+                    &lt;<span class="pl-ent">includes</span>&gt;
+                        &lt;<span class="pl-ent">include</span>&gt;**/*.scss&lt;/<span class="pl-ent">include</span>&gt;
+                    &lt;/<span class="pl-ent">includes</span>&gt;
+                &lt;/<span class="pl-ent">source</span>&gt;
+                &lt;<span class="pl-ent">destination</span>&gt;${project.build.directory}/classes&lt;/<span class="pl-ent">destination</span>&gt;
+            &lt;/<span class="pl-ent">resource</span>&gt;
+        &lt;/<span class="pl-ent">resources</span>&gt;
+    &lt;/<span class="pl-ent">configuration</span>&gt;
+    &lt;<span class="pl-ent">executions</span>&gt;
+        &lt;<span class="pl-ent">execution</span>&gt;
+            &lt;<span class="pl-ent">id</span>&gt;generate-css-using-sass&lt;/<span class="pl-ent">id</span>&gt;
+            &lt;<span class="pl-ent">goals</span>&gt;
+                &lt;<span class="pl-ent">goal</span>&gt;update-stylesheets&lt;/<span class="pl-ent">goal</span>&gt;
+            &lt;/<span class="pl-ent">goals</span>&gt;
+        &lt;/<span class="pl-ent">execution</span>&gt;
+    &lt;/<span class="pl-ent">executions</span>&gt;
+&lt;/<span class="pl-ent">plugin</span>&gt;</pre></div>
+<p>see: <a href="https://github.com/GeoDienstenCentrum/sass-maven-plugin/issues/120">https://github.com/GeoDienstenCentrum/sass-maven-plugin/issues/120</a> and <a href="https://stackoverflow.com/questions/1007211/maven-add-dependency-on-artifact-source" rel="nofollow">https://stackoverflow.com/questions/1007211/maven-add-dependency-on-artifact-source</a></p>
+
+        </div>
+
+    </div>]

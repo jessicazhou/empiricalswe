@@ -1,0 +1,32 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <h3>
+<a aria-hidden="true" class="anchor" href="#host-name-and-port" id="user-content-host-name-and-port"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Host name and port</h3>
+<p>It is currently assumed that elasticsearch will be a single node installed locally on the machine running ChemBio Hub.</p>
+<p>In order to change this you would have to edit the <a href="https://github.com/thesgc/chembiohub_ws/blob/master/cbh_utils/elasticsearch_client.py">elasticsearch client file</a> and create a function call to get an instance of <code>elasticsearch.Elasticsearch()</code> where it is called with a hostname and port as in <a href="https://elasticsearch-py.readthedocs.io/en/master/api.html#elasticsearch.Elasticsearch" rel="nofollow">https://elasticsearch-py.readthedocs.io/en/master/api.html#elasticsearch.Elasticsearch</a>. This function call would be needed everywhere where the elasticsearch connection is instantiated. the settings could be added to django settings file.</p>
+<p>###Clustering</p>
+<p>If there are greater than 100000 compound batches registered then it will be best to use a cluster of elasticsearch nodes. <a href="https://www.digitalocean.com/community/tutorials/how-to-set-up-a-production-elasticsearch-cluster-on-ubuntu-14-04" rel="nofollow">This tutorial </a> shows how such a cluster can be set up. It is best to either use Docker or use multiple VMs.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#es_heap_size" id="user-content-es_heap_size"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>ES_HEAP_SIZE</h3>
+<p>We use an elasticsearch heap size of 2 GB, this is set up by editing the heap size parameter in /etc/init.d/elasticsearch</p>
+<p>###Indexing setup</p>
+<p>The elasticsearch mapping used in chem bio hub is set up in the <a href="https://github.com/thesgc/chembiohub_ws/blob/master/cbh_utils/elasticsearch_client.py">elasticsearch client file</a>.</p>
+<p>If a new type of field is added the key thing is that the <a href="https://github.com/thesgc/chembiohub_ws/blob/master/cbh_utils/elasticsearch_client.py#L125">fix_datatypes_for_index</a> function must return a string or list of strings. That string should be a searchable representation of the data in the field. Usually no change is required but for attachments we used a list of names of files to avoid things in the JSON data disrupting the search index.</p>
+<p>###Shards</p>
+<p>Data in elasticsearch is stored in lucene indices. These are known as shards. Within the indices themselves there are more shards - these are lucene data files. The top level elasticsearch sharding determines the speed at which data can be retrieved. Because ChemBio Hub uses a large number of indices - one per project, we only use one shard per index. In order to get an advantage from scaling up the number of elasticsearch nodes then the shards per index figure would have to be increased. The limit for the number of active shards on one elasticsearch instance seems to be about 1000 for the type of queries we run on chembio hub.</p>
+<p>With 5 shards per index this would limit projects to 200, with one shard per index the number of projects could go much higher.</p>
+<p>###Analysis of strings</p>
+<p>When analysing a string for search certain characters are treated by prefixing them with a space. This enables full text search to work elegantly for chemical names and allows items in JSON strings to also be search for. For example:</p>
+<p>If I have a document containing 1-methyl-propane it will be indexed as 1 - methyl - propane</p>
+<p>The search term will also be subjected to the same operation and will be treated as a phrase search afterwards.</p>
+<p>This means the user can search either for:</p>
+<p>methyl</p>
+<p>OR</p>
+<p>1-methyl =&gt; mapped to "1 - methyl"</p>
+<p>OR</p>
+<p>1-methyl-pro =&gt; mapped to "1 - methyl - pro*"</p>
+<p>The default text search is what is a phrase prefix query - see the elasticsearch docs <a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-multi-match-query.html#type-phrase" rel="nofollow">here</a>.</p>
+
+        </div>
+
+    </div>]

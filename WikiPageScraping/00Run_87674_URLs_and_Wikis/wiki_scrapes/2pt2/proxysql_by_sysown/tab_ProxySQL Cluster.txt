@@ -1,0 +1,422 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>Those features are EXPERIMENTAL and subject to changes, especially because not all the features in the roadmap are implemented yet.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#preface" id="user-content-preface"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Preface</h2>
+<p>ProxySQL is a decentralized proxy, and it is normally advised to deploy it close to the application.
+This approach seems to scale pretty well to hundred(s) of nodes, as it was designed to be easily reconfigurable at runtime.<br/>
+This allows to coordinate and reconfigure a farm of ProxySQL instances using a configuration management software like Ansible/Chef/Puppet/Salt (in alphabetical order), or a service discovery software like Etcd/Consul/ZooKeeper.<br/>
+This allows ProxySQL to be highly customizable, and be adopted in any setup using any of these technologies, or even re-configurable by home-made tools.<br/>
+Although it has some drawback too:</p>
+<ul>
+<li>it requires and relies on external software (configuration management software itself)</li>
+<li>the previous point means also that such approach it is not natively supported</li>
+<li>converge time it is not predictable</li>
+<li>there is no protection against network split</li>
+</ul>
+<p>For this reason, ProxySQL 1.4.x attempts to support clustering natively. As pointed already, these features are EXPERIMENTAL and subject to changes, especially because not all the features in the roadmap are implemented yet.</p>
+<p>Currently there are two main components in the ProxySQL clustering solution:</p>
+<ul>
+<li>monitoring</li>
+<li>re-configuration</li>
+</ul>
+<p>Both components (monitoring and remote reconfiguration) are available for 4 tables:</p>
+<ul>
+<li><code>mysql_query_rules</code></li>
+<li><code>mysql_servers</code></li>
+<li><code>mysql_users</code></li>
+<li><code>proxysql_servers</code></li>
+</ul>
+<p>More will be added in future, see roadmap.</p>
+<h1>
+<a aria-hidden="true" class="anchor" href="#monitoring" id="user-content-monitoring"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Monitoring</h1>
+<p>To support Cluster Monitoring, several new tables, commands and variables were introduced.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#admin-variables" id="user-content-admin-variables"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Admin variables</h3>
+<p>Several new variables were added related to the Cluster solution. They are all Admin's variables, that means that to load them the command <code>LOAD ADMIN VARIABLES TO RUNTIME</code> is needed.</p>
+<p>Variables that define what to sync:</p>
+<ul>
+<li>
+<code>admin-checksum_mysql_query_rules</code>: boolean variable. When <code>true</code> (default) ProxySQL generates a new configuration checksum every time <code>LOAD MYSQL QUERY RULES TO RUNTIME</code> is executed. If set to <code>false</code>, the new configuration isn't automatically propagated, neither is synced from a remote node;</li>
+<li>
+<code>admin-checksum_mysql_servers</code>: boolean variable. When <code>true</code> (default) ProxySQL generates a new configuration checksum every time <code>LOAD MYSQL SERVERS TO RUNTIME</code> is executed. If set to <code>false</code>, the new configuration isn't automatically propagated, neither is synced from a remote node;</li>
+<li>
+<code>admin-checksum_mysql_users</code>: boolean variable. When <code>true</code> (default) ProxySQL generates a new configuration checksum every time <code>LOAD MYSQL USERS TO RUNTIME</code> is executed. If set to <code>false</code>, the new configuration isn't automatically propagated, neither is synced from a remote node. If you have millions of users, disable this feature and do not rely on it, as it may be very slow;</li>
+</ul>
+<p>Variables that define credentials:</p>
+<ul>
+<li>
+<code>admin-cluster_username</code> and <code>admin-cluster_password</code>: to monitor other proxysql instances this credential is used. Note that the pair username/password should also be present in <code>admin-admin_credentials</code>, or connection will fail. If <code>admin-cluster_username</code> is not defined, Clustering doesn't perform any check;</li>
+</ul>
+<p>Variables that define checks interval/frequency:</p>
+<ul>
+<li>
+<code>admin-cluster_check_interval_ms</code> : this variable defines the interval between checksums checks.<br/>
+default: 1000. Min: 10 , Max: 300000</li>
+<li>
+<code>admin-cluster_check_status_frequency</code> : if greater than 0, this variable defines after how many checksums checks a status check is performed.<br/>
+default: 10. Min: 0 , Max: 10000</li>
+</ul>
+<p>After a remote sync, it is normally a good idea to immediately save to disk the new change. In this way, after a restart the configuration will be already in sync. Variables related to sync to disk:</p>
+<ul>
+<li>
+<code>admin-cluster_mysql_query_rules_save_to_disk</code>: boolean variable. When <code>true</code> (default) after a remote sync and load to runtime, the new mysql query rules are also saved to disk;</li>
+<li>
+<code>admin-cluster_mysql_servers_save_to_disk</code>: boolean variable. When <code>true</code> (default) after a remote sync and load to runtime, the new mysql servers are also saved to disk;</li>
+<li>
+<code>admin-cluster_mysql_users_save_to_disk</code>: boolean variable. When <code>true</code> (default) after a remote sync and load to runtime, the new mysql users are also saved to disk;</li>
+<li>
+<code>admin-cluster_proxysql_servers_save_to_disk</code>: boolean variable. When <code>true</code> (default) after a remote sync and load to runtime, the new proxysql servers are also saved to disk;</li>
+</ul>
+<p>It is possible that multiple ProxSQL instances are being reconfigured at the same time, for different reasons.<br/>
+For example it is possible that each ProxySQL instance is monitoring a MySQL replication topology and automatically detecting a failover, and within a short period of time (probably less than a second) they will all converge to the same configuration without the need of synchronize with each other.<br/>
+Similarly, it is possible that a temporary network issue or a slow MySQL instance is detected by all proxies that will automatically shun the node. All proxies will take the same action without the need to synchronize with each other.<br/>
+Or, as a final example, if a slave is lagging and automatically shunned because of replication lag, all proxies will take the same action independently from each other.<br/>
+For this reason, ProxySQL Cluster can be configured to not synchronize immediately with a remote node, but to wait a certain number of checks before triggering a remote synchronization. If after such threshold the local and the remote configuration is still different, a synchronization is triggered:</p>
+<ul>
+<li>
+<code>admin-cluster_mysql_query_rules_diffs_before_sync</code>: defines how many mismatching checks triggers the synchronization of <code>mysql_query_rules</code><br/>
+default: 3. Min: 0 (never sync). Max: 1000</li>
+<li>
+<code>admin-cluster_mysql_servers_diffs_before_sync</code>: defines how many mismatching checks triggers the synchronization of <code>mysql_servers</code><br/>
+default: 3. Min: 0 (never sync). Max: 1000</li>
+<li>
+<code>admin-cluster_mysql_users_diffs_before_sync</code>: defines how many mismatching checks triggers the synchronization of <code>mysql_users</code><br/>
+default: 3. Min: 0 (never sync). Max: 1000</li>
+<li>
+<code>admin-cluster_proxysql_servers_diffs_before_sync</code>: defines how many mismatching checks triggers the synchronization of <code>proxysql_servers</code><br/>
+default: 3. Min: 0 (never sync). Max: 1000</li>
+</ul>
+<h3>
+<a aria-hidden="true" class="anchor" href="#configuration-tables" id="user-content-configuration-tables"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Configuration tables</h3>
+<h4>
+<a aria-hidden="true" class="anchor" href="#table-proxysql_servers" id="user-content-table-proxysql_servers"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Table <code>proxysql_servers</code>
+</h4>
+<p>Table definition:</p>
+<pre><code>CREATE TABLE proxysql_servers (
+    hostname VARCHAR NOT NULL,
+    port INT NOT NULL DEFAULT 6032,
+    weight INT CHECK (weight &gt;= 0) NOT NULL DEFAULT 0,
+    comment VARCHAR NOT NULL DEFAULT '',
+    PRIMARY KEY (hostname, port) )
+</code></pre>
+<p>This table is a configuration table, and defines a list of ProxySQL peers.</p>
+<ul>
+<li>
+<code>hostname</code> : peer's hostname/IP</li>
+<li>
+<code>port</code> : peer's port</li>
+<li>
+<code>weight</code> : currently unused, but in the roadmap for future enhancements</li>
+<li>
+<code>comment</code> : free form comment field</li>
+</ul>
+<h5>
+<a aria-hidden="true" class="anchor" href="#support-for-config-file" id="user-content-support-for-config-file"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Support for config file</h5>
+<p>Entries for <code>proxysql_servers</code> can be loaded form configuration file.</p>
+<p>Below an example of how to cofigure <code>proxysql_servers</code> from config file:</p>
+<pre><code>proxysql_servers =
+(
+    {
+        hostname="172.16.0.101"
+        port=6032
+        weight=0
+        comment="proxysql1"
+    },
+    {
+        hostname="172.16.0.102"
+        port=6032
+        weight=0
+        comment="proxysql2"
+    }
+)
+</code></pre>
+<p>Note: ProxySQL reads from config file only if the database file doesn't exist, or if executed with <code>--initial</code></p>
+<ul>
+<li>configuration file doesn't support this table yet!</li>
+<li>because this feature is still experimental, the table is not automatically loaded from disk</li>
+</ul>
+<h4>
+<a aria-hidden="true" class="anchor" href="#table-runtime_proxysql_servers" id="user-content-table-runtime_proxysql_servers"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Table <code>runtime_proxysql_servers</code>
+</h4>
+<p>Table definition:</p>
+<pre><code>CREATE TABLE runtime_proxysql_servers (
+    hostname VARCHAR NOT NULL,
+    port INT NOT NULL DEFAULT 6032,
+    weight INT CHECK (weight &gt;= 0) NOT NULL DEFAULT 0,
+    comment VARCHAR NOT NULL DEFAULT '',
+    PRIMARY KEY (hostname, port) )
+</code></pre>
+<p>Like other <code>runtime_</code> tables, this is a runtime representation of the base table: <code>proxysql_servers</code> .</p>
+<h4>
+<a aria-hidden="true" class="anchor" href="#table-runtime_checksums_values" id="user-content-table-runtime_checksums_values"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Table <code>runtime_checksums_values</code>
+</h4>
+<p>Table definition:</p>
+<pre><code>CREATE TABLE runtime_checksums_values (
+    name VARCHAR NOT NULL,
+    version INT NOT NULL,
+    epoch INT NOT NULL,
+    checksum VARCHAR NOT NULL,
+    PRIMARY KEY (name))
+</code></pre>
+<p>Table <code>runtime_checksums_values</code> is the first <code>runtime_</code> table that is not the runtime representation of a base table. Table <code>runtime_checksums_values</code> shows information of when a <code>LOAD TO RUNTIME</code> command was executed:</p>
+<ul>
+<li>
+<code>name</code> : name of the module</li>
+<li>
+<code>version</code> : how many times <code>LOAD TO RUNTIME</code> was executed, either explicitly or not (executed internal due to some other event)</li>
+<li>
+<code>epoch</code> : timestamp of when <code>LOAD TO RUNTIME</code> was executed</li>
+<li>
+<code>checksum</code> : the checksum of the internal memory structure resulting from <code>LOAD TO RUNTIME</code>
+</li>
+</ul>
+<p>Example:</p>
+<pre><code>Admin&gt; SELECT * FROM runtime_checksums_values;
++-------------------+---------+------------+--------------------+
+| name              | version | epoch      | checksum           |
++-------------------+---------+------------+--------------------+
+| admin_variables   | 0       | 0          |                    |
+| mysql_query_rules | 5       | 1503442167 | 0xD3BD702F8E759B1E |
+| mysql_servers     | 1       | 1503440533 | 0x6F8CEF0F4BD6456E |
+| mysql_users       | 1       | 1503440533 | 0xF8BDF26C65A70AC5 |
+| mysql_variables   | 0       | 0          |                    |
+| proxysql_servers  | 2       | 1503442214 | 0x89768E27E4931C87 |
++-------------------+---------+------------+--------------------+
+6 rows in set (0,00 sec)
+</code></pre>
+<p>Note:<br/>
+Only 4 of the 6 modules generate a checksum for now.</p>
+<ul>
+<li>
+<code>LOAD MYSQL QUERY RULES TO RUNTIME</code>: generates a new checksum if <code>admin-checksum_mysql_query_rules</code> is true</li>
+<li>
+<code>LOAD MYSQL SERVERS TO RUNTIME</code>: generates a new checksum if <code>admin-checksum_mysql_servers</code> is true</li>
+<li>
+<code>LOAD MYSQL USERS TO RUNTIME</code>: generates a new checksum if <code>admin-checksum_mysql_users</code> is true</li>
+<li>
+<code>LOAD PROXYSQL SERVERS TO RUNTIME</code>: generates a new checksum, always</li>
+<li>
+<code>LOAD ADMIN VARIABLES TO RUNTIME</code>: does NOT generate a checksum yet</li>
+<li>
+<code>LOAD MYSQL VARIABLES TO RUNTIME</code>: does NOT generate a checksum yet</li>
+</ul>
+<h3>
+<a aria-hidden="true" class="anchor" href="#new-commands" id="user-content-new-commands"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>New commands:</h3>
+<ul>
+<li>
+<code>LOAD PROXYSQL SERVERS FROM MEMORY</code> / <code>LOAD PROXYSQL SERVERS TO RUNTIME</code><br/>
+loads ProxySQL servers from the in-memory database to the runtime data structures</li>
+<li>
+<code>SAVE PROXYSQL SERVERS TO MEMORY</code> / <code>SAVE PROXYSQL SERVERS FROM RUNTIME</code><br/>
+persists the ProxySQL Servers from the runtime data structures to the in-memory database</li>
+<li>
+<code>LOAD PROXYSQL SERVERS TO MEMORY</code> / <code>LOAD PROXYSQL SERVERS FROM DISK</code><br/>
+loads ProxySQL Servers from the on-disk database to the in-memory database</li>
+<li>
+<code>LOAD PROXYSQL SERVERS FROM CONFIG</code><br/>
+loads ProxySQL Servers from configuration file to the in-memory database</li>
+<li>
+<code>SAVE PROXYSQL SERVERS FROM MEMORY</code> / <code>SAVE PROXYSQL SERVERS TO DISK</code><br/>
+persists the ProxySQL Servers from the in-memory database to the on-disk database</li>
+</ul>
+<h3>
+<a aria-hidden="true" class="anchor" href="#stats-tables" id="user-content-stats-tables"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>stats tables</h3>
+<p>3 new tables were added in <code>stats</code> schema</p>
+<h4>
+<a aria-hidden="true" class="anchor" href="#table-stats_proxysql_servers_checksums" id="user-content-table-stats_proxysql_servers_checksums"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Table <code>stats_proxysql_servers_checksums</code>
+</h4>
+<p>Table definition:</p>
+<pre><code>Admin&gt; SHOW CREATE TABLE stats.stats_proxysql_servers_checksums\G
+*************************** 1. row ***************************
+       table: stats_proxysql_servers_checksums
+Create Table: CREATE TABLE stats_proxysql_servers_checksums (
+    hostname VARCHAR NOT NULL,
+    port INT NOT NULL DEFAULT 6032,
+    name VARCHAR NOT NULL,
+    version INT NOT NULL,
+    epoch INT NOT NULL,
+    checksum VARCHAR NOT NULL,
+    changed_at INT NOT NULL,
+    updated_at INT NOT NULL,
+    diff_check INT NOT NULL,
+    PRIMARY KEY (hostname, port, name) )
+1 row in set (0,00 sec)
+</code></pre>
+<p>This table shows the checksum of other proxies, and their status:</p>
+<ul>
+<li>
+<code>hostname</code> : hostname of the peer</li>
+<li>
+<code>port</code> : port of the peer</li>
+<li>
+<code>name</code> : name of the module as reported in peer's <code>runtime_checksums_values</code>
+</li>
+<li>
+<code>version</code> : version of checksum's module as reported in peer's <code>runtime_checksums_values</code>.<br/>
+Note that a ProxySQL instance just started will have <code>version=1</code>: for this reason, a ProxySQL instance will never sync from another instance having <code>version=1</code>, because it is unlikely that a ProxyQL instance just started is the source of truth. This prevent a new joining node to corrupt current Cluster configuration.</li>
+<li>
+<code>epoch</code> : epoch of the checksum's module as reported in peer's <code>runtime_checksums_values</code>
+</li>
+<li>
+<code>checksum</code> : the checksum's module as reported in peer's <code>runtime_checksums_values</code>
+</li>
+<li>
+<code>changed_at</code> : the timestamp of when a checksum change was detected</li>
+<li>
+<code>updated_at</code> : the timestamp of when this entry was last refreshed</li>
+<li>
+<code>diff_check</code> : a counter that defines for how many checks the checksum of the remote peer's was different than the local checksum.
+The reconfiguration algorithm will wait a threshold to be reached before triggering a reconfiguration.<br/>
+This is useful in case the same configuration is applied to multiple proxies at the same time, or when proxies are reconfiguring themselves in case of a failover and they will likely converge without the need of resync.<br/>
+See also variables <code>cluster_*_diffs_before_sync</code><br/>
+If <code>diff_check</code> increases a lot without triggering a synchronization it means that the remote peer is not a reliable source of truth, for example if <code>version=1</code>.<br/>
+On the other hand, it the remote peer doesn't sync with the rest of the cluster it means that the cluster doesn't have a reliable source of truth. This happen when all the proxies in a cluster starts with a different configuration, and they can't automatically decide which is the correct configuration. Running <code>LOAD module TO RUNTIME</code> on one of the node will automatically "elect" it to become the source of truth for that specific module.</li>
+</ul>
+<h4>
+<a aria-hidden="true" class="anchor" href="#table-stats_proxysql_servers_metrics" id="user-content-table-stats_proxysql_servers_metrics"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Table <code>stats_proxysql_servers_metrics</code>
+</h4>
+<p>Table definition:</p>
+<pre><code>Admin&gt; SHOW CREATE TABLE stats.stats_proxysql_servers_metrics\G
+*************************** 1. row ***************************
+       table: stats_proxysql_servers_metrics
+Create Table: CREATE TABLE stats_proxysql_servers_metrics (
+    hostname VARCHAR NOT NULL,
+    port INT NOT NULL DEFAULT 6032,
+    weight INT CHECK (weight &gt;= 0) NOT NULL DEFAULT 0,
+    comment VARCHAR NOT NULL DEFAULT '',
+    response_time_ms INT NOT NULL,
+    Uptime_s INT NOT NULL,
+    last_check_ms INT NOT NULL,
+    Queries INT NOT NULL,
+    Client_Connections_connected INT NOT NULL,
+    Client_Connections_created INT NOT NULL,
+    PRIMARY KEY (hostname, port) )
+1 row in set (0,00 sec)
+</code></pre>
+<p>This table shows some of the metrics that are retrieved when the clustering module executes <code>SHOW MYSQL STATUS</code> in its peers. Columns:</p>
+<ul>
+<li>
+<code>hostname</code> : hostname of the peer</li>
+<li>
+<code>port</code> : port of the peer</li>
+<li>
+<code>weight</code> : same as reported in <code>proxysql_servers</code>.<code>weight</code>
+</li>
+<li>
+<code>comment</code> : same as reported in <code>proxysql_servers</code>.<code>comment</code>
+</li>
+<li>
+<code>response_time_ms</code> : response time while running <code>SHOW MYSQL STATUS</code>, in millisecond</li>
+<li>
+<code>Uptime_s</code> : peer's uptime in second</li>
+<li>
+<code>last_check_ms</code> : age of the last time a check was executed, in millisecond</li>
+<li>
+<code>Queries</code> : number of queries executed by the peer</li>
+<li>
+<code>Client_Connections_connected</code> : number of client's connections connected</li>
+<li>
+<code>Client_Connections_created</code> : number of client's connections created</li>
+</ul>
+<p>Note:<br/>
+All the status variables are retrieved by the peers, but only few are monitored to be able to check if the peer is up and running and processing traffic.<br/>
+Currently this feature is useful only for debugging purpose, but future versions will use these metrics to understand the health of remote peers.</p>
+<h4>
+<a aria-hidden="true" class="anchor" href="#table-stats_proxysql_servers_status" id="user-content-table-stats_proxysql_servers_status"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Table <code>stats_proxysql_servers_status</code>
+</h4>
+<p>Currently unused</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#bandwidth-consideration" id="user-content-bandwidth-consideration"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Bandwidth consideration</h3>
+<p>In the architecture described above, all nodes monitor all the other nodes. A fully mesh peer-to-peer network.<br/>
+To reduce network usage, nodes do not always exchange the whole list of checksum: instead the exchange a single checksum resulting from combining all the versions and all the checksums. It this global checksum changed, a detailed list of checksums is retrieved.<br/>
+Using this technique, a 200 nodes cluster monitoring each other every 1000ms, requires a bandwidth of 50KBpb in/out to/from each node.</p>
+<h1>
+<a aria-hidden="true" class="anchor" href="#re-configuration" id="user-content-re-configuration"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Re-configuration</h1>
+<p>Becauses proxies monitor each others, they can immediately know when a checksum of a confguration changed, that means that the configuration itself changes.
+If a configuration changed, it is checked against its own configuration because it is possible that the remote peer's configuration and its own configuration have changed at the same time, or within a short period of time.
+If they differ:</p>
+<ul>
+<li>if the own <code>version</code> is 1 , find the peer with <code>version &gt; 1</code> and with the highest epoch, and sync immediately</li>
+<li>if the own <code>version</code> is greater than 1, starts counting for how many checks they differ
+<ul>
+<li>when the number of checks in which they differ is greater than <code>cluster__name___diffs_before_sync</code> and <code>cluster__name__diffs_before_sync</code> itself is greater than 0, find the peer with <code>version &gt; 1</code> and with the highest epoch, and sync immediately (Note: it is possible that a different is detected against a node, but the sync is performed against a different node. Because the sync is done with the node with the highest epoch, it is expected that all the nodes will converge)</li>
+</ul>
+</li>
+</ul>
+<p>The syncing process is performed as follow:</p>
+<ul>
+<li>the same connection used to perform the health check is used to execute a series of <code>SELECT</code> statements in the form of <code>SELECT _list_of_columns_ FROM runtime_module</code>  . For example:</li>
+</ul>
+<pre><code>SELECT hostgroup_id, hostname, port, status, weight, compression, max_connections, max_replication_lag, use_ssl, max_latency_ms, comment FROM runtime_mysql_servers;
+SELECT writer_hostgroup, reader_hostgroup, comment FROM runtime_mysql_replication_hostgroups;
+</code></pre>
+<ul>
+<li>delete the local configuration tables. For example:</li>
+</ul>
+<pre><code>DELETE FROM mysql_servers;
+DELETE FROM mysql_replication_hostgroups;
+</code></pre>
+<ul>
+<li>insert into the local configuration tables what retrieved from remote peer</li>
+<li>issue an internal <code>LOAD module_name TO RUNTIME</code> : this will increase version number and create a new checksum</li>
+<li>if <code>cluster__name__save_to_disk</code> is <code>true</code>, issue an internal <code>SAVE module_name TO DISK</code>
+</li>
+</ul>
+<h1>
+<a aria-hidden="true" class="anchor" href="#todo" id="user-content-todo"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>TODO</h1>
+<ul>
+<li>add support for MySQL Group Replication</li>
+<li>add support for Scheduler</li>
+</ul>
+<h1>
+<a aria-hidden="true" class="anchor" href="#roadmap" id="user-content-roadmap"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Roadmap</h1>
+<p>This is an overview of the features related to clustering, and not a complete list. None the following list is impletemented yet.<br/>
+Implementation may be different than what listed right now:</p>
+<ul>
+<li>support for master election: the word master was intentionally chosen instead of leader</li>
+<li>only master proxy is writable/configurable</li>
+<li>implementation of MySQL-like replication from master to slaves, allowing to push configuration in real-time instead pulling it</li>
+<li>implementation of MySQL-like replication from master to candidate-masters</li>
+<li>implementation of MySQL-like replication from candidate-masters to slaves</li>
+<li>creation of a quorum with only candidate-masters: normal slaves are not part of the quorum</li>
+</ul>
+<h1>
+<a aria-hidden="true" class="anchor" href="#qa" id="user-content-qa"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Q&amp;A</h1>
+<h4>
+<a aria-hidden="true" class="anchor" href="#what-if-a-different-configuration-is-loaded-at-the-same-time-on-each-of-the-proxysql-servers-which-configuration-is-the-one-that-needs-to-be-propagated-to-all-other-nodes--the-last-one" id="user-content-what-if-a-different-configuration-is-loaded-at-the-same-time-on-each-of-the-proxysql-servers-which-configuration-is-the-one-that-needs-to-be-propagated-to-all-other-nodes--the-last-one"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>What if a different configuration is loaded at the same time on each of the proxysql servers, which configuration is the one that needs to be "propagated" to all other nodes ? The last one?</h4>
+<p>The concept of master and master election is not implemented yet. That means that a <code>LOAD</code> command can be potentially be executed on multiple nodes at the same time (multi-master, to make some analogy), and each will trigger an automatic reconfiguration with timestamp based conflict-resolution.<br/>
+If the same configuration is loaded at the same time on multiple proxysql instances, they should automatically converge.<br/>
+If different configurations are loaded on multiple proxysql instances at different times, the last one will win.<br/>
+If different configurations are loaded on multiple proxysql instances at the same time, the two configurations will start propagating till the point in which they won't converge as conflict resolution is not possible.<br/>
+The good thing is that each ProxySQL knows the checksum of configuration of every other node, so mismatches are easy to detect and monitor.</p>
+<h4>
+<a aria-hidden="true" class="anchor" href="#who-is-writing-this-configuration-to-all-those-nodes" id="user-content-who-is-writing-this-configuration-to-all-those-nodes"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>who is writing this configuration to all those nodes?</h4>
+<p>Currently a pull mechanism is used, therefore the node that detects it needs to reconfigure itself will pull the configuration from the node with the most up-to-date configuration and apply it locally.</p>
+<h4>
+<a aria-hidden="true" class="anchor" href="#how-are-you-going-to-implement-election--raft-consensus-protocol-" id="user-content-how-are-you-going-to-implement-election--raft-consensus-protocol-"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>How are you going to implement election ? Raft consensus protocol ?</h4>
+<p>Implementation of election is in the roadmap, but probably not Raft consensus protocol.<br/>
+ProxySQL uses tables to store configuration, it uses the MySQL protocol to perform requests to its peers querying their health and their configuration, it uses the MySQL protocol to implement heartbeat and much more: for these reasons, in the case of ProxySQL, the MySQL protocol itself might be a more versatile solution compared to Raft protocol.</p>
+<h4>
+<a aria-hidden="true" class="anchor" href="#what-will-happen-if-for-some-reason-one-of-the-nodes-will-be-unable-to-grab-the-new-configuration-in-an-event-of-re-configuration" id="user-content-what-will-happen-if-for-some-reason-one-of-the-nodes-will-be-unable-to-grab-the-new-configuration-in-an-event-of-re-configuration"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>What will happen if for some reason one of the nodes will be unable to grab the new configuration in an event of re-configuration?</h4>
+<p>Changes are propagated asynchronously. Therefore it is possible that one of nodes is not able to grab the new configuration, for example in case of network issue of ProxySQL being restarted. Yet, when a ProxySQL instance detects that one of its peers has a newer configuration, it will automatically grab it.</p>
+<h4>
+<a aria-hidden="true" class="anchor" href="#what-about-crossdc--what-will-be-the-best-practice--having-a-cluster-in-each-dc" id="user-content-what-about-crossdc--what-will-be-the-best-practice--having-a-cluster-in-each-dc"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>What about crossdc ? what will be the best practice , having a cluster in each DC?</h4>
+<p>Cluster do not have boundaries, therefore it is possible to have a single cluster across multiple DCs, or to have multiple clusters in the same DC, or multiple clusters across multiple DCs. This really depends from the specific use case.<br/>
+The only limitation is that each proxysql instance needs to belong to a single cluster.<br/>
+Clusters do not have names, and to make sure that a node doesn't erroneously join the wrong cluster it is important to ensure that each cluster uses different credentials. See <code>admin-admin_credentials</code>, <code>admin-cluster_username</code> and <code>admin-cluster_password</code>.</p>
+<h4>
+<a aria-hidden="true" class="anchor" href="#could-be-a-nice-feature-to-somehow-replicate-the-configuration-crossdc-but-prefer-traffic-to-the-backend-server-that-is-closest-to-the-local-proxysql-server-i-am-doing-it-now-using-weight" id="user-content-could-be-a-nice-feature-to-somehow-replicate-the-configuration-crossdc-but-prefer-traffic-to-the-backend-server-that-is-closest-to-the-local-proxysql-server-i-am-doing-it-now-using-weight"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Could be a nice feature to somehow replicate the configuration crossdc but prefer traffic to the backend server that is closest to the local proxysql server. I am doing it now using weight.</h4>
+<p>For this specific case I think it makes more sense to create a different cluster for each DC, as configuration will be different.</p>
+<h4>
+<a aria-hidden="true" class="anchor" href="#how-is-a-new-proxysql-going-to-join-the-cluster-" id="user-content-how-is-a-new-proxysql-going-to-join-the-cluster-"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>How is a new proxysql going to join the cluster ?</h4>
+<p>Bootstrap is very easy: starts with at least 1 peer in <code>proxysql_servers</code> .</p>
+<h4>
+<a aria-hidden="true" class="anchor" href="#how-will-all-other-proxysql-server-know-there-is-a-new-node-" id="user-content-how-will-all-other-proxysql-server-know-there-is-a-new-node-"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>How will all other proxysql server know there is a new node ?</h4>
+<p>They do not know it automatically, and this is intentional to prevent that a new node may corrupt the cluster.<br/>
+In other words, a new node can pull the configuration as soon as it joins, but cannot advertise itself as the source of truth.<br/>
+To let the other proxysql instances know that there is a new node, it is enough to add the new node in <code>proxysql_servers</code> of any node of the current cluster and issue <code>LOAD PROXYSQL SERVERS TO RUNTIME</code> .</p>
+
+        </div>
+
+    </div>]

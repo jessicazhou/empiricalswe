@@ -1,0 +1,40 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>We have a legacy application based on EXT-JS. We like to add new module into the existing application, using AngularJS and bootsrap. My problem is that bootstrap’s CSS are conflicting with CSS of the legacy code. The new module, which written using bootstrap and AngularJS, wrapped around by legacy code, so I need to import exists CSS and new CSS on the same page.</p>
+<p>I thought of 2 possible solutions:</p>
+<p>Having a prefix to bootstrap’s css file and apply it only to inner part of the page content (AngularJS, new module). The problem is that popup, and angular-bootstrap 3rd party component still interrupted by legacy CSS.</p>
+<p>Having my whole inner page (AngularJS module) in separate IFrame, embedded into page that contains the legacy CSS.</p>
+<p>It seems like using IFrame solves my problem, but I aware that using IFrame is discouraged, and I am looking for optimal solution for my problem.</p>
+<p>Do you think that IFrame is a good practice in this scenario?</p>
+<p>Do you have other proven solution?</p>
+<p>We have a legacy application based on EXT-JS. We like to add new module into the existing application, using AngularJS and bootsrap. My problem is that bootstrap’s CSS are conflicting with CSS of the legacy code. The new module, which written using bootstrap and AngularJS, wrapped around by legacy code, so I need to import exists CSS and new CSS on the same page.</p>
+<p>I thought of 2 possible solutions:</p>
+<p>Having a prefix to bootstrap’s css file and apply it only to inner part of the page content (AngularJS, new module). The problem is that popup, and angular-bootstrap 3rd party component still interrupted by legacy CSS.</p>
+<p>Having my whole inner page (AngularJS module) in separate IFrame, embedded into page that contains the legacy CSS.</p>
+<p>It seems like using IFrame solves my problem, but I aware that using IFrame is discouraged, and I am looking for optimal solution for my problem.</p>
+<p>Do you think that IFrame is a good practice in this scenario?</p>
+<p>Do you have other proven solution?</p>
+<p>5 down vote</p>
+<p>I believe you can just inquire AngularJS and your app, and using hooks to provide necessary HTML. A few things to note though:</p>
+<p>Because the URL cannot be changed, you should use router in legacy mode (using URL hash) instead of HTML5 mode.</p>
+<p>Since you're running in generated URL, the templateURLs must be built dynamically. For example, ouput a script tag for URL to your plugin folder:</p>
+&lt;script&gt;var MY_PLUGIN_BASE = '<!--?php echo plugins_url(); ?-->'&lt;/script&gt;
+<p>And then later define your route and templateURL using that constant:</p>
+<p>$routeProvider</p>
+<p>.when('/', {</p>
+<p>templateUrl: MY_PLUGIN_BASE+'my-plugin/views/main.html',</p>
+<p>controller: 'Main'</p>
+<p>})</p>
+<p>This works, but in general I will avoid using routes in such situations. This cause more work in the controllers and directives, but it is safer because there could be other client side MVC apps on the page.</p>
+<p>The ng-app is attached to the root element of your view instead of body.</p>
+<p>For more general embedded AngularJS app (in my experience: a bookmarklet), you need to:</p>
+<p>Inject AngularJS if needed (check for window.angular), CSS and HTML.</p>
+<p>Inject your app's JS file. Because only one ng-app will be auto bootstraped, bootstrap your app manually using angular.bootstrap</p>
+<p>angular.bootstrap(document.getElementById('my-app'), ['MyApp'])</p>
+<p>Use absolute URL for templateURL, and make sure that URL have CORS enabled.</p>
+<p>Again, avoid using routes if possible. For the Wordpress plugin, we're pretty sure that there's no other app using hash for routing (Wordpress is using Backbone, but I don't see the routes), but in general there are already a MVC app on the page that handle routing.</p>
+<p>You can just use Angular-UI/UI-Router github.com/angular-ui/ui-router. It is very similar to Angular's route, and the url is optional for all states. The way I was doing it before is having a function linkTo(url) on the $rootScope that change a url (also on the $rootScope), and the view is hide/show with ngIf based on the current url. – tungd Jan 16 at 16:04</p>
+
+        </div>
+
+    </div>]

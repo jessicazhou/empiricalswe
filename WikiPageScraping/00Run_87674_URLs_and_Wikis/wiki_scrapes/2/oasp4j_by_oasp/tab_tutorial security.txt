@@ -1,0 +1,142 @@
+[<div class="wiki-body gollum-asciidoc-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <div>
+<div>Table of Contents</div>
+<ul>
+<li>
+<a href="#securing-the-application">Securing the application</a>
+<ul>
+<li><a href="#cors-filter">CORS filter</a></li>
+<li><a href="#csrf-filter">CSRF filter</a></li>
+<li><a href="#securing-methods">Securing methods</a></li>
+</ul>
+</li>
+</ul>
+</div>
+
+<h1 id="user-content-securing-the-application">
+<a aria-hidden="true" class="anchor" href="#securing-the-application" id="user-content-securing-the-application"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Securing the application</h1>
+<div>
+<h2 id="user-content-cors-filter">
+<a aria-hidden="true" class="anchor" href="#cors-filter" id="user-content-cors-filter"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>CORS filter</h2>
+<div>
+<div>
+<p>Cross-origin resource sharing (CORS) is a mechanism that allows restricted resources on a web page to be requested from another domain outside the domain from which the resource originated.</p>
+</div>
+<div>
+<p>AJAX (XMLHttpRequest) requests have been limited to accessing the same domain as the parent web page (as per the same-origin security policy), so "Cross-domain" AJAX requests are forbidden by default because of their ability to perform advanced requests that introduce many security issues.</p>
+</div>
+<div>
+<p>So to manage and solve that in OASP…​ TODO</p>
+</div>
+</div>
+</div>
+<div>
+<h2 id="user-content-csrf-filter">
+<a aria-hidden="true" class="anchor" href="#csrf-filter" id="user-content-csrf-filter"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>CSRF filter</h2>
+<div>
+<div>
+<p>Cross-Site Request Forgery (CSRF) is an attack that forces an end user to execute unwanted actions on a web application in which they’re currently authenticated.</p>
+</div>
+<div>
+<p>In <a href="https://www.owasp.org/index.php/Main_Page" rel="nofollow">OWASP</a> (Open Web Application Security Project) they talk about this vulnerability and they have written a guide to prevent CSRF attacks (<a href="https://www.owasp.org/index.php/CSRF_Prevention_Cheat_Sheet" rel="nofollow">CSRF Prevention</a>).</p>
+</div>
+<div>
+<p>OASP uses the synchronizer token pattern to avoid this problem. This solution is to ensure that each request requires, in addition to our session cookie, a randomly generated token as an HTTP parameter. When a request is submitted, the server must look up the expected value for the parameter and compare it against the actual value in the request. If the values do not match, the request should fail.</p>
+</div>
+<div>
+<p>OASP has extended the Csrf Spring filter and has applied it to REST request, by OASP convention, the request to the path <code>/services/rest/**</code>.
+This filter is active by default, but it can be disabled changing the value of the system property <code>CsrfDisabled</code>.</p>
+</div>
+<div>
+<p>OASP also provides a REST service that allow to retrieve the CSRF token in the URL: <code>services/rest/security/v1/csrftoken/</code></p>
+</div>
+<div>
+<p>At this point we have resolved the issue in the server side but we have to manage the token in the client side. This is responsability for the client side developers so we should retrive the CSRF token after the login and then, we should send the token in every request to the server.</p>
+</div>
+</div>
+</div>
+<div>
+<h2 id="user-content-securing-methods">
+<a aria-hidden="true" class="anchor" href="#securing-methods" id="user-content-securing-methods"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Securing methods</h2>
+<div>
+<div>
+<p>OASP focus on role-based authorization to cope with authorization for executing use case of an application. OASP use the JSR250 annotations, mainly @RolesAllowed, for authorizing method calls against the permissions defined in the annotation body. This has to be done for each use-case method in logic layer
+This is an example of how to annotate the methods with RolesAllowed:</p>
+</div>
+<div>
+<div>
+<div class="highlight highlight-source-java"><pre><span class="pl-k">public</span> <span class="pl-k">class</span> <span class="pl-en">UcFindTableImpl</span> <span class="pl-k">extends</span> <span class="pl-e">AbstractTableUc</span> <span class="pl-k">implements</span> <span class="pl-e">UcFindTable</span> {
+
+  <span class="pl-c"><span class="pl-c">/*</span>* Logger instance. <span class="pl-c">*/</span></span>
+  <span class="pl-k">private</span> <span class="pl-k">static</span> <span class="pl-k">final</span> <span class="pl-smi">Logger</span> <span class="pl-c1">LOG</span> <span class="pl-k">=</span> <span class="pl-smi">LoggerFactory</span><span class="pl-k">.</span>getLogger(<span class="pl-smi">UcFindTableImpl</span><span class="pl-k">.</span>class);
+
+  <span class="pl-c"><span class="pl-c">/**</span></span>
+<span class="pl-c">   * {<span class="pl-k">@inheritDoc</span>}</span>
+<span class="pl-c">   <span class="pl-c">*/</span></span>
+  <span class="pl-k">@Override</span>
+  <span class="pl-k">@RolesAllowed</span>(<span class="pl-smi">PermissionConstants</span><span class="pl-c1"><span class="pl-k">.</span>FIND_TABLE</span>)
+  <span class="pl-k">public</span> <span class="pl-smi">TableEto</span> <span class="pl-en">findTable</span>(<span class="pl-smi">Long</span> <span class="pl-v">id</span>) {
+    <span class="pl-c1">...</span>
+  }
+
+}
+
+<span class="pl-k">public</span> <span class="pl-k">class</span> <span class="pl-en">UcManageTableImpl</span> <span class="pl-k">extends</span> <span class="pl-e">AbstractTableUc</span> <span class="pl-k">implements</span> <span class="pl-e">UcManageTable</span> {
+
+  <span class="pl-c"><span class="pl-c">/**</span></span>
+<span class="pl-c">   * {<span class="pl-k">@inheritDoc</span>}</span>
+<span class="pl-c">   <span class="pl-c">*/</span></span>
+  <span class="pl-k">@Override</span>
+  <span class="pl-k">@RolesAllowed</span>(<span class="pl-smi">PermissionConstants</span><span class="pl-c1"><span class="pl-k">.</span>DELETE_TABLE</span>)
+  <span class="pl-k">public</span> <span class="pl-k">void</span> <span class="pl-en">deleteTable</span>(<span class="pl-smi">Long</span> <span class="pl-v">tableId</span>) {
+    <span class="pl-c1">...</span>
+  }
+
+  <span class="pl-c"><span class="pl-c">/**</span></span>
+<span class="pl-c">   * {<span class="pl-k">@inheritDoc</span>}</span>
+<span class="pl-c">   <span class="pl-c">*/</span></span>
+  <span class="pl-k">@Override</span>
+  <span class="pl-k">@RolesAllowed</span>(<span class="pl-smi">PermissionConstants</span><span class="pl-c1"><span class="pl-k">.</span>SAVE_TABLE</span>)
+  <span class="pl-k">public</span> <span class="pl-smi">TableEto</span> <span class="pl-en">saveTable</span>(<span class="pl-k">@Valid</span> <span class="pl-smi">TableEto</span> <span class="pl-v">table</span>) {
+     <span class="pl-c1">...</span>
+  }
+}</pre></div>
+</div>
+</div>
+<div>
+<p>We have defined the value of the annotation RolesAllowed as constants, so we need to create a constant class for this purpose. Continuing with the example, that is our constant class:</p>
+</div>
+<div>
+<div>
+<div class="highlight highlight-source-java"><pre><span class="pl-k">package</span> <span class="pl-smi">io.oasp.gastronomy.restaurant.general.common.api.constants</span>;
+
+<span class="pl-c"><span class="pl-c">/**</span></span>
+<span class="pl-c"> * Contains constants for the keys of all</span>
+<span class="pl-c"> * {<span class="pl-k">@link</span> io.oasp.module.security.common.api.accesscontrol.AccessControlPermission}s.</span>
+<span class="pl-c"> *</span>
+<span class="pl-c"> <span class="pl-c">*/</span></span>
+<span class="pl-k">public</span> <span class="pl-k">abstract</span> <span class="pl-k">class</span> <span class="pl-en">PermissionConstants</span> {
+
+  <span class="pl-c"><span class="pl-c">/*</span>* {@link io.oasp.module.security.common.api.accesscontrol.AccessControlPermission} to retrieve table. <span class="pl-c">*/</span></span>
+  <span class="pl-k">public</span> <span class="pl-k">static</span> <span class="pl-k">final</span> <span class="pl-smi">String</span> <span class="pl-c1">FIND_TABLE</span> <span class="pl-k">=</span> <span class="pl-s"><span class="pl-pds">"</span>FindTable<span class="pl-pds">"</span></span>;
+
+  <span class="pl-c"><span class="pl-c">/*</span>* {@link io.oasp.module.security.common.api.accesscontrol.AccessControlPermission} to save table. <span class="pl-c">*/</span></span>
+  <span class="pl-k">public</span> <span class="pl-k">static</span> <span class="pl-k">final</span> <span class="pl-smi">String</span> <span class="pl-c1">SAVE_TABLE</span> <span class="pl-k">=</span> <span class="pl-s"><span class="pl-pds">"</span>SaveTable<span class="pl-pds">"</span></span>;
+
+  <span class="pl-c"><span class="pl-c">/*</span>* {@link io.oasp.module.security.common.api.accesscontrol.AccessControlPermission} to remove table. <span class="pl-c">*/</span></span>
+  <span class="pl-k">public</span> <span class="pl-k">static</span> <span class="pl-k">final</span> <span class="pl-smi">String</span> <span class="pl-c1">DELETE_TABLE</span> <span class="pl-k">=</span> <span class="pl-s"><span class="pl-pds">"</span>DeleteTable<span class="pl-pds">"</span></span>;
+}</pre></div>
+</div>
+</div>
+</div>
+</div>
+        </div>
+
+        <div class="wiki-footer gollum-markdown-content boxed-group" id="wiki-footer">
+          <div class="boxed-group-inner wiki-auxiliary-content markdown-body">
+            <p><a href="http://creativecommons.org/licenses/by-nd/4.0/" rel="nofollow"><img alt="Creative Commons License Agreement" data-canonical-src="http://i.creativecommons.org/l/by-nd/4.0/88x31.png" src="https://camo.githubusercontent.com/171d004f9ccb9199e35ac8ec3d99ede916037a9f/687474703a2f2f692e6372656174697665636f6d6d6f6e732e6f72672f6c2f62792d6e642f342e302f38387833312e706e67"/></a><br/><span>This documentation</span> is licensed under the <a href="http://creativecommons.org/licenses/by-nd/4.0/" rel="nofollow">Creative Commons License (Attribution-NoDerivatives 4.0 International)</a>.</p>
+
+          </div>
+        </div>
+    </div>]

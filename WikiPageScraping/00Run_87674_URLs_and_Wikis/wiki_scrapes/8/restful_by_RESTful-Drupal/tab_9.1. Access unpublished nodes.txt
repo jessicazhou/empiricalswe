@@ -1,0 +1,69 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>To allow a node resource to access unpublished nodes, you will need to create a custom data provider. Following is some sample code that does this.</p>
+<div class="highlight highlight-text-html-php"><pre><span class="pl-pse">&lt;?php</span><span class="pl-s1"></span>
+<span class="pl-s1"></span>
+<span class="pl-s1"><span class="pl-c"><span class="pl-c">/**</span></span></span>
+<span class="pl-s1"><span class="pl-c"> * @file</span></span>
+<span class="pl-s1"><span class="pl-c"> * Contains \Drupal\my_module\Plugin\DataProvider\DataProviderNodeUnpublished.</span></span>
+<span class="pl-s1"><span class="pl-c"> <span class="pl-c">*/</span></span></span>
+<span class="pl-s1"></span>
+<span class="pl-s1"><span class="pl-c1">namespace</span> <span class="pl-c1">Drupal</span>\ <span class="pl-c1">my_module\Plugin\</span><span class="pl-c1">DataProvider</span>;</span>
+<span class="pl-s1"></span>
+<span class="pl-s1"></span>
+<span class="pl-s1"><span class="pl-k">use</span> <span class="pl-c1">Drupal\restful\Exception\BadRequestException</span>;</span>
+<span class="pl-s1"><span class="pl-k">use</span> <span class="pl-c1">Drupal\restful\Plugin\resource\DataProvider\DataProviderInterface</span>;</span>
+<span class="pl-s1"><span class="pl-k">use</span> <span class="pl-c1">Drupal\restful\Plugin\resource\DataProvider\DataProviderNode</span>;</span>
+<span class="pl-s1"></span>
+<span class="pl-s1"><span class="pl-k">class</span> <span class="pl-en">DataProviderNodeUnpublished</span> <span class="pl-k">extends</span> <span class="pl-e">DataProviderNode</span> <span class="pl-k">implements</span> <span class="pl-e">DataProviderInterface</span> {</span>
+<span class="pl-s1"></span>
+<span class="pl-s1">  <span class="pl-c"><span class="pl-c">/**</span></span></span>
+<span class="pl-s1"><span class="pl-c">   * Overrides DataProviderEntity::getQueryForList().</span></span>
+<span class="pl-s1"><span class="pl-c">   *</span></span>
+<span class="pl-s1"><span class="pl-c">   * Expose both published and unpublished nodes. Filter out anon results</span></span>
+<span class="pl-s1"><span class="pl-c">   * though, because unpublished anon results would otherwise be accessible to </span></span>
+<span class="pl-s1"><span class="pl-c">   * all anon users.</span></span>
+<span class="pl-s1"><span class="pl-c">   <span class="pl-c">*/</span></span></span>
+<span class="pl-s1">  <span class="pl-k">public</span> <span class="pl-k">function</span> <span class="pl-en">getQueryForList</span>() {</span>
+<span class="pl-s1">    <span class="pl-smi">$query</span> <span class="pl-k">=</span> <span class="pl-k">parent</span><span class="pl-k">::</span>getQueryForList();</span>
+<span class="pl-s1">    <span class="pl-smi">$this</span><span class="pl-k">-&gt;</span>removePublishedCondition(<span class="pl-smi">$query</span>);</span>
+<span class="pl-s1">    <span class="pl-k">return</span> <span class="pl-smi">$query</span>;</span>
+<span class="pl-s1">  }</span>
+<span class="pl-s1"></span>
+<span class="pl-s1">  <span class="pl-c"><span class="pl-c">/**</span></span></span>
+<span class="pl-s1"><span class="pl-c">   * Overrides DataProviderEntity::getQueryCount().</span></span>
+<span class="pl-s1"><span class="pl-c">   *</span></span>
+<span class="pl-s1"><span class="pl-c">   * Count both published and unpublished nodes.</span></span>
+<span class="pl-s1"><span class="pl-c">   <span class="pl-c">*/</span></span></span>
+<span class="pl-s1">  <span class="pl-k">public</span> <span class="pl-k">function</span> <span class="pl-en">getQueryCount</span>() {</span>
+<span class="pl-s1">    <span class="pl-smi">$query</span> <span class="pl-k">=</span> <span class="pl-k">parent</span><span class="pl-k">::</span>getQueryCount();</span>
+<span class="pl-s1">    <span class="pl-smi">$this</span><span class="pl-k">-&gt;</span>removePublishedCondition(<span class="pl-smi">$query</span>);</span>
+<span class="pl-s1">    <span class="pl-k">return</span> <span class="pl-smi">$query</span>;</span>
+<span class="pl-s1">  }</span>
+<span class="pl-s1"></span>
+<span class="pl-s1">  <span class="pl-c"><span class="pl-c">/**</span></span></span>
+<span class="pl-s1"><span class="pl-c">   * Remove the "Published" status condition from the passed query, if it has one.</span></span>
+<span class="pl-s1"><span class="pl-c">   *</span></span>
+<span class="pl-s1"><span class="pl-c">   * <span class="pl-k">@param</span>  dbQuery $query</span></span>
+<span class="pl-s1"><span class="pl-c">   *   The query object.</span></span>
+<span class="pl-s1"><span class="pl-c">   * <span class="pl-k">@return</span> dbQuery</span></span>
+<span class="pl-s1"><span class="pl-c">   *   The modified query object.</span></span>
+<span class="pl-s1"><span class="pl-c">   <span class="pl-c">*/</span></span></span>
+<span class="pl-s1">  <span class="pl-k">private</span> <span class="pl-k">function</span> <span class="pl-en">removePublishedCondition</span>(<span class="pl-smi">$query</span>) {</span>
+<span class="pl-s1">    <span class="pl-c"><span class="pl-c">//</span> The implementation is ugly, but seems Drupal offers nothing better:</span></span>
+<span class="pl-s1">    <span class="pl-k">foreach</span> (<span class="pl-smi">$query</span><span class="pl-k">-&gt;</span><span class="pl-smi">propertyConditions</span> <span class="pl-k">as</span> <span class="pl-smi">$id</span> <span class="pl-k">=&gt;</span> <span class="pl-smi">$condition</span>) {</span>
+<span class="pl-s1">      <span class="pl-k">if</span> (<span class="pl-smi">$condition</span>[<span class="pl-s"><span class="pl-pds">'</span>column<span class="pl-pds">'</span></span>] <span class="pl-k">===</span> <span class="pl-s"><span class="pl-pds">'</span>status<span class="pl-pds">'</span></span>) {</span>
+<span class="pl-s1">        <span class="pl-c1">unset</span>(<span class="pl-smi">$query</span><span class="pl-k">-&gt;</span><span class="pl-smi">propertyConditions</span>[<span class="pl-smi">$id</span>]);</span>
+<span class="pl-s1">      }</span>
+<span class="pl-s1">    }</span>
+<span class="pl-s1">  }</span>
+<span class="pl-s1">}</span></pre></div>
+<p>Finally, your resource definition will need to implement the following method, and specify your new custom data provider.</p>
+<p>eg</p>
+<div class="highlight highlight-text-html-php"><pre><span class="pl-s1">  <span class="pl-k">protected</span> <span class="pl-k">function</span> <span class="pl-en">dataProviderClassName</span>() {</span>
+<span class="pl-s1">    <span class="pl-k">return</span> <span class="pl-s"><span class="pl-pds">'</span>\Drupal\my_module\Plugin\DataProvider\DataProviderNodeUnpublished<span class="pl-pds">'</span></span>;</span>
+<span class="pl-s1">  }</span></pre></div>
+
+        </div>
+
+    </div>]

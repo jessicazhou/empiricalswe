@@ -1,0 +1,79 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>lark.js 的路由和 ror/odp 等框架的 controller/action 类似，但更简单。lark.js 将 controller和action合二为一，通过文件存放路径映射 url 路径，减少复杂度。</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#%E6%A0%B9%E6%8D%AE%E6%96%87%E4%BB%B6%E8%B7%AF%E5%BE%84%E8%87%AA%E5%8A%A8%E5%8A%A0%E8%BD%BD%E8%B7%AF%E7%94%B1" id="user-content-根据文件路径自动加载路由"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>根据文件路径自动加载路由</h2>
+<p>例如对于 web 页面的路由，可以写成类似于<code>php</code>的基于目录和文件名的路由形式。lark-router会将url对应的path分派到这个文件来处理，比如下面的路由:</p>
+<pre><code>/book/list?id=123
+</code></pre>
+<p>你只需在 controllers 目录下新建 book 目录，在book目录下新建 list.js, 在list.js中写如下代码来处理url对应的业务逻辑：</p>
+<pre><code>module.exports = function(router){
+    router.get('/', function *(next){
+         var id = this.request.id
+        // do something
+    })
+}
+</code></pre>
+<p>更多的例子:</p>
+<pre><code>controllers/index.js             ===&gt;  GET /
+controllers/demo.js              ===&gt;  GET /demo
+controllers/hello/world.js       ===&gt;  GET /hello/world
+controllers/demo/index.js        ===&gt;  GET /demo
+</code></pre>
+<p>使用如下方式匹配url参数：</p>
+<pre><code>router.get('/hello/:name', function * (next) {    // ===&gt; GET /hello/{name}  {name}是不含'/'的字符串
+  var name = this.params.name;
+});
+</code></pre>
+<p>输入'<a href="http://localhost:3000/hello/world',%E8%AF%A5%E4%BB%A3%E7%A0%81%E4%B8%AD%E7%9A%84'name'%E4%BC%9A%E5%BE%97%E5%88%B0" rel="nofollow">http://localhost:3000/hello/world',该代码中的'name'会得到</a> world的值</p>
+<pre><code>router.get('/foo/:bar*', function * (next) {       // ===&gt; GET /foo/{bar}     {bar}是/foo/之后的全部字符串
+  var bar  = this.params.bar;
+});
+</code></pre>
+<p>输入url路径'<a href="http://localhost:3000/hello/world/again',%E8%AF%A5%E4%BB%A3%E7%A0%81%E4%B8%AD%E7%9A%84'name'%E4%BC%9A%E5%BE%97%E5%88%B0" rel="nofollow">http://localhost:3000/hello/world/again',该代码中的'name'会得到</a> 'world/again'的值</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#restful-api-%E7%9A%84%E8%B7%AF%E7%94%B1" id="user-content-restful-api-的路由"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>RESTful API 的路由</h2>
+<p>特别的，对于 restful api 的路由，要设置路由的METHOD，可以写成如下形式:</p>
+<pre><code>router
+  .get('/', function *(next) {          // ===&gt; GET /?...
+    this.body = 'Hello World!';
+  })
+  .post('/', function *(next) {         // ===&gt; POST /?...
+    // ...
+  })
+  .put('/', function *(next) {          // ===&gt; PUT /?...
+    // ...
+  })
+  .del('/', function *(next) {          // ===&gt; DELETE /?...
+    // ...
+  });
+</code></pre>
+<h2>
+<a aria-hidden="true" class="anchor" href="#%E8%87%AA%E5%AE%9A%E4%B9%89%E8%B7%AF%E7%94%B1" id="user-content-自定义路由"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>自定义路由</h2>
+<p>除了lark自动加载的路由外，用户还可以在controller中自定义路由。</p>
+<p>首先引用原生的koa-router，创建原生路由对象。</p>
+<pre><code>var Router = require('koa-router');
+var _router = new Router();
+</code></pre>
+<p>之后添加路由规则。</p>
+<pre><code>_router.get('/xxx', function * () {
+    yield next
+})
+</code></pre>
+<p>最后通过<code>app.use</code>注册到系统中。由于controller在执行时的上下文绑定了<code>app</code>，所以可以通过<code>this.use</code>调用。</p>
+<pre><code>this.use(_router.routes());
+</code></pre>
+<p>完整示例：</p>
+<pre><code>var Router = require('koa-router');
+module.export = function (router) {
+    var _router = new Router();
+    _router.get('/xxx', function * () {
+        yield next
+    })
+    this.use(_router.routes());
+};
+</code></pre>
+
+        </div>
+
+    </div>]

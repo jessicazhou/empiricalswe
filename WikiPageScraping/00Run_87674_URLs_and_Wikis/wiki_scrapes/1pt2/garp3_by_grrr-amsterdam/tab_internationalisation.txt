@@ -1,0 +1,119 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <h1>
+<a aria-hidden="true" class="anchor" href="#how-to-internationalise-a-garp-app" id="user-content-how-to-internationalise-a-garp-app"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>How to internationalise a Garp app</h1>
+<ul>
+<li>In <code>core.ini</code>, change <code>resources.router.locale.enabled</code> to true.</li>
+<li>In <code>core.ini</code>, make sure <code>resources.locale.force</code> is set to true.</li>
+<li>Make sure <code>resources.frontController.params.locales</code> is an array with a couple of locales.</li>
+<li>Make sure <code>resources.locale.default</code> is set to something.</li>
+<li>Configure snippet model to have i18n fields (look at Melkweg for an example) and run a <code>g spawn</code>.</li>
+<li>Configure <code>resources.locale.translate.adapter</code> as <code>"Garp_I18n_Translate_Adapter_Snippet"</code>.</li>
+<li>Run <code>g snippet storeI18nStrings</code>. This takes all the strings from the file-based i18n store (e.g. <code>garp/application/data/i18n/nl.php</code>) and stores them as snippets. You might want to pass <code>--editable=0</code> if you don't want to burden the admins with these snippets in the CMS. They're mostly system messages and CMS strings so it's not entirely crazy to leave them out.
+(note: this does not populate <code>snippets.ini</code>. Harmen is sorta working on that)</li>
+<li>Start adding snippets to <code>snippets.ini</code> and replace ALL hard-coded strings with <code>__('identifier')</code> (remember to escape the output!).</li>
+<li>Add <code>multilingual: true</code> to any existing model column that you wish to be internationalised. Remember this for new models. Spawn again.</li>
+</ul>
+<h2>
+<a aria-hidden="true" class="anchor" href="#querying-models" id="user-content-querying-models"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Querying models</h2>
+<p>When fetching from models, make sure you're fetching from the derived, localised version. Instead of using</p>
+<pre><code>$eventModel = new Model_Event();
+$event = $eventModel-&gt;fetchBySlug('foobar');
+</code></pre>
+<p>You will need to use <code>Garp_I18n_ModelFactory</code>:</p>
+<pre><code>$modelFactory = new Garp_I18n_ModelFactory();
+$eventModel = $modelFactory-&gt;getModel('Event');
+$event = $eventModel-&gt;fetchBySlug('foobar');
+</code></pre>
+<h3>
+<a aria-hidden="true" class="anchor" href="#on-binding-models" id="user-content-on-binding-models"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>On binding models</h3>
+<p>Binding internationalized models is a little more work, because you need to let Garp know it should use a root table's relation <code>rule</code> for another model (the localized one).</p>
+<p>This requires changing its <code>referenceMap</code> property at runtime. Use the <code>Garp_Model_ReferenceMapLocalizer</code> for this.
+An example:</p>
+<pre><code>&lt;?php
+$modelFactory = new Garp_I18n_ModelFactory();
+$tagModel = $modelFactory-&gt;getModel('Tag');
+
+$localizer = new Garp_Model_ReferenceMapLocalizer($tagModel);
+$localizer-&gt;populate('Model_Article');
+
+$tagModel-&gt;bindModel('Model_Article', array(
+  'modelClass' =&gt; $modelFactory-&gt;getModel('Article')
+));
+?&gt;
+</code></pre>
+<h2>
+<a aria-hidden="true" class="anchor" href="#internationalised-routes" id="user-content-internationalised-routes"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Internationalised routes</h2>
+<p>If you want to use translated routes, you need to configure a routes file per locale.
+Configure this like so:</p>
+<pre><code>resources.router.routesFile.generic = APPLICATION_PATH "/configs/routes.ini"
+resources.router.routesFile.nl = APPLICATION_PATH "/configs/routes_nl.ini"
+resources.router.routesFile.en = APPLICATION_PATH "/configs/routes_en.ini"
+</code></pre>
+<h2>
+<a aria-hidden="true" class="anchor" href="#linking-to-the-same-page-in-a-different-language" id="user-content-linking-to-the-same-page-in-a-different-language"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Linking to the same page in a different language</h2>
+<p>In other words, how to make a language switch?</p>
+<div class="highlight highlight-text-html-php"><pre><span class="pl-s1"><span class="pl-k">foreach</span> (<span class="pl-smi">$this</span><span class="pl-k">-&gt;</span>config()<span class="pl-k">-&gt;</span><span class="pl-smi">resources</span><span class="pl-k">-&gt;</span><span class="pl-smi">frontController</span><span class="pl-k">-&gt;</span><span class="pl-smi">params</span><span class="pl-k">-&gt;</span><span class="pl-smi">locales</span> <span class="pl-k">as</span> <span class="pl-smi">$i</span> <span class="pl-k">=&gt;</span> <span class="pl-smi">$altLang</span>):</span>
+<span class="pl-s1">  <span class="pl-smi">$urlParams</span> <span class="pl-k">=</span> <span class="pl-c1">isset</span>(<span class="pl-smi">$this</span><span class="pl-k">-&gt;</span><span class="pl-smi">alternateUrlParams</span>[<span class="pl-smi">$altLang</span>]) ?</span>
+<span class="pl-s1">    <span class="pl-smi">$this</span><span class="pl-k">-&gt;</span><span class="pl-smi">alternateUrlParams</span>[<span class="pl-smi">$altLang</span>] : <span class="pl-c1">array</span>();</span>
+<span class="pl-s1"></span>
+<span class="pl-s1">  <span class="pl-smi">$alternateUrl</span> <span class="pl-k">=</span> <span class="pl-smi">$this</span><span class="pl-k">-&gt;</span>fullUrl(</span>
+<span class="pl-s1">    <span class="pl-smi">$this</span><span class="pl-k">-&gt;</span>i18n()<span class="pl-k">-&gt;</span>getAlternateUrl(<span class="pl-smi">$altLang</span>, <span class="pl-smi">$urlParams</span>), <span class="pl-c1">false</span>, <span class="pl-c1">true</span>);</span>
+<span class="pl-s1"></span>
+<span class="pl-s1">  <span class="pl-c1">echo</span> <span class="pl-smi">$this</span><span class="pl-k">-&gt;</span>htmlLink(<span class="pl-smi">$alternateUrl</span>, <span class="pl-smi">$altLang</span>, <span class="pl-c1">array</span>(</span>
+<span class="pl-s1">    <span class="pl-s"><span class="pl-pds">'</span>rel<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-s"><span class="pl-pds">'</span>alternate<span class="pl-pds">'</span></span>,</span>
+<span class="pl-s1">    <span class="pl-s"><span class="pl-pds">'</span>hreflang<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-smi">$altLang</span></span>
+<span class="pl-s1">  ));</span>
+<span class="pl-s1"><span class="pl-k">endforeach</span>;</span></pre></div>
+<p>Let's break it up to see what this all means:</p>
+<div class="highlight highlight-text-html-php"><pre><span class="pl-s1"><span class="pl-k">foreach</span> (<span class="pl-smi">$this</span><span class="pl-k">-&gt;</span>config()<span class="pl-k">-&gt;</span><span class="pl-smi">resources</span><span class="pl-k">-&gt;</span><span class="pl-smi">frontController</span><span class="pl-k">-&gt;</span><span class="pl-smi">params</span><span class="pl-k">-&gt;</span><span class="pl-smi">locales</span> <span class="pl-k">as</span> <span class="pl-smi">$i</span> <span class="pl-k">=&gt;</span> <span class="pl-smi">$altLang</span>):</span></pre></div>
+<p>Loops over all available languages.</p>
+<div class="highlight highlight-text-html-php"><pre><span class="pl-s1"><span class="pl-smi">$urlParams</span> <span class="pl-k">=</span> <span class="pl-c1">isset</span>(<span class="pl-smi">$this</span><span class="pl-k">-&gt;</span><span class="pl-smi">alternateUrlParams</span>[<span class="pl-smi">$altLang</span>]) ?</span>
+<span class="pl-s1">    <span class="pl-smi">$this</span><span class="pl-k">-&gt;</span><span class="pl-smi">alternateUrlParams</span>[<span class="pl-smi">$altLang</span>] : <span class="pl-c1">array</span>();</span></pre></div>
+<p>Checks to see if <code>$this-&gt;alternateUrlParams</code> is provided and wether the current language has an index in there. More on this later.</p>
+<div class="highlight highlight-text-html-php"><pre><span class="pl-s1"><span class="pl-smi">$alternateUrl</span> <span class="pl-k">=</span> <span class="pl-smi">$this</span><span class="pl-k">-&gt;</span>fullUrl(</span>
+<span class="pl-s1">  <span class="pl-smi">$this</span><span class="pl-k">-&gt;</span>i18n()<span class="pl-k">-&gt;</span>getAlternateUrl(<span class="pl-smi">$altLang</span>, <span class="pl-smi">$urlParams</span>), <span class="pl-c1">false</span>, <span class="pl-c1">true</span>);</span></pre></div>
+<p>Get the current route in a different language.</p>
+<div class="highlight highlight-text-html-php"><pre><span class="pl-s1"><span class="pl-c1">echo</span> <span class="pl-smi">$this</span><span class="pl-k">-&gt;</span>htmlLink(<span class="pl-smi">$alternateUrl</span>, <span class="pl-smi">$altLang</span>, <span class="pl-c1">array</span>(</span>
+<span class="pl-s1">  <span class="pl-s"><span class="pl-pds">'</span>rel<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-s"><span class="pl-pds">'</span>alternate<span class="pl-pds">'</span></span>,</span>
+<span class="pl-s1">  <span class="pl-s"><span class="pl-pds">'</span>hreflang<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-smi">$altLang</span></span>
+<span class="pl-s1">));</span></pre></div>
+<p>Echo the link with some sensible attributes.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#route-params" id="user-content-route-params"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Route params</h3>
+<p>Some alternate routes are easy. <code>/nl/over-ons</code> might become <code>/en/about-us</code>. We can just parse that from the routes file.<br/>
+Other routes are more complicated, because the need params. These are the routes that are configured like this: <code>/blog/:slug</code>. That <code>:slug</code> bit is determined at runtime and it's therefore the responsibility of the developer to make sure to pass it from the controller to the view. In Dutch you might have <code>/nl/blog/hallo-wereld</code>, in English it would become <code>/en/blog/hello-world</code>.</p>
+<p>To grab these alternate parameters you can use the controller helper <code>Garp_Controller_Helper_I18nAlternative</code>:</p>
+<div class="highlight highlight-text-html-php"><pre><span class="pl-s1"><span class="pl-c"><span class="pl-c">//</span> from controller</span></span>
+<span class="pl-s1"><span class="pl-smi">$this</span><span class="pl-k">-&gt;</span><span class="pl-smi">view</span><span class="pl-k">-&gt;</span><span class="pl-smi">alternateUrlParams</span> <span class="pl-k">=</span></span>
+<span class="pl-s1">  <span class="pl-smi">$this</span><span class="pl-k">-&gt;</span><span class="pl-smi">_helper</span><span class="pl-k">-&gt;</span>I18nAlternative(<span class="pl-s"><span class="pl-pds">'</span>BlogPost<span class="pl-pds">'</span></span>, <span class="pl-s"><span class="pl-pds">'</span>blog_post_id<span class="pl-pds">'</span></span>, <span class="pl-smi">$row</span>);</span></pre></div>
+<p>This expects three parameters:</p>
+<ol>
+<li>The model name</li>
+<li>The foreign key from the i18n table to the base table</li>
+<li>The row that's viewed at the moment</li>
+</ol>
+<p><em>Warning</em>: right now this helper only concerns itself with the <code>slug</code> column. If you need other parameters in your alternate route, this might need refactoring.</p>
+<p>The result of that call looks something like:</p>
+<div class="highlight highlight-text-html-php"><pre><span class="pl-s1"><span class="pl-k">Array</span></span>
+<span class="pl-s1">(</span>
+<span class="pl-s1">    [<span class="pl-c1">nl</span>] <span class="pl-k">=&gt;</span> <span class="pl-k">Array</span></span>
+<span class="pl-s1">        (</span>
+<span class="pl-s1">            [<span class="pl-c1">slug</span>] <span class="pl-k">=&gt;</span> <span class="pl-c1">ff</span><span class="pl-k">-</span><span class="pl-c1">c</span><span class="pl-k">-</span><span class="pl-c1">blog</span></span>
+<span class="pl-s1">        )</span>
+<span class="pl-s1"></span>
+<span class="pl-s1">    [<span class="pl-c1">en</span>] <span class="pl-k">=&gt;</span> <span class="pl-k">Array</span></span>
+<span class="pl-s1">        (</span>
+<span class="pl-s1">            [<span class="pl-c1">slug</span>] <span class="pl-k">=&gt;</span> <span class="pl-c1">free</span><span class="pl-k">-</span><span class="pl-c1">charging</span><span class="pl-k">-</span><span class="pl-k">for</span><span class="pl-k">-</span><span class="pl-c1">fastned</span><span class="pl-k">-</span><span class="pl-c1">founders</span><span class="pl-k">-</span><span class="pl-c1">forever</span></span>
+<span class="pl-s1">        )</span>
+<span class="pl-s1"></span>
+<span class="pl-s1">    [<span class="pl-c1">de</span>] <span class="pl-k">=&gt;</span> <span class="pl-k">Array</span></span>
+<span class="pl-s1">        (</span>
+<span class="pl-s1">            [<span class="pl-c1">slug</span>] <span class="pl-k">=&gt;</span> <span class="pl-c1">ff</span><span class="pl-k">-</span><span class="pl-c1">c</span><span class="pl-k">-</span><span class="pl-c1">blog</span></span>
+<span class="pl-s1">        )</span>
+<span class="pl-s1"></span>
+<span class="pl-s1">)<span class="pl-s"><span class="pl-pds">`</span><span class="pl-pds">`</span><span class="pl-pds">`</span></span></span></pre></div>
+
+        </div>
+
+    </div>]

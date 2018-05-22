@@ -1,0 +1,163 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>On this page:</p>
+<ul>
+<li>Types of Fields and Properties</li>
+<li>Public field array keys</li>
+<li>Disabling a field</li>
+<li>Accepting data (POST and PUT requests)</li>
+</ul>
+<p>RESTful defines several resource kinds through <strong>data providers</strong>, for example <strong>db table resources</strong>, <strong>entity resources</strong> and more.</p>
+<p><strong>Resources</strong> will usually want to provide <strong>public fields</strong>, which are the fields that the API makes available for requests to that endpoint.</p>
+<p>Your resource plugin will need to implement the method <code>publicFields</code> which returns an array describing the fields you wish to make public.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#types-of-fields-and-properties" id="user-content-types-of-fields-and-properties"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Types of Fields and Properties</h2>
+<p>These fields are either Drupal fields, Drupal entity properties (such as nid, status, created etc) or completely arbitrary API fields that return anything you want. A simple example array for the latter would look like:</p>
+<div class="highlight highlight-text-html-php"><pre><span class="pl-s1"><span class="pl-smi">$public_fields</span>[<span class="pl-s"><span class="pl-pds">'</span>myField<span class="pl-pds">'</span></span>] <span class="pl-k">=</span> <span class="pl-c1">array</span>(</span>
+<span class="pl-s1">  <span class="pl-s"><span class="pl-pds">'</span>callback<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-c1">array</span>(<span class="pl-smi">$this</span>, <span class="pl-s"><span class="pl-pds">'</span>myFieldDataProviderCallbackWithALongName<span class="pl-pds">'</span></span>),</span>
+<span class="pl-s1">);</span></pre></div>
+<p>which will call the specified function on the resource class your <code>publicFields</code> is defined in:</p>
+<div class="highlight highlight-text-html-php"><pre><span class="pl-s1"><span class="pl-k">public</span> <span class="pl-k">function</span> <span class="pl-en">myFieldDataProviderCallbackWithALongName</span>() {</span>
+<span class="pl-s1">  <span class="pl-k">return</span> <span class="pl-s"><span class="pl-pds">'</span>barry<span class="pl-pds">'</span></span>;</span>
+<span class="pl-s1">}</span></pre></div>
+<p>A more typical case would be returning a field or property of the entity you're exposing on this resource. The following example exposes the author user ID:</p>
+<div class="highlight highlight-text-html-php"><pre><span class="pl-s1"><span class="pl-smi">$public_fields</span>[<span class="pl-s"><span class="pl-pds">'</span>uid<span class="pl-pds">'</span></span>] <span class="pl-k">=</span> <span class="pl-c1">array</span>(</span>
+<span class="pl-s1">  <span class="pl-s"><span class="pl-pds">'</span>property<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-s"><span class="pl-pds">'</span>author<span class="pl-pds">'</span></span>,</span>
+<span class="pl-s1">  <span class="pl-s"><span class="pl-pds">'</span>sub_property<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-s"><span class="pl-pds">'</span>uid<span class="pl-pds">'</span></span>,</span>
+<span class="pl-s1">);</span></pre></div>
+<h2>
+<a aria-hidden="true" class="anchor" href="#public-field-array-keys" id="user-content-public-field-array-keys"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Public field array keys</h2>
+<p>The <code>publicFields</code> method is originally defined in the class <code>\Drupal\restful\Plugin\resource\Resource</code>, and there you can find the following documentation about this array.</p>
+<ul>
+<li>
+<p><strong>"access_callbacks"</strong>: An array of callbacks to determine if user has access
+to the property. Note that this callback is on top of the access provided by
+entity API, and is used for convenience, where for example write
+operation on a property should be denied only on certain request
+conditions. The Passed arguments are:</p>
+<ul>
+<li>
+<strong>op</strong>: The operation that access should be checked for. Can be "view" or
+"edit".</li>
+<li>
+<strong>public_field_name</strong>: The name of the public field.</li>
+<li>
+<strong>property_wrapper</strong>: The wrapped property.</li>
+<li>
+<strong>wrapper</strong>: The wrapped entity.</li>
+</ul>
+<p>The 'op' argument should return:</p>
+<ul>
+<li>
+<code>\Drupal\restful\Plugin\resource\Field\ResourceFieldBase::ACCESS_ALLOW</code>,</li>
+<li>
+<code>\Drupal\restful\Plugin\resource\Field\ResourceFieldBase::ACCESS_DENY</code>, or</li>
+<li>
+<code>\Drupal\restful\Plugin\resource\Field\ResourceFieldBase::ACCESS_IGNORE</code>.</li>
+</ul>
+</li>
+<li>
+<p><strong>"property"</strong>: The entity property (e.g. "title", "nid"). Name of the
+property as described in <code>hook_entity_property_info</code>. Field API fields get
+this info by default, but you can declare your own.</p>
+</li>
+<li>
+<p><strong>"sub_property"</strong>: A sub property name of a property to take from it the
+content. This can be used for example on a text field with filtered text
+input format where we would need to do $wrapper-&gt;body-&gt;value-&gt;value().
+Defaults to FALSE.</p>
+</li>
+<li>
+<p><strong>"formatter"</strong>: Used for rendering the value of a configurable field using
+Drupal field API's formatter. The value is the $display value that is
+passed to field_view_field().</p>
+</li>
+<li>
+<p><strong>"wrapper_method"</strong>: The wrapper's method name to perform on the field.
+This can be used for example to get the entity label, by setting the
+value to "label". Defaults to "value".</p>
+</li>
+<li>
+<p><strong>"wrapper_method_on_entity"</strong>: A Boolean to indicate on what to perform
+the wrapper method. If TRUE the method will perform on the entity (e.g.
+$wrapper-&gt;label()) and FALSE on the property or sub property
+(e.g. $wrapper-&gt;field_reference-&gt;label()). Defaults to FALSE.</p>
+</li>
+<li>
+<p><strong>"column"</strong>: If the property is a field, set the column that would be used
+in queries. For example, the default column for a text field would be
+"value". Defaults to the first column returned by field_info_field(),
+otherwise FALSE.</p>
+</li>
+<li>
+<p><strong>"callback"</strong>: A callable callback to get a computed value. The wrapped
+entity is passed as argument. Defaults To FALSE.
+The callback function receive as first argument the entity
+EntityMetadataWrapper object. <strong>CAUTION:</strong> Computed values do not provide
+free integration with <em>sorts</em> and <em>filters</em>.</p>
+</li>
+<li>
+<p><strong>"process_callbacks"</strong>: An array of callbacks to perform on the returned
+value, or an array with the object and method. Defaults to an empty array.
+When applying <em>filters</em> and <em>sorts</em> to any public field with process
+callbacks, the original unprocessed value will be considered.</p>
+</li>
+<li>
+<p><strong>"resource"</strong>: This property can be assigned only to an entity reference
+field. An array as the value, with:</p>
+<ul>
+<li>
+<strong>"name"</strong>: The resource name.</li>
+<li>
+<strong>"fullView"</strong>: Determines if the referenced resource should be rendered,
+or just the referenced ID(s) to appear. Defaults to TRUE.</li>
+<li>
+<strong>"majorVersion"</strong>: The major version of the resource to use.</li>
+<li>
+<strong>"minorVersion"</strong>: The minor version of the resource to use.</li>
+</ul>
+</li>
+</ul>
+<div class="highlight highlight-text-html-php"><pre><span class="pl-s1">  <span class="pl-c1">array</span>(</span>
+<span class="pl-s1">    <span class="pl-s"><span class="pl-pds">'</span>name<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-s"><span class="pl-pds">'</span>pages<span class="pl-pds">'</span></span>,</span>
+<span class="pl-s1">    <span class="pl-s"><span class="pl-pds">'</span>fullView<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-c1">FALSE</span>,</span>
+<span class="pl-s1">    <span class="pl-s"><span class="pl-pds">'</span>majorVersion<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-c1">2</span>,</span>
+<span class="pl-s1">    <span class="pl-s"><span class="pl-pds">'</span>minorVersion<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-c1">1</span>,</span>
+<span class="pl-s1">  );</span></pre></div>
+<ul>
+<li>
+<strong>"methods"</strong>: An array of HTTP methods allowed for this field. If a field
+is write only, set this to:</li>
+</ul>
+<div class="highlight highlight-text-html-php"><pre><span class="pl-s1">  <span class="pl-s"><span class="pl-pds">'</span>methods<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-c1">array</span>(</span>
+<span class="pl-s1">    <span class="pl-c1">\Drupal\restful\Http\</span><span class="pl-c1">RequestInterface</span><span class="pl-k">::</span><span class="pl-c1">METHOD_POST</span>,</span>
+<span class="pl-s1">    <span class="pl-c1">\Drupal\restful\Http\</span><span class="pl-c1">RequestInterface</span><span class="pl-k">::</span><span class="pl-c1">METHOD_PUT</span>,</span>
+<span class="pl-s1">    <span class="pl-c1">\Drupal\restful\Http\</span><span class="pl-c1">RequestInterface</span><span class="pl-k">::</span><span class="pl-c1">METHOD_PATCH</span>,</span>
+<span class="pl-s1">  );</span></pre></div>
+<ul>
+<li>
+<strong>"class"</strong>: Each public field is mapped to a Field class. RESTful assigns a class to each field automatically if none is provided, based on the the field's type (e.g. entity reference, text, text-long, file, image etc). This is done in <code>ResourceField::fieldClassName()</code>. If you wish, you may specify each field's class explicitly inside <code>publicFields()</code>, e.g.</li>
+</ul>
+<div class="highlight highlight-text-html-php"><pre><span class="pl-s1"><span class="pl-smi">$public_fields</span>[<span class="pl-s"><span class="pl-pds">'</span>myNewField<span class="pl-pds">'</span></span>] <span class="pl-k">=</span> <span class="pl-c1">array</span>(</span>
+<span class="pl-s1">  <span class="pl-s"><span class="pl-pds">'</span>class<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-s"><span class="pl-pds">'</span>\Drupal\restful\Plugin\resource\Field\ResourceFieldKeyValue<span class="pl-pds">'</span></span>,</span>
+<span class="pl-s1">  <span class="pl-c"><span class="pl-c">//</span> etc...</span></span>
+<span class="pl-s1">}</span></pre></div>
+<h2>
+<a aria-hidden="true" class="anchor" href="#disabling-a-field" id="user-content-disabling-a-field"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Disabling a field</h2>
+<p>If you want to disable a field without removing it –so it can be used programatically–. You can set the <em>methods</em> to an empty array.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#accepting-data-post-and-put-requests" id="user-content-accepting-data-post-and-put-requests"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Accepting data (POST and PUT requests)</h2>
+<p>Generally, data will be expected by RESTful (from POST and PUT requests) in the same format that it would be provided (in response to a GET request).</p>
+<p>For example, the following public field definition:</p>
+<div class="highlight highlight-text-html-php"><pre><span class="pl-s1">      <span class="pl-s"><span class="pl-pds">'</span>description<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-c1">array</span>(</span>
+<span class="pl-s1">        <span class="pl-s"><span class="pl-pds">'</span>property<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-s"><span class="pl-pds">'</span>body<span class="pl-pds">'</span></span>,</span>
+<span class="pl-s1">        <span class="pl-s"><span class="pl-pds">'</span>sub_property<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-s"><span class="pl-pds">'</span>value<span class="pl-pds">'</span></span>,</span>
+<span class="pl-s1">      ),</span></pre></div>
+<p>Would provide and expect that field's data in the following format:</p>
+<div class="highlight highlight-source-json"><pre>{
+  <span class="pl-s"><span class="pl-pds">"</span>description<span class="pl-pds">"</span></span>: <span class="pl-s"><span class="pl-pds">"</span>Some text<span class="pl-pds">"</span></span>,
+}</pre></div>
+
+        </div>
+
+    </div>]

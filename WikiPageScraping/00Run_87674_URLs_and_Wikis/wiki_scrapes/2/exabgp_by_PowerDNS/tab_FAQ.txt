@@ -1,0 +1,193 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p><strong>Where can I ask for help ??</strong></p>
+<p>The best place to start is our <a href="http://groups.google.com/group/exabgp-users/" rel="nofollow">google group</a> (email <a href="mailto:exabgp-users@googlegroups.com">exabgp-users@googlegroups.com</a>) and private <a href="https://plus.google.com/u/0/communities/108249711110699351497" rel="nofollow">Google + community</a> (prevents spam and co)</p>
+<p>But feel free to contact me privately if you want  via mail and/or jabber at</p>
+<pre><code>&gt; echo 'print ".".join(["exabgp@exa-networks","co","uk"])' | python
+&gt; echo 'print ".".join(["thomas","mangin@exa-networks","co","uk"])' | python
+</code></pre>
+<hr/>
+<p><strong>When can I ask for help ??</strong></p>
+<pre><code>I normally answer as soon as I see the mails. My timezone is BST (United Kingdom).
+</code></pre>
+<hr/>
+<p><strong>Where is the documentation ?</strong></p>
+<pre><code>Here and in the code .. really do you need more ??
+If so please feel free to contribute some, I am a terrible author and my english despicable.
+</code></pre>
+<hr/>
+<p><strong>Is this code supported ?</strong></p>
+<pre><code>Yes - Should you find any bugs, please report it, and I will fix them
+</code></pre>
+<hr/>
+<p><strong>I can not connect to ExaBGP</strong></p>
+<pre><code>ExaBGP does not listen for incoming connection by default. You must specify the IP to listen to (default port is 179).
+
+&gt; env exabgp.tcp.bind="127.0.0.1" exabgp.tcp.port=1790 ../../../sbin/exabgp first.conf
+</code></pre>
+<hr/>
+<p><strong>Quagga is not happy with ExaBGP</strong></p>
+<pre><code>ExaBGP will refuse BGP OPEN message with a router-id of 0.0.0.0 in accordance with RFC6286.
+This is quagga's default router-id.
+Quagga users need to setup their router-id to a non zero value when connecting to ExaBGP.
+</code></pre>
+<hr/>
+<p><strong>Does it work on Linux, MAC OS X, Windows ?</strong></p>
+<pre><code>Linux: yes, it is our deployment environment
+MACOS: yes, it is developed on MAC OSX 10.7
+Windows: It should, but I have never tried. Let me know your experience.
+</code></pre>
+<hr/>
+<p><strong>How can I make exabgp reload its configuration ?</strong></p>
+<pre><code>From 3.2 stable, send it a SIGUSR1, for example:
+linux &gt; kill -SIGUSR1 &lt;pid&gt;
+BSD   &gt; kill -s SIGUSR1 &lt;pid&gt;
+
+It forces ExaBGP to compare the previous and new configuration,
+tear down and setup new peers, tear down sessions for un-configured ones,
+and announce/withdraw the routes which changed. 
+	
+Previous versions were using SIGHUP, it was changed to accommodate processes run within "screen".
+"screen" sends SIGHUP to the program run when it terminates.
+</code></pre>
+<hr/>
+<p><strong>I keep seeing "could not connect to peer (if you use MD5, check your passwords): timed out" in the logs</strong></p>
+<pre><code>OR your machine can not contact the router (firewall, routing issue, ...)
+OR your MD5 passwords are not the same on both machines
+OR you need to enable multi-hop BGP on your router
+OR you are a FreeBSD user that has the incorrect password in /etc/ipsec.conf
+</code></pre>
+<hr/>
+<p><strong>I keep seeing "FreeBSD requires that you set your MD5 key via ipsec.conf." in the logs</strong></p>
+<pre><code>You are attempting to configure a TCP MD5 Signature password from within the exabgp config file.
+You must add 'md5 kernel;' to your configuration and follow the rest of the instructions on the
+[examples] page.
+</code></pre>
+<hr/>
+<p><strong>I keep seeing "FreeBSD requires that you rebuild your kernel to enable TCP MD5 Signatures.  Please review the documentation" in the logs</strong></p>
+<pre><code>You are using FreeBSD, however, you have not recompiled your kernel based on the instructions.
+</code></pre>
+<hr/>
+<p><strong>I keep seeing "The client took over <code>&lt;number&gt;</code> seconds to send the OPEN, closing"</strong></p>
+<pre><code>There is likely a problem with BGP Connection Collision Detection
+Make sure that either ExaBPG router-id is BIGGER than your router configured router-id
+or your router is in passive mode (does not try to establish outgoing connection).
+
+For cisco 12.4 and later it is : 
+neighbor X.X.X.X transport connection-mode passive
+</code></pre>
+<p>For Juniper :
+set protocols bgp group group-name neighbor address passive</p>
+<hr/>
+<p><strong>I keep seeing "This OS does not support TCP_MD5SIG, you can not use MD5 : Errno 42 Protocol not available" in the logs</strong></p>
+<pre><code>You are most likely using a MAC and trying to use MD5 password
+It does not work, if you need MD5 please use another OS
+</code></pre>
+<hr/>
+<p><strong>I keep seeing "Received Notification (3,10) from peer UPDATE message error: Invalid Network Field." in the logs</strong></p>
+<pre><code>You are most likely trying to send IPv6 route(s) to a router which is not ready to accept them
+You can check this by looking at the printed OPEN in the logs.
+
+Or you are trying to send an IPv4 address on a session which only negotiated IPv6
+This is caused as we send the route(s) even if the router did not announce the protocol
+To fix it under junos type "set family inet6 unicast" under your bgp group or peer 
+</code></pre>
+<hr/>
+<p><strong>I am trying to send some IPv6 routes to my router but the connection never stays up</strong></p>
+<pre><code>You may need to enable family inet6 for this peer.
+juniper: 
+
+set protocol bgp group mygroup neighbor IP family inet6 unicast
+set protocol bgp group mygroup neighbor IP family inet  unicast
+
+Do not forget to explicitly enable IPv4 as well if you are planning to send both v6 and v4 routes
+</code></pre>
+<hr/>
+<p><strong>All seems fine but my route is not added to the routing table</strong></p>
+<pre><code>You may need to allow for non-directly connected next-hop
+juniper:
+
+set protocol bgp group mygroup neighbor IP accept-remote-nexthop
+</code></pre>
+<hr/>
+<p><strong>Juniper does accept connection when I specify an HoldTime inferior to 20 seconds</strong></p>
+<pre><code>Junipers will not accept a holdtime &lt; 20 seconds ..
+unless you enable a hidden command that lets you get it down to 6.
+
+You can set it in the BGP protcols, group or neighbor level to set the configuration:
+
+set minimum-hold-time 1
+                      ^
+value 1 is not within range (6..65535) at '1'
+</code></pre>
+<hr/>
+<p><strong>I see I can specify the as-path (as-sequence) sent to the peer. Do you prepend the router ASN to peers ?</strong></p>
+<pre><code>EBGP: we will add the router ASN automatically, to prevent BGP loops.
+IBGP: it is used "as it".
+</code></pre>
+<hr/>
+<p><strong>Can I connect using a IPv6 connection ?</strong></p>
+<pre><code>Yes, IPv6 is a first class citizen here :)
+</code></pre>
+<hr/>
+<p><strong>Can you maintain more than one BGP session ?</strong></p>
+<pre><code>Yes, you can define more than one neighbor in the configuration file
+Or have multiple instance running (like one instance per peer)
+</code></pre>
+<hr/>
+<p><strong>What is this "split" feature you can use on a route ?</strong></p>
+<pre><code>exabgp allows you to write "route 10.0.0./16 next-hop 1.2.3.4 split /24"
+This will then result in the announcement of the 256 x /24 routes which makes the /16
+This is useful if you want to block large netmasks but to make sure your routes are used by the router 
+</code></pre>
+<hr/>
+<p><strong>Can I save the program PID to use it with external scripts ?</strong></p>
+<pre><code>Yes, just set the PID environment value with the location of the file
+</code></pre>
+<p>examples :</p>
+<pre><code>&gt; env PID="/var/run/exabgp.pid" /opt/bin/bgpd /opt/etc/bgp/config.txt
+&gt; export PID="/var/run/exabgp.pid" 
+&gt; /opt/bin/bgpd /opt/etc/bgp/config.txt 
+</code></pre>
+<hr/>
+<p><strong>Are you planning to add more features ?</strong></p>
+<pre><code>It has been a long time since I added a feature for my own use, so YES, I do try to help others !
+</code></pre>
+<hr/>
+<p><strong>Why did you implement Graceful Restart ?</strong></p>
+<pre><code>My use case are machines announcing service IPs without lower MED/Local Prefence backup machines
+ready to take the over in case of problems. The BGP IPs are then still routed during reboots and
+in case of very high load for example it will not render the service IP unreacheable if some
+keepalive are missed.
+
+If no graceful-restart time is set, the waiting time is set to be the same as the hold-time.
+As servers often take much longer than the default 180 seconds to reboots, we recommend that
+you set the graceful-restart timer to a much higher value.
+</code></pre>
+<hr/>
+<p><strong>I would like to inject routes in the network but my server is behind a NATing firewall, will it work ?</strong></p>
+<pre><code>NAT is not a good idea but: Yes, it will work.
+Set your local-address as your machine LAN IP and the router-id as the firewall public IP.
+</code></pre>
+<hr/>
+<p><strong>As the code is single threaded, can a blocking network IO with one peer cause issues with another ?</strong></p>
+<pre><code>We are using select to read data when available on the socket but we are not using a dedicated thread
+for keepalive.
+
+If it be a concern, run one instance of the program per peer.
+
+High Disk IO (causing a long pause on configuration reload) may have the same effect,
+that is why the default run script renice positively the program.
+</code></pre>
+<hr/>
+<p><strong>As you have no separate thread for keepalives, how many peers do you think one instance can manage comfortably?</strong></p>
+<pre><code>it will really depend on the number of routes exchanged, and many other parameters,
+but under normal use (even thousand of routes) you should never encounter an issue.
+If unsure, just drop me a mail. I have heard of deployment with 160 peers
+(low volume of routes update) .. and some others with one peers and insane number of update
+(over 20/second constant).
+</code></pre>
+
+        </div>
+
+    </div>]

@@ -1,0 +1,162 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>A start-to-finish guide for adding a new tileset to the game.</p>
+<p>###Visible elements inside frogatto are made of 3 different things:</p>
+<ul>
+<li>"Backgrounds" - Non-interactive images can be placed in background (or foreground) parallax layers; these are typically large images (256-512px) wide, and have fairly limited options for placement.</li>
+<li>"Objects" - Objects are our most flexible in-game entity.  They can be any size, and can be placed anywhere you want.  They can also interact with the player in any way we want.</li>
+<li>"Tiles" - Tiles are considerably less flexible than objects.  They can be placed only on a 16x16 grid, and their only form of interactivity is to be solid or not.  They exist in our engine for optimization reasons, and for convenience of placement/layout.  This convenience is mostly in the form of "autotiling", where the game automatically chooses the individual tile graphics for you, as you lay out a large section of a tile type, automatically placing edges pieces where they belong, and randomly picking interior pieces to fill in the center areas.</li>
+</ul>
+<p>Tiles are divided into tilesets; for example, in the first (seaside) environment of the game, the solid brown rocks are one tileset, and the grey rocks behind you are another tileset.  Placing tilesets in the game is a bit like using a "paint" program; you select a tileset to place, and you paint that tileset onto the map.  There is no means in the editor to place individual tiles, if you want a specific feature in a specific place.  What's best to do in that circumstance is to create that feature as an object that merely "looks like" a tile, and place it in game.  We have found in practice that most purely decorative features, such as variations in rock shape, are best just left to purely random distribution;  if an individual feature shows up in a bad place in-game, you simply shuffle the tiles around a bit, and its location will change.</p>
+<p>Tiles are represented in-game by a mnemonic; a 3-letter abbreviation for the tile.  For example, <code>grk</code> might be shorthand for "grey rock".  When our level files are created, they have inside them enormous matrices of tiles, each row being something like <code>grk, grk, grk, , grk, grk, grk</code>, etc.  The mnemonic indicates the presence of a tile, the lack of it indicates an empty tile.</p>
+<p>Tiles are coded by writing a tileset definition file, which lists all of the different arrangements/patterns which there are individual graphics to represent.  For example, if you have drawn an upper-right-corner edge tile, you will have a pattern corresponding to that in the tileset definition.  Because the list of potential edges for single tiles is a deterministic set about about 26 arrangements, we've made a pre-built arranagement for which you can run a perl-script to generate a full set of tile pattern definitions.</p>
+<p>###To create a tileset, you do the following:</p>
+<ol>
+<li>
+<p>Draw the tileset, and save the image in <code>~/images/</code>.   Most tilesets go in <code>~/images/tiles</code>.
+One formatting concern is worth pointing out; make sure the tileset image is a multiple of 16 pixels in dimension (outright being a power of 2 is probably a good idea for future-proofing).</p>
+</li>
+<li>
+<p>Create a tileset definition file, and place it inside <code>~/data/tiles/</code>.  This is the most complicated step, and is covered below.</p>
+</li>
+<li>
+<p>Link to this file inside <code>data/tiles.cfg</code> - the game will only look for tileset definitions in the specific files listed there (this is an optimization).  Just look at the ones there, and follow by example - it's the tile mnemonic, followed by a comma-separated list of files that define it's tiling patterns.</p>
+</li>
+<li>
+<p>To make the tile placeable in the editor, create a listing for it in <code>data/editor.cfg</code>.  Each listing there is very short, and you can mostly follow by example, but I'll describe the fields it uses:</p>
+</li>
+</ol>
+<ul>
+<li>
+<code>category</code> - tiles are offered in a drop down menu in the editor, and this menu has a series of submenus.  This determines which one this tile-type goes in.</li>
+<li>
+<code>type</code> - the mnemonic which represents the tile that will be placed.</li>
+<li>
+<code>zorder</code> - which zorder layer a tile is placed in.  Although tiles can occupy the same zorder, it's strongly recommended that you do not have them share zorders, because some tiling patterns require empty tiles, not just tiles of a different type around them, and will malfunction if placed next to each other.  Also, note that at the time of this writing, zorders are written into the level files, which means you can't easily globally change them.  This sucks and we want to fix it.</li>
+<li>
+<code>preview</code> - this is an arrangement of tiles, like a little one-zorder level-in-miniature, which will be displayed over on the sidebar of the editor when you have this tile type selected.  This is defined manually because not all tiles can display all arrangements, so this lets you define an arrangement that will actually display (some tiles for example, like pipes, may only go in strips one tile wide).</li>
+<li>
+<code>x_speed</code> and <code>y_speed</code> - seeing a name like this, one might incorrectly expect that this makes a set of tiles outright "move" in-game, even if the player is standing still (like, perhaps, a conveyor-belt).  What it actually does, is it controls "parallax" - different sets of tiles can be given a parallax value (where 100 is the baseline), and will move either more quickly, or more slowly than the layer the player is on, thus appearing to be in the foreground or background.  Values greater than 100 are background, and lesser, foreground.</li>
+</ul>
+<h3>
+<a aria-hidden="true" class="anchor" href="#writing-tileset-definitions---single-tile-patterns" id="user-content-writing-tileset-definitions---single-tile-patterns"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Writing Tileset Definitions - Single-tile Patterns:</h3>
+<p>There are two kinds of tile patterns we have; one is called a (single) <code>tile_pattern</code>, and the other is called a <code>multi_tile_pattern</code>.  We abbreviate these with STP and MTP.  I'm going to briefly describe their function here, but for readability, I'll describe our intent in this nonexistant linked tutorial; this assumes you know what we're doing.</p>
+<p>Note that tile patterns are evaluated in order, and only the first one that matches is used.  This is important because some tile patterns, as used on later tiles in a set, have to have patterns that would conflict with earlier tiles in the set (e.g. they have to have a fairly general layout of matching to work at all, and if they were first, they would "claim" the tiles that another, very specific tile pattern needs to match with.</p>
+<p>Multi-tile patterns override single-tile patterns; they're processed first, and thus a group of tiles which would otherwise each fit certain single-tile patterns will instead be claimed by the multi-tile one.  Because multi-tile patterns are a superset of single-tile patterns, they can be made to do the same things, and thus you're not losing functionality due to this (in some odd case where you might need the STP to come first).  It's generally advisable to use STPs for the purpose for which they're designed, rather than MTPs which do the same thing, because STPs are faster.</p>
+<p>A single-tile pattern picks which graphic and solidity data will be applied to a given position in game.  It does this by looking at the immediately adjacent tiles (only in the same zorder layer!) and querying what tile types are present there.  Inside a tile configuration file, a tile_pattern looks like this:</p>
+<pre><code>tile_pattern: 	{
+		image: "tiles/pipes-small.png",
+		tiles: "03|13|23|33|43|53",
+		pattern: ".*   ,(pps)?,.*,
+		         !(pps), pps  ,!(pps),
+		          .*   ,(pps)?,.*",
+ 		},
+</code></pre>
+<p>The valid parameters are:</p>
+<ul>
+<li>
+<p><code>image</code> - This is relative to the images folder.</p>
+</li>
+<li>
+<p><code>tiles</code> - This is the YX position of the tile in the spritesheet, measured in units of individual tiles - <strong>no, that's not a typo</strong>, dave found it more convenient to measure y first, then x.  We use an unusual numerical base here to ensure we only need 2 characters, which is base-52; numbers 0-9, then a-z, then A-Z (though you might hit 52 first before Z).  As you will note in our above example there is not one, but several two-character pairs, separated by <code>|</code> characters.  These are a set of different possible tiles from which the game will randomly pick one - this allows you to make otherwise-repetitive areas (especially the solid-fill area on the interior of a tileset) look much more organic.</p>
+</li>
+<li>
+<p><code>reverse</code> - A lot of tilesets have a given pattern, and need to have the exact same thing, flipped horizontally.  Rather than forcing you to make that by hand, as long as you're okay with recycling the same, horizontally flipped graphic, setting this to "yes" will spare you that time.</p>
+</li>
+<li>
+<p><code>solid</code> - This lets you make a given tile graphic correspond to something solid, or non-solid.  Besides the obvious <code>yes</code> and <code>no</code> booleans, this also allows upward slopes (we currently have no provision for sloped ceilings, just floors, but would like to correct this).  There are two patterns for 45° slopes - <code>diagonal</code> and <code>reverse_diagonal</code>, which respectively are a slope with the bottom on the left and the top on the right, and vice-versa.  We also have patterns for 22° slopes (i.e. slopes that take two tiles sideways to go upwards by one tile).  These require two patterns for each direction, since on the first tile, the slope has to make it only halfways up the tile, and then on the second tile, you need a slope that starts at the halfway mark, and carries on to the top.  These are: <code>quarter_diagonal_lower</code>, <code>quarter_diagonal_upper</code>, <code>reverse_quarter_diagonal_lower</code>, and <code>reverse_quarter_diagonal_upper</code>.</p>
+</li>
+<li>
+<p><code>passthrough</code> - this is simply a boolean; it takes a solid tile's upper-surface, and makes it "passthrough", which in our parlance means a bridge you can walk on, but which you can deliberately jump down through, and jump up through.  To spare duplication of information, the shape for this comes from <code>solid</code>; if you want something diagonal, as we use on our wooden bridges in frogatto, make this true, and then use a diagonal pattern for <code>solid</code>.</p>
+</li>
+<li>
+<p><code>damage</code> - if a tile has a solid area, that solid area will deal this much damage when something bumps into it.</p>
+</li>
+<li>
+<p><code>pattern</code> - this is the big enchilada; this is a 3x3 (or 5x5) grid which describes what tiles, around the actual tile being drawn, must be present.  Each of the cells is a <a href="http://en.wikipedia.org/wiki/Regular_expression" rel="nofollow">regex</a>;  our tiles are represented by a 3-letter mnemonic, such as <code>grs</code> for grass, or <code>rok</code> for rock.  Using <code>rok</code> as an example, the regex in a cell describes whether the tile should be empty (which is represented by whitespace <code></code>), whether the tile must be present<code>rok</code>, whether the tile is optional <code>(rok)?</code> (which means the tile can be either empty, or have that tile type in it, but can't have any <em>other</em> tile type), whether the tile must have "anything but" a certain tile type <code>!(rok)</code>, whether a tile can be one of a set of various possible tiles <code>(rok|grs)</code>, or whether a tile can be anything, empty or not <code>.*</code>.  So for a simple example, the following code would display the "upper surface", aka the floor, of a hypothetical rock tile type:</p>
+<pre><code>  {
+  image: "tiles/rock.png",
+  	tiles: "01",
+  	pattern: "(rok)?,     ,(rok)?,
+                    (rok) ,(rok) ,(rok) ,
+                    (rok)?,(rok)?,(rok)?",
+  },
+</code></pre>
+</li>
+</ul>
+<h3>
+<a aria-hidden="true" class="anchor" href="#writing-tileset-definitions---multi-tile-patterns" id="user-content-writing-tileset-definitions---multi-tile-patterns"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Writing Tileset Definitions - Multi-tile Patterns:</h3>
+<p>Multi-tile patterns are designed to allow you to place a large graphic, spanning multiple tiles, when a certain exact pattern of tiles is placed.  Most crucially - this is a large graphic where the interior seams at a multiple of the regular tile width do <strong>NOT</strong> graphically tile well (or at all) with regular tiles.  This is meant to be a large graphic which can't be broken up, and has to be treated as atomic/indivisible.</p>
+<p><em>(note - this philosophical tangent here will probably get forked to the other wiki page, which will also describe what autotiling is, etc)</em>
+Philosophically, the main purpose of these is to help alleviate the frequent seams that occur at grid edges in regular tile work.  No matter how well done tile art is, it has to have similar arrangements of pixels at every grid interval in order to seam well with its neighbors.  No matter what you do, this similarity is mandatory, so it creates repeating patterns that show up at every grid interval.  The most straightforward way to fix this is to use larger tiles - assuming a fixed screen size, each doubling of tile-size <em>quarters</em> the amount of seams visible onscreen (since the number of seams is reduced by half along both axes).  However, it quarters something else, too: the number of tiles that can be on screen, and thus the complexity-space of possible arrangements.  Quarter that too much, and the game rapidly becomes redundant - you start seeing the same arrangements of tiles, and the same jumping puzzles, over and over.</p>
+<p>As an aside - there are some more advanced solutions which would also help us alleviate this, such as <a href="http://en.wikipedia.org/wiki/Wang_tile" rel="nofollow">Wang Tiles</a> which we don't support, but would be very interesting as potential future additions.  We're open to future research on this if we can make game-developer's lives easier by implementing something - so if you know of any other techniques, feel free to suggest them or implement them.</p>
+<p>What we settled on was based on a simple thought:  "I have these 16x16 tiles, sure, and when I have tight, 1-tile-wide arrangements of stuff, they're absolutely necessary as such.  However, quite frequently, I have unbroken runs of 2 or 4 tiles in a row, such as straight edges.  These are very common, and I could imagine drawing a single, unbroken "big tile" that would fit where they go, instead of them, which would eliminate all the repetition."  We implemented this in an idea we call "multi-tile-patterns".</p>
+<p>Multi-tile-patterns essentially allow us to use larger tile sizes, if-and-only-if a larger tile would fit - whilst allowing us all the placement flexibility and level-design variety of smaller tiles.  It's the best of both worlds.  Multi-tile-patterns need not be square, need not be parallelograms (consider tetris block-shapes), and in fact <em>need not even be topographically contiguous.</em>  All they need to be is some pattern of tiles within a rectangular pattern, which if they match that pattern, can selectively replace all - or only some, of the tiles within that larger pattern.</p>
+<p>An example of a fairly simple MTP - one which we use to draw a set of four-tile-tall "deadly spikes", is as follows:</p>
+<pre><code>multi_tile_pattern: [
+ 	{
+		chance: 100,
+            pattern: " -&gt;tile1         ,    -&gt;tile2
+                       -&gt;tile3         ,    -&gt;tile4   
+                    spk-&gt;tile5         , spk-&gt;tile6
+                       -&gt;tile7         ,    -&gt;tile8",
+		range: {
+			image: "tiles/spikes-deadly.png",
+			from: "tile1",
+			to: "tile8",
+			tiles: "00",
+		},
+		tile5: {
+			solid: true,
+			damage: 128,
+		},
+		tile6: {
+			solid: true,
+			damage: 128,
+		},
+		alternative: {
+			range: {
+				image: "tiles/spikes-deadly.png",
+				from: "tile1",
+				to: "tile8",
+				tiles: "02",
+			},
+			tile5: {
+				solid: true,
+				damage: 128,
+			},
+			tile6: {
+				solid: true,
+				damage: 128,
+			},
+		},
+	},
+</code></pre>
+<p>To explain these tags in detail:</p>
+<ul>
+<li>
+<code>alternative</code>, as you can see above, occupies almost half the code listing above, and seems to duplicate what's printed above it.  It is a randomly-chosen alternative for the graphics (and solidity) regularly displayed by the MTP.  This allows you to have several alternate graphics, and further reduce graphical repetition.  Because it redefines the solidity, if they're sufficiently different, you can make them act different;  a replacement for flat ground might in fact have an ever-so-slight bump to it (like a pitcher's mound rising and falling).</li>
+<li>
+<code>chance</code> - allows you to not always claim a set of tiles with an MTP - sometimes for very large MTPs, it's better for an organic look if they don't <strong>always</strong> claim the tiles they match, and sometimes leave them to combinations of smaller MTPs or STPs. This is in percent; a 100 means a pattern will always be used.</li>
+<li>
+<code>range</code> - for a rectangular region in the pattern, between an upper-left named-tile <code>from</code>, and a lower-right named tile <code>to</code>, this will graphically apply tiles in <code>image</code> starting with the tile position <code>tiles</code>.  Values for <code>tiles</code> are as they are in STPs.  This is a shorthand to do large, rectangular blocks of tiles, which is the most common use of multi-tile-patterns.  Don't be confused by our naming scheme - the intervening tiles need not have sequential names.</li>
+<li>
+<code>pattern</code> - This is a matrix of tiles in the game which need to match this pattern to have the MTP applied to them.  Unlike single tile patterns, where you're replacing just one tile (and thus it makes sense to implicitly designate it, by making it the one in the middle), with this, you want to be able to replace multiple tiles at totally arbitrary positions; since we need to tell the game which tiles are being replaced, we have to be explicit about which ones are it; in fact we have to give each one its own name.</li>
+<li>We start by making a matrix of tiles; you see in our above example that the whole matrix is two tiles wide, and we have two rows of <code></code> empty tiles, then one row of <code>spk</code> spike tiles, and then two more empty tiles.  For our 16x16 tiles, we want to plop down a single image which is 32 pixels wide, and 64 pixels tall.  We want it to be drawn if the tiles we placed were at the second row up from the bottom - thus it'll extend a little bit below where we click, for the roots of the spikes, and then the sharp tips will extend two tiles above.</li>
+<li>We then, using <code>(pattern_regex)-&gt;tileName</code>, give each individual tile a unique name.  These names can be anything - prior to using regular, sequential names, we often used names like <code>upleft</code> or <code>bottom_middle</code>.  As we used MTPs more and more, we moved up from our initial MTPs which were usually no more than 2x2, and when we moved to larger, 4x4 or bigger arrangements, sequential names made things more manageable.  Remember also - the tiles you choose to replace need not be in a contiguous block, and can be any underlying tile type (for example, an MTP could blend together two types of terrain).</li>
+<li>Once these names are established, you then need a series of tags, given these names, denoting what goes in each replaced tile.  Prior to our "range" shorthand, every single, individual tile had to have its own listing here, and every single one had to repeat some of the same data.  Although ranges spare us from having to denote which image, and which graphical tile-location within the image gets displayed - which often makes it unnecessary to define most of these tiles at all, it's still useful to be able to specify individual properties which apply only to a specific tile for a set of multi-tiles.  For example, with these spikes, we give only the spikes down at the bottom the property of dealing damage.  <strong>The property names inside these tiles are the same as within single-tile patterns.</strong>
+</li>
+</ul>
+<p>###Final Notes:
+Because STPs have a fairly small finite problem space, we've come up with a standard pattern for 16x16 tiles which handles every possible arrangement they can ever be in.  We've written a perl script which will automatically generate a definition file for these;  this is self-documented and is in the Anura repo at <code>~/make-tileset.pl</code>.</p>
+<p>Although we've been gradually coalescing on a moderately standard arrangement of multi-tile-patterns, we do not have a script to generate them, and coming up with a set of tiles which could account for all possible arrangements is entirely unfeasible, because the combinatorial space is enormous.  We've settled for something that nicely handles the most common arrangements.</p>
+
+        </div>
+
+        <div class="wiki-footer gollum-markdown-content boxed-group" id="wiki-footer">
+          <div class="boxed-group-inner wiki-auxiliary-content markdown-body">
+            <p>More help can be found via IRC, <a href="irc://irc.freenode.net/#frogatto" rel="nofollow">#Frogatto</a> on freenode.net. This wiki is not a complete reference.</p>
+
+          </div>
+        </div>
+    </div>]

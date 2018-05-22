@@ -1,0 +1,178 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <h3>
+<a aria-hidden="true" class="anchor" href="#%E8%BD%AF%E4%BB%B6%E6%A6%82%E8%A6%81" id="user-content-软件概要"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>软件概要</h3>
+<p>该软件实现了自动化生成测试报告。首先测试人员生成测试脚本（亦即jmx文件），然后使用Python脚本和Shell脚本，实现自动化生成测试报告。生成测试报告使用了ant和jmeter。</p>
+<p>自动化生成测试报告目录结构如下：</p>
+<pre><code>tree auto_gen_testing_reports
+</code></pre>
+<blockquote>
+<p>auto_gen_testing_reports <br/>
+├── auto_deploy_app_remote.py <br/>
+├── auto_deploy_app_v_final.py <br/>
+├── auto_gen_testing_reports.sh <br/>
+├── build.xml <br/>
+├── config.conf <br/>
+├── crontab <br/>
+├── get_git_version.py <br/>
+└── test_result.py <br/></p>
+<p>0 directories, 8 files</p>
+</blockquote>
+<p>该脚本实现的功能如下：</p>
+<ul>
+<li>打印帮助</li>
+<li>克隆Git项目</li>
+<li>拉取Git项目</li>
+<li>配置生成报告</li>
+<li>自动生成测试报告</li>
+<li>拷贝生成报告</li>
+</ul>
+<h3>
+<a aria-hidden="true" class="anchor" href="#%E8%84%9A%E6%9C%AC%E5%B8%AE%E5%8A%A9" id="user-content-脚本帮助"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>脚本帮助</h3>
+<pre><code>./auto_deploy_app_remote.py -h
+</code></pre>
+<div class="highlight highlight-source-shell"><pre>Auto generate testing reports. Write <span class="pl-k">in</span> Python.
+Version 1.0. By Robin Wen. Email:dbarobinwen@gmail.com
+
+Usage auto_deploy_app.py [-hpas]
+  [-h <span class="pl-k">|</span> --help] Prints this <span class="pl-c1">help</span> and usage message
+  [-c <span class="pl-k">|</span> --git-clone] Clone the repo via git
+  [-u <span class="pl-k">|</span> --git-pull] Update the repo via git
+  [-p <span class="pl-k">|</span> --pre-conf] Pre config before generate testing reports
+  [-a <span class="pl-k">|</span> --auto-gen] Auto generate testing reports
+  [-s <span class="pl-k">|</span> --scp-report] SCP generated testing reports
+</pre></div>
+<p>在脚本名后加上「-h 或者 --help」表示打印帮助。
+同理，加上「-c  | --git-clone」表示克隆Git项目，加上「-u | --git-pull」表示获取Git项目，加上「-p | -pre-conf」表示测试前准备，加上「-a | --auto-gen」表示自动化生成测试报告，加上「-s | --scp-report」表示拷贝生成的测试报告。</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#%E8%84%9A%E6%9C%AC%E6%A6%82%E8%BF%B0" id="user-content-脚本概述"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>脚本概述</h3>
+<p>如前所述，「auto_deploy_app_remote.py」是主执行脚本，用于显示帮助以及调用相应函数。「auto_deploy_app_v_final.py」是核心执行脚本，实现所有的相关功能。核心执行脚本采用Fabric实现远程执行命令，主执行脚本再通过<strong>fab -f 脚本名 任务名</strong>调用相应方法。</p>
+<p>主执行脚本和核心执行脚本的方法名基本一致，主执行脚本包括如下方法：main(argv)、usage()、git_clone()、git_pull()、pre_conf()、auto_gen()和scp_report()。</p>
+<p>核心执行脚本包括如下方法：git_clone()、git_pull()、pre_conf()、auto_gen()、scp_report()和getConfig()。</p>
+<p><strong>主执行脚本：</strong></p>
+<ul>
+<li>main(argv) 主函数</li>
+<li>usage() 使用说明函数</li>
+<li>git_clone() 克隆项目函数</li>
+<li>git_pull() 拉取项目函数</li>
+<li>pre_conf() 执行自动化生成测试报告之前的准备工作</li>
+<li>auto_gen() 自动化生成测试报告</li>
+<li>scp_report() 拷贝生成的测试报告</li>
+</ul>
+<p><strong>主执行脚本</strong></p>
+<p>主执行脚本内容如下：
+参考脚本auto_deploy_app_remote.py。</p>
+<p><strong>核心执行脚本</strong></p>
+<p>方法和主执行脚本基本一致，相同的不赘述。核心执行脚本还提供getConfig()方法，用于读取配置文件。</p>
+<p>核心执行脚本内容如下：
+参考脚本auto_deploy_app_v_final.py。</p>
+<p><code>auto_gen_testing_reports.sh</code>脚本实现了自动生成测试报告，并且拷贝生成的测试报告。</p>
+<p>参考auto_gen_testing_reports.sh脚本。</p>
+<p><code>build.xml</code>为ant的配置文件。</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#%E9%85%8D%E7%BD%AE%E6%96%87%E4%BB%B6%E6%A6%82%E8%BF%B0" id="user-content-配置文件概述"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>配置文件概述</h3>
+<p>完整配置文件内容如下：</p>
+<div class="highlight highlight-source-shell"><pre><span class="pl-c"><span class="pl-c">#</span> Remote server section.</span>
+[remote]
+<span class="pl-c"><span class="pl-c">#</span> Remote server ip.</span>
+remote_ip=
+<span class="pl-c"><span class="pl-c">#</span> Remote server port.</span>
+remote_port=
+<span class="pl-c"><span class="pl-c">#</span> Remote server username.</span>
+remote_usr=
+<span class="pl-c"><span class="pl-c">#</span> Remote server password.</span>
+remote_pwd=
+
+<span class="pl-c"><span class="pl-c">#</span> Jmeter section.</span>
+[jmeter]
+<span class="pl-c"><span class="pl-c">#</span> Jmeter home directory.</span>
+jmeter_home=
+
+<span class="pl-c"><span class="pl-c">#</span> Ant section.</span>
+[ant]
+<span class="pl-c"><span class="pl-c">#</span> Ant home directory.</span>
+ant_home=
+
+<span class="pl-c"><span class="pl-c">#</span> Scripts section.</span>
+[script]
+<span class="pl-c"><span class="pl-c">#</span> Mall scripts home dir.</span>
+script_dir=
+<span class="pl-c"><span class="pl-c">#</span> Jmeter mall scripts section.</span>
+mall_script=
+
+<span class="pl-c"><span class="pl-c">#</span> Report section.</span>
+[report]
+<span class="pl-c"><span class="pl-c">#</span> Report directory.</span>
+report_dir=
+<span class="pl-c"><span class="pl-c">#</span> Report export directory.</span>
+report_exp_dir=
+
+<span class="pl-c"><span class="pl-c">#</span> Git section.</span>
+[git]
+<span class="pl-c"><span class="pl-c">#</span> Git Url.</span>
+git_url=
+<span class="pl-c"><span class="pl-c">#</span> Git repo diectory.</span>
+git_repo=</pre></div>
+<p>接下来，我逐一进行讲解。</p>
+<p>配置文件包括以下段：remote、jmeter、ant、script、report和git。</p>
+<p>每个段的说明如下：</p>
+<ul>
+<li>remote 该段定义远程服务器登录信息。
+<ul>
+<li>remote_ip 部署远程服务器IP。</li>
+<li>remote_port 部署远程服务器端口。</li>
+<li>remote_usr 部署远程服务器用户名。</li>
+<li>remote_pwd 部署远程服务器密码。</li>
+</ul>
+</li>
+<li>jmeter 该段定义Jmeter的相关路径。
+<ul>
+<li>jmeter_home Jmeter主目录。</li>
+</ul>
+</li>
+<li>ant 该段定义Ant的相关信息。
+<ul>
+<li>ant_home Ant的主目录。</li>
+</ul>
+</li>
+<li>script 该段定义脚本相关信息。
+<ul>
+<li>script_dir 脚本的主目录。</li>
+<li>mall_script 自动化测试报告的脚本路径。</li>
+</ul>
+</li>
+<li>report 该段定义测试报告的相关信息。
+<ul>
+<li>report_dir 存放Jmeter脚本的服务器的测试报告目录。</li>
+<li>report_exp_dir 导出到远程服务器的测试报告目录。</li>
+</ul>
+</li>
+<li>git 该段定义Git的相关信息。
+<ul>
+<li>git_url Git的URL。</li>
+<li>git_repo 克隆的Git项目目录。</li>
+</ul>
+</li>
+</ul>
+<p>如有需要，请酌情修改。</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#%E8%84%9A%E6%9C%AC%E4%BD%BF%E7%94%A8" id="user-content-脚本使用"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>脚本使用</h2>
+<p><strong>Step 1：</strong> 把以auto_开头的三个脚本以及config.conf配置文件放到远程服务器，脚本中的路径（YOUR_PATH）请酌情修改。</p>
+<p><strong>Step 2：</strong> 把<code>get_git_version.py</code>放到存放Jmeter脚本的服务器，请酌情存放。</p>
+<p><strong>Step 3：</strong> 把<code>build.xml</code>放到存放Jmeter脚本的服务器，其中JMeter.home、testing.testplans.home、testing.report.home参数对应的路径请酌情修改。</p>
+<p><strong>Step 4：</strong> 远程服务器添加crontab计划任务。</p>
+<pre><code>crontab -e
+</code></pre>
+<p>crontab 任务如下。</p>
+<pre><code>crontab -l
+</code></pre>
+<blockquote>
+<p>10 00 * * * bash YOUR_PATH/auto_gen_testing_reports.sh
+*/1 * * * * ntpdate pool.ntp.org</p>
+</blockquote>
+<p>该任务定义了凌晨0点10分自动化生成测试报告。</p>
+<p><strong>Step 5：</strong> 早晨上班就可以看到昨晚生成的测试报告了，如果有问题，把日志给开发人员，再做调试。So easy, 妈妈再也不用担心我加班了！:)</p>
+
+        </div>
+
+    </div>]

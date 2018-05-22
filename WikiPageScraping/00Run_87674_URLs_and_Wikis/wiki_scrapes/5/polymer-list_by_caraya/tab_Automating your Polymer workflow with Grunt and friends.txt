@@ -1,0 +1,108 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>If you've done work with <a href="http://gruntjs.com/" rel="nofollow">Grunt</a> and its plugin ecosystem this Gruntfile will look familiar. I will only point out the differences and what may not be common knowledge (it wasn't for me when I started working on this stylesheet)</p>
+<div class="highlight highlight-source-js"><pre>(<span class="pl-k">function</span> () {
+  <span class="pl-s"><span class="pl-pds">'</span>use strict<span class="pl-pds">'</span></span>;
+  <span class="pl-c1">module</span>.<span class="pl-en">exports</span> <span class="pl-k">=</span> <span class="pl-k">function</span> (<span class="pl-smi">grunt</span>) {
+    <span class="pl-c"><span class="pl-c">//</span> require it at the top and pass in the grunt instance</span>
+    <span class="pl-c"><span class="pl-c">//</span> it will measure how long things take for performance</span>
+    <span class="pl-c"><span class="pl-c">//</span>testing</span>
+    <span class="pl-c1">require</span>(<span class="pl-s"><span class="pl-pds">'</span>time-grunt<span class="pl-pds">'</span></span>)(grunt);
+
+    <span class="pl-c"><span class="pl-c">//</span> load-grunt will read the package file and automatically</span>
+    <span class="pl-c"><span class="pl-c">//</span> load all our packages configured there. </span>
+    <span class="pl-c"><span class="pl-c">//</span> Yay for laziness</span>
+    <span class="pl-c1">require</span>(<span class="pl-s"><span class="pl-pds">'</span>load-grunt-tasks<span class="pl-pds">'</span></span>)(grunt);</pre></div>
+<p>I discovered two nice time savers when researching creating my own Grunt tasks for building the project.</p>
+<p>The first one is <a href="https://github.com/sindresorhus/time-grunt">time-grunt</a> that will tell you how long did your tasks take.</p>
+<p>The second one is <a href="https://github.com/sindresorhus/load-grunt-tasks">load-grunt-tasks</a> that will require all the pacakges that you've set up in your <code>package.json</code> and avoiding issues with forgetting to load a package.</p>
+<div class="highlight highlight-source-js"><pre>  <span class="pl-smi">grunt</span>.<span class="pl-en">initConfig</span>({
+
+    <span class="pl-c"><span class="pl-c">//</span> Hint the grunt file and all files under js/ </span>
+    <span class="pl-c"><span class="pl-c">//</span> and one directory below</span>
+    jshint<span class="pl-k">:</span> {
+      files<span class="pl-k">:</span> [<span class="pl-s"><span class="pl-pds">'</span>Gruntfile.js<span class="pl-pds">'</span></span>, <span class="pl-s"><span class="pl-pds">'</span>js/{,*/}*.js<span class="pl-pds">'</span></span>],
+      options<span class="pl-k">:</span> {
+        <span class="pl-c"><span class="pl-c">//</span> options here to override JSHint defaults</span>
+      }
+    },
+
+    autoprefixer<span class="pl-k">:</span> {
+      options<span class="pl-k">:</span> {
+        browsers<span class="pl-k">:</span> [<span class="pl-s"><span class="pl-pds">'</span>last 2 versions<span class="pl-pds">'</span></span>]
+      },
+      main<span class="pl-k">:</span> {
+        files<span class="pl-k">:</span> [{
+          expand<span class="pl-k">:</span> <span class="pl-c1">true</span>,
+          cwd<span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">'</span>css<span class="pl-pds">'</span></span>,
+          src<span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">'</span>*.css<span class="pl-pds">'</span></span>,
+          dest<span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">'</span>css<span class="pl-pds">'</span></span>,
+          ext<span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">'</span>.prefixed.css<span class="pl-pds">'</span></span>,
+          extDot<span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">'</span>last<span class="pl-pds">'</span></span>
+        }]
+      }
+    },
+
+    watch<span class="pl-k">:</span> {
+      options<span class="pl-k">:</span> {
+        nospawn<span class="pl-k">:</span> <span class="pl-c1">true</span>,
+      },
+      <span class="pl-c"><span class="pl-c">//</span> Watch all javascript files and hint them</span>
+      js<span class="pl-k">:</span> {
+        files<span class="pl-k">:</span> [<span class="pl-s"><span class="pl-pds">'</span>js/{,*/}*.js<span class="pl-pds">'</span></span>],
+        tasks<span class="pl-k">:</span> [<span class="pl-s"><span class="pl-pds">'</span>jshint<span class="pl-pds">'</span></span>]
+      },
+      <span class="pl-c"><span class="pl-c">//</span> watch all css files and auto prefix if needed</span>
+      styles<span class="pl-k">:</span> {
+        files<span class="pl-k">:</span> [ <span class="pl-s"><span class="pl-pds">'</span>css/{,*/}*.css<span class="pl-pds">'</span></span> ],
+        tasks<span class="pl-k">:</span> [<span class="pl-s"><span class="pl-pds">'</span>autoprefixer:main<span class="pl-pds">'</span></span>]
+      },
+      <span class="pl-c"><span class="pl-c">//</span> watch the html files, vulcanize and publish</span>
+      html<span class="pl-k">:</span> {
+        files<span class="pl-k">:</span> [<span class="pl-s"><span class="pl-pds">'</span>*.html<span class="pl-pds">'</span></span>],
+        tasks<span class="pl-k">:</span> [<span class="pl-s"><span class="pl-pds">'</span>vulcanize:elements<span class="pl-pds">'</span></span>]
+      }
+    },</pre></div>
+<p>the basic tasks: jshint, autoprefixer and watch are standard to most projects.</p>
+<p>Jshint will lint your Javascript files (including the Grunt buildfile itself) on any changes to a Javascript file</p>
+<p>Autoprefixer will build a prefixed copy of any CSS file under the css directory. This <strong>does not</strong> include CSS under templates in custom elements.</p>
+<p>Watch will automate actions based on changes to the indicated files.</p>
+<ul>
+<li>If any Javascript file under the js directory change, they will all be linted again.</li>
+<li>If any CSS file under the css directory change, Autoprefix will run to prefix any needed rule.</li>
+<li>If HTML files change the elements.html file will be vulcanized (more of what vulcanize do later).</li>
+</ul>
+<div class="highlight highlight-source-js"><pre>  <span class="pl-c"><span class="pl-c">//</span> Vulcanize elements.html to reduce the number of </span>
+  <span class="pl-c"><span class="pl-c">//</span> network requests</span>
+  vulcanize<span class="pl-k">:</span> {
+    elements<span class="pl-k">:</span> {
+      options<span class="pl-k">:</span> {
+        strip<span class="pl-k">:</span> <span class="pl-c1">true</span>
+      },
+      files<span class="pl-k">:</span> {
+        <span class="pl-s"><span class="pl-pds">'</span>element-vulcanized.html<span class="pl-pds">'</span></span><span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">'</span>elements.html<span class="pl-pds">'</span></span>
+      }
+    }
+  },
+
+Vulcanize is Polymer concatenation and minimization tool <span class="pl-k">for</span> web <span class="pl-smi">components</span>. <span class="pl-c1">I</span><span class="pl-s"><span class="pl-pds">'</span><span class="pl-ii">ve chosen to vulcanize all the required elements in `elements.html` to reduce the number of requests we make of the server and the size of all the requested elements.</span></span>
+<span class="pl-s"></span>
+<span class="pl-s">  <span class="pl-pds">'</span></span>gh<span class="pl-k">-</span>pages<span class="pl-s"><span class="pl-pds">'</span><span class="pl-ii">: {</span></span>
+<span class="pl-s"><span class="pl-ii">    options: {</span></span>
+<span class="pl-s"><span class="pl-ii">      add: true,</span></span>
+<span class="pl-s">      message: <span class="pl-pds">'</span></span>Content committed from Grunt gh<span class="pl-k">-</span>pages<span class="pl-s"><span class="pl-pds">'</span></span>
+<span class="pl-s"><span class="pl-ii">    },</span></span>
+<span class="pl-s">    <span class="pl-pds">'</span></span>all<span class="pl-s"><span class="pl-pds">'</span><span class="pl-ii">: {</span></span>
+<span class="pl-s"><span class="pl-ii">      // These files will get pushed to the `</span></span>
+<span class="pl-s"><span class="pl-ii">      // gh-pages` branch (the default).</span></span>
+<span class="pl-s">      src: [<span class="pl-pds">'</span></span><span class="pl-k">**</span><span class="pl-c"><span class="pl-c">/*</span>']</span>
+<span class="pl-c">    }</span>
+<span class="pl-c">  }</span>
+<span class="pl-c">  }); // closes initConfig</span>
+<span class="pl-c">  }; // closes module.exports</span>
+<span class="pl-c">}()); // closes the use strict function</span></pre></div>
+<p>the gh-pages task will push the specified files to the gh-pages branch of the repository. It assumes that your code is already in a Git repository. It will ask for your github username and password.</p>
+
+        </div>
+
+    </div>]

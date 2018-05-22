@@ -1,0 +1,55 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>Building on windows is more difficult than on Linux
+To start with a recent build of obs-studio is best<br/>
+The below build script is what I use in Jenkins,<br/>
+It should be as simple as placing the below in a .bat, installing the required obs-studio dependencies and changing paths as required. See the obs-studio documentation for how to build it and required dependencies.
+This script builds using <strong>Visual Studio Expres 2013</strong><br/>
+set Arch to be x86 or x64<br/>
+set BuildTarget to be Release or RelWithDebInfo<br/>
+set WORKSPACE to be a location of checked out obs-studio</p>
+<pre><code>Setlocal EnableDelayedExpansion
+
+echo %Label%
+echo %Arch%
+echo %BuildTarget%
+
+set TARGETBUILD=%BuildTarget%
+set OBSSTUDIOBUILD=R:\rundir\%TARGETBUILD%\obs-studio
+mkdir "%OBSSTUDIOBUILD%"
+set OBSSTUDIOBUILD32=R:\Projects\obs-studio\build32\%TARGETBUILD%
+set OBSSTUDIOBUILD64=R:\Projects\obs-studio\build64\%TARGETBUILD%
+set OBSSOURCE=%WORKSPACE%
+
+if "%Arch%" == "x86" (	
+    rmdir "!OBSSTUDIOBUILD32!" /s /q
+	mkdir "!OBSSTUDIOBUILD32!"
+
+	"C:\Program Files (x86)\CMake\bin\cmake.exe" -B"!OBSSTUDIOBUILD32!" -H"!OBSSOURCE!" -G "Visual Studio 12 2013" -DCOPY_DEPENDENCIES:BOOL=TRUE -DQTDIR32:PATH="C:/Qt/5.5/msvc2013" -DDepsPath32:PATH="C:/Projects/obs-studio-dependencies/win32"
+
+
+	call "C:\Program Files (x86)\Microsoft Visual Studio 11.0\Common7\Tools\VsDevCmd.bat"
+
+	msbuild "!OBSSTUDIOBUILD32!\obs-studio.sln" /t:ALL_BUILD /p:VisualStudioVersion=12.0;Configuration=%!TARGETBUILD!
+
+	xcopy "!OBSSTUDIOBUILD32!\rundir\!TARGETBUILD!" "!OBSSTUDIOBUILD!" /e /d /y /h /r /c
+)
+
+if "%Arch%" == "x64" (
+	rmdir "!OBSSTUDIOBUILD64!" /s /q
+	mkdir "!OBSSTUDIOBUILD64!"
+
+	"C:\Program Files (x86)\CMake\bin\cmake.exe" -B"!OBSSTUDIOBUILD64!" -H"!OBSSOURCE!" -G "Visual Studio 12 2013 Win64" -DCOPY_DEPENDENCIES:BOOL=TRUE -DQTDIR64:PATH="C:/Qt/5.5/msvc2013_64" -DDepsPath64:PATH="C:/Projects/obs-studio-dependencies/win64"
+
+
+	call "C:\Program Files (x86)\Microsoft Visual Studio 11.0\Common7\Tools\VsDevCmd.bat"
+
+	msbuild "!OBSSTUDIOBUILD64!\obs-studio.sln" /t:ALL_BUILD /p:VisualStudioVersion=12.0;Configuration=!TARGETBUILD!
+
+	xcopy "!OBSSTUDIOBUILD64!\rundir\!TARGETBUILD!" "!OBSSTUDIOBUILD!" /e /d /y /h /r /c
+)
+</code></pre>
+
+        </div>
+
+    </div>]

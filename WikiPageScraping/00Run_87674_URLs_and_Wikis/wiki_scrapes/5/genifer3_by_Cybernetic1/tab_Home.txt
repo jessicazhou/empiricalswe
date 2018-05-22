@@ -1,0 +1,45 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <h1>
+<a aria-hidden="true" class="anchor" href="#architecture" id="user-content-architecture"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Architecture:</h1>
+<p><img alt="" src="https://raw.githubusercontent.com/Cybernetic1/genifer3/master/docs/Genifer3-architecture.png"/></p>
+<h1>
+<a aria-hidden="true" class="anchor" href="#genifer3-action-language" id="user-content-genifer3-action-language"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Genifer3 Action Language:</h1>
+<p>A sample program that scans a string of Chinese text and transliterates some words into Cantonese.</p>
+<p>The program consists of several steps:</p>
+<ol start="0">
+<li>Initially, the input string is stored on the In-Tape</li>
+<li>Scan the string of Chinese characters</li>
+<li>Recognize the word under focus (sometimes a word can have 2+ characters)</li>
+<li>Increment the focus position</li>
+<li>Look up the word's transliteration</li>
+<li>Output the translated word to Out-Tape</li>
+<li>Test: end of tape？</li>
+<li>If not, repeat step #1</li>
+</ol>
+<p>Of special note is that at the tape position under focus, the positions before and after the focus is also given some weights &lt; 1.  The focused items will be "manifested" into Working Memory with varying intensities.</p>
+<p>For pattern recognition, we have rules such as</p>
+<pre><code> "char-A char-B --&gt; word-C"
+</code></pre>
+<p>so that multiple-character words can be recognized.  When a word is recognized, it will <strong>inhibit</strong> the same word being recognized again when the focus shifts.</p>
+<p>Such mechanisms allow the program to be made up of very short instructions.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#the-final-program" id="user-content-the-final-program"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>The final program:</h2>
+<ol start="0">
+<li>Focus</li>
+<li>CantoneseWord</li>
+<li>Extract Word</li>
+<li>EndOfTape -&gt; Exit</li>
+<li>Goto 0</li>
+</ol>
+<p>The entire program consists of only 8 Atoms.</p>
+<p>Line 0: The tape position is under focus;  The item under focus and the neighboring items got manifested into Working Memory;  This automatically triggers inference with Rules in the KB, leading to a new winner-takes-all result;  The focal position is incremented to prepare for the next iteration.</p>
+<p>In other words, this program works <em>along</em> with inference in the KB.</p>
+<p>Line 1: A single predicate means that this predicate will be applied to the last "winner" result in Working Memory.  By the way, the Working Memory forgets things quickly towards the tail.  This allows the latest result to be picked up via "cues" without the ambiguity caused by multiple results.</p>
+<p>Line 2: To extract means to take the latest result in Working Memory and put it onto the Out-Tape.  The argument of this command is the "cue", ie, a superclass of the desired result.  The strongest candidate in Working Memory that matches the superclass will be extracted.</p>
+<p>Line 3: This is a conditional logic formula, with the obvious meaning.</p>
+<p>Line 4: Just reset the program counter to position 0 of the tape.</p>
+
+        </div>
+
+    </div>]

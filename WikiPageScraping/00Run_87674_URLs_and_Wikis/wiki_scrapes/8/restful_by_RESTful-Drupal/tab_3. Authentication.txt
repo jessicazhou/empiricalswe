@@ -1,0 +1,38 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>RESTful provides several authentication methods out-of-the-box; basic-auth, cookie, and token. Which you choose (if any) depends on a number of factors.</p>
+<p>The cookies authentication will only work if your client will be served from the same domain as Drupal is running on.</p>
+<p>If your client is fully-decoupled (e.g. served from a different domain, or running as an app on a device), you will need to use token-based authentication. You must then consider the security implications of storing this token on the device. For example, it may not be wise to store this token in a browser's local storage.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#using-login-endpoint-with-cookies" id="user-content-using-login-endpoint-with-cookies"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Using login endpoint, with cookies</h2>
+<p>You will need to have Drupal give you an authentication cookie either by manually logging in to your Drupal site, or via the <code>api/v1.0/login</code> endpoint (<a href="login">see more</a>).</p>
+<p>Once your client has the auth cookie, it can send that back with every request and Drupal will know the REST request has come from an authenticated user.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#using-token-auth-module" id="user-content-using-token-auth-module"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Using token-auth module</h2>
+<p>The RESTful project comes with the optional <strong>RESTful token authentication</strong> module, which allows you to authenticate a REST call using a token. To use token authentication in 2.x, you'll need to specify it as your resource's authentication method in its annotation, since all methods are available to your API's consumers by default:</p>
+<pre><code> *   authenticationTypes = {
+ *     "token"
+ *   },
+</code></pre>
+<p>The endpoint for this is <code>api/login-token</code> (<a href="3.2.-Token-authentication">read more</a>). For customizing this endpoint, see <a href="https://github.com/RESTful-Drupal/restful/issues/863#issuecomment-200254487">this example</a> on how to extend and modify its behaviour, such as disabling cookie authentication.</p>
+<p>Once your client has obtained the authentication token, it can send that back with each request, so that Drupal knows the request is from the authenticated user. For example, your request would include this header :</p>
+<pre><code>access_token: 1BN31E7saCPxnUr3dxFmFoEzl6rsrgk17487s6GOOhg
+</code></pre>
+<blockquote>
+<p>Use <code>access-token</code> instead of <code>access_token</code> for ensuring header is not going to be dropped out from $_SERVER so it remains compatible with other webservers different than apache. See <a href="https://github.com/RESTful-Drupal/restful/blob/7.x-2.x/docs/api_url.md#working-with-authentication-providers">Working with authentication providers</a></p>
+</blockquote>
+<p>Example written in Angular: <a href="https://github.com/Gizra/angular-restful-auth">https://github.com/Gizra/angular-restful-auth</a></p>
+<p>If you intend to do this in conjunction with CORS (i.e. from another domain) there is a known issue you should be aware of. See <a href="https://github.com/RESTful-Drupal/restful/wiki/OPTIONS-requests#a-warning-regarding-cors-and-authenticated-resources">A warning regarding CORS and authenticated resources</a> for more.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#obtaining-the-current-user-in-custom-drupal-module-code" id="user-content-obtaining-the-current-user-in-custom-drupal-module-code"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Obtaining the current user in custom Drupal module code</h2>
+<p>If you're using cookie-based auth, Drupal's <code>global $user</code> will accurately reflect the currently authenticated user, even for RESTful requests.</p>
+<p>However, if you are using one of the other authentication methods, Drupal won't receive a cookie with the request, and thus won't authenticate. RESTful authenticates separately.</p>
+<p>In this situation, if you are writing a custom Drupal module, you will need to ask RESTful for the authenticated user object, rather than using <code>global $user</code> (or any other traditional Drupal-based method for getting the current user).</p>
+<p>RESTful allows you to get the currently authenticated user by calling <code>-&gt;getAccount()</code> which is defined in many of its classes. If your custom code is outside of any RESTful class, you can still obtain it as follows:</p>
+<div class="highlight highlight-text-html-php"><pre><span class="pl-s1"><span class="pl-smi">$resource</span> <span class="pl-k">=</span> restful()<span class="pl-k">-&gt;</span>getResourceManager()<span class="pl-k">-&gt;</span>negotiate();</span>
+<span class="pl-s1"><span class="pl-smi">$resource</span><span class="pl-k">-&gt;</span>setRequest(restful()<span class="pl-k">-&gt;</span>getRequest());</span>
+<span class="pl-s1"><span class="pl-smi">$resource</span><span class="pl-k">-&gt;</span>getAccount();</span></pre></div>
+
+        </div>
+
+    </div>]

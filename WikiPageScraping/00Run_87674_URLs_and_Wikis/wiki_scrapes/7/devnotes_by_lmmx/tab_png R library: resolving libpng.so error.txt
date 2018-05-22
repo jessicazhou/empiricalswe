@@ -1,0 +1,97 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <h3>
+<a aria-hidden="true" class="anchor" href="#libpng16so16-cannot-open-shared-object-file-no-such-file-or-directory" id="user-content-libpng16so16-cannot-open-shared-object-file-no-such-file-or-directory"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><code>libpng16.so.16: cannot open shared object file: No such file or directory</code>
+</h3>
+<p>The <code>png</code> package is required by various other libraries, but on Ubuntu many have reported it fails as follows:</p>
+<pre><code>&gt; install.packages("png")
+Installing package into ‘/home/louis/opt/R/libs’
+(as ‘lib’ is unspecified)
+trying URL 'https://mirrors.ebi.ac.uk/CRAN/src/contrib/png_0.1-7.tar.gz'
+Content type 'unknown' length 24990 bytes (24 KB)
+==================================================
+downloaded 24 KB
+
+* installing *source* package ‘png’ ...
+** package ‘png’ successfully unpacked and MD5 sums checked
+** libs
+gcc -std=gnu99 -I/usr/share/R/include -DNDEBUG      `libpng-config --cflags` -fpic  -g -O2 -fstack-protector --param=ssp-buffer-size=4 -Wformat -Werror=format-security -D_FORTIFY_SOURCE=2 -g  -c read.c -o read.o
+gcc -std=gnu99 -I/usr/share/R/include -DNDEBUG      `libpng-config --cflags` -fpic  -g -O2 -fstack-protector --param=ssp-buffer-size=4 -Wformat -Werror=format-security -D_FORTIFY_SOURCE=2 -g  -c write.c -o write.o
+gcc -std=gnu99 -shared -L/usr/lib/R/lib -Wl,-Bsymbolic-functions -Wl,-z,relro -o png.so read.o write.o -L/home/louis/anaconda3/lib -lpng16 -lm -lz -lm -L/usr/lib/R/lib -lR
+installing to /home/louis/opt/R/libs/png/libs
+** R
+** inst
+** preparing package for lazy loading
+** help
+*** installing help indices
+** building package indices
+** testing if installed package can be loaded
+Error in dyn.load(file, DLLpath = DLLpath, ...) : 
+  unable to load shared object '/home/louis/opt/R/libs/png/libs/png.so':
+  libpng16.so.16: cannot open shared object file: No such file or directory
+Error: loading failed
+Execution halted
+ERROR: loading failed
+* removing ‘/home/louis/opt/R/libs/png’
+
+The downloaded source packages are in
+        ‘/tmp/RtmpGg4rjz/downloaded_packages’
+Warning message:
+In install.packages("png") :
+  installation of package ‘png’ had non-zero exit status
+</code></pre>
+<p>I already have this <code>.so</code> file on my computer in various places (including from former versions of R)</p>
+<div class="highlight highlight-source-shell"><pre><span class="pl-k">function</span> <span class="pl-en">findafile</span> (){ find / -iname <span class="pl-s"><span class="pl-pds">"</span><span class="pl-smi">$@</span><span class="pl-pds">"</span></span> <span class="pl-k">2&gt;</span>/dev/null; }
+findafile png.so</pre></div>
+<ul>
+<li><code>@/R/x86_64-pc-linux-gnu-library/3.0/png/libs/png.so</code></li>
+<li><code>~/R/x86_64-pc-linux-gnu-library/3.2/png/libs/png.so</code></li>
+<li><code>/usr/lib/x86_64-linux-gnu/imlib2/loaders/png.so</code></li>
+<li><code>/usr/lib/x86_64-linux-gnu/ImageMagick-6.7.7/modules-Q16/coders/png.so</code></li>
+</ul>
+<div class="highlight highlight-source-shell"><pre>findafile libpng16.so.16</pre></div>
+<ul>
+<li><code>~/anaconda3/pkgs/libpng-1.6.17-0/lib/libpng16.so.16</code></li>
+<li><code>~/anaconda3/lib/libpng16.so.16</code></li>
+</ul>
+<div class="highlight highlight-source-shell"><pre>findafile libpng16.so.16.17.0</pre></div>
+<ul>
+<li><code>/home/louis/anaconda3/pkgs/libpng-1.6.17-0/lib/libpng16.so.16.17.0</code></li>
+<li><code>/home/louis/anaconda3/lib/libpng16.so.16.17.0</code></li>
+</ul>
+<p><a href="http://ubuntuforums.org/archive/index.php/t-2287140.html" rel="nofollow">This answer</a> suggests <code>ln -s</code> symlinking but copying is fine (and e.g. protects against you deleting your old R version trees and losing any retro-linked libraries)</p>
+<p>User <em>stuckinsd</em> recommends:</p>
+<div class="highlight highlight-source-shell"><pre>mkdir /home/kuragari/R/x86_64-pc-linux-gnu-library/3.2/png/
+mkdir /home/kuragari/R/x86_64-pc-linux-gnu-library/3.2/png/libs/
+ln -s /usr/kuragari/x86_64-linux-gnu/imlib2/loaders/png.so /home/tlu/R/x86_64-pc-linux-gnu-library/3.2/png/libs/
+ln -s /home/kuragari/anaconda/lib/libpng16.so.16 /home/tlu/R/x86_64-pc-linux-gnu-library/3.2/png/libs/
+ln -s /home/kuragari/anaconda/lib/libpng16.so.16.17.0 /home/tlu/R/x86_64-pc-linux-gnu-library/3.2/png/libs/</pre></div>
+<p><a href="http://www.thegeekstuff.com/2012/06/linux-shared-libraries/" rel="nofollow">Info on shared libraries here</a>.</p>
+<p>I have 3.3, and <a href="https://github.com/lmmx/devnotes/wiki/Updating-R-on-Linux/">use a personal package library</a> at <code>~/opt/R/libs/</code>, so it was:</p>
+<div class="highlight highlight-source-shell"><pre>mkdir -p <span class="pl-k">~</span>/opt/R/libs/png/libs/
+<span class="pl-c"><span class="pl-c">#</span> old version's built library:</span>
+ln -s /usr/lib/x86_64-linux-gnu/imlib2/loaders/png.so <span class="pl-k">~</span>/opt/R/libs/png/libs/
+ln -s /home/louis/anaconda3/lib/libpng16.so.16 <span class="pl-k">~</span>/opt/R/libs/png/libs/
+ln -s /home/louis/anaconda3/lib/libpng16.so.16.17.0 <span class="pl-k">~</span>/opt/R/libs/png/libs/
+
+<span class="pl-c"><span class="pl-c">#</span> There'll still be the same error if you run `install.packages('png')`</span>
+<span class="pl-c"><span class="pl-c">#</span> you need to run `sudo ldconfig` inside the folder with the `.so` files</span>
+<span class="pl-c"><span class="pl-c">#</span> (what it does is explained here: http://stackoverflow.com/a/28460293/2668831</span>
+
+<span class="pl-c1">cd</span> <span class="pl-k">~</span>/opt/R/libs/png/libs/
+sudo ldconfig</pre></div>
+<ul>
+<li>
+<strong>Note</strong>: trial and error showed only the <code>/usr/lib/x86_64-linux-gnu/imlib2/loaders/png.so</code> version would work</li>
+<li>I had to start R with <code>sudo</code> to get the copy from the above location to work</li>
+</ul>
+
+        </div>
+
+        <div class="wiki-footer gollum-markdown-content boxed-group" id="wiki-footer">
+          <div class="boxed-group-inner wiki-auxiliary-content markdown-body">
+            <p><a href="https://github.com/lmmx/devnotes/wiki">Main page</a></p>
+
+          </div>
+        </div>
+    </div>]

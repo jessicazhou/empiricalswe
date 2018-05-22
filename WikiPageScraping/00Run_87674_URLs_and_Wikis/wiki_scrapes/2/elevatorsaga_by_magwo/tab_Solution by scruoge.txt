@@ -1,0 +1,208 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <pre><code>{
+    init: function(elevators, floors) {
+        var calls = [];
+
+        var evaluate = function(call, elev){
+            var cQueue = 300;
+            var cFloor = 100;
+            var cLoad = 200;
+            var cDir = 500;
+            var nDir;
+            if (elev.goingUpIndicator() &amp;&amp; elev.goingDownIndicator())
+                nDir = 0;
+            else
+                nDir = ((elev.goingUpIndicator() &amp;&amp; elev.currentFloor() &lt;= call.num &amp;&amp; call.dir == 'Up') || (elev.goingDownIndicator() &amp;&amp; elev.currentFloor() &gt;= call.num &amp;&amp; call.dir == 'Down') ? 0 : 1) * cDir;
+            
+            var evaluation = elev.calls.length * cQueue + Math.abs(elev.currentFloor() - call.num) * cFloor + elev.loadFactor() * cLoad + nDir;
+            
+            console.log({Message: 'Evaluation', CallFrom: call.num, CallTo: call.dir, Elevator: elevators.indexOf(elev), Evaluation: evaluation});
+            
+            return evaluation;
+        };
+        
+        var dispatchCall = function(call){
+            // find moving elevator nearest to the call in right direction and push task in it's queue
+            var dispatchThreshold = 300;
+            var nearest = null;
+            var nearness = 0;
+            elevators.forEach(function(elev){
+                var evaluation = evaluate(call, elev);
+                if (!nearest || nearness &gt; evaluation) {
+                    nearest = elev;
+                    nearness = evaluation;
+                }
+            });
+            
+            if (nearest &amp;&amp; dispatchThreshold &gt; nearness){
+
+                console.log({
+                    Message: 'Call dispatched',
+                    Evaluation: nearness,
+                    CallFrom: call.num,
+                    CallTo: call.dir,
+                    Elevator: elevators.indexOf(nearest)
+                });
+                
+                nearest.calls.push(call);
+                return true;
+            }
+            
+            return false;
+        };
+        
+        var findCall = function(elev){
+            // find call in common queue, which optimally suits this elevator
+            var bestCall = null;
+            var bestEval = 0;
+            var bestIndex = -1;
+            calls.forEach(function(call, index){
+                var evaluation = evaluate(call, elev);
+                if (!bestCall || bestEval &gt; evaluation){
+                    bestCall = call;
+                    bestEval = evaluation;
+                    bestIndex = index;
+                }
+            });
+
+            if (bestCall)
+            {
+                console.log({
+                    Message: 'Call fetched',
+                    Evaluation: bestEval,
+                    CallFrom: bestCall.num,
+                    CallTo: bestCall.dir,
+                    Elevator: elevators.indexOf(elev)
+                });
+                
+                calls.splice(bestIndex, 1);
+                return bestCall;
+            }
+            return calls.shift();
+        };
+        
+        var onElevatorCall = function(direction) {
+            var floorNum = this.floorNum();
+            var call = {num: floorNum, dir: direction};
+            if (!dispatchCall(call))
+                calls.push(call);
+        };
+
+        var updateIndicators = function(targetFloor){
+            targetFloor = targetFloor !== undefined ? targetFloor : this.currentFloor();
+            if (this.currentFloor() &lt; targetFloor){
+                this.goingUpIndicator(true);
+                this.goingDownIndicator(false);
+            }
+            if (this.currentFloor() &gt; targetFloor){
+                this.goingUpIndicator(false);
+                this.goingDownIndicator(true);
+            }
+            if (this.currentFloor() == targetFloor){
+                this.goingUpIndicator(this.currentFloor() &lt; (floors.length - 1));
+                this.goingDownIndicator(this.currentFloor() &gt; 0);
+            }
+        };
+
+        var checkCalls = function(){
+            if (!this.currentCall){
+                if (!this.calls.length){
+                    var call = findCall(this);
+                    if (call)
+                        this.calls.push(call);
+                }
+                if (this.calls.length){
+                    this.currentCall = this.calls.shift();
+                    this.goTo(this.currentCall.num);
+                }
+            }
+        };
+
+        var checkCallFinished = function(floorNum){
+            var inversion = {'Up': 'Down', 'Down': 'Up'};
+            floorNum = floorNum || this.currentFloor();
+            if (this.currentCall &amp;&amp; this.currentCall.num == floorNum){
+                this['going' + this.currentCall.dir + 'Indicator'](true);
+                this['going' + inversion[this.currentCall.dir] + 'Indicator'](false);
+                this.currentCall = null;
+            }
+        };
+
+        var goTo = function(floorNum, force){
+            this.working = true;
+            this.goToFloor(floorNum, force);
+        };
+        
+        var onIdle = function () {
+            this.updateIndicators();
+            this.checkCalls();
+        };
+        
+        var onFloorButtonPressed = function(floorNum){
+            this.goTo(floorNum);
+        };
+        
+        var onPassingFloor = function(floorNum, direction){
+            var i = this.destinationQueue.indexOf(floorNum);
+            if (i &gt; -1) {
+                this.destinationQueue.splice(i, 1);
+                this.destinationQueue.unshift(floorNum);
+                this.checkDestinationQueue();
+                return;
+            }
+            for (var i = 0; i &lt; this.calls.length; i++) {
+                if (this.calls[i].num == floorNum &amp;&amp; this.calls[i].dir.toLowerCase() == direction) {
+                    this.calls.splice(i, 1);
+                    this.goToFloor(floorNum, true);
+                    return;
+                }
+            }
+        };
+        
+        var onStoppedAtFloor = function(floorNum){
+            this.checkCallFinished(floorNum);
+        };
+        
+        floors.forEach(function(floor){
+            floor.onElevatorCall = onElevatorCall;
+            floor.on('up_button_pressed', function () {
+                this.onElevatorCall('Up');
+                elevators.forEach(function(elev){elev.checkCalls();});
+            });
+            floor.on('down_button_pressed', function () {
+                this.onElevatorCall('Down');
+                elevators.forEach(function(elev){elev.checkCalls();});
+            });
+        });
+
+        elevators.forEach(function(elev){
+            elev.working = false;
+            elev.calls = [];
+            elev.currentCall = null;
+            
+            elev.updateIndicators = updateIndicators;
+            elev.checkCallFinished = checkCallFinished;
+            elev.checkCalls = checkCalls;
+            elev.goTo = goTo;
+            elev.findCall = findCall;
+            
+            elev.on("idle", onIdle);
+            elev.on('floor_button_pressed', onFloorButtonPressed);
+            elev.on('passing_floor', onPassingFloor);
+            elev.on('stopped_at_floor', onStoppedAtFloor);
+            
+            elev.goToFloor(0);
+        });
+    },
+    update: function(dt, elevators, floors) {
+        elevators.forEach(function(elev){
+            elev.updateIndicators(elev.destinationQueue[0]);
+        });
+    }
+}
+</code></pre>
+
+        </div>
+
+    </div>]

@@ -1,0 +1,340 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>This migration guide helps you transition an application written using the <code>v3.x</code> series of this package, to the <code>v4.x</code>
+series. This guide focuses specifically on the breaking changes to help get your existing app up and running as
+quickly as possible. In some cases, there may be better techniques for accomplishing what your app already does by
+utilizing brand new features or new API. Learn about all the new features in our
+<a href="https://github.com/slackapi/node-slack-sdk/releases/tag/v4.0.0"><code>v4.0.0</code> release notes</a> if you'd like
+to go beyond a simple port.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#webclient" id="user-content-webclient"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>WebClient</h2>
+<h3>
+<a aria-hidden="true" class="anchor" href="#constructor" id="user-content-constructor"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Constructor</h3>
+<ul>
+<li>The <code>slackAPIUrl</code> option has been renamed to <code>slackApiUrl</code> to improve readability.</li>
+<li>The <code>transport</code> option has been removed. If you used this option to implement proxy support, use the new <code>agent</code>
+option as described <a href="#proxy-support-with-agent">below</a>. If you used this option for setting custom TLS configuration,
+use the new <code>tls</code> option as described <a href="#custom-tls-configuration">below</a>. If you were using this for
+some other reason, please <a href="https://github.com/slackapi/node-slack-sdk/issues/new">open an issue</a> and describe your
+use case so we can help you migrate.</li>
+</ul>
+<h3>
+<a aria-hidden="true" class="anchor" href="#all-methods" id="user-content-all-methods"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>All methods</h3>
+<h4>
+<a aria-hidden="true" class="anchor" href="#-all-web-api-methods-no-longer-take-positional-arguments-" id="user-content--all-web-api-methods-no-longer-take-positional-arguments-"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>🚨 <strong>All Web API methods no longer take positional arguments.</strong> 🚨</h4>
+<p>They each take one argument, an object, in which some
+properties are required and others are optional (depending on the method). You no longer have to memorize or look up
+the order of the arguments. The method arguments are described in the
+<a href="https://api.slack.com/methods" rel="nofollow">API method documentation</a>. If you are using an editor that understands TypeScript or
+JSDoc annotations, your editor may present you with useful information about these arguments as you type.</p>
+<p>If any Web API method is called with a callback parameter, and the call results in an error from the platform, you will
+no longer get the platform's response as the second argument to the callback. Instead, that response will exist as the
+<code>.data</code> property on the first argument (the error). You can consolidate this logic by using Promises instead (or
+continue to use callbacks if you prefer).</p>
+<p><strong>Before:</strong></p>
+<div class="highlight highlight-source-js"><pre><span class="pl-k">const</span> { <span class="pl-c1">WebClient</span> } <span class="pl-k">=</span> <span class="pl-c1">require</span>(<span class="pl-s"><span class="pl-pds">'</span>@slack/client<span class="pl-pds">'</span></span>)
+<span class="pl-k">const</span> <span class="pl-c1">web</span> <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-en">WebClient</span>(token);
+
+<span class="pl-smi">web</span>.<span class="pl-smi">chat</span>.<span class="pl-c1">postMessage</span>(channelId, text, { as_user<span class="pl-k">:</span> <span class="pl-c1">true</span>, parse<span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">'</span>full<span class="pl-pds">'</span></span> }, (<span class="pl-smi">error</span>, <span class="pl-smi">resp</span>) <span class="pl-k">=&gt;</span> {
+  <span class="pl-k">if</span> (error) {
+    <span class="pl-k">if</span> (resp) {
+      <span class="pl-c"><span class="pl-c">//</span> a platform error occurred, `resp.error` contains the error information</span>
+    }
+    <span class="pl-c"><span class="pl-c">//</span> some other error occurred</span>
+    <span class="pl-k">return</span>;
+  }
+
+  <span class="pl-c"><span class="pl-c">//</span> success</span>
+});</pre></div>
+<p><strong>After:</strong></p>
+<div class="highlight highlight-source-js"><pre><span class="pl-c"><span class="pl-c">//</span> a new export, ErrorCode, is a dictionary of known error types</span>
+<span class="pl-k">const</span> { <span class="pl-c1">WebClient</span>, <span class="pl-c1">ErrorCode</span> } <span class="pl-k">=</span> <span class="pl-c1">require</span>(<span class="pl-s"><span class="pl-pds">'</span>@slack/client<span class="pl-pds">'</span></span>)
+<span class="pl-k">const</span> <span class="pl-c1">web</span> <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-en">WebClient</span>(token);
+
+<span class="pl-smi">web</span>.<span class="pl-smi">chat</span>.<span class="pl-c1">postMessage</span>({ channel<span class="pl-k">:</span> channelId, text, as_user<span class="pl-k">:</span> <span class="pl-c1">true</span>, parse<span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">'</span>full<span class="pl-pds">'</span></span> })
+  .<span class="pl-c1">then</span>((<span class="pl-smi">resp</span>) <span class="pl-k">=&gt;</span> { <span class="pl-c"><span class="pl-c">/*</span> success <span class="pl-c">*/</span></span> })
+  .<span class="pl-c1">catch</span>((<span class="pl-smi">error</span>) <span class="pl-k">=&gt;</span> {
+    <span class="pl-k">if</span> (<span class="pl-smi">error</span>.<span class="pl-c1">code</span> <span class="pl-k">===</span> <span class="pl-smi">ErrorCode</span>.<span class="pl-smi">PlatformError</span>) {
+      <span class="pl-c"><span class="pl-c">//</span> a platform error occurred, `error.message` contains error information, `error.data` contains the entire resp</span>
+    } <span class="pl-k">else</span> {
+      <span class="pl-c"><span class="pl-c">//</span> some other error occurred</span>
+    }
+  });</pre></div>
+<h3>
+<a aria-hidden="true" class="anchor" href="#dm" id="user-content-dm"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>dm</h3>
+<p>This family of methods was always a duplicate of those under the <code>.im</code> family. These duplicates have been removed.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#mpdm" id="user-content-mpdm"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>mpdm</h3>
+<p>This family of methods was always a duplicate of those under the <code>.mpim</code> family. These duplicates have been removed.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#rtmclient" id="user-content-rtmclient"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>RTMClient</h2>
+<p>The top-level export name has changed from <code>RtmClient</code> to <code>RTMClient</code>.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#constructor-1" id="user-content-constructor-1"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Constructor</h3>
+<ul>
+<li>The <code>slackAPIUrl</code> option has been renamed to <code>slackApiUrl</code> to improve readability.</li>
+<li>The <code>dataStore</code> option has been removed. See the <a href="https://github.com/slackapi/node-slack-sdk/wiki/DataStore-v3.x-Migration-Guide">DataStore v3.x Migration Guide</a>.</li>
+<li>The <code>useRtmConnect</code> option now has a default value of <code>true</code>. We recommend querying for additional data using a
+<code>WebClient</code> after this client is connected. If that doesn't help, then you can set this option to <code>false</code>.</li>
+<li>The <code>socketFn</code> option has been removed. If you used this option to implement proxy support, use the new <code>agent</code>
+option as described <a href="#proxy-support-with-agent">below</a>. If you used this option for setting custom TLS
+configuration, use the new <code>tls</code> option as described <a href="#custom-tls-configuration">below</a>. If you were using this for
+some other reason, please <a href="https://github.com/slackapi/node-slack-sdk/issues/new">open an issue</a> and describe your
+use case so we can help you migrate.</li>
+<li>The <code>wsPingInterval</code> and <code>maxPongInterval</code> options have been replaced with <code>clientPingTimeout</code> and
+<code>serverPongTimeout</code>. Most likely, you can replace these values respectively, or drop using them all together.</li>
+</ul>
+<h3>
+<a aria-hidden="true" class="anchor" href="#datastore" id="user-content-datastore"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>dataStore</h3>
+<p>The data store has been removed from the <code>RTMClient</code>. See the
+<a href="https://github.com/slackapi/node-slack-sdk/wiki/DataStore-v3.x-Migration-Guide">DataStore v3.x Migration Guide</a> for
+more details on this change.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#reconnect" id="user-content-reconnect"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>reconnect()</h3>
+<p>This method has been removed, but it can be substituted by using <code>disconnect()</code>, waiting for the <code>disconnected</code> event,
+and then calling <code>start(options)</code>. Reconnecting using the method was rarely used by developers, and its implementation
+increased the complexity of state management in the client.</p>
+<p><strong>Before:</strong></p>
+<div class="highlight highlight-source-js"><pre><span class="pl-smi">rtm</span>.<span class="pl-en">reconnect</span>();</pre></div>
+<p><strong>After:</strong></p>
+<div class="highlight highlight-source-js"><pre><span class="pl-smi">rtm</span>.<span class="pl-c1">disconnect</span>();
+<span class="pl-c"><span class="pl-c">//</span> You will need to store the start options from the first time you connect and then reuse them here.</span>
+<span class="pl-smi">rtm</span>.<span class="pl-en">once</span>(<span class="pl-s"><span class="pl-pds">'</span>disconnected<span class="pl-pds">'</span></span>, () <span class="pl-k">=&gt;</span> <span class="pl-smi">rtm</span>.<span class="pl-c1">start</span>(options));</pre></div>
+<h3>
+<a aria-hidden="true" class="anchor" href="#updatemessage" id="user-content-updatemessage"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>updateMessage()</h3>
+<p>This method has been removed from the <code>RTMClient</code>, but can be substituted by using the <code>WebClient</code>.</p>
+<p><strong>Before:</strong></p>
+<div class="highlight highlight-source-js"><pre><span class="pl-k">const</span> <span class="pl-c1">message</span> <span class="pl-k">=</span> { ts<span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">'</span>999999999.0000000<span class="pl-pds">'</span></span>, channel<span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">'</span>C123456<span class="pl-pds">'</span></span>, text<span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">'</span>updated message text<span class="pl-pds">'</span></span> };
+<span class="pl-smi">rtm</span>.<span class="pl-en">updateMessage</span>(message).<span class="pl-c1">then</span>(<span class="pl-en">console</span>.<span class="pl-smi">log</span>);</pre></div>
+<p><strong>After:</strong></p>
+<div class="highlight highlight-source-js"><pre><span class="pl-c"><span class="pl-c">//</span> We recommend that you initialize this object at the same time you would have initialized the RTMClient</span>
+<span class="pl-k">const</span> <span class="pl-c1">web</span> <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-en">WebClient</span>(token);
+
+<span class="pl-k">const</span> <span class="pl-c1">message</span> <span class="pl-k">=</span> { ts<span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">'</span>999999999.0000000<span class="pl-pds">'</span></span>, channel<span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">'</span>C123456<span class="pl-pds">'</span></span>, text<span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">'</span>updated message text<span class="pl-pds">'</span></span> };
+<span class="pl-smi">web</span>.<span class="pl-smi">chat</span>.<span class="pl-en">update</span>(message).<span class="pl-c1">then</span>(<span class="pl-en">console</span>.<span class="pl-smi">log</span>);</pre></div>
+<h3>
+<a aria-hidden="true" class="anchor" href="#send" id="user-content-send"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>send()</h3>
+<p>This method has be repurposed, and in most cases you will instead rely on <code>addOutgoingEvent(awaitReply, type, body)</code>.</p>
+<p>The main difference is that if you want to know when the message is acknowledged by the server (you were using the
+optional callback parameter to <code>send()</code>), you'll only be able to do so using the returned Promise. If you prefer
+callbacks, you can translate the interface using a library like Bluebird
+(see: <a href="http://bluebirdjs.com/docs/api/ascallback.html" rel="nofollow">http://bluebirdjs.com/docs/api/ascallback.html</a>) or the Node
+<a href="https://nodejs.org/api/util.html#util_util_callbackify_original" rel="nofollow"><code>util.callbackify()</code></a> since v8.2.0.</p>
+<p>As an added benefit, you will be able to send the message without worrying whether the client is in a connected state
+or not.</p>
+<p><strong>Before:</strong></p>
+<div class="highlight highlight-source-js"><pre><span class="pl-k">const</span> <span class="pl-c1">message</span> <span class="pl-k">=</span> { type<span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">'</span>message_type<span class="pl-pds">'</span></span>, key<span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">'</span>value<span class="pl-pds">'</span></span>, foo<span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">'</span>bar<span class="pl-pds">'</span></span> };
+<span class="pl-smi">rtm</span>.<span class="pl-c1">send</span>(message, (<span class="pl-smi">error</span>, <span class="pl-smi">resp</span>) <span class="pl-k">=&gt;</span> {
+  <span class="pl-k">if</span> (error) {
+    <span class="pl-c"><span class="pl-c">//</span> error handling</span>
+    <span class="pl-k">return</span>;
+  }
+  <span class="pl-c"><span class="pl-c">//</span> success handling</span>
+});</pre></div>
+<p><strong>After:</strong></p>
+<div class="highlight highlight-source-js"><pre><span class="pl-k">const</span> <span class="pl-c1">message</span> <span class="pl-k">=</span> { type<span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">'</span>message_type<span class="pl-pds">'</span></span>, key<span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">'</span>value<span class="pl-pds">'</span></span>, foo<span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">'</span>bar<span class="pl-pds">'</span></span> };
+<span class="pl-smi">rtm</span>.<span class="pl-en">addOutgoingEvent</span>(<span class="pl-c1">true</span>, <span class="pl-smi">message</span>.<span class="pl-c1">type</span>, message)
+  .<span class="pl-c1">then</span>((<span class="pl-smi">resp</span>) <span class="pl-k">=&gt;</span> {
+    <span class="pl-c"><span class="pl-c">//</span> success handling</span>
+  })
+  .<span class="pl-c1">catch</span>((<span class="pl-smi">error</span>) <span class="pl-k">=&gt;</span> {
+    <span class="pl-c"><span class="pl-c">//</span> error handling</span>
+  });</pre></div>
+<h3>
+<a aria-hidden="true" class="anchor" href="#events" id="user-content-events"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Events</h3>
+<p>The <code>RTMClient</code> now has more well-defined states (and substates) that you may observe using the
+<a href="https://nodejs.org/api/events.html" rel="nofollow"><code>EventEmitter</code> API pattern</a>. The following table helps describe the relationship
+between events in the <code>v3.x</code> series and events in the <code>v4.x</code> series.</p>
+<table>
+<thead>
+<tr>
+<th>Event Name (<code>v4.x</code>)</th>
+<th>Event Name (<code>v3.x</code>)</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>disconnected</code></td>
+<td><code>disconnect</code></td>
+<td>The client is not connected to the platform. This is a steady state - no attempt to connect is occurring.</td>
+</tr>
+<tr>
+<td><code>connecting</code></td>
+<td>
+<code>connecting</code> / <code>attempting_reconnect</code>
+</td>
+<td>The client is in the process of connecting to the platform.</td>
+</tr>
+<tr>
+<td><code>authenticated</code></td>
+<td><code>authenticated</code></td>
+<td>The client has authenticated with the platform. The <code>rtm.connect</code> or <code>rtm.start</code> response is emitted as an argument. This is a sub-state of <code>connecting</code>.</td>
+</tr>
+<tr>
+<td><code>connected</code></td>
+<td></td>
+<td>The client is connected to the platform and incoming events will start being emittied.</td>
+</tr>
+<tr>
+<td><code>ready</code></td>
+<td><code>open</code></td>
+<td>The client is ready to send outgoing messages. This is a sub-state of <code>connected</code>
+</td>
+</tr>
+<tr>
+<td><code>disconnecting</code></td>
+<td></td>
+<td>The client is no longer connected to the platform and cleaning up its resources. It will soon transition to <code>disconnected</code>.</td>
+</tr>
+<tr>
+<td><code>reconnecting</code></td>
+<td></td>
+<td>The client is no longer connected to the platform and cleaning up its resources. It will soon transition to <code>connecting</code>.</td>
+</tr>
+<tr>
+<td><code>error</code></td>
+<td><code>ws_error</code></td>
+<td>An error has occurred. The error is emitted as an argument. The <code>v4</code> event is a super set of the <code>v3</code> event. To test whether the event is a websocket error, check <code>error.code === ErrorCodes.RTMWebsocketError</code>
+</td>
+</tr>
+<tr>
+<td><code>unable_to_rtm_start</code></td>
+<td><code>unable_to_rtm_start</code></td>
+<td>A problem occurred while connecting, a reconnect may or may not occur. Use of this event is discouraged since <code>disconnecting</code> and <code>reconnecting</code> are more meaningful.</td>
+</tr>
+<tr>
+<td><code>slack_event</code></td>
+<td></td>
+<td>An incoming Slack event has been received. The event type and event body are emitted as the arguments.</td>
+</tr>
+<tr>
+<td><code>{type}</code></td>
+<td><code>{type}</code></td>
+<td>An incoming Slack event of type <code>{type}</code> has been received. The event is emitted as an argument. An example is <code>message</code> for all message events</td>
+</tr>
+<tr>
+<td><code>{type}::{subtype}</code></td>
+<td><code>{type}::{subtype}</code></td>
+<td>An incoming Slack event of type <code>{type}</code> and subtype <code>{subtype}</code> has been received. The event is emitted as an argument. An example is <code>message::bot_message</code> for all bot messages.</td>
+</tr>
+<tr>
+<td><code>raw_message</code></td>
+<td><code>raw_message</code></td>
+<td>A websocket message arrived. The message (unparsed string) is emitted as an argument. Use of this event is discouraged since <code>slack_event</code> is more useful.</td>
+</tr>
+<tr>
+<td></td>
+<td><code>ws_opening</code></td>
+<td>This event is no longer emitted, and the state of the underlying websocket is considered private.</td>
+</tr>
+<tr>
+<td></td>
+<td><code>ws_opened</code></td>
+<td>This event is no longer emitted, and the state of the underlying websocket is considered private.</td>
+</tr>
+<tr>
+<td></td>
+<td><code>ws_close</code></td>
+<td>This event is no longer emitted, and the state of the underlying websocket is considered private.</td>
+</tr>
+</tbody>
+</table>
+<h2>
+<a aria-hidden="true" class="anchor" href="#incoming-webhooks" id="user-content-incoming-webhooks"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Incoming Webhooks</h2>
+<ul>
+<li>The following options have been renamed:
+<ul>
+<li>
+<code>iconEmoji</code> =&gt; <code>icon_emoji</code>
+</li>
+<li>
+<code>iconUrl</code> =&gt; <code>icon_url</code>
+</li>
+<li>
+<code>linkNames</code> =&gt; <code>link_names</code>
+</li>
+<li>
+<code>unfurlLinks</code> =&gt; <code>unfurl_links</code>
+</li>
+<li>
+<code>unfurlMedia</code> =&gt; <code>unfurl_media</code>
+</li>
+</ul>
+</li>
+</ul>
+<h2>
+<a aria-hidden="true" class="anchor" href="#client_events-rtm_events-rtm_message_subtypes" id="user-content-client_events-rtm_events-rtm_message_subtypes"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>CLIENT_EVENTS, RTM_EVENTS, RTM_MESSAGE_SUBTYPES</h2>
+<p>These constants have been removed. We recommend using simple strings for event names. The values that were in
+<code>CLIENT_EVENTS</code> have been migrated according to the <a href="#events">events table above</a>. The <code>RTM_EVENTS</code> dictionary isn't
+necessary, just directly subscribe to the event name as a string.</p>
+<p><strong>Before:</strong></p>
+<div class="highlight highlight-source-js"><pre><span class="pl-smi">rtm</span>.<span class="pl-en">on</span>(<span class="pl-c1">CLIENT_EVENTS</span>.<span class="pl-c1">RTM</span>.<span class="pl-c1">AUTHENTICATED</span>, (<span class="pl-smi">connectionData</span>) <span class="pl-k">=&gt;</span> {
+  <span class="pl-en">console</span>.<span class="pl-c1">log</span>(<span class="pl-s"><span class="pl-pds">'</span>RTMClient authenticated<span class="pl-pds">'</span></span>);
+});
+
+<span class="pl-smi">rtm</span>.<span class="pl-en">on</span>(<span class="pl-c1">RTM_EVENTS</span>.<span class="pl-c1">MESSAGE</span>, (<span class="pl-c1">event</span>) <span class="pl-k">=&gt;</span> {
+  <span class="pl-en">console</span>.<span class="pl-c1">log</span>(<span class="pl-s"><span class="pl-pds">`</span>Incoming message: <span class="pl-s1"><span class="pl-pse">${</span><span class="pl-c1">event</span>.<span class="pl-smi">ts</span><span class="pl-pse">}</span></span><span class="pl-pds">`</span></span>);
+})</pre></div>
+<p><strong>After:</strong></p>
+<div class="highlight highlight-source-js"><pre><span class="pl-smi">rtm</span>.<span class="pl-en">on</span>(<span class="pl-s"><span class="pl-pds">'</span>authenticated<span class="pl-pds">'</span></span>, (<span class="pl-smi">connectionData</span>) <span class="pl-k">=&gt;</span> {
+  <span class="pl-en">console</span>.<span class="pl-c1">log</span>(<span class="pl-s"><span class="pl-pds">'</span>RTMClient authenticated<span class="pl-pds">'</span></span>);
+});
+
+<span class="pl-smi">rtm</span>.<span class="pl-en">on</span>(<span class="pl-s"><span class="pl-pds">'</span>message<span class="pl-pds">'</span></span>, (<span class="pl-c1">event</span>) <span class="pl-k">=&gt;</span> {
+  <span class="pl-en">console</span>.<span class="pl-c1">log</span>(<span class="pl-s"><span class="pl-pds">`</span>Incoming message: <span class="pl-s1"><span class="pl-pse">${</span><span class="pl-c1">event</span>.<span class="pl-smi">ts</span><span class="pl-pse">}</span></span><span class="pl-pds">`</span></span>);
+})</pre></div>
+<h2>
+<a aria-hidden="true" class="anchor" href="#retry_policies" id="user-content-retry_policies"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>RETRY_POLICIES</h2>
+<p>The names of these policies have slightly changed for more consistency with our style guide. The dictionary of policies
+is now exported under the name <code>retryPolicies</code>. See <code>src/retry-policies.ts</code> for details.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#proxy-support-with-agent" id="user-content-proxy-support-with-agent"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Proxy Support with <code>agent</code>
+</h2>
+<p>In order to pass outgoing requests from <code>WebClient</code> or <code>RTMClient</code> through an HTTP proxy, you'll first need to install
+an additional package in your application:</p>
+<pre><code>$ npm install --save https-proxy-agent
+</code></pre>
+<p>Next, use the <code>agent</code> option in the client constructor to configure with your proxy settings.</p>
+<div class="highlight highlight-source-js"><pre><span class="pl-k">const</span> <span class="pl-c1">HttpsProxyAgent</span> <span class="pl-k">=</span> <span class="pl-c1">require</span>(<span class="pl-s"><span class="pl-pds">'</span>https-proxy-agent<span class="pl-pds">'</span></span>);
+<span class="pl-k">const</span> { <span class="pl-c1">WebClient</span>, <span class="pl-c1">RTMClient</span> } <span class="pl-k">=</span> <span class="pl-c1">require</span>(<span class="pl-s"><span class="pl-pds">'</span>@slack/client<span class="pl-pds">'</span></span>);
+
+<span class="pl-c"><span class="pl-c">//</span> in this example, we read the token from an environment variable. its best practice to keep sensitive data outside</span>
+<span class="pl-c"><span class="pl-c">//</span> your source code.</span>
+<span class="pl-k">const</span> <span class="pl-c1">token</span> <span class="pl-k">=</span> <span class="pl-c1">process</span>.<span class="pl-smi">env</span>.<span class="pl-c1">SLACK_TOKEN</span>;
+
+<span class="pl-c"><span class="pl-c">//</span> its common to read the proxy URL from an environment variable, since it also may be sensitive.</span>
+<span class="pl-k">const</span> <span class="pl-c1">proxyUrl</span> <span class="pl-k">=</span> <span class="pl-c1">process</span>.<span class="pl-smi">env</span>.<span class="pl-smi">http_proxy</span> <span class="pl-k">||</span> <span class="pl-s"><span class="pl-pds">'</span>http://12.34.56.78:9999<span class="pl-pds">'</span></span>;
+
+<span class="pl-c"><span class="pl-c">//</span> To use Slack's Web API:</span>
+<span class="pl-k">const</span> <span class="pl-c1">web</span> <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-en">WebClient</span>(token, { agent<span class="pl-k">:</span> <span class="pl-k">new</span> <span class="pl-en">HttpsProxyAgent</span>(proxyUrl) });
+
+<span class="pl-c"><span class="pl-c">//</span> To use Slack's RTM API:</span>
+<span class="pl-k">const</span> <span class="pl-c1">rtm</span> <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-en">RTMClient</span>(token, { agent<span class="pl-k">:</span> <span class="pl-k">new</span> <span class="pl-en">HttpsProxyAgent</span>(proxyUrl) });
+
+<span class="pl-c"><span class="pl-c">//</span> NOTE: for a more complex proxy configuration, see the https-proxy-agent documentation:</span>
+<span class="pl-c"><span class="pl-c">//</span> https://github.com/TooTallNate/node-https-proxy-agent#api</span></pre></div>
+<h2>
+<a aria-hidden="true" class="anchor" href="#custom-tls-configuration" id="user-content-custom-tls-configuration"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Custom TLS Configuration</h2>
+<p>You may want to use a custom TLS configuration if your application needs to send requests through a server with a
+self-signed certificate.</p>
+<p>Example:</p>
+<div class="highlight highlight-source-js"><pre><span class="pl-k">const</span> { <span class="pl-c1">WebClient</span>, <span class="pl-c1">RTMClient</span> } <span class="pl-k">=</span> <span class="pl-c1">require</span>(<span class="pl-s"><span class="pl-pds">'</span>@slack/client<span class="pl-pds">'</span></span>);
+
+<span class="pl-c"><span class="pl-c">//</span> in this example, we read the token from an environment variable. its best practice to keep sensitive data outside</span>
+<span class="pl-c"><span class="pl-c">//</span> your source code.</span>
+<span class="pl-k">const</span> <span class="pl-c1">token</span> <span class="pl-k">=</span> <span class="pl-c1">process</span>.<span class="pl-smi">env</span>.<span class="pl-c1">SLACK_TOKEN</span>;
+
+<span class="pl-c"><span class="pl-c">//</span> Configure TLS options</span>
+<span class="pl-k">const</span> <span class="pl-c1">tls</span> <span class="pl-k">=</span> {
+  key<span class="pl-k">:</span> <span class="pl-smi">fs</span>.<span class="pl-en">readFileSync</span>(<span class="pl-s"><span class="pl-pds">'</span>/path/to/key<span class="pl-pds">'</span></span>),
+  cert<span class="pl-k">:</span> <span class="pl-smi">fs</span>.<span class="pl-en">readFileSync</span>(<span class="pl-s"><span class="pl-pds">'</span>/path/to/cert<span class="pl-pds">'</span></span>),
+  ca<span class="pl-k">:</span> <span class="pl-smi">fs</span>.<span class="pl-en">readFileSync</span>(<span class="pl-s"><span class="pl-pds">'</span>/path/to/cert<span class="pl-pds">'</span></span>),
+};
+
+<span class="pl-k">const</span> <span class="pl-c1">web</span> <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-en">WebClient</span>(token, { slackApiUrl<span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">'</span>https://fake.slack.com/api<span class="pl-pds">'</span></span>, tls });
+<span class="pl-k">const</span> <span class="pl-c1">rtm</span> <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-en">RTMClient</span>(token, { slackApiUrl<span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">'</span>https://fake.slack.com/api<span class="pl-pds">'</span></span>, tls });</pre></div>
+
+        </div>
+
+    </div>]

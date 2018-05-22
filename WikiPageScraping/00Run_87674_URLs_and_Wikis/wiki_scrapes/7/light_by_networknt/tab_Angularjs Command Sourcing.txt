@@ -1,0 +1,84 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>Angularjs and Command Sourcing</p>
+<p>The communication between Angular applications to resource servers is normally done through REST API. Compare with other web service protocols it has its merits but the traditional way of REST API design is not suitable for event sourcing architecture.</p>
+<p>Let’s take a look at the pros and cons of REST and SOAP first.</p>
+<p>SOAP packaging for both request and response is heavy weight and parsing XML is expensive. WSDL discovery adds another layer of overhead and reveals entire message format for targeted attacks. The integration is at process level not data level. Above is the penalty to scalability of you system and why it is rarely used over the Internet. Even in enterprise web service integration, it is used less and less.</p>
+<p>REST is light weigh, has predictable end points and exposes resource instead of process. It is very suitable for client side applications (AngularJS etc.) that only consume resources. However, it has it own shortcomings.</p>
+<ul>
+<li>There is no standard and developers design the API differently.</li>
+<li>This causes the mapping from URL to request handler complicated.</li>
+</ul>
+<p>The following is my recommendation on how Angular sends command to the server and the server gives back response by looking up rule from command data to handle the request.</p>
+<p>From Angular, each communication to the backend will be a command using HTTP post(read, write, not cacheable) and get(read, cacheable).</p>
+<p>There are two part of the each command: common and command specific</p>
+<p>Here is a list of elements for common:</p>
+<pre><code>host
+app
+category
+name
+version
+readOnly
+</code></pre>
+<p>Of above, category, name and readOnly are mandatory. If host and app are missing, then it means to call some common rules of part of the core system. If version is missing, then it means for the rule the original will be called.</p>
+<p>Command specific data portion will be flexible and can be anything.</p>
+<pre><code>{
+	“host”: “www.networknt.com”,
+	“app”: “OnlineShopping”,
+	“category”: “user”,
+	“name”, “login”,
+	“version”: 1,
+	“readOnly”, false,
+	“data”: {
+		“userId”: “stevehu”,
+		“password”, “password”,
+		“rememberMe”, true	
+	}
+}
+</code></pre>
+<p>Here is the way to lookup command rules and event rules based on command common fields</p>
+<pre><code>    public static String getCommandRuleClass(Map&lt;String, Object&gt; jsonMap) throws Exception {
+        Class c = Class.forName("com.networknt.light.rule.Rule");
+        String commandName = (String) jsonMap.get("name");
+        String ruleClass = commandName.substring(0, 1).toUpperCase() + commandName.substring(1) + "Rule";
+        ruleClass = c.getPackage().getName() + "." +
+                (jsonMap.get("host") == null? "" : jsonMap.get("host") + ".") +
+                (jsonMap.get("app") == null? "" : jsonMap.get("app") + ".") +
+                (jsonMap.get("category") == null? "" : jsonMap.get("category") + ".") +
+                (jsonMap.get("version") == null? "" : jsonMap.get("version") + ".") +
+                ruleClass;
+        //System.out.println("ruleClass = " + ruleClass);
+        return ruleClass;
+    }
+
+    public static String getEventRuleClass(Map&lt;String, Object&gt; jsonMap) throws Exception {
+        Class c = Class.forName("com.networknt.light.rule.Rule");
+        String eventName = (String) jsonMap.get("name");
+        String ruleClass = eventName.substring(0, 1).toUpperCase() + eventName.substring(1) + "EvRule";
+        ruleClass = c.getPackage().getName() + "." +
+                (jsonMap.get("host") == null? "" : jsonMap.get("host") + ".") +
+                (jsonMap.get("app") == null? "" : jsonMap.get("app") + ".") +
+                (jsonMap.get("category") == null? "" : jsonMap.get("category") + ".") +
+                (jsonMap.get("version") == null? "" : jsonMap.get("version") + ".") +
+                ruleClass;
+        //System.out.println("ruleClass = " + ruleClass);
+        return ruleClass;
+    }
+</code></pre>
+<p>The way the api rule is called.</p>
+<pre><code>if(readOnly) {            
+    RuleEngine.getInstance().executeRule(Util.getCommandRuleClass(jsonMap), jsonMap);
+} else {
+    boolean valid = RuleEngine.getInstance().executeRule(Util.getCommandRuleClass(jsonMap), jsonMap);
+    if(valid) {
+        // persist event into event store.
+        Map&lt;String, Object&gt; eventMap = (Map&lt;String, Object&gt;)jsonMap.get("eventMap");
+        DbService.persistEvent(eventMap);
+        RuleEngine.getInstance().executeRuleAsync(Util.getEventRuleClass(eventMap), eventMap);
+    }
+}
+</code></pre>
+
+        </div>
+
+    </div>]

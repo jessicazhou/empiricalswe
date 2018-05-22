@@ -1,0 +1,103 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>References:</p>
+<ul>
+	<li><a href="http://www.devtrends.com/index.php/setting-up-a-simple-dns-server-with-bind9/" rel="nofollow">http://www.devtrends.com/index.php/setting-up-a-simple-dns-server-with-bind9/</a></li>
+	<li><a href="https://www.digitalocean.com/community/tutorials/how-to-configure-bind-as-a-caching-or-forwarding-dns-server-on-ubuntu-14-04" rel="nofollow">https://www.digitalocean.com/community/tutorials/how-to-configure-bind-as-a-caching-or-forwarding-dns-server-on-ubuntu-14-04</a></li>
+</ul>
+<p>Install name server and its utilities</p>
+<div class="highlight highlight-source-shell"><pre>apt-get install bind9 bind9utils bind9-doc</pre></div>
+<p>Modify DHCP server to assign ourselves as name authority, do: <code>nano /etc/dhcp/dhcpd.conf</code></p>
+<pre><code># in /etc/dhcp/dhcpd.conf:
+# option definitions common to all supported networks...
+option domain-name "home.netbeast";
+option domain-name-servers 8.8.8.8, 8.8.4.4;
+
+# A slightly different configuration for an internal subnet.
+subnet 10.0.0.0 netmask 255.255.255.0 {
+  range 10.0.0.2 10.0.0.254;
+  option domain-name-servers 10.0.0.1;
+  option domain-name "home.netbeast";
+  option routers 10.0.0.1;
+  option broadcast-address 10.0.0.255;
+  default-lease-time 600;
+  max-lease-time 7200;
+}
+</code></pre>
+<p>Modify local available server list <code>/etc/resolv.conf</code> configuring our
+domain name:</p>
+<pre><code>domain home.netbeast
+search home.netbeast
+nameserver 192.168.0.1
+</code></pre>
+<p>Forward unknown request to google DNS servers (you can modify this to use your favourite name provider). This is my <code>/etc/bind/named.conf.options</code></p>
+<pre><code>options {
+        directory "/var/cache/bind";
+
+        // If there is a firewall between you and nameservers you want
+        // to talk to, you may need to fix the firewall to allow multiple
+        // ports to talk.  See http://www.kb.cert.org/vuls/id/800113
+
+        // If your ISP provided one or more IP addresses for stable
+        // nameservers, you probably want to use them as forwarders.
+        // Uncomment the following block, and insert the addresses replacing
+        // the all-0's placeholder.
+
+        forwarders {
+                8.8.8.8;
+                8.8.4.4;
+                192.168.0.1;
+        };
+        forward only;
+        recursion yes;
+
+        dnssec-enable yes;
+        dnssec-validation yes;
+
+        //========================================================================
+        // If BIND logs error messages about the root key being expired,
+        // you will need to update your keys.  See https://www.isc.org/bind-keys
+        //========================================================================
+
+        auth-nxdomain no;    # conform to RFC1035
+        listen-on-v6 { any; };
+};
+</code></pre>
+<p>(Finally) modify BIND9 to add names and IPs to the database. Add the following to <code>/etc/bind/db.local</code>:</p>
+<pre><code>$TTL  60480
+home.netbeast.     IN      A       10.0.0.1
+</code></pre>
+<p>The next file to change, which we will also make changes for reverse DNS at the same time, is the <code>/etc/bind/named.conf.default-zones</code>. The line for the primary zone, which references the <code>/etc/bind/db.local</code> file must state your local domain in the quotes following the zone directive:</p>
+<pre><code>zone “netbeast” {
+  type master;
+  file “/etc/bind/db.local”;
+};
+</code></pre>
+<p>Reset BIND and DHCP servers. As clients, reconnect to netbeast WiFi network to get the new DHCP settings.</p>
+<pre><code>service bind9 restart
+service isc-dhcp-server restart
+</code></pre>
+<p>Written with ♥, by netBeast staff</p>
+<p>Any doubt reach us at @netbeast_co (twitter) or staff [at] netbeast.co.</p>
+
+        </div>
+
+        <div class="wiki-footer gollum-markdown-content boxed-group" id="wiki-footer">
+          <div class="boxed-group-inner wiki-auxiliary-content markdown-body">
+            <p># <code>warning</code>: now our docs are being published in our gitbook and available on our website. Visit <a href="http://docs.netbeast.co/" rel="nofollow">http://docs.netbeast.co/</a></p>
+<h1>
+<a aria-hidden="true" class="anchor" href="#contact" id="user-content-contact"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Contact</h1>
+<ul>
+<li>Visit our site <a href="https://netbeast.co" rel="nofollow">https://netbeast.co</a>
+</li>
+<li>Mail us: staff [at] netbeast.co</li>
+<li>Report a bug or enter discussion at <a href="https://github.com/netbeast-co/docs/issues">issues</a>
+</li>
+<li>Other resources: <a href="https://github.com/netbeast-co/dashboard">Dashboard</a>, Netbeast <a href="https://github.com/netbeast-co/API">API</a>
+</li>
+</ul>
+<p><a href="https://gitter.im/netbeast-co/xway?utm_source=badge&amp;utm_medium=badge&amp;utm_campaign=pr-badge" rel="nofollow"><img alt="Gitter" data-canonical-src="https://badges.gitter.im/Join%20Chat.svg" src="https://camo.githubusercontent.com/da2edb525cde1455a622c58c0effc3a90b9a181c/68747470733a2f2f6261646765732e6769747465722e696d2f4a6f696e253230436861742e737667"/></a></p>
+
+          </div>
+        </div>
+    </div>]

@@ -1,0 +1,62 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <h1>
+<a aria-hidden="true" class="anchor" href="#the-state-model-for-bucket-before-the-2017-changes" id="user-content-the-state-model-for-bucket-before-the-2017-changes"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>The state model for bucket before the 2017 changes</h1>
+<p>These are the states a bucket could be in:</p>
+<ul>
+<li>
+<strong>Idea</strong> - New bucket. Only used for discussion at this point. The target is not fixed yet.
+<ul>
+<li><code>status == 'draft'</code></li>
+<li>It can transition to <strong>Funding</strong> or <strong>Cancelled</strong>.</li>
+</ul>
+</li>
+<li>
+<strong>Funding</strong> - People can start contributing to the bucket. The bucket is not yet fully funded and not cancelled.
+<ul>
+<li>
+<code>target</code> is now fixed and can’t be changed.</li>
+<li>If a <code>contribution</code> is added that makes the sum of contribution go over <code>target</code>, it will be adjusted down. Thus no buckets should have contributions that are over <code>target</code>. This is an invariant.</li>
+<li>If a contribution is added that makes the sum of contributions equal to <code>target</code> the <code>status</code> get set to <code>funded</code>
+</li>
+<li>The bucket can be archived (UI: <code>archiveBucketDialog</code>) or finished (UI: <code>finishBucketDialog</code>)</li>
+<li>If it gets archived and <code>status == 'live'</code> the dialog states the money will be returned. If it’s not live there’s no warning. This is also what happens in <code>bucket_service.rb</code>
+</li>
+<li>If it gets finished and <code>status == 'live'</code> the dialog states it’s no longer possible to add money to the bucket. This is done through setting <code>status == 'funded'</code>
+</li>
+<li><code>status == 'live'</code></li>
+<li>It can transition to <strong>Funded</strong> or <strong>Cancelled</strong>.</li>
+</ul>
+</li>
+<li>
+<strong>Funded</strong> - The bucket is fully funded. It’s not archived.
+<ul>
+<li><code>status == 'funded'</code></li>
+<li>If it’s archived the <code>status</code> doesn’t change. The <code>archived_at</code> timestamp gets set.</li>
+<li>It can transition to <strong>Archived</strong> (it can't transition to <strong>Cancelled</strong>).</li>
+</ul>
+</li>
+<li>
+<strong>Archived</strong> - The bucket is funded and then archived, so it’s less visible on the group page.
+<ul>
+<li>
+<code>archived_at</code> is set.</li>
+<li>
+<code>status == 'funded'</code> , the bucket was funded before it was archived and the contributions are still present.</li>
+</ul>
+</li>
+<li>
+<strong>Cancelled</strong> - The bucked is cancelled. It’s not possible to contribute to it. Any previous contributions has been deleted. It’s less visible on the group page.
+<ul>
+<li>
+<code>archived_at</code> is set.</li>
+<li><code>(status == 'draft') || (status = 'live')</code></li>
+<li>If <code>status == 'live'</code>  the bucket was in the process of being funded when it was archived and all contributions are deleted.</li>
+<li>If <code>status == 'draft'</code> no contributions was ever added.</li>
+</ul>
+</li>
+</ul>
+
+        </div>
+
+    </div>]

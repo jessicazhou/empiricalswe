@@ -1,0 +1,70 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>Once a single instance has been installed to a particular base URL, due to all of the systems used by ChemBio Hub being namespaced it is possioble to install a second instance.</p>
+<p>Conda and the ubuntu dependencies are already installed therefore you start the process by running the install_linux64 script as the user who runs ChemBio Hub</p>
+<pre><code>git clone https://github.com/thesgc/chembiohub_ws.git mynewinstance
+cd mynewinstance
+bash scripts/install_linux64.sh mynewinstance Ubuntu
+</code></pre>
+<p>Now, as a user with sudo privileges you need to move the generated config files to the right places on the server</p>
+<pre><code> sudo mv /tmp/uwsgi "/etc/supervisor/conf.d/mynewinstance_uwsgi_supervisor.conf"
+ sudo mv /tmp/postgres "/etc/supervisor/conf.d/mynewinstance_postgres_supervisor.conf"
+</code></pre>
+<p>Next you will need to restart supervisor</p>
+<pre><code>sudo service supervisor restart
+</code></pre>
+<p>On looking at the supervisor status you should now see 3 new  processes</p>
+<pre><code>sudo supervisorctl status
+...
+running mynewinstance_uwsgi
+running mynewinstance_qcluster
+running mynewinstance_postgresql
+...
+</code></pre>
+<p>If they are not running then debug them by opening another terminal window and using</p>
+<pre><code>supervisorctl tail -f mynewinstance_qcluster
+</code></pre>
+<p>To tail the process while you restart it e.g.</p>
+<pre><code>supervisorctl restart mynewinstance_qcluster
+</code></pre>
+<p>Once the processes have started OK, return to the user that runs ChemBio Hub and run the following in order to create the database</p>
+<pre><code>source activate mynewinstance
+export ENV_NAME=mynewinstance
+psql  -h $CONDA_ENV_PATH/var/postgressocket -c "create extension if not exists hstore;create extension if not exists  rdkit;" template1
+createdb -h $CONDA_ENV_PATH/var/postgressocket ${ENV_NAME}_db -T template1
+python deployment/generate_secret_settings.py &gt; deployment/settings/secret.py
+</code></pre>
+<p>Next, add an entry to the secret settings file to patch the redis database number so that it does not clash with the existing one. Edit deployment/settings/default.py and change the caching setting to the following - redis database number.</p>
+<p>CACHES = {
+"default": {
+"BACKEND": "django_redis.cache.RedisCache",
+"LOCATION": "redis://127.0.0.1:6379/2",
+"OPTIONS": {
+"CLIENT_CLASS": "django_redis.client.DefaultClient",
+}
+},</p>
+<p>ENV_NAME: {
+"BACKEND": "django_redis.cache.RedisCache",
+"LOCATION": "redis://127.0.0.1:6379/2",
+"OPTIONS": {
+"CLIENT_CLASS": "django_redis.client.DefaultClient",
+}
+}
+}</p>
+<pre><code>python manage.py migrate
+python manage.py loaddata projecttypes.json
+python manage.py reindex_compounds_new
+cd src/ng-chem
+bower install
+cd ../..
+python manage.py collectstatic --noinput
+</code></pre>
+<p>A file was created in /tmp/apache containing the apache config for this server. Include these directives into the existing apache config file for the server in order to complate the configuration.</p>
+<p>Once the directives have been added, run</p>
+<pre><code>sudo service apache2 reload 
+</code></pre>
+<p>In order to restart the service</p>
+
+        </div>
+
+    </div>]

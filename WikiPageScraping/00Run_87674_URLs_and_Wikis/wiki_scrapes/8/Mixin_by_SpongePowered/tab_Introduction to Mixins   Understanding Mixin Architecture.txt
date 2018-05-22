@@ -1,0 +1,318 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>Before you start writing mixins, it is important to develop an understanding of the basic concepts that allow them to work. This section gives a brief introduction to these concepts. Even though you may be familiar with all of the information presented here I recommend at least skim reading the first 3 sections as they introduce the example case I will be using to demonstrate how mixins are applied, and some peculiar corners of Java and the JVM which are leveraged heavily in mixins.</p>
+<p><em><strong>This is not a tutorial!</strong> This introduction is not intended as a tutorial, for more details about mixin implementation consult the mixin example code in the <a href="https://github.com/SpongePowered/SpongeCommon/tree/bleeding/src/example/java/org/spongepowered">examples</a> in the Sponge repository.</em></p>
+<blockquote>
+<p><strong>NOTE</strong></p>
+<p>If you already have a comprehensive understanding of bytecode, name binding and frankly if you already know your INVOKESPECIAL from your INVOKEVIRTUAL, then feel free to <a href="https://github.com/SpongePowered/Mixin/wiki/Introduction-to-Mixins---Understanding-Mixin-Architecture#4-only-you-mixins-can-save-mankind">skip to section 4</a> where mixins themselves are introduced.</p>
+</blockquote>
+<h3>
+<a aria-hidden="true" class="anchor" href="#1-thinking-with-portals-mixins---the-example-case" id="user-content-1-thinking-with-portals-mixins---the-example-case"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>1. Thinking with <del>portals</del> mixins - the example case</h3>
+<p>In order to be able to think about how mixins work, I will present a canned example. <em>Note that this example is purely made up for the purposes of demonstration and isn't anything like the namesakes in the real code base!</em></p>
+<p>In our canned example, we will be looking at a class <code>EntityPlayer</code>, whose immediate (and only) superclass is <code>Entity</code>. We can represent this in a UML-esque manner like this:</p>
+<p><img alt="Figure 1 - a simple class hierarchy" src="https://raw.githubusercontent.com/SpongePowered/Mixin/master/docs/images/mixin_tut_0.png"/></p>
+<p><strong>Figure 1 - a simple (imaginary) class hierarchy</strong></p>
+<p>In mixin jargon <code>EntityPlayer</code> is the <strong>target class</strong>, it is the class which the mixin will be applied to.</p>
+<p>To flesh out the example, let's add some imaginary fields and methods to our imaginary example classes:</p>
+<p><img alt="Figure 2 - a simple class hierarchy with members" src="https://raw.githubusercontent.com/SpongePowered/Mixin/master/docs/images/mixin_tut_1.png"/></p>
+<p><strong>Figure 2 - adding some imaginary fields and methods to our example</strong></p>
+<p>This representation is chosen deliberately to represent which members represent our class's public surface area, with public methods and fields jutting outside of the class body since they are visible to other objects. This "view" that the outside world has of our class is an important concept to keep in mind when working with mixins.</p>
+<p>Notice that the inherited public methods from <code>Entity</code> <em>also</em> represent part of our class's publicly visible surface area, and the "ghost" methods <code>getHealth</code> and <code>setHealth</code> which are inherited from the parent class represent this presence in the class's overall external appearance.</p>
+<p>Before working with mixins, it is vital to have a deep understanding of the two Java keywords <code>this</code> and <code>super</code>. That may seem like an odd statement since anyone who has worked with Java for more than five minutes will recognise these keywords and their usage, yet appreciating the subtle implications of both is important if you don't want to go insane when writing mixins.</p>
+<p>First let's look at some of the possible invocations and accesses in our imaginary class:</p>
+<p><img alt="Figure 3 - some possible field and method accesses" src="https://raw.githubusercontent.com/SpongePowered/Mixin/master/docs/images/mixin_tut_2.png"/></p>
+<p><strong>Figure 3 - some possible field and method accesses</strong></p>
+<p>There's nothing particularly controversial about this scenario, <code>this.level</code>, <code>this.update()</code> and <code>this.food</code> all seem pretty standard. On the other hand the calls to <code>super.health</code> and <code>this.health</code>, and the call to <code>super.onUpdate()</code> from <code>update</code> are designed to highlight an aspect of the JVM which isn't obvious when writing Java code.</p>
+<p>Ask yourself the following questions:</p>
+<ul>
+<li>
+<p>What are the practical implications of qualifying the call to <code>onUpdate</code> with <code>super</code> rather than qualifying it with <code>this</code>?</p>
+</li>
+<li>
+<p>What are the practical implications of qualifying the access of <code>health</code> with <code>super</code> rather than qualifying it with <code>this</code>?</p>
+</li>
+</ul>
+<p>After all, both qualifications will work exactly the same in practice, right?</p>
+<p>The answer to the two questions is:</p>
+<ul>
+<li>
+<p><code>super.onUpdate()</code> <em>will always call the method</em> in <code>Entity</code> <em>even if a subclass overrides it</em>, whereas <code>this.onUpdate()</code> will, in subclasses which override the method, <em>call the overridden method where appropriate</em>.</p>
+</li>
+<li>
+<p>There is no difference, the field in <code>Entity</code> will always be accessed from the method <code>takeDamage</code>, even if a subclass "hides" the field by declaring it again.</p>
+</li>
+</ul>
+<p>The underlying reason for this behaviour is that invocations qualified with <code>super</code>, and all field accesses are <strong>statically bound</strong> at compile time, this means they always reference the member. Conversely, accesses qualified with <code>this</code> are <strong>dynamically bound</strong>, this means they don't resolve their target until they are actually called, allowing subclasses to override methods and have them called when appropriate.</p>
+<blockquote>
+<p><strong>NOTES</strong></p>
+<p>As well as invocations qualified with <code>super</code>, access to <code>private</code> and <code>static</code> methods are always <strong>statically bound</strong> as well.</p>
+<p>In bytecode, statically-bound invocations are represented by the INVOKESPECIAL and INVOKESTATIC opcodes, dynamic calls are represented by the INVOKEVIRTUAL opcode.</p>
+</blockquote>
+<p>Realising the precise nature of these keywords is useful when developing mixins and is the reason for some of the restrictions imposed on mixin classes, more on this later.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#2-through-the-looking-glass" id="user-content-2-through-the-looking-glass"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>2. Through the looking glass</h3>
+<p>I avoided using the word <em>Interface</em> above to describe the publicly visible members in order to avoid confusion with <em>actual</em> Java interfaces, since interfaces themselves play a key role in how mixins can be employed.</p>
+<p>To see how interfaces affect our interaction with a class, let's look at what happens if we create an interface which contains a few of the methods in our example, and access those methods via the interface.</p>
+<p>Side note: <em>yes this goes completely off the UML rails but UML is not really useful for representing the concepts here, the <strong>bottom</strong> of this block diagram is the 'visible surface' of a class from the point of view of any other object, the interface is - in effect - sitting "in front of" the public façade of the class and presenting a subset of it.</em></p>
+<p><img alt="Figure 4 - a diagram to annoy UML enthusiasts" src="https://raw.githubusercontent.com/SpongePowered/Mixin/master/docs/images/mixin_tut_3.png"/></p>
+<p><strong>Figure 4 - a diagram to annoy UML enthusiasts</strong></p>
+<p>There are some useful things to make a note of here:</p>
+<ul>
+<li>
+<p>Firstly, it's crucial to note that the <code>getHealth</code> and <code>setHealth</code> in the <code>Entity</code> class are actually implementing the interface methods, even though the class <code>Entity</code> has no knowledge of the interface <code>LivingThing</code>, the implication being that there is nothing <em>special</em> about interface methods in a class: as long as the method signatures<a href="#nb1"><sup>1</sup></a> match those in the interface, then the class method is deemed to implement the interface method. It should be clear from this that interface method calls are <strong>dynamically bound</strong>.</p>
+</li>
+<li>
+<p>We also made no changes to either class except for declaring that it <code>implements LivingThing</code>. In fact, if Java didn't require us to include the <code>implements</code> clause then this program structure would be allowed with no changes to the program at all. What this tells us is that if we can somehow sneakily insert the <code>implements</code> clause onto a target class, then provided the methods in our interface exist we will be able to invoke them on the target class.</p>
+</li>
+</ul>
+<blockquote>
+<p><a name="user-content-nb1"><sup>1</sup></a> A method's <strong>signature</strong> is its set of parameters <em>and its return type</em>. For example for the method:</p>
+<div class="highlight highlight-source-java"><pre><span class="pl-k">public</span> <span class="pl-smi">ThingType</span> getThingAtLocation(<span class="pl-k">double</span> scale, <span class="pl-k">int</span> x, <span class="pl-k">int</span> y, <span class="pl-k">int</span> z, <span class="pl-k">boolean</span> squash) {</pre></div>
+<p>the signature would be:</p>
+<pre><code>(double,int,int,int,boolean)com.mypackage.ThingType
+</code></pre>
+<p>note that we put the parameters in parentheses and the return type on the end. In practice to save space, <a href="https://www.murrayc.com/permalink/1998/03/13/the-java-class-file-format/#TypeDescriptors" rel="nofollow">a more compact syntax is used</a> and in bytecode the above signature would look like this:</p>
+<pre><code>(DIIIZ)Lcom/mypackage/ThingType;
+</code></pre>
+<p>You will need to become familiar with bytecode descriptors if you plan to work with <em>Injectors</em>.</p>
+</blockquote>
+<h3>
+<a aria-hidden="true" class="anchor" href="#3-quack-quack" id="user-content-3-quack-quack"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>3. Quack, quack</h3>
+<p>The final piece to the puzzle which we are slowly assembling is a useful Java language feature relating to interfaces, namely the fact that you can cast any object reference to any interface and the compiler will happily compile it.</p>
+<p>For example, let's say we invent a new interface for objects which can level up, and call it <code>Leveller</code>, like this:</p>
+<p><img alt="Figure 5 - the Leveller interface" src="https://raw.githubusercontent.com/SpongePowered/Mixin/master/docs/images/mixin_tut_4.png"/></p>
+<p><strong>Figure 5 - <em>what a beautiful day, hey, hey</em></strong></p>
+<p>The following code will happily compile:</p>
+<div class="highlight highlight-source-java"><pre><span class="pl-k">public</span> <span class="pl-k">void</span> method() {
+    <span class="pl-c"><span class="pl-c">//</span> Make a new EntityPlayer</span>
+    <span class="pl-smi">EntityPlayer</span> player <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-smi">EntityPlayer</span>();
+
+    <span class="pl-c"><span class="pl-c">//</span> This will compile, even though EntityPlayer doesn't</span>
+    <span class="pl-c"><span class="pl-c">//</span> actually implement the interface, but it will throw</span>
+    <span class="pl-c"><span class="pl-c">//</span> a ClassCastException at runtime</span>
+    <span class="pl-smi">Leveller</span> lev <span class="pl-k">=</span> (<span class="pl-smi">Leveller</span>)player;
+
+    <span class="pl-c"><span class="pl-c">//</span> We will never reach this code, but again it will</span>
+    <span class="pl-c"><span class="pl-c">//</span> compile just fine.</span>
+    <span class="pl-k">int</span> level <span class="pl-k">=</span> lev<span class="pl-k">.</span>getLevel();
+} </pre></div>
+<p>We know from the last section that the method <code>getLevel()</code> in <code>EntityPlayer</code> <strong>can</strong> happily implement the interface with no changes, but the fact that the <code>implements</code> clause doesn't explicitly declare the interface causes the cast to fail at runtime. If we can somehow apply the <code>implements</code> clause at runtime, then we finally have a viable way of implementing <em>duck typing</em> in Java using interfaces.</p>
+<blockquote>
+<p>"implementing <strong>what</strong>?"<br/>                     - you, probably</p>
+</blockquote>
+<p><a href="http://en.wikipedia.org/wiki/Duck_typing" rel="nofollow">Duck typing</a> is a method of implicit typing used in dynamically typed languages which allows object members to be accessed or invoked based simply on whether they exist or not. It takes its name from the "duck test" expressed as</p>
+<blockquote>
+<p>When I see a bird that walks like a duck and swims like a duck and quacks like a duck, I call that bird a duck.</p>
+</blockquote>
+<p>In other words, if all we care about is that an object has methods <code>quack()</code> and <code>walk()</code> then as far as we are concerned it's a <code>Duck</code> and don't actually care if it's just a very smart <code>Pigeon</code>, as long as it has the methods then it's a <code>Duck</code> to us.</p>
+<p>If it's still not obvious what's happening here then I suggest <a href="http://en.wikipedia.org/wiki/Duck_typing" rel="nofollow">reading the Wikipedia article</a> as it covers the concept in detail which is beyond the scope of this introduction.</p>
+<p>So what do we know so far?</p>
+<ul>
+<li>
+<p>We know that the relationship between classes and interfaces is quite flimsy, and with a little spit and sellotape can be manipulated in a number of ways which are beneficial to us.</p>
+</li>
+<li>
+<p>We know that we can leverage <strong>dynamic binding</strong> in Java to write code which compiles (although it won't run, yet) and that somehow patching the <code>implements</code> clause onto the target object is the key to making this work.</p>
+</li>
+<li>
+<p>We know that superclass invocations using the <code>super</code> keyword are <strong>statically bound</strong> at compile time, and this means we have to give extra thought to exactly <em>what</em> we're referring to when we specify <code>super</code>.</p>
+</li>
+</ul>
+<p>One final thing to consider is what happens when a class <em>doesn't</em> implement an interface. Let's add another method to our <code>Leveller</code> example interface called <code>setLevel()</code>:</p>
+<p><img alt="Figure 6 - adding setLevel()" src="https://raw.githubusercontent.com/SpongePowered/Mixin/master/docs/images/mixin_tut_5.png"/></p>
+<p><strong>Figure 6 - adding setLevel()</strong></p>
+<p>Adding the second method to the interface adds scope for another - different - runtime error, in this case an <code>AbstractMethodError</code></p>
+<div class="highlight highlight-source-java"><pre><span class="pl-k">public</span> <span class="pl-k">void</span> method() {
+    <span class="pl-smi">EntityPlayer</span> player <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-smi">EntityPlayer</span>();
+
+    <span class="pl-c"><span class="pl-c">//</span> Assume that we can runtime-patch the interface</span>
+    <span class="pl-c"><span class="pl-c">//</span> declaration onto the EntityPlayer class, allowing</span>
+    <span class="pl-c"><span class="pl-c">//</span> this assignment to succeed</span>
+    <span class="pl-smi">Leveller</span> lev <span class="pl-k">=</span> (<span class="pl-smi">Leveller</span>)player;
+
+    <span class="pl-c"><span class="pl-c">//</span> This statement will throw an AbstractMethodError at</span>
+    <span class="pl-c"><span class="pl-c">//</span> runtime because setLevel(I) is not defined in the</span>
+    <span class="pl-c"><span class="pl-c">//</span> EntityPlayer class or any of its superclasses.</span>
+    lev<span class="pl-k">.</span>setLevel(<span class="pl-c1">10</span>);
+} </pre></div>
+<p>Understanding these aspects of Java and the JVM, let's take a look at mixins themselves.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#4-only-you-mixins-can-save-mankind" id="user-content-4-only-you-mixins-can-save-mankind"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>4. Only <del>you</del> mixins can save mankind</h3>
+<p>So now we know the basic tasks that mixins must achieve in order to allow us to get other objects to quack:</p>
+<ol>
+<li>Let us apply an interface of our choosing to the <strong>target class</strong> at runtime</li>
+<li>Let us insert a method <em>implementation</em> for any methods which are declared in the interface but are not present in the <strong>target class</strong>
+</li>
+</ol>
+<p>First let's look at how we declare a mixin class with <code>EntityPlayer</code> as its <strong>target class</strong>:</p>
+<div class="highlight highlight-source-java"><pre><span class="pl-k">@Mixin</span>(<span class="pl-smi">EntityPlayer</span><span class="pl-k">.</span>class)
+<span class="pl-k">public</span> <span class="pl-k">abstract</span> <span class="pl-k">class</span> <span class="pl-en">MixinEntityPlayer</span>
+    <span class="pl-k">extends</span> <span class="pl-e">Entity</span> {
+}</pre></div>
+<p>Yes it really is that simple. Using the <code>@Mixin</code> annotation defines this class as a mixin and specifies the <strong>target class</strong> we want to apply it to. Also note that:</p>
+<ul>
+<li>
+<p>The mixin class is marked with the <code>abstract</code> modifier. Whilst this is not a requirement, it helps when using mixins within an IDE because it means the end user cannot write code which tries to instantiate a mixin class, which would lead to an error at runtime. It also removes the requirement (imposed by the Java compiler) to implement every method within any declared interfaces, which is one of the main goals of mixins.</p>
+</li>
+<li>
+<p>The mixin class extends <code>Entity</code>, which is the same superclass as our <strong>target class</strong>. This is important in order to preserve the semantics of any <strong>static bindings</strong> which are compiled into our mixin class. More details on this later.</p>
+</li>
+</ul>
+<p>If we were to include this mixin in our runtime right now and run the game, the mixin would be applied and absolutely nothing would be changed, this is because we haven't actually declared anything in our mixin. Let's take a look at how we can achieve objective <strong>1</strong> above, and use our mixin to monkey-patch a new interface onto the <strong>target class</strong>:</p>
+<div class="highlight highlight-source-java"><pre><span class="pl-k">@Mixin</span>(<span class="pl-smi">EntityPlayer</span><span class="pl-k">.</span>class)
+<span class="pl-k">public</span> <span class="pl-k">abstract</span> <span class="pl-k">class</span> <span class="pl-en">MixinEntityPlayer</span>
+    <span class="pl-k">extends</span> <span class="pl-e">Entity</span>
+    <span class="pl-k">implements</span> <span class="pl-e">LivingThing</span> {
+}</pre></div>
+<p>That's it! Any interfaces declared on the mixin are applied to the <strong>target class</strong> when the mixin is processed. Let's take a look at the current class hierarchy:</p>
+<p><img alt="Figure 7 - mixin hierarchy (before application)" src="https://raw.githubusercontent.com/SpongePowered/Mixin/master/docs/images/mixin_tut_6.png"/></p>
+<p><strong>Figure 7 - mixin hierarchy (before application)</strong></p>
+<p>While this diagram represents the actual hierarchy of classes we will create, it is actually more useful (and in some more complex cases, vital) to <em>realise that a mixin is <strong>not really a class</strong>.</em> At runtime, the mixin will be applied to the <strong>target class</strong> and so it is much more conducive to good thought processes to think of mixins as <em>existing <strong>within</strong> the <strong>target class</strong></em> instead.</p>
+<p>After the mixin is applied, the new class hierarchy looks like this:</p>
+<p><img alt="Figure 8 - class hierarchy (after application)" src="https://raw.githubusercontent.com/SpongePowered/Mixin/master/docs/images/mixin_tut_7.png"/></p>
+<p><strong>Figure 8 - class hierarchy (after application)</strong></p>
+<p>As we can see, the target class now implements the <code>LivingThing</code> interface, which now allows our duck typing to work as we wanted:</p>
+<div class="highlight highlight-source-java"><pre><span class="pl-k">public</span> <span class="pl-k">void</span> method() {
+    <span class="pl-smi">EntityPlayer</span> player <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-smi">EntityPlayer</span>();
+
+    <span class="pl-c"><span class="pl-c">//</span> With the mixin applied, this cast succeeds</span>
+    <span class="pl-smi">LivingThing</span> living <span class="pl-k">=</span> (<span class="pl-smi">LivingThing</span>)player;
+
+    <span class="pl-c"><span class="pl-c">//</span> And because the cast succeeded, we can pass our object</span>
+    <span class="pl-c"><span class="pl-c">//</span> to other things that require a reference to LivingThing</span>
+    <span class="pl-c"><span class="pl-c">//</span> such as the method below</span>
+    <span class="pl-k">if</span> (<span class="pl-c1">this</span><span class="pl-k">.</span>isAlive(living)) {
+        <span class="pl-c"><span class="pl-c">//</span> hooray</span>
+    }
+}
+
+<span class="pl-k">public</span> <span class="pl-k">boolean</span> isAlive(<span class="pl-smi">LivingThing</span> living) {
+    <span class="pl-c"><span class="pl-c">//</span> We can call getHealth() just fine, because the method</span>
+    <span class="pl-c"><span class="pl-c">//</span> exists and is accessible via the LivingThing interface</span>
+    <span class="pl-k">int</span> health <span class="pl-k">=</span> living<span class="pl-k">.</span>getHealth();
+    <span class="pl-k">return</span> health <span class="pl-k">&gt;</span> <span class="pl-c1">0</span>;
+} </pre></div>
+<p>Since we've taken care of the first objective and can now successfully apply new interfaces to the <strong>target class</strong>, let's take a look at the second objective:</p>
+<ul>
+<li>Let us insert a method <em>implementation</em> for any methods which are declared in the interface but are not present in the <strong>target class</strong>
+</li>
+</ul>
+<p>We'll begin by having our mixin class implement the <code>Leveller</code> interface, which declares a method not currently implemented in our <strong>target class</strong> or any of its superclasses:</p>
+<div class="highlight highlight-source-java"><pre><span class="pl-k">@Mixin</span>(<span class="pl-smi">EntityPlayer</span><span class="pl-k">.</span>class)
+<span class="pl-k">public</span> <span class="pl-k">abstract</span> <span class="pl-k">class</span> <span class="pl-en">MixinEntityPlayer</span>
+    <span class="pl-k">extends</span> <span class="pl-e">Entity</span>
+    <span class="pl-k">implements</span> <span class="pl-e">LivingThing</span>, <span class="pl-e">Leveller</span> {
+}</pre></div>
+<p>producing the following class hierarchy:</p>
+<p><img alt="Figure 9 - mixin hierarchy (before application)" src="https://raw.githubusercontent.com/SpongePowered/Mixin/master/docs/images/mixin_tut_8.png"/></p>
+<p><strong>Figure 9 - mixin hierarchy (before application)</strong></p>
+<p>Because our mixin class is <code>abstract</code>, this code will happily compile, however any runtime call to the <code>setLevel()</code> method will result in an <code>AbstractMethodError</code> as described above. We can fix this by defining the <code>setLevel()</code> method in the mixin itself:</p>
+<div class="highlight highlight-source-java"><pre><span class="pl-k">@Mixin</span>(<span class="pl-smi">EntityPlayer</span><span class="pl-k">.</span>class)
+<span class="pl-k">public</span> <span class="pl-k">abstract</span> <span class="pl-k">class</span> <span class="pl-en">MixinEntityPlayer</span>
+    <span class="pl-k">extends</span> <span class="pl-e">Entity</span>
+    <span class="pl-k">implements</span> <span class="pl-e">LivingThing</span>, <span class="pl-e">Leveller</span> {
+
+    <span class="pl-k">@Override</span>
+    <span class="pl-k">public</span> <span class="pl-k">void</span> <span class="pl-en">setLevel</span>(<span class="pl-k">int</span> <span class="pl-v">newLevel</span>) {
+        <span class="pl-c"><span class="pl-c">//</span> TODO implement this method</span>
+    }
+}</pre></div>
+<p><img alt="Figure 10 - adding a method to the mixin" src="https://raw.githubusercontent.com/SpongePowered/Mixin/master/docs/images/mixin_tut_9.png"/></p>
+<p><strong>Figure 10 - adding a method to the mixin</strong></p>
+<p>Now when the mixin is applied the new method will also be patched into the <strong>target class</strong>:</p>
+<p><img alt="Figure 11 - class hierarchy (after application)" src="https://raw.githubusercontent.com/SpongePowered/Mixin/master/docs/images/mixin_tut_10.png"/></p>
+<p><strong>Figure 11 - class hierarchy (after application)</strong></p>
+<p>Our patched target class now fully implements all of the declared interfaces and we can see how easy it can be to add a new method to our target class. At the moment our new method doesn't actually do anything, we'll see how we can remedy this in the next section.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#5-to-light-a-candle-is-to-cast-a-shadow" id="user-content-5-to-light-a-candle-is-to-cast-a-shadow"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>5. To light a candle is to cast a Shadow</h3>
+<p>So we now have a way to inject new methods into our <strong>target class</strong>, but we will fairly quickly encounter a problem with implementing the body of our freshly-injected method: In an ideal world we'd like our new <code>setLevel()</code> implementation to be able to access the <code>level</code> variable in <code>EntityPlayer</code>, but there's a problem... it can't.</p>
+<p><img alt="Figure 12 - impossible access" src="https://raw.githubusercontent.com/SpongePowered/Mixin/master/docs/images/mixin_tut_11.png"/></p>
+<p><strong>Figure 12 - impossible access</strong></p>
+<p>We can't access a member of the <strong>target class</strong> because until the mixin is actually applied, the field doesn't exist! Because the superclass of the mixin is <code>Entity</code>, it doesn't even help if the field is <code>protected</code>: as far as the Java compiler is concerned, the field is nowhere to be seen.</p>
+<p>However <strong>we know</strong> that when the mixin is applied that the field <strong>will be there</strong>, what we need is some way of telling Java <em>"hey, this field <strong>will</strong> exist, let me access it"</em>. Fortunately mixins provide a mechanism for doing exactly this, via the <code>@Shadow</code> annotation:</p>
+<div class="highlight highlight-source-java"><pre><span class="pl-k">@Mixin</span>(<span class="pl-smi">EntityPlayer</span><span class="pl-k">.</span>class)
+<span class="pl-k">public</span> <span class="pl-k">abstract</span> <span class="pl-k">class</span> <span class="pl-en">MixinEntityPlayer</span>
+    <span class="pl-k">extends</span> <span class="pl-e">Entity</span>
+    <span class="pl-k">implements</span> <span class="pl-e">LivingThing</span>, <span class="pl-e">Leveller</span> {
+    
+    <span class="pl-k">@Shadow</span>
+    <span class="pl-k">private</span> <span class="pl-k">int</span> level;
+    
+    <span class="pl-k">@Override</span>
+    <span class="pl-k">public</span> <span class="pl-k">void</span> <span class="pl-en">setLevel</span>(<span class="pl-k">int</span> <span class="pl-v">newLevel</span>) {
+        <span class="pl-c"><span class="pl-c">//</span> Refers to the shadow field above, but will refer</span>
+        <span class="pl-c"><span class="pl-c">//</span> to the REAL field when the mixin is applied</span>
+        <span class="pl-c1">this</span><span class="pl-k">.</span>level <span class="pl-k">=</span> newLevel;
+    }
+}</pre></div>
+<p>The <code>@Shadow</code> annotation creates a "virtual field" in the mixin which mirrors its <strong>target class</strong> counterpart:</p>
+<p><img alt="Figure 13 - me and my shadow" src="https://raw.githubusercontent.com/SpongePowered/Mixin/master/docs/images/mixin_tut_12.png"/></p>
+<p><strong>Figure 13 - me and my shadow</strong></p>
+<p>It is also possible to apply <code>@Shadow</code> to methods as well, in order to invoke methods which are only defined in the target class, for example say we wanted to call the <code>update()</code> method immediately after setting the level, we can easily shadow the method and then invoke it from our new <code>setLevel()</code> method body:</p>
+<div class="highlight highlight-source-java"><pre><span class="pl-k">@Mixin</span>(<span class="pl-smi">EntityPlayer</span><span class="pl-k">.</span>class)
+<span class="pl-k">public</span> <span class="pl-k">abstract</span> <span class="pl-k">class</span> <span class="pl-en">MixinEntityPlayer</span>
+    <span class="pl-k">extends</span> <span class="pl-e">Entity</span>
+    <span class="pl-k">implements</span> <span class="pl-e">LivingThing</span>, <span class="pl-e">Leveller</span> {
+    
+    <span class="pl-k">@Shadow</span>
+    <span class="pl-k">private</span> <span class="pl-k">int</span> level;
+    
+    <span class="pl-k">@Shadow</span>
+    <span class="pl-k">private</span> <span class="pl-k">void</span> <span class="pl-en">update</span>() {}
+    
+    <span class="pl-k">@Override</span>
+    <span class="pl-k">public</span> <span class="pl-k">void</span> <span class="pl-en">setLevel</span>(<span class="pl-k">int</span> <span class="pl-v">newLevel</span>) {
+        <span class="pl-c"><span class="pl-c">//</span> Set the level value</span>
+        <span class="pl-c1">this</span><span class="pl-k">.</span>level <span class="pl-k">=</span> newLevel;
+        
+        <span class="pl-c"><span class="pl-c">//</span> Invoke the shadowed method to update the object state</span>
+        <span class="pl-c1">this</span><span class="pl-k">.</span>update();
+    }
+}</pre></div>
+<p>We would normally declare the shadow method as <code>abstract</code> simply to avoid having to write a method body, however because it is not possible to declare something as both <code>private</code> and <code>abstract</code> for obvious reasons, we simply declare the shadow method with an empty body.</p>
+<p><img alt="Figure 14 - shadow all the things" src="https://raw.githubusercontent.com/SpongePowered/Mixin/master/docs/images/mixin_tut_13.png"/></p>
+<p><strong>Figure 14 - shadow all the things</strong></p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#6-is-it-a-bird-is-it-a-plane-no-its-superclass" id="user-content-6-is-it-a-bird-is-it-a-plane-no-its-superclass"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>6. Is it a bird? Is it a plane? No it's superclass!</h3>
+<p>The final stop on our tour of the basic features of mixins is a brief look at how superclass accesses are handled within mixins. To begin with, we need to first understand why a mixin class is declared with the same superclass as the <strong>target class</strong>.</p>
+<p>First let's take a quick look at our current class hierarchy:</p>
+<p><img alt="Figure 15 - state of play" src="https://raw.githubusercontent.com/SpongePowered/Mixin/master/docs/images/mixin_tut_14.png"/></p>
+<p><strong>Figure 15 - state of play</strong></p>
+<p>Remember from section 1 that invocations qualified with the <code>super</code> keyword are <strong>statically bound</strong>. In the context of our mixin class, if we call <code>super.onUpdate()</code> as shown in <strong>figure 15</strong> then the generated bytecode will reference the <code>onUpdate</code> method in the <code>Entity</code> class specifically.</p>
+<p>When the mixin has the same parent class as the <strong>target class</strong>, this is exactly what we want. However it is actually possible to have a mixin inherit from <em>any class in the <strong>target class</strong>'s hierarchy</em>, up to and including <code>Object</code>.</p>
+<p>Let's assume for a minute that <code>EntityPlayer</code> does not inherit directly from <code>Entity</code>, but instead an intermediate class <code>EntityMoving</code>, the mixin class will still extend directly from <code>Entity</code>:</p>
+<p><img alt="Figure 16 - expanded hierarchy - this diagram is deliberately wrong!" src="https://raw.githubusercontent.com/SpongePowered/Mixin/master/docs/images/mixin_tut_15.png"/></p>
+<p><strong>Figure 16 - expanded hierarchy - note: this diagram is deliberately wrong!</strong></p>
+<p>Looking at this new hierarchy, it's now obvious why <code>super.onUpdate()</code> will <em>appear</em> to be calling the method in <code>Entity</code> from within the mixin class, but this is where it's important that you <strong>ignore what your IDE (and common sense probably) is telling you, and remember that a mixin's point of view is ALWAYS that of the <em>target class</em></strong>!</p>
+<p>The problem here is that the intermediate class <code>EntityMoving</code> has overridden the <code>onUpdate</code> moving and the functional contract of the class is such that calling <code>onUpdate</code> in the superclass will actually lead to inconsistent behaviour. When we invoke <code>super.onUpdate()</code> from the mixin, it <strong>must</strong> have the <strong>same</strong> semantics as if the same Java statement were invoked <strong>from the target class</strong>, and <strong>this is indeed the case</strong>.</p>
+<ul>
+<li>
+<p>In order to preserve the semantic consistency of Java code you type into a mixin, the mixin transformer updates all <strong>static bindings</strong> in the mixin class as it is applied. This means that in the above example, the call to <code>super.onUpdate()</code> correctly invokes the method in <code>EntityMoving</code></p>
+</li>
+<li>
+<p>This doesn't affect the semantics of the <code>this</code> keyword. Which for <code>protected</code> and <code>public</code> methods will always use <strong>dynamic binding</strong> and thus will always invoke the appropriate subclass method.</p>
+</li>
+</ul>
+<blockquote>
+<p>To get technical, the transformer will process all INVOKESPECIAL opcodes in the mixin and analyse the superclass hierarchy of the target class to find the most specialised version of that method. This process is expensive and is only carried out on "detached" mixins (those mixins whose superclass differs from the target class's superclass). To avoid this processing step, it is recommended that mixin classes have the same superclass as their target wherever possible.</p>
+</blockquote>
+<p><img alt="Figure 17 - final hierarchy" src="https://raw.githubusercontent.com/SpongePowered/Mixin/master/docs/images/mixin_tut_16.png"/></p>
+<p><strong>Figure 17 - final hierarchy (mixin applied)</strong></p>
+<p>As you can see, after the mixin is applied to the target class, the semantics of the <code>super.onUpdate()</code> call are updated to be consistent with the <strong>target class</strong> and all is once again well.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#7-wrapping-up" id="user-content-7-wrapping-up"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>7. Wrapping up</h3>
+<p>While this introduction covers the basics of mixins, there are many more aspects of mixin functionality to explore, especially when working in an environment where the <strong>target classes</strong> will be obfuscated before being used in a production environment.</p>
+<h4>
+<a aria-hidden="true" class="anchor" href="#more-mixin-topics-coming-soon" id="user-content-more-mixin-topics-coming-soon"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>More mixin topics (coming soon)</h4>
+<ul>
+<li><a href="https://github.com/SpongePowered/Mixin/wiki/Introduction-to-Mixins---The-Mixin-Environment">Introduction to Mixins - The Mixin Environment</a></li>
+<li><a href="https://github.com/SpongePowered/Mixin/wiki/Introduction-to-Mixins---Overwriting-Methods">Introduction to Mixins - Overwriting Methods</a></li>
+<li><a href="https://github.com/SpongePowered/Mixin/wiki/Resolving-Method-Signature-Conflicts">Resolving Method Signature Conflicts</a></li>
+<li><a href="https://github.com/SpongePowered/Mixin/wiki/Obfuscation-and-Mixins">Obfuscation and Mixins</a></li>
+<li><a href="https://github.com/SpongePowered/Mixin/wiki/Advanced-Mixin-Usage---Soft-Implementation">Advanced Mixin Usage - Soft Implementation</a></li>
+<li><a href="https://github.com/SpongePowered/Mixin/wiki/Advanced-Mixin-Usage---Using-Injection">Advanced Mixin Usage - Using Injection</a></li>
+</ul>
+
+        </div>
+
+    </div>]

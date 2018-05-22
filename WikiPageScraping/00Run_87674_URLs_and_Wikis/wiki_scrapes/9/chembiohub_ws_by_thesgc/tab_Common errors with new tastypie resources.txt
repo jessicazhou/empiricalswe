@@ -1,0 +1,40 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>Missing the created_by field?</p>
+<p>We have a Class which needs adding to your class hierarchy for the object concerned</p>
+<pre><code>IntegrityError: null value in column "created_by_id" violates not-null constraint
+  DETAIL:  Failing row contains (1, 2016-01-23 16:15:24.65331+00, 2016-01-23 16:15:24.653662+00, null, null,     null, null, null, null, t, null).
+</code></pre>
+<p>This will add the created by field to the data during the conversion of the JSON data to an object. The class is called:</p>
+<p>UserHydrate and you also have to add the created by field to make it work</p>
+<p>class DataFormConfigResource(UserHydrate, ModelResource):
+...
+created_by = fields.ForeignKey(
+"cbh_core_ws.resources.UserResource", 'created_by')
+class Meta:
+filtering = {
+"id": ALL
+}
+always_return_data = True</p>
+<hr/>
+<pre><code>  ValueError: No JSON object could be decoded when testing - no data coming back from a POST or PATCH request
+</code></pre>
+<p>This error arises when you have not set the meta class to return data always e.g.</p>
+<pre><code>class Meta:
+    filtering = {
+        "id": ALL
+    }
+    always_return_data = True
+</code></pre>
+<p>###If you are trying to save a related resource:</p>
+<ul>
+<li>You can POST either the resource uri or the whole object or a dictionary with just the pk</li>
+<li>Watch out for readonly fields - they will not be hydrated</li>
+<li>Ensure the permissions are set correctly on each related resource</li>
+<li>If using resource uris then your resource must actually be registered to the API</li>
+<li>Currently there is no way to stop the issues whereby these resources can be posted to - you will have to explicitly block these URLs</li>
+</ul>
+
+        </div>
+
+    </div>]

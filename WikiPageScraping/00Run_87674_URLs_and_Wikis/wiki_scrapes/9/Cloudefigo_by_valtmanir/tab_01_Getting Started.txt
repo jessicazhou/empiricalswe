@@ -1,0 +1,118 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <h2>
+<a aria-hidden="true" class="anchor" href="#prerequisites" id="user-content-prerequisites"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Prerequisites</h2>
+<p>This version of Cloudefigo supports only Amazon Web Services (AWS) environment. Thus, an account in AWS with administrative privileges is required for this stage. Following providing the privileges described below, no administrative privileges will be needed any more.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#cloning-the-code" id="user-content-cloning-the-code"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Cloning the Code</h2>
+<p>To get a local copy of the current code, clone it using git:</p>
+<pre><code>$ git clone https://github.com/valtmanir/Cloudefigo.git Cloudefigo
+$ cd Cloudefigo
+</code></pre>
+<h2>
+<a aria-hidden="true" class="anchor" href="#setting-the-iaas-environment" id="user-content-setting-the-iaas-environment"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Setting the IaaS Environment</h2>
+<ol>
+<li>Make sure you are using 2 different security group: remediation and production. All servers are launched into Remediation SG and move only after they pass vulnerability scan sucessfuly.</li>
+<li>Create a new instance of the latest Ubuntu and assign an <a href="http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/elastic-ip-addresses-eip.html" rel="nofollow">Elastic IP</a> to it. Then, install Nessus on this instance.</li>
+<li>Get <a href="https://www.getchef.com/" rel="nofollow">Chef server</a> and assign an Elastic IP to it as well. Cloudefigo tested with <a href="https://manage.chef.io/signup" rel="nofollow">managed-chef</a> but other versions of Chef can be implmeneted as well.</li>
+<li>Create a new user and group for Cloudefigo management operations. Then, add the following policy to the group:</li>
+</ol>
+<pre><code>{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "Stmt1413548658000",
+      "Effect": "Allow",
+      "Action": [
+        "ec2:ModifyInstanceAttribute",
+        "ec2:RunInstances",
+        "ec2:CreateTags",
+        "ec2:DescribeInstances"
+      ],
+      "Resource": [
+        "*"
+      ]
+    },
+    {
+      "Sid": "Stmt1413627168000",
+      "Effect": "Allow",
+      "Action": [
+        "iam:CreateRole",
+        "iam:GetRole",
+        "iam:ListRoles",
+        "iam:PutRolePolicy",
+        "iam:CreateInstanceProfile",
+        "iam:GetInstanceProfile",
+        "iam:AddRoleToInstanceProfile",
+        "iam:PassRole"
+      ],
+      "Resource": [
+        "*"
+      ]
+    },
+    {
+      "Sid": "Stmt1417412719000",
+      "Effect": "Allow",
+      "Action": [
+        "cloudtrail:DescribeTrails"
+      ],
+      "Resource": [
+        "*"
+      ]
+    },
+    {
+      "Sid": "Stmt1417412836000",
+      "Effect": "Allow",
+      "Action": [
+        "s3:GetObject",
+        "s3:ListBucket",
+        "s3:PutObject",
+        "s3:DeleteObject"
+      ],
+      "Resource": [
+        "arn:aws:s3:::cloud-log-trial",
+        "arn:aws:s3:::cloud-log-trial/*"
+      ]
+    }
+  ]
+}
+</code></pre>
+<p>Note that resource names may be different between environments.<br/>
+4. <a href="http://docs.aws.amazon.com/general/latest/gr/getting-aws-sec-creds.html" rel="nofollow">Generate API keys</a> for this user and store them for the coming steps. You can download them in excel format to ease the process, but do not forget to remove them when the getting started stages done.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#setting-up-the-management-environment" id="user-content-setting-up-the-management-environment"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Setting Up the Management Environment</h2>
+<ol>
+<li>Install <a href="https://www.python.org/download/releases/2.7/" rel="nofollow">Python 2.7</a>.</li>
+<li>In order to install Pychef, the following dependencies should be installed. The first is <a href="https://pypi.python.org/pypi/pip" rel="nofollow">Python-pip</a>. Note that if running pip from Windows, the execution path should be the <code>PYTHONPATH\Lib\site-packages</code> and the pip command should be called as <code>python pip</code>.</li>
+<li>When pip installed, it is easy to install Wheel by running the following command line:</li>
+</ol>
+<pre><code>pip install wheel
+</code></pre>
+<ol start="4">
+<li>Then install PyChef using Wheel by running (this example runs on linux):</li>
+</ol>
+<pre><code>wget https://pypi.python.org/packages/2.7/P/PyChef/PyChef-0.2.3-py27-none-any.whl
+wheel install PyChef-0.2.3-py27-none-any.whl
+</code></pre>
+<ol start="5">
+<li>Install Django web application framework by following the instructions in the following <a href="https://www.djangoproject.com/download/" rel="nofollow">link</a>. Note that if using pip, in some cases the MD5 checksum is incorrect, an therefore, need to add the parameter <code>--trusted-host pypi.python.org</code>.</li>
+<li>
+<a href="http://aws.amazon.com/cli/" rel="nofollow">Amazon Web Services CLI</a> needed to manage the credentials of the management user only. Install the AWS CLI and set the credentials using the following command:</li>
+</ol>
+<pre><code>$ aws configure
+AWS Access Key ID [None]: (your access key id)
+AWS Secret Access Key [None]: (your secret access key)
+Default region name [None]: 
+Default output format [None]:
+</code></pre>
+<ol start="6">
+<li>Install AWS SDK (Boto) using Wheel by running (this example runs on linux):</li>
+</ol>
+<pre><code>wget https://pypi.python.org/packages/3.4/b/boto/boto-2.36.0-py2.py3-none-any.whl#md5=3777433a2f800450a63d44c4b91d5caf
+wheel install boto-2.36.0-py2.py3-none-any.whl
+</code></pre>
+<p>When all set up, the configuration must be edited before any magic can happen.</p>
+
+        </div>
+
+    </div>]

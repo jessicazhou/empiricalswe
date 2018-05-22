@@ -1,0 +1,115 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>These directions will get you started with the Django development server, running MyUW as javerage.</p>
+<p>Prerequisites</p>
+<pre><code>A Python installation 2.7
+pip or easy_install
+git
+</code></pre>
+<p>Step-by-step</p>
+<p>If you don't have it already, install virtualenv:</p>
+<pre><code>pip install virtualenv
+</code></pre>
+<p>if you don't have pip, you may be able to:</p>
+<pre><code>easy_install virtualenv
+</code></pre>
+<p>Checkout the master of the myuw project:</p>
+<pre><code>git clone https://github.com/uw-it-aca/myuw.git 
+</code></pre>
+<p>OR</p>
+<pre><code>git clone git@github.com:uw-it-aca/myuw.git
+</code></pre>
+<p>Turn myuw into a virtualenv:</p>
+<pre><code>virtualenv  myuw   
+</code></pre>
+<p>Activate your virtualenv:</p>
+<pre><code>cd myuw
+source bin/activate
+</code></pre>
+<p>Upgrade your setuptools:</p>
+<pre><code>pip install setuptools --upgrade
+</code></pre>
+<p>Install required Python packages with pip:</p>
+<pre><code>pip install -r requirements.txt
+</code></pre>
+<p>If you receive errors with the above, ensure you have lib32z1-dev, libxslt1-dev, libxml2-dev, and python-dev installed.</p>
+<p>Create a django project in the myuw dir:</p>
+<pre><code>django-admin.py startproject project .
+</code></pre>
+<p>That '.' at the end is important!</p>
+<p>Modify at least the following settings in project/settings.py:</p>
+<p>For INSTALLED_APPS, add:</p>
+<pre><code>    'compressor',
+    'rc_django',
+    'django_mobileesp',
+    'templatetag_handlebars',
+    'myuw',
+    'userservice',
+    'django_client_logger',
+    'supporttools',
+    'blti',
+    'hx_toolkit'
+</code></pre>
+<p>You need to use MIDDLEWARE_CLASSES instead of MIDDLEWARE.  Add these:</p>
+<pre><code>    'django.contrib.auth.middleware.RemoteUserMiddleware',  
+    'userservice.user.UserServiceMiddleware',
+    'django_mobileesp.middleware.UserAgentDetectionMiddleware',
+    'rc_django.middleware.EnableServiceDegradationMiddleware',
+</code></pre>
+<p>The full list should look something like:</p>
+<pre><code>MIDDLEWARE_CLASSES = [                                                      
+    'django.middleware.security.SecurityMiddleware',                        
+    'django.contrib.sessions.middleware.SessionMiddleware',                 
+    'django.middleware.common.CommonMiddleware',                            
+    'django.middleware.csrf.CsrfViewMiddleware',                            
+    'django.contrib.auth.middleware.AuthenticationMiddleware',              
+    'django.contrib.messages.middleware.MessageMiddleware',                 
+    'django.middleware.clickjacking.XFrameOptionsMiddleware',               
+    'django.contrib.auth.middleware.RemoteUserMiddleware',                  
+    'django_mobileesp.middleware.UserAgentDetectionMiddleware',            
+    'userservice.user.UserServiceMiddleware',                               
+    'rc_django.middleware.EnableServiceDegradationMiddleware',            
+]    
+</code></pre>
+<p>Below that add:</p>
+<pre><code>AUTHENTICATION_BACKENDS = ( 'django.contrib.auth.backends.RemoteUserBackend', )
+
+AUTHZ_GROUP_BACKEND = 'authz_group.authz_implementation.all_ok.AllOK'
+USERSERVICE_ADMIN_GROUP = 'u_g'
+
+MEDIA_URL = '/media/'
+MEDIA_ROOT = 'media/'
+STATIC_URL = '/static/'
+STATIC_ROOT = 'static/'
+MYUW_ADMIN_GROUP = []
+RESTCLIENTS_ADMIN_GROUP = []
+MAILMAN_COURSEREQUEST_RECIPIENT = ""
+</code></pre>
+<p>Change TIME_ZONE to 'America/Los_Angeles'</p>
+<p>In addition, certain functionality may be disabled by default.  Too enable, add or modify:</p>
+<pre><code> MYUW_ENABLED_FEATURES = []
+</code></pre>
+<p>To enable teaching page add 'instructor_schedule' in the list.
+To enable instructor textbooks add 'instructor_textbooks' to this list.</p>
+<p>If you're not running your dev server on your local computer, you'll need to update your ALLOWED_HOSTS setting.  If you're on axd3, it should be this:</p>
+<pre><code>ALLOWED_HOSTS = ['axd3.s.uw.edu']
+</code></pre>
+<p>Add include to your imports in project/urls.py:</p>
+<pre><code>from django.conf.urls import url, include
+</code></pre>
+<p>Map urls to the myuw_mobile app by adding the following to urlpatterns in project/urls.py:</p>
+<pre><code>url(r'^support', include('userservice.urls')),
+url(r'^logging', include('django_client_logger.urls')),
+url(r'^', include('myuw.urls')),
+</code></pre>
+<p>Migrate your database:</p>
+<pre><code>python manage.py migrate
+</code></pre>
+<p>You should now be able to run your development server (on AXD3, use port 8000-10000):</p>
+<pre><code>REMOTE_USER=javerage python manage.py runserver 0.0.0.0:&lt;your port&gt;
+</code></pre>
+<p>If you are using AXD3 you can view your development server at <a href="http://axd3.s.uw.edu" rel="nofollow">http://axd3.s.uw.edu</a>:</p>
+
+        </div>
+
+    </div>]

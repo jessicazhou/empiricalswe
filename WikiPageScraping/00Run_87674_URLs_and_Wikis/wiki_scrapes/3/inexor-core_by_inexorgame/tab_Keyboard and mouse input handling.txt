@@ -1,0 +1,481 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <table>
+<thead>
+<tr>
+<th>Branches</th>
+<th>Issues</th>
+<th>Main developers</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="/inexorgame/code/tree/cef_fixex_prepr">cef_fixex_prepr</a></td>
+<td>?</td>
+<td><a href="/aschaeffer">@aschaeffer</a></td>
+</tr>
+</tbody>
+</table>
+<p>The new user interface requires a redesign of the keyboard and mouse handling.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#keyboard-input-handling" id="user-content-keyboard-input-handling"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Keyboard input Handling</h2>
+<h3>
+<a aria-hidden="true" class="anchor" href="#handling-of-key-press-and-key-release-events-binds" id="user-content-handling-of-key-press-and-key-release-events-binds"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Handling of key press and key release events (Binds)</h3>
+<p>Binds are managed in the C++ code. The mouse buttons and the mouse wheel are handled as normal keys also.</p>
+<h4>
+<a aria-hidden="true" class="anchor" href="#input-layer-bit-mask" id="user-content-input-layer-bit-mask"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Input layer bit mask</h4>
+<p>The bit mask describes for which layers are affected by the key bind. The bits can be combined which means a bind affects multiple layers. If a key is pressed, it is checked if the bind affects the current layer.</p>
+<table>
+<thead>
+<tr>
+<th align="left">Bit</th>
+<th align="left">Input Layer</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="left">Bit 0</td>
+<td align="left">GameLayer</td>
+</tr>
+<tr>
+<td align="left">Bit 1</td>
+<td align="left">HudLayer</td>
+</tr>
+<tr>
+<td align="left">Bit 2</td>
+<td align="left">AppLayer</td>
+</tr>
+<tr>
+<td align="left">Bit 3</td>
+<td align="left">ChatLayer</td>
+</tr>
+<tr>
+<td align="left">Bit 4</td>
+<td align="left">G3DLayer</td>
+</tr>
+</tbody>
+</table>
+<p>Though the HudLayer is a valid input layer, it doesn't receive any input (neither key nor mouse input).</p>
+<h5>
+<a aria-hidden="true" class="anchor" href="#the-sub-input-layer-bit-mask-for-the-gamelayer" id="user-content-the-sub-input-layer-bit-mask-for-the-gamelayer"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>The sub input layer bit mask for the GameLayer</h5>
+<p>The game layer has a sub bit mask.</p>
+<table>
+<thead>
+<tr>
+<th align="left">Bit</th>
+<th align="left">Input Sub layer</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="left">Bit 0</td>
+<td align="left">Playing</td>
+</tr>
+<tr>
+<td align="left">Bit 1</td>
+<td align="left">Spectating</td>
+</tr>
+<tr>
+<td align="left">Bit 2</td>
+<td align="left">Editing</td>
+</tr>
+</tbody>
+</table>
+<h4>
+<a aria-hidden="true" class="anchor" href="#bind-mask" id="user-content-bind-mask"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Bind mask</h4>
+<p>It shouldn't be able to bind all keys on all layers. In order to prevent useless or conflicting key/bitmask bindings, we're using a bind mask like shown in the table below. The X indicates if a key can be bind with the given bit.</p>
+<table>
+<thead>
+<tr>
+<th align="left">Key</th>
+<th align="left">0</th>
+<th align="left">1</th>
+<th align="left">2</th>
+<th align="left">3</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="left">A-Z</td>
+<td align="left">x</td>
+<td align="left"></td>
+<td align="left"></td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left">a-z</td>
+<td align="left">x</td>
+<td align="left"></td>
+<td align="left"></td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left">0-9</td>
+<td align="left">x</td>
+<td align="left"></td>
+<td align="left"></td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left">!"§$%&amp;/()=?</td>
+<td align="left">x</td>
+<td align="left"></td>
+<td align="left"></td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left">ENTER</td>
+<td align="left">x</td>
+<td align="left"></td>
+<td align="left"></td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left">POS1,END</td>
+<td align="left">x</td>
+<td align="left"></td>
+<td align="left"></td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left">BACKSPACE,DEL</td>
+<td align="left">x</td>
+<td align="left"></td>
+<td align="left"></td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left">MOUSEWHEEL1-2</td>
+<td align="left">x</td>
+<td align="left"></td>
+<td align="left">x</td>
+<td align="left">x</td>
+</tr>
+<tr>
+<td align="left">MOUSE1-3</td>
+<td align="left">x</td>
+<td align="left"></td>
+<td align="left">x</td>
+<td align="left">x</td>
+</tr>
+<tr>
+<td align="left">ESC</td>
+<td align="left">x</td>
+<td align="left"></td>
+<td align="left">x</td>
+<td align="left">x</td>
+</tr>
+<tr>
+<td align="left">F1-F12</td>
+<td align="left">x</td>
+<td align="left"></td>
+<td align="left">x</td>
+<td align="left">x</td>
+</tr>
+</tbody>
+</table>
+<h4>
+<a aria-hidden="true" class="anchor" href="#important-binds--examples" id="user-content-important-binds--examples"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Important binds / examples</h4>
+<table>
+<thead>
+<tr>
+<th align="left">Key</th>
+<th align="left">Action</th>
+<th align="left">0</th>
+<th align="left">1</th>
+<th align="left">2</th>
+<th align="left">3</th>
+<th align="left">Remark</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="left">W</td>
+<td align="left">Forward</td>
+<td align="left">x</td>
+<td align="left"></td>
+<td align="left"></td>
+<td align="left"></td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left">A</td>
+<td align="left">Left</td>
+<td align="left">x</td>
+<td align="left"></td>
+<td align="left"></td>
+<td align="left"></td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left">S</td>
+<td align="left">Backward</td>
+<td align="left">x</td>
+<td align="left"></td>
+<td align="left"></td>
+<td align="left"></td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left">D</td>
+<td align="left">Right</td>
+<td align="left">x</td>
+<td align="left"></td>
+<td align="left"></td>
+<td align="left"></td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left">MOUSE 1</td>
+<td align="left">Shot</td>
+<td align="left">x</td>
+<td align="left"></td>
+<td align="left"></td>
+<td align="left"></td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left">MOUSE 2</td>
+<td align="left">WeaponChange</td>
+<td align="left">x</td>
+<td align="left"></td>
+<td align="left"></td>
+<td align="left"></td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left">ESC</td>
+<td align="left">OpenAppLayer</td>
+<td align="left">x</td>
+<td align="left"></td>
+<td align="left"></td>
+<td align="left"></td>
+<td align="left">Open AppLayer, Change location to main menu</td>
+</tr>
+<tr>
+<td align="left">ESC</td>
+<td align="left">CloseAppLayer</td>
+<td align="left"></td>
+<td align="left"></td>
+<td align="left">x</td>
+<td align="left"></td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left">T</td>
+<td align="left">OpenChatLayer</td>
+<td align="left">x</td>
+<td align="left"></td>
+<td align="left">x</td>
+<td align="left"></td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left">ESC</td>
+<td align="left">CloseChatLayer</td>
+<td align="left"></td>
+<td align="left"></td>
+<td align="left"></td>
+<td align="left">x</td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left">F1</td>
+<td align="left">OpenServerBr.</td>
+<td align="left">x0</td>
+<td align="left"></td>
+<td align="left"></td>
+<td align="left"></td>
+<td align="left">When playing, open AppLayer, Change location to server browser</td>
+</tr>
+<tr>
+<td align="left">F3</td>
+<td align="left">OpenTextureBr.</td>
+<td align="left">x2</td>
+<td align="left"></td>
+<td align="left"></td>
+<td align="left"></td>
+<td align="left">When editing, open AppLayer, Change location to texture browser</td>
+</tr>
+<tr>
+<td align="left">F4</td>
+<td align="left">OpenModelBr.</td>
+<td align="left">x2</td>
+<td align="left"></td>
+<td align="left"></td>
+<td align="left"></td>
+<td align="left">When editing, open AppLayer, Change location to model browser</td>
+</tr>
+<tr>
+<td align="left">MWHEEL 1</td>
+<td align="left">WeaponChange</td>
+<td align="left">x0</td>
+<td align="left"></td>
+<td align="left"></td>
+<td align="left"></td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left">MWHEEL 2</td>
+<td align="left">WeaponChange</td>
+<td align="left">x0</td>
+<td align="left"></td>
+<td align="left"></td>
+<td align="left"></td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left">MWHEEL 1</td>
+<td align="left"></td>
+<td align="left">x2</td>
+<td align="left"></td>
+<td align="left"></td>
+<td align="left"></td>
+<td align="left">Different actions in combination with other key modifiers</td>
+</tr>
+<tr>
+<td align="left">MWHEEL 2</td>
+<td align="left"></td>
+<td align="left">x2</td>
+<td align="left"></td>
+<td align="left"></td>
+<td align="left"></td>
+<td align="left">Different actions in combination with other key modifiers</td>
+</tr>
+<tr>
+<td align="left">MWHEEL 1</td>
+<td align="left">ScrollConsole</td>
+<td align="left"></td>
+<td align="left"></td>
+<td align="left"></td>
+<td align="left">x</td>
+<td align="left">Scroll console up</td>
+</tr>
+<tr>
+<td align="left">MWHEEL 2</td>
+<td align="left">ScrollConsole</td>
+<td align="left"></td>
+<td align="left"></td>
+<td align="left"></td>
+<td align="left">x</td>
+<td align="left">Scroll console down</td>
+</tr>
+</tbody>
+</table>
+<h3>
+<a aria-hidden="true" class="anchor" href="#handling-of-text-input" id="user-content-handling-of-text-input"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Handling of text input</h3>
+<p>If no bind (key+bitmask) has matched, the key input is handled as text input. Text input is forwarded to the target layer as shown in the table below:</p>
+<table>
+<thead>
+<tr>
+<th align="left">GameLayer</th>
+<th align="left">AppLayer</th>
+<th align="left">ChatLayer</th>
+<th align="left">Target</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="left">active</td>
+<td align="left">inactive</td>
+<td align="left">inactive</td>
+<td align="left">Ignore</td>
+</tr>
+<tr>
+<td align="left">*</td>
+<td align="left">active</td>
+<td align="left">inactive</td>
+<td align="left">AppLayer</td>
+</tr>
+<tr>
+<td align="left">*</td>
+<td align="left">*</td>
+<td align="left">active</td>
+<td align="left">ChatLayer</td>
+</tr>
+</tbody>
+</table>
+<h2>
+<a aria-hidden="true" class="anchor" href="#mouse-input-handling" id="user-content-mouse-input-handling"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Mouse input handling</h2>
+<p>If no bind (key+bitmask) has matched, the key input is handled as text input. Text input is forwarded to the target layer as shown in the table below:</p>
+<table>
+<thead>
+<tr>
+<th align="left">Mouse input</th>
+<th align="left">GameLayer</th>
+<th align="left">AppLayer</th>
+<th align="left">ChatLayer</th>
+<th align="left">Target</th>
+<th align="left">Remarks</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="left">Mouse X / Y</td>
+<td align="left">active</td>
+<td align="left">inactive</td>
+<td align="left">inactive</td>
+<td align="left">GameLayer</td>
+<td align="left">Rotates the player</td>
+</tr>
+<tr>
+<td align="left">Mouse X / Y</td>
+<td align="left">*</td>
+<td align="left">active</td>
+<td align="left">inactive</td>
+<td align="left">AppLayer</td>
+<td align="left">Move the mouse in the UI</td>
+</tr>
+<tr>
+<td align="left">Mouse X / Y</td>
+<td align="left">*</td>
+<td align="left">*</td>
+<td align="left">active</td>
+<td align="left">Ignore</td>
+<td align="left">No mouse input in chat</td>
+</tr>
+<tr>
+<td align="left">Mousewheel U / D</td>
+<td align="left">active</td>
+<td align="left">inactive</td>
+<td align="left">inactive</td>
+<td align="left">GameLayer</td>
+<td align="left">Binds</td>
+</tr>
+<tr>
+<td align="left">Mousewheel U / D</td>
+<td align="left">*</td>
+<td align="left">active</td>
+<td align="left">inactive</td>
+<td align="left">AppLayer</td>
+<td align="left">Mouse wheel in the UI</td>
+</tr>
+<tr>
+<td align="left">Mousewheel U / D</td>
+<td align="left">*</td>
+<td align="left">*</td>
+<td align="left">active</td>
+<td align="left">ChatLayer</td>
+<td align="left">Binds</td>
+</tr>
+</tbody>
+</table>
+<h2>
+<a aria-hidden="true" class="anchor" href="#converting-sdl2-key-codes-to-browserjavascript-key-codes" id="user-content-converting-sdl2-key-codes-to-browserjavascript-key-codes"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Converting SDL2 key codes to Browser/JavaScript key codes</h2>
+<ul>
+<li><a href="https://wiki.libsdl.org/SDL_Keycode" rel="nofollow">https://wiki.libsdl.org/SDL_Keycode</a></li>
+<li><a href="http://unixpapa.com/js/key.html" rel="nofollow">http://unixpapa.com/js/key.html</a></li>
+<li><a href="https://www.mediaevent.de/javascript/Extras-Javascript-Keycodes.html" rel="nofollow">https://www.mediaevent.de/javascript/Extras-Javascript-Keycodes.html</a></li>
+<li><a href="https://jeffkayser.com/projects/keyboard-keycodes-and-charcodes-in-javascript/index.html" rel="nofollow">https://jeffkayser.com/projects/keyboard-keycodes-and-charcodes-in-javascript/index.html</a></li>
+<li><a href="http://www.asquare.net/javascript/tests/KeyCode.html" rel="nofollow">http://www.asquare.net/javascript/tests/KeyCode.html</a></li>
+</ul>
+
+        </div>
+
+        <div class="wiki-footer gollum-markdown-content boxed-group" id="wiki-footer">
+          <div class="boxed-group-inner wiki-auxiliary-content markdown-body">
+            <p>Need help? <a class="internal present" href="/inexorgame/inexor-core/wiki/Contact">Contact</a> us.</p>
+
+          </div>
+        </div>
+    </div>]

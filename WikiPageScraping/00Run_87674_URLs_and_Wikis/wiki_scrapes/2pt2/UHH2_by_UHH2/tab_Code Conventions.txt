@@ -1,0 +1,53 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <h1>
+<a aria-hidden="true" class="anchor" href="#code-conventions" id="user-content-code-conventions"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Code Conventions</h1>
+<h2>
+<a aria-hidden="true" class="anchor" href="#header-files" id="user-content-header-files"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Header Files</h2>
+<ul>
+<li>protect against multiple inclusion via <code>#pragma once</code>
+</li>
+<li>only include necessary headers. For header files, it might be enough to forward-declare or include <code>core/include/fwd.h</code> for many classes</li>
+<li>do not use <code>using namespace</code> in header files; use that only in source files</li>
+</ul>
+<h2>
+<a aria-hidden="true" class="anchor" href="#memory" id="user-content-memory"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Memory</h2>
+<p>Make use of smart pointers for managing memory explicitly. A good choice is <code>std::unique_ptr</code> or (for shared ownership) <code>std::shared_ptr</code>. Remember you can create <code>std::vector</code>s (or other containers) of smart pointers, if necessary. In particular, do that if the actual type is not known at declaration time and only the base class is known, e.g. for abstract classes such as <code>AnalysisModule</code>.</p>
+<p>For example, you could write quite generically in your <code>AnalysisModule</code>:</p>
+<pre><code>// in the class:
+std::vector&lt;std::unique_ptr&lt;uhh2::AnalysisModule&gt;&gt; modules;
+
+// in the constructor, add new modules:
+modules.emplace_back(new JetCorrector(JERFiles::PHYS14_L123_MC));
+
+// in process, call; all modules:
+for(auto &amp; m : modules){
+   m-&gt;process(event);
+}
+</code></pre>
+<h2>
+<a aria-hidden="true" class="anchor" href="#documentation" id="user-content-documentation"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Documentation</h2>
+<p>Document what each class and each function does, including a description of all input / output parameters. If applicable, also describe which event input is used or modified. Also document what happens in the case of an error.</p>
+<p>For <code>AnalysisModules</code> document which <code>Event</code> content is read, written, or modified and whether some input / output is optional. State which options from the <code>Context</code> class are interpreted (if any) and what the allowed values are.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#classes" id="user-content-classes"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Classes</h2>
+<p>Use nouns as class names.</p>
+<p>Be minimalistic for both data and methods: Only declare data members which are actually used and only implement methods which are used.</p>
+<p>Hide details of the implementation by exposing no implementation-dependent data structures via the public interface.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#methods" id="user-content-methods"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Methods</h2>
+<p>Use verbs as method names. An exception is getter methods: they should be named after what they get (without the 'get' itself). Mark methods as <code>const</code> whenever possible.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#function-arguments" id="user-content-function-arguments"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Function Arguments</h2>
+<p>Be minimalistic: only use arguments actually needed.</p>
+<p>The simpler, the better: avoid using more advanced constructs (such as accepting smart pointers) if a simpler construct (such as accepting a bare pointer of reference) will also do. To judge what is "simpler" consider how many different classes are involved in the declaration and how easy it is for a caller to get these. For example, it is always easier for a caller to get a reference than a smart pointer, as the former can be trivially constructed from the latter.</p>
+<p>As function input arguments, use pass-by-value for non-compound types (int, float, double, etc.) and const-reference for compound types (vectors, strings, Jets, Leptons, etc.). Only if the argument is optional, pass by pointer-to-const.</p>
+<p>To return the result, use the return value of the function if possible. Alternatively, accept a parameter by reference which is modified, e.g. the Event container. Only if the argument is optional, pass by pointer.</p>
+<p>Only pass smart pointers if ownership is transferred / shared between caller and callee. This can be the case for a constructor where the object takes (shared or exclusive) ownership of one or more objects. For functions, it is almost always better to use references, const-references, or raw pointers instead of smart pointers, as discussed above.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#formatting" id="user-content-formatting"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Formatting</h2>
+<p>Use spaces only (no tabs), preferentially 4 spaces per indentation level.</p>
+
+        </div>
+
+    </div>]

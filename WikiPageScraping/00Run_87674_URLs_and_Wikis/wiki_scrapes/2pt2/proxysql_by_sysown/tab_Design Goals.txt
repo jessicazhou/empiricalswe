@@ -1,0 +1,64 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>ProxySQL has been built with a few key design choices in mind.</p>
+<h1>
+<a aria-hidden="true" class="anchor" href="#maximum-uptime" id="user-content-maximum-uptime"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Maximum uptime</h1>
+<p>Since ProxySQL is a proxy, it's expected to be up there as close to 100% of
+the time as possible. This means that we should be handling differently the
+usual suspects when it comes to downtime:</p>
+<ul>
+<li>
+<strong>configuration changes</strong>. This is usually done by changing the configuration
+file and restarting the daemon. In ProxySQL, by design, the user is able to
+modify most configuration variables through the admin interface, without
+having to restart the server. Example things that can be modified at runtime:
+<ul>
+<li>interfaces on which ProxySQL is listening</li>
+<li>backend servers to which ProxySQL is connecting</li>
+<li>timeouts for the different operations performed by ProxySQL</li>
+</ul>
+</li>
+<li>
+<strong>crashes</strong>. ProxySQL has an extensive suite of integration tests that are
+ran using Docker, to ensure that it does not crash. Also, each major release
+is performance-tested using sysbench, and memory-leak tested using valgrind.
+In addition to this, an angel process has been implemented that monitors and
+restarts ProxySQL when needed, in order to keep downtimes to a minimum, if they
+end up occuring.</li>
+</ul>
+<h1>
+<a aria-hidden="true" class="anchor" href="#maximum-scalability" id="user-content-maximum-scalability"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Maximum scalability</h1>
+<p>There are several key scenarios that we wanted to run as fast as possible when
+interacting with ProxySQL:</p>
+<ul>
+<li>time to complete a new MySQL connection to it: this is why ProxySQL has a
+pool of threads all waiting via the system call <code>accept()</code> to receive a new
+connection. Because of this, the probability of the new TCP connection of being
+established faster is increased</li>
+<li>time to connect to a MySQL backend: this is why ProxySQL has a backend
+connection pool in which it keeps some idle connections alive to the backend
+servers, according to the configuration. When it needs to send a packet to
+those servers, most of the time the connection is already open</li>
+<li>multi-core scalability: ProxySQL has a multi-threaded design where all threads
+do the same thing (marshal messages back and forth between the backend servers
+and the MySQL client connections), and our tests show that it scales very well
+with the number of cores.</li>
+</ul>
+<h1>
+<a aria-hidden="true" class="anchor" href="#cascade-possibilities" id="user-content-cascade-possibilities"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Cascade possibilities</h1>
+<p>ProxySQL can be cascaded to as many layers as required. For example, one common
+scenario is to have a ProxySQL instance as close to the servers running the
+application as possible, pointing to another middle layer cluster of ProxySQL
+servers that routes all traffic to a farm of backend MySQL servers.</p>
+<p>A -&gt; P1 -----&gt; {P2, P3, P4 ..} ------&gt; {B1, B2, B3, ..}</p>
+<p>The advantage in this case is that it is completely fault tolerant with respect
+to the MySQL access, given that the app is not a single point of failure. There
+is no modification needed at the application level for the application to
+connect to a cluster of proxies instead of a single one. If any proxy from the
+middle layer fails, the P1 proxy will detect that and will route traffic through
+the other ones. If any of the backends B1, B2, B3, ... fails, then the middle
+layer proxies will take care of the job in a way that is transparent to P1.</p>
+
+        </div>
+
+    </div>]

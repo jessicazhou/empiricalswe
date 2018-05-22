@@ -1,0 +1,123 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <h1>
+<a aria-hidden="true" class="anchor" href="#ssl-configuration-for-backends" id="user-content-ssl-configuration-for-backends"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>SSL configuration for backends</h1>
+<p>ProxySQL supports SSL connections to the backends since version v1.2.0e . Attempts to configure an older version will fails.</p>
+<p><strong>NOTE: SSL is supported only for backends. Clients cannot use use SSL to connect to ProxySQL</strong></p>
+<p><strong>NOTE2: As of v1.4.5, because ProxySQL uses mariadb-connector-c-2.3.1 only SSL/TLSv1.0 is supported right now: <a href="https://mariadb.com/kb/en/library/mariadb-connector-c-300-release-notes/" rel="nofollow">https://mariadb.com/kb/en/library/mariadb-connector-c-300-release-notes/</a>.</strong></p>
+<p>To enabled SSL connections you need to:</p>
+<ul>
+<li>update <code>mysql_servers</code>.<code>use_ssl</code> for the server you want to use SSL;</li>
+<li>update associated global variables.</li>
+</ul>
+<p>If you want to connect to the same server with both SSL and non-SSL you need to configure the same server in two different hostgroups, and define access rules.
+For example, to configure SSL on one server:</p>
+<div class="highlight highlight-source-sql"><pre>mysql<span class="pl-k">&gt;</span> <span class="pl-k">SELECT</span> <span class="pl-k">*</span> <span class="pl-k">FROM</span> mysql_servers;
+<span class="pl-k">+</span><span class="pl-c"><span class="pl-c">--</span>------------+-----------+-------+--------+--------+-------------+-----------------+---------------------+---------+----------------+</span>
+| hostgroup_id | hostname  | port  | status | weight | compression | max_connections | max_replication_lag | use_ssl | max_latency_ms |
+<span class="pl-k">+</span><span class="pl-c"><span class="pl-c">--</span>------------+-----------+-------+--------+--------+-------------+-----------------+---------------------+---------+----------------+</span>
+| <span class="pl-c1">1</span>            | <span class="pl-c1">127</span>.<span class="pl-c1">0</span>.<span class="pl-c1">0</span>.<span class="pl-c1">1</span> | <span class="pl-c1">21891</span> | ONLINE | <span class="pl-c1">1</span>      | <span class="pl-c1">0</span>           | <span class="pl-c1">1000</span>            | <span class="pl-c1">0</span>                   | <span class="pl-c1">0</span>       | <span class="pl-c1">0</span>              |
+| <span class="pl-c1">2</span>            | <span class="pl-c1">127</span>.<span class="pl-c1">0</span>.<span class="pl-c1">0</span>.<span class="pl-c1">1</span> | <span class="pl-c1">21892</span> | ONLINE | <span class="pl-c1">1</span>      | <span class="pl-c1">0</span>           | <span class="pl-c1">1000</span>            | <span class="pl-c1">0</span>                   | <span class="pl-c1">0</span>       | <span class="pl-c1">0</span>              |
+| <span class="pl-c1">2</span>            | <span class="pl-c1">127</span>.<span class="pl-c1">0</span>.<span class="pl-c1">0</span>.<span class="pl-c1">1</span> | <span class="pl-c1">21893</span> | ONLINE | <span class="pl-c1">1</span>      | <span class="pl-c1">0</span>           | <span class="pl-c1">1000</span>            | <span class="pl-c1">0</span>                   | <span class="pl-c1">0</span>       | <span class="pl-c1">0</span>              |
+<span class="pl-k">+</span><span class="pl-c"><span class="pl-c">--</span>------------+-----------+-------+--------+--------+-------------+-----------------+---------------------+---------+----------------+</span>
+<span class="pl-c1">3</span> rows <span class="pl-k">in</span> <span class="pl-k">set</span> (<span class="pl-c1">0</span>.<span class="pl-c1">00</span> sec)
+
+mysql<span class="pl-k">&gt;</span> <span class="pl-k">UPDATE</span> mysql_servers <span class="pl-k">SET</span> use_ssl<span class="pl-k">=</span><span class="pl-c1">1</span> <span class="pl-k">WHERE</span> port<span class="pl-k">=</span><span class="pl-c1">21891</span>;
+Query OK, <span class="pl-c1">1</span> row affected (<span class="pl-c1">0</span>.<span class="pl-c1">00</span> sec)
+
+mysql<span class="pl-k">&gt;</span> <span class="pl-k">SELECT</span> <span class="pl-k">*</span> <span class="pl-k">FROM</span> mysql_servers;
+<span class="pl-k">+</span><span class="pl-c"><span class="pl-c">--</span>------------+-----------+-------+--------+--------+-------------+-----------------+---------------------+---------+----------------+</span>
+| hostgroup_id | hostname  | port  | status | weight | compression | max_connections | max_replication_lag | use_ssl | max_latency_ms |
+<span class="pl-k">+</span><span class="pl-c"><span class="pl-c">--</span>------------+-----------+-------+--------+--------+-------------+-----------------+---------------------+---------+----------------+</span>
+| <span class="pl-c1">1</span>            | <span class="pl-c1">127</span>.<span class="pl-c1">0</span>.<span class="pl-c1">0</span>.<span class="pl-c1">1</span> | <span class="pl-c1">21891</span> | ONLINE | <span class="pl-c1">1</span>      | <span class="pl-c1">0</span>           | <span class="pl-c1">1000</span>            | <span class="pl-c1">0</span>                   | <span class="pl-c1">1</span>       | <span class="pl-c1">0</span>              |
+| <span class="pl-c1">2</span>            | <span class="pl-c1">127</span>.<span class="pl-c1">0</span>.<span class="pl-c1">0</span>.<span class="pl-c1">1</span> | <span class="pl-c1">21892</span> | ONLINE | <span class="pl-c1">1</span>      | <span class="pl-c1">0</span>           | <span class="pl-c1">1000</span>            | <span class="pl-c1">0</span>                   | <span class="pl-c1">0</span>       | <span class="pl-c1">0</span>              |
+| <span class="pl-c1">2</span>            | <span class="pl-c1">127</span>.<span class="pl-c1">0</span>.<span class="pl-c1">0</span>.<span class="pl-c1">1</span> | <span class="pl-c1">21893</span> | ONLINE | <span class="pl-c1">1</span>      | <span class="pl-c1">0</span>           | <span class="pl-c1">1000</span>            | <span class="pl-c1">0</span>                   | <span class="pl-c1">0</span>       | <span class="pl-c1">0</span>              |
+<span class="pl-k">+</span><span class="pl-c"><span class="pl-c">--</span>------------+-----------+-------+--------+--------+-------------+-----------------+---------------------+---------+----------------+</span>
+<span class="pl-c1">3</span> rows <span class="pl-k">in</span> <span class="pl-k">set</span> (<span class="pl-c1">0</span>.<span class="pl-c1">00</span> sec)
+
+mysql<span class="pl-k">&gt;</span> LOAD MYSQL SERVERS TO RUNTIME;
+Query OK, <span class="pl-c1">0</span> rows affected (<span class="pl-c1">0</span>.<span class="pl-c1">00</span> sec)
+
+mysql<span class="pl-k">&gt;</span> <span class="pl-k">SELECT</span> <span class="pl-k">*</span> <span class="pl-k">FROM</span> runtime_mysql_servers;
+<span class="pl-k">+</span><span class="pl-c"><span class="pl-c">--</span>------------+-----------+-------+--------+--------+-------------+-----------------+---------------------+---------+----------------+</span>
+| hostgroup_id | hostname  | port  | status | weight | compression | max_connections | max_replication_lag | use_ssl | max_latency_ms |
+<span class="pl-k">+</span><span class="pl-c"><span class="pl-c">--</span>------------+-----------+-------+--------+--------+-------------+-----------------+---------------------+---------+----------------+</span>
+| <span class="pl-c1">1</span>            | <span class="pl-c1">127</span>.<span class="pl-c1">0</span>.<span class="pl-c1">0</span>.<span class="pl-c1">1</span> | <span class="pl-c1">21891</span> | ONLINE | <span class="pl-c1">1</span>      | <span class="pl-c1">0</span>           | <span class="pl-c1">1000</span>            | <span class="pl-c1">0</span>                   | <span class="pl-c1">1</span>       | <span class="pl-c1">0</span>              |
+| <span class="pl-c1">2</span>            | <span class="pl-c1">127</span>.<span class="pl-c1">0</span>.<span class="pl-c1">0</span>.<span class="pl-c1">1</span> | <span class="pl-c1">21892</span> | ONLINE | <span class="pl-c1">1</span>      | <span class="pl-c1">0</span>           | <span class="pl-c1">1000</span>            | <span class="pl-c1">0</span>                   | <span class="pl-c1">0</span>       | <span class="pl-c1">0</span>              |
+| <span class="pl-c1">2</span>            | <span class="pl-c1">127</span>.<span class="pl-c1">0</span>.<span class="pl-c1">0</span>.<span class="pl-c1">1</span> | <span class="pl-c1">21893</span> | ONLINE | <span class="pl-c1">1</span>      | <span class="pl-c1">0</span>           | <span class="pl-c1">1000</span>            | <span class="pl-c1">0</span>                   | <span class="pl-c1">0</span>       | <span class="pl-c1">0</span>              |
+<span class="pl-k">+</span><span class="pl-c"><span class="pl-c">--</span>------------+-----------+-------+--------+--------+-------------+-----------------+---------------------+---------+----------------+</span>
+<span class="pl-c1">3</span> rows <span class="pl-k">in</span> <span class="pl-k">set</span> (<span class="pl-c1">0</span>.<span class="pl-c1">00</span> sec)
+</pre></div>
+<p>At this stage, trying to connect to host 127.0.0.1 and port 21891 <strong>will not</strong> use SSL because no key and no certificate are configured. Instead, normal non-SSL connections will be established.</p>
+<p>The next step to use SSL connections is to configure key and certificate.</p>
+<div class="highlight highlight-source-sql"><pre>mysql<span class="pl-k">&gt;</span> <span class="pl-k">SELECT</span> <span class="pl-k">*</span> <span class="pl-k">FROM</span> global_variables <span class="pl-k">WHERE</span> variable_name <span class="pl-k">LIKE</span> <span class="pl-s"><span class="pl-pds">'</span>mysql%ssl%<span class="pl-pds">'</span></span>;
+<span class="pl-k">+</span><span class="pl-c"><span class="pl-c">--</span>------------------+----------------+</span>
+| variable_name      | variable_value |
+<span class="pl-k">+</span><span class="pl-c"><span class="pl-c">--</span>------------------+----------------+</span>
+| mysql<span class="pl-k">-</span>ssl_p2s_ca   | (<span class="pl-k">null</span>)         |
+| mysql<span class="pl-k">-</span>ssl_p2s_cert | (<span class="pl-k">null</span>)         |
+| mysql<span class="pl-k">-</span>ssl_p2s_key  | (<span class="pl-k">null</span>)         |
+<span class="pl-k">+</span><span class="pl-c"><span class="pl-c">--</span>------------------+----------------+</span>
+<span class="pl-c1">3</span> rows <span class="pl-k">in</span> <span class="pl-k">set</span> (<span class="pl-c1">0</span>.<span class="pl-c1">00</span> sec)
+
+mysql<span class="pl-k">&gt;</span> <span class="pl-k">SET</span> mysql<span class="pl-k">-</span>ssl_p2s_cert<span class="pl-k">=</span><span class="pl-s"><span class="pl-pds">"</span>/home/vagrant/newcerts/client-cert.pem<span class="pl-pds">"</span></span>;
+Query OK, <span class="pl-c1">1</span> row affected (<span class="pl-c1">0</span>.<span class="pl-c1">00</span> sec)
+
+mysql<span class="pl-k">&gt;</span> <span class="pl-k">SET</span> mysql<span class="pl-k">-</span>ssl_p2s_key<span class="pl-k">=</span><span class="pl-s"><span class="pl-pds">"</span>/home/vagrant/newcerts/client-key.pem<span class="pl-pds">"</span></span>;
+Query OK, <span class="pl-c1">1</span> row affected (<span class="pl-c1">0</span>.<span class="pl-c1">00</span> sec)
+
+mysql<span class="pl-k">&gt;</span> <span class="pl-k">SELECT</span> <span class="pl-k">*</span> <span class="pl-k">FROM</span> global_variables <span class="pl-k">WHERE</span> variable_name <span class="pl-k">LIKE</span> <span class="pl-s"><span class="pl-pds">'</span>mysql%ssl%<span class="pl-pds">'</span></span>;
+<span class="pl-k">+</span><span class="pl-c"><span class="pl-c">--</span>------------------+----------------------------------------+</span>
+| variable_name      | variable_value                         |
+<span class="pl-k">+</span><span class="pl-c"><span class="pl-c">--</span>------------------+----------------------------------------+</span>
+| mysql<span class="pl-k">-</span>ssl_p2s_ca   | (<span class="pl-k">null</span>)                                 |
+| mysql<span class="pl-k">-</span>ssl_p2s_cert | <span class="pl-k">/</span>home<span class="pl-k">/</span>vagrant<span class="pl-k">/</span>newcerts<span class="pl-k">/</span>client<span class="pl-k">-</span><span class="pl-c1">cert</span>.<span class="pl-c1">pem</span> |
+| mysql<span class="pl-k">-</span>ssl_p2s_key  | <span class="pl-k">/</span>home<span class="pl-k">/</span>vagrant<span class="pl-k">/</span>newcerts<span class="pl-k">/</span>client<span class="pl-k">-</span><span class="pl-c1">key</span>.<span class="pl-c1">pem</span>  |
+<span class="pl-k">+</span><span class="pl-c"><span class="pl-c">--</span>------------------+----------------------------------------+</span>
+<span class="pl-c1">3</span> rows <span class="pl-k">in</span> <span class="pl-k">set</span> (<span class="pl-c1">0</span>.<span class="pl-c1">01</span> sec)
+
+mysql<span class="pl-k">&gt;</span> LOAD MYSQL VARIABLES TO RUNTIME;
+Query OK, <span class="pl-c1">0</span> rows affected (<span class="pl-c1">0</span>.<span class="pl-c1">00</span> sec)</pre></div>
+<p>At this point, all <strong>new connections</strong> to host 127.0.0.1 and port 21891 will use SSL.</p>
+<p>If you are happy with the new changes, you can make them persistent saving the configuration on disk:</p>
+<div class="highlight highlight-source-sql"><pre>mysql<span class="pl-k">&gt;</span> SAVE MYSQL SERVERS TO DISK;
+Query OK, <span class="pl-c1">0</span> rows affected (<span class="pl-c1">0</span>.<span class="pl-c1">01</span> sec)
+
+mysql<span class="pl-k">&gt;</span> SAVE MYSQL VARIABLES TO DISK;
+Query OK, <span class="pl-c1">58</span> rows affected (<span class="pl-c1">0</span>.<span class="pl-c1">00</span> sec)</pre></div>
+<p>Happy SSLing!</p>
+<h1>
+<a aria-hidden="true" class="anchor" href="#ssl-configuration-for-frontends" id="user-content-ssl-configuration-for-frontends"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>SSL configuration for frontends</h1>
+<p>Available since 2.0, and enabled by default.</p>
+<p>Supported protocol:</p>
+<pre><code>SSLv2
+SSLv3
+TLSv1
+TLSv1.1
+TLSv1.2
+</code></pre>
+<p>Supported ciphers:</p>
+<pre><code>DHE-RSA-AES256-GCM-SHA384
+DHE-RSA-AES256-SHA256
+DHE-RSA-AES256-SHA
+DHE-RSA-CAMELLIA256-SHA
+AES256-GCM-SHA384
+AES256-SHA256
+AES256-SHA
+CAMELLIA256-SHA
+DHE-RSA-AES128-GCM-SHA256
+DHE-RSA-AES128-SHA256
+DHE-RSA-AES128-SHA
+DHE-RSA-SEED-SHA
+DHE-RSA-CAMELLIA128-SHA
+AES128-GCM-SHA256
+AES128-SHA256
+AES128-SHA
+SEED-SHA
+CAMELLIA128-SHA
+DES-CBC3-SHA
+</code></pre>
+
+        </div>
+
+    </div>]

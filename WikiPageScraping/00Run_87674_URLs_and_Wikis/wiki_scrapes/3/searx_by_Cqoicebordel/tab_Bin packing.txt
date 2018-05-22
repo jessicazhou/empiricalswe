@@ -1,0 +1,51 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>To display the core blocks, we have two steps to execute :</p>
+<p>First, we have to decide what size will have each block.
+We give each core possible sizes, and explore all possibilities. Total must be minimal, and int.
+Order by size.<br/>
+Text : {1, 0.75, 0.5}<br/>
+Image : {0.5, 0.25}<br/>
+Audio : {1, 0.5}<br/>
+Video : {1}<br/>
+Torrent : {1, 0.5}<br/>
+Map : {1}<br/>
+Code : {1}</p>
+<p>Secondly, we execute bin packing algorithm.
+Example in JS :</p>
+<div class="highlight highlight-source-js"><pre><span class="pl-en">Packer</span> <span class="pl-k">=</span> <span class="pl-k">function</span>(<span class="pl-smi">w</span>, <span class="pl-smi">h</span>) {
+  <span class="pl-c1">this</span>.<span class="pl-smi">root</span> <span class="pl-k">=</span> { x<span class="pl-k">:</span> <span class="pl-c1">0</span>, y<span class="pl-k">:</span> <span class="pl-c1">0</span>, w<span class="pl-k">:</span> w, h<span class="pl-k">:</span> h };
+};
+
+<span class="pl-smi">Packer</span>.<span class="pl-c1">prototype</span> <span class="pl-k">=</span> {
+
+  <span class="pl-en">fit</span><span class="pl-k">:</span> <span class="pl-k">function</span>(<span class="pl-smi">blocks</span>) {
+    <span class="pl-k">var</span> n, node, block;
+    <span class="pl-k">for</span> (n <span class="pl-k">=</span> <span class="pl-c1">0</span>; n <span class="pl-k">&lt;</span> <span class="pl-smi">blocks</span>.<span class="pl-c1">length</span>; n<span class="pl-k">++</span>) {
+      block <span class="pl-k">=</span> blocks[n];
+      <span class="pl-k">if</span> (node <span class="pl-k">=</span> <span class="pl-c1">this</span>.<span class="pl-en">findNode</span>(<span class="pl-c1">this</span>.<span class="pl-smi">root</span>, <span class="pl-smi">block</span>.<span class="pl-smi">w</span>, <span class="pl-smi">block</span>.<span class="pl-smi">h</span>))
+        <span class="pl-smi">block</span>.<span class="pl-smi">fit</span> <span class="pl-k">=</span> <span class="pl-c1">this</span>.<span class="pl-en">splitNode</span>(node, <span class="pl-smi">block</span>.<span class="pl-smi">w</span>, <span class="pl-smi">block</span>.<span class="pl-smi">h</span>);
+    }
+  },
+
+  <span class="pl-en">findNode</span><span class="pl-k">:</span> <span class="pl-k">function</span>(<span class="pl-smi">root</span>, <span class="pl-smi">w</span>, <span class="pl-smi">h</span>) {
+    <span class="pl-k">if</span> (<span class="pl-smi">root</span>.<span class="pl-smi">used</span>)
+      <span class="pl-k">return</span> <span class="pl-c1">this</span>.<span class="pl-en">findNode</span>(<span class="pl-smi">root</span>.<span class="pl-c1">right</span>, w, h) <span class="pl-k">||</span> <span class="pl-c1">this</span>.<span class="pl-en">findNode</span>(<span class="pl-smi">root</span>.<span class="pl-smi">down</span>, w, h);
+    <span class="pl-k">else</span> <span class="pl-k">if</span> ((w <span class="pl-k">&lt;=</span> <span class="pl-smi">root</span>.<span class="pl-smi">w</span>) <span class="pl-k">&amp;&amp;</span> (h <span class="pl-k">&lt;=</span> <span class="pl-smi">root</span>.<span class="pl-smi">h</span>))
+      <span class="pl-k">return</span> root;
+    <span class="pl-k">else</span>
+      <span class="pl-k">return</span> <span class="pl-c1">null</span>;
+  },
+
+  <span class="pl-en">splitNode</span><span class="pl-k">:</span> <span class="pl-k">function</span>(<span class="pl-smi">node</span>, <span class="pl-smi">w</span>, <span class="pl-smi">h</span>) {
+    <span class="pl-smi">node</span>.<span class="pl-smi">used</span> <span class="pl-k">=</span> <span class="pl-c1">true</span>;
+    <span class="pl-smi">node</span>.<span class="pl-smi">down</span>  <span class="pl-k">=</span> { x<span class="pl-k">:</span> <span class="pl-smi">node</span>.<span class="pl-c1">x</span>,     y<span class="pl-k">:</span> <span class="pl-smi">node</span>.<span class="pl-c1">y</span> <span class="pl-k">+</span> h, w<span class="pl-k">:</span> <span class="pl-smi">node</span>.<span class="pl-smi">w</span>,     h<span class="pl-k">:</span> <span class="pl-smi">node</span>.<span class="pl-smi">h</span> <span class="pl-k">-</span> h };
+    <span class="pl-smi">node</span>.<span class="pl-c1">right</span> <span class="pl-k">=</span> { x<span class="pl-k">:</span> <span class="pl-smi">node</span>.<span class="pl-c1">x</span> <span class="pl-k">+</span> w, y<span class="pl-k">:</span> <span class="pl-smi">node</span>.<span class="pl-c1">y</span>,     w<span class="pl-k">:</span> <span class="pl-smi">node</span>.<span class="pl-smi">w</span> <span class="pl-k">-</span> w, h<span class="pl-k">:</span> h          };
+    <span class="pl-k">return</span> node;
+  }
+}</pre></div>
+<p>In a few words : we try to fill the space with the biggest pieces, then go to the smaller ones until it fits. When no piece fits, we open a new line and start again.</p>
+
+        </div>
+
+    </div>]

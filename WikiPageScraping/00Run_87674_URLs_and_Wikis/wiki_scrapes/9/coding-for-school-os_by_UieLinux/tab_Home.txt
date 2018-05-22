@@ -1,0 +1,244 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <h1>
+<a aria-hidden="true" class="anchor" href="#coding-for-school-os" id="user-content-coding-for-school-os"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Coding for School OS</h1>
+<p>Coding for school OS, per gli amici CFS-OS, è basata sulla distribuzione <a href="http://www.raspbian.org" rel="nofollow">Raspbian</a> per <a href="http://www.raspberrypi.org" rel="nofollow">Raspberry PI</a>.
+La personalizzazione consiste in 4 punti fondamentali:</p>
+<ol>
+<li>Modifica dell'aspetto (Temi, Icone, ecc..)</li>
+<li>Installazione nuovi programmi</li>
+<li>Eliminazione programmi ritenuti inutili</li>
+<li>Ottimizzazione di sistema per migliorare le prestazioni</li>
+</ol>
+<p><img alt="Imgur" data-canonical-src="http://i.imgur.com/vFVXEB7.png?1" src="https://camo.githubusercontent.com/a184707647e0b3434978fee0e91c46e07817e8e0/687474703a2f2f692e696d6775722e636f6d2f764656584542372e706e673f31"/></p>
+<ol>
+<li>Ambiente di sviluppo</li>
+</ol>
+<hr/>
+<p>Per applicare le personalizzazioni, si parte dalla distro di partenza e si applicano le modifiche.
+Ci sono 2 possibilità.</p>
+<ol>
+<li>Riportare tutte le modifiche su una installazione fatta su una raspberry (vedi Appendice)</li>
+<li>Eseguire sul computer una macchina virtuale con qemu in emulazione.</li>
+</ol>
+<p>Per eseguire la VM segure le seguenti indicazioni:</p>
+<ul>
+<li>Scaricare l'ultima immagine di <a href="http://downloads.raspberrypi.org/raspbian_latest" rel="nofollow">raspbian</a> ed estrarla: unzip 201X-XX-XX-wheezy-raspbian.zip</li>
+<li>Scaricare il <a href="http://xecdesign.com/downloads/linux-qemu/kernel-qemu" rel="nofollow">kernel</a> (oppure utilizzare quello nella cartella qemu-raspbian)</li>
+<li>Eseguire lo script qemu-rasp-first-boot.sh (è nella cartella qemu-raspbian) assicurandosi che i percorsi dei file siano corretti</li>
+<li>Al prompt dei comandi aprire il file /etc/ld.so.preload e commentare l'unica riga così: #/usr/lib/arm-linux-gnueabihf/libcofi_rpi.so</li>
+<li>Creare il file /etc/udev/rules.d/90-qemu.rules con il seguente contenuto:</li>
+</ul>
+<pre><code>   KERNEL=="sda", SYMLINK+="mmcblk0"
+   KERNEL=="sda?", SYMLINK+="mmcblk0p%n"
+   KERNEL=="sda2", SYMLINK+="root"
+</code></pre>
+<ul>
+<li>Spegnere il sistema digitando exit</li>
+<li>Eseguire script qemu-rasp.sh</li>
+<li>Fonte: <a href="http://xecdesign.com/qemu-emulating-raspberry-pi-the-easy-way/" rel="nofollow">http://xecdesign.com/qemu-emulating-raspberry-pi-the-easy-way/</a>
+</li>
+</ul>
+<ol start="2">
+<li>Configurazione iniziale</li>
+</ol>
+<hr/>
+<p>Al primo boot si avvia in automatico il tool raspi-config. Eseguire i seguenti passi:</p>
+<ul>
+<li>(1)Expand Filesystem
+<ul>
+<li>Basta dare invio e riformatta la SD in modo da occuparla interamente</li>
+</ul>
+</li>
+<li>(2)Change User Password
+<ul>
+<li>Impostare una password per l'utente pi (es: ragno)</li>
+</ul>
+</li>
+<li>(3)Enable Boot to Desktop/Scratch
+<ul>
+<li>Selezionare "Desktop Log in..."</li>
+</ul>
+</li>
+<li>(4)Internationalisation Options
+<ul>
+<li>I1-Change Locale
+<ul>
+<li>[*]it_IT.UTF-8 UTF-8 default locale for system enviroment</li>
+</ul>
+</li>
+<li>I2-Change Timezone
+<ul>
+<li>Europe-&gt;Rome</li>
+</ul>
+</li>
+<li>I3-Change Keyboard Layout
+<ul>
+<li>Generic 105-key (Intl) PC -&gt; Other -&gt; Italian -&gt; Italian -&gt; The default for
+the keyboard layout -&gt; No compose key -&gt; Finish -&gt; Yes</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>Impostare xorg per farlo andare a 800x600. Creare in file /etc/X11/xorg.conf e incollarci:</li>
+</ul>
+<pre><code>  Section "Screen"
+  Identifier "Default Screen"
+  SubSection "Display"
+  Depth 16
+  Modes "800x600" "640x480"
+  EndSubSection
+  EndSection
+</code></pre>
+<ul>
+<li>Fare il reboot</li>
+</ul>
+<ol start="3">
+<li>Personalizzazione interfaccia</li>
+</ol>
+<hr/>
+<ul>
+<li>Al primo boot aprire una sessione terminale</li>
+<li>Nella home (/home/pi) eseguire</li>
+</ul>
+<pre><code>  $ git clone https://github.com/UieLinux/coding-for-school-os
+</code></pre>
+<ul>
+<li>Spostarsi nella cartella coding-for-school-os</li>
+</ul>
+<pre><code>  $ cd ./coding-for-school-os
+</code></pre>
+<ul>
+<li>Diventare root:</li>
+</ul>
+<pre><code>  $ sudo -s
+</code></pre>
+<ul>
+<li>Installare i temi</li>
+</ul>
+<pre><code>  # ./install.sh
+</code></pre>
+<h2>
+<a aria-hidden="true" class="anchor" href="#4-modifiche-da-effettuare-manualmente" id="user-content-4-modifiche-da-effettuare-manualmente"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><del>4. Modifiche da effettuare manualmente</del>
+</h2>
+<p><del>Alcune modifiche all'interfaccia non sono ancora state riportate nello script di installazione. Per ora tali modifiche sono da effettuare manualmente, e sono:</del></p>
+<ul>
+<li>
+<del>Tasto destro sul pannello / Impostazioni Pannello</del>
+<ul>
+<li><del>In "Aspetto", "Sfondo" scegliere "Tema di sistema"</del></li>
+<li>
+<del>In "Aspetto", "Carattere", "Colore personalizzato" cliccare il pulsante bianco</del>
+<ul>
+<li><del>In Nome colore impostare #393939</del></li>
+</ul>
+</li>
+<li><del>In "Applet di pannello" scegliere "Pager scrivania" e cliccare "Rimuovi"</del></li>
+<li><del>In "Applet di pannello" scegliere "Monitoraggio CPU" e cliccare "Rimuovi"</del></li>
+<li>
+<del>In "Applet di pannello" scegliere "Barra avvio applicazioni" e cliccare "Modifica"</del>
+<ul>
+<li><del>Nella finestra "Barra di avvio applicazioni", sulla sinistra, scegliere "Logout" e cliccare "Rimuovi"</del></li>
+<li><del>Nella finestra "Barra di avvio applicazioni", sulla sinistra, scegliere "Screenlock" e cliccare "Rimuovi"</del></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><del>In Menu / Preferenze / Openbox Configuration Manager, scegliere in Tema -&gt; "coding-for-school"</del></li>
+<li><del>In Menu / Preferenze / Openbox Configuration Manager, scegliere Desktop e mettere 1 nel numero di desktop virtuali</del></li>
+<li><del>In Menu / Preference / Personalizza Aspetto e Stile, scegliere in Widget -&gt; "coding-for-school"</del></li>
+<li><del>In Menu / Preference / Personalizza Aspetto e Stile, scegliere in Tema di icone -&gt; "coding-for-school"</del></li>
+</ul>
+<ol start="5">
+<li>Creare l'immagine finale di CFS-OS</li>
+</ol>
+<hr/>
+<ul>
+<li>Estraete la mSD card dalla Raspberrypi (da spenta) e inseritela in un lettore nel PC</li>
+<li>Individuate la lettera assegnata al dispositivo con fdisk -l</li>
+<li>Copiate l'immagine raw della mSD con dd:</li>
+</ul>
+<pre><code>  # dd if=/dev/sdX of=CFS-OS.img
+</code></pre>
+<ul>
+<li>Comprimere l'immagine con 7z</li>
+</ul>
+<pre><code>  # 7z a CFS-OS.7z CFS-OS.img
+</code></pre>
+<ul>
+<li>Installare l'immagine compressa su una nuova mSD card</li>
+</ul>
+<pre><code>  # 7z e -so CFS-OS.7z | dd of=/dev/sdX
+</code></pre>
+<ol start="6">
+<li>Appendice</li>
+</ol>
+<hr/>
+<h3>
+<a aria-hidden="true" class="anchor" href="#installare-raspbian-su-microsd" id="user-content-installare-raspbian-su-microsd"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Installare Raspbian su microSD</h3>
+<ul>
+<li>Scaricare l'ultima versione di raspbian:</li>
+</ul>
+<pre><code>  $ wget http://downloads.raspberrypi.org/raspbian_latest
+</code></pre>
+<ul>
+<li>Inserire l'SD nel computer ed eseguire:</li>
+</ul>
+<pre><code>  # unzip -p 201X-XX-XX-wheezy-raspbian.zip | dd of=/dev/sdX bs=4M
+</code></pre>
+<p>###Configurazione Iniziale</p>
+<p>Valgono gli stessi passaggi per l'installazione in virtuale.
+Nel caso ci siano dei problemi con l'overscan e vengano visualizzate delle bande nere attorno
+all'immagine del desktop è possibile disabilitarlo:
+*(8) Advaced Options
+- A1 Overscan
+- </p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#elenco-icone-di-default-sul-desktop-di-cfs" id="user-content-elenco-icone-di-default-sul-desktop-di-cfs"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Elenco icone di default sul desktop di CFS</h3>
+<ul>
+<li>Solo il cestino</li>
+</ul>
+<h3>
+<a aria-hidden="true" class="anchor" href="#note" id="user-content-note"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Note:</h3>
+<ul>
+<li>Valutare se è il caso di eliminare alcuni programmi invece di togliere solo le icone dal desktop</li>
+<li>Valutare quali programmi e link aggiungere, tra cui alcune idee:
+<ul>
+<li><a href="http://owncloud.org/" rel="nofollow">owncloud</a></li>
+<li><a href="https://code.google.com/p/blockly/" rel="nofollow">blockly</a></li>
+<li><a href="http://www.codecademy.com/courses/kano-pong/0/1" rel="nofollow">Kano pong</a></li>
+<li><a href="http://kidsruby.com" rel="nofollow">kids Ruby</a></li>
+</ul>
+</li>
+</ul>
+<ol start="7">
+<li>Risorse</li>
+</ol>
+<hr/>
+<ul>
+<li><a href="http://www.linux-mitterteich.de/fileadmin/datafile/papers/2013/qemu_raspiemu_lug_18_sep_2013.pdf" rel="nofollow">http://www.linux-mitterteich.de/fileadmin/datafile/papers/2013/qemu_raspiemu_lug_18_sep_2013.pdf</a></li>
+<li><a href="https://github.com/cymplecy/scratch_gpio">https://github.com/cymplecy/scratch_gpio</a></li>
+<li><a href="http://simplesi.net/scratchgpio/" rel="nofollow">http://simplesi.net/scratchgpio/</a></li>
+<li><a href="https://extremeshok.com/1081/raspberry-pi-raspbian-tuning-optimising-optimizing-for-reduced-memory-usage/" rel="nofollow">https://extremeshok.com/1081/raspberry-pi-raspbian-tuning-optimising-optimizing-for-reduced-memory-usage/</a></li>
+<li><a href="https://gist.github.com/cybear/4751158">https://gist.github.com/cybear/4751158</a></li>
+<li><a href="http://computers.tutsplus.com/tutorials/learn-how-to-use-raspberry-pi-gpio-pins-with-scratch--mac-59941" rel="nofollow">http://computers.tutsplus.com/tutorials/learn-how-to-use-raspberry-pi-gpio-pins-with-scratch--mac-59941</a></li>
+<li><a href="http://www.danielemeli.com/configurazione-iniziale-del-raspberry-pi/" rel="nofollow">http://www.danielemeli.com/configurazione-iniziale-del-raspberry-pi/</a></li>
+<li><a href="https://www.safaribooksonline.com/library/view/raspberry-pi-hacks/9781449362737/ch01.html" rel="nofollow">https://www.safaribooksonline.com/library/view/raspberry-pi-hacks/9781449362737/ch01.html</a></li>
+<li><a href="https://github.com/raspberrypilearning">https://github.com/raspberrypilearning</a></li>
+<li><a href="http://www.meccanismocomplesso.org/starting-raspberry-pi-introduction/" rel="nofollow">http://www.meccanismocomplesso.org/starting-raspberry-pi-introduction/</a></li>
+<li><a href="http://wiringpi.com/" rel="nofollow">http://wiringpi.com/</a></li>
+<li><a href="http://pi4j.com/images/j8header-large.png" rel="nofollow">http://pi4j.com/images/j8header-large.png</a></li>
+<li><a href="http://www.maffucci.it/2012/07/21/raspberry-pi-lezione-01-conosciamo-la-scheda/" rel="nofollow">http://www.maffucci.it/2012/07/21/raspberry-pi-lezione-01-conosciamo-la-scheda/</a></li>
+<li><a href="http://blog.oscarliang.net/use-gpio-pins-on-raspberry-pi/" rel="nofollow">http://blog.oscarliang.net/use-gpio-pins-on-raspberry-pi/</a></li>
+<li><a href="http://www.raspberrypi.org/forums/viewtopic.php?f=62&amp;t=18832" rel="nofollow">http://www.raspberrypi.org/forums/viewtopic.php?f=62&amp;t=18832</a></li>
+<li><a href="https://learn.adafruit.com/webide/installation" rel="nofollow">https://learn.adafruit.com/webide/installation</a></li>
+<li><a href="http://www.raspberrypi.org/forums/viewtopic.php?f=66&amp;t=18207" rel="nofollow">http://www.raspberrypi.org/forums/viewtopic.php?f=66&amp;t=18207</a></li>
+<li><a href="http://www.emcu.it/RaspBerryPi/RaspBerryPi.html" rel="nofollow">http://www.emcu.it/RaspBerryPi/RaspBerryPi.html</a></li>
+<li><a href="https://learn.sparkfun.com/tutorials/raspberry-gpio" rel="nofollow">https://learn.sparkfun.com/tutorials/raspberry-gpio</a></li>
+<li><a href="http://www.mauroalfieri.it/elettronica/webiopi-raspberry-controllo-remoto-gpio.html" rel="nofollow">http://www.mauroalfieri.it/elettronica/webiopi-raspberry-controllo-remoto-gpio.html</a></li>
+<li><a href="http://www.vincenzov.net/tutorial/RaspberryPi/" rel="nofollow">http://www.vincenzov.net/tutorial/RaspberryPi/</a></li>
+</ul>
+
+        </div>
+
+    </div>]

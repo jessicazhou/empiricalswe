@@ -1,0 +1,174 @@
+[<div class="wiki-body gollum-org-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <h1>
+<a aria-hidden="true" class="anchor" href="#javascript-%D0%BA%D0%BE%D0%B4-%D0%B2%D1%81%D1%82%D1%80%D0%B0%D0%B8%D0%B2%D0%B0%D0%B5%D0%BC%D1%8B%D0%B9-%D0%B2-%D0%B4%D0%B5%D1%80%D0%B5%D0%B2%D0%BE-ui-%D1%8D%D0%BB%D0%B5%D0%BC%D0%B5%D0%BD%D1%82%D0%BE%D0%B2" id="user-content-javascript-код-встраиваемый-в-дерево-ui-элементов"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Javascript код, встраиваемый в дерево ui элементов.</h1>
+<p>Прежде всего важно понять, что этот код исполняется на стороне бэкенда ui, поэтому не имеет доступа ни до чего, кроме возможностей ui.
+  Этот код может находиться <span>только</span> в методе code `action_object`ов</p>
+<p>api экспортируется в метод код с помощью специальной фукнции-прокси - ui.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#%D0%92%D0%B8%D0%B4%D1%8B-api" id="user-content-Виды-api"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Виды api</h2>
+<p>Для кода доступны следующие виды программных интерфейсов:</p>
+<ul>
+  <li>`ui` -
+    модификация, создание и удаление элементов ui в дереве ui</li>
+</ul>
+<p>++ `signal` -
+  Модификация обработчиков сигналов(подробнее об этом смотрите в описании свойства `signal`, в основной спецификации gui), испускание сигналов элементов ui. Имеет смысл рассматривать этот api как часть ui api
+  ++ `action_object` -
+  создание, удаление и модификация `action_object`ов. Этот апи также часть `ui` api.</p>
+<ul>
+  <li>data stack
+    сохранение и передача различных данных между секциями code в разных action_objectах, с учётом порождаемых состояний. Выполняет сразу две задачи - хранить некоторые глобальные данные и передача данных от одной секции code к другой(подобно параметрам функций).</li>
+</ul>
+<p>Представленные выше виды api имеют соответствующие объекты, к которым имеет доступ javascript код. Фактически, это единственные глобальные api, которые доступны любым участкам кода, встраиваемого в дерево ui. Иными словами, js код не имеет доступа ни к какому контексту, в котором он может исполняться(например доступ к DOM браузера(если исполняется в браузере) или доступ к файлам(если исполняется в node.js))</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#%D0%9F%D0%BE%D0%B4%D1%80%D0%BE%D0%B1%D0%BD%D0%BE%D0%B5-%D0%BE%D0%BF%D0%B8%D1%81%D0%B0%D0%BD%D0%B8%D0%B5-api" id="user-content-Подробное-описание-api"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Подробное описание api</h2>
+<h3>
+<a aria-hidden="true" class="anchor" href="#ui" id="user-content-ui"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>`ui`</h3>
+<p>Каждая секция `code` имеет доступ к:</p>
+<ul>
+  <li>ui - объект корень, в котором содержится интерфейс пользователя.</li>
+  <li>local.ui. Подмножество `ui`, точнее ссылка на конкретный элемент `ui`, в контексте которого выполняется текущий `action_object`</li>
+</ul>
+<p>ui содержит дерево объектов-элементов, которые могут иметь следующиеметоды:</p>
+<ul>
+  <li>id create(ui_definition). Создание элемента из ui описания. Метод существует только у root фрейма.</li>
+  <li>add(elem_name, id) - добавление элемента элемента к контейнеру. Существует только у фреймов.</li>
+  <li>id remove() - вытаскивание элемента из контейнера. Существует у всех элементов, кромe root фрейма</li>
+  <li>delete - удаление элемента. Существует у всех элементов, кроме root фрейма.</li>
+  <li>elem_obj get(elem_obj_pattern) - Получает объект, содержащий поля, которые указаны в elem_obj_pattern.</li>
+</ul>
+<p>Есть у всех объектов</p>
+<ul>
+  <li>info get_info - Возвращает информацию о текущем элементе, его характеристиках. Применимо пока только для frame объектов, чтобы узнать разрешение, отношение милиметров к пикселям, профайлы производительности и поддерживаемые операции.</li>
+</ul>
+<h3>
+<a aria-hidden="true" class="anchor" href="#signal" id="user-content-signal"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>`signal`</h3>
+<p>Сигнал, а точнее фукнция его испускания, выглядит как метод объекта, но с префиксом emit_
+  Например так:</p>
+
+<div class="highlight highlight-source-js"><pre> <span class="pl-en">ui</span>(<span class="pl-s"><span class="pl-pds">'</span>somepanel<span class="pl-pds">'</span></span>).<span class="pl-smi">emit_on_clicked</span>;</pre></div>
+
+<h3>
+<a aria-hidden="true" class="anchor" href="#action_object" id="user-content-action_object"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>`action_object`</h3>
+<p>Создание action_object в javascript во многом подобна тому, как он описывается в json описании ui.
+  Сначала заполняется объект, например так:
+  
+</p><div class="highlight highlight-source-js"><pre><span class="pl-k">var</span> aobj;
+<span class="pl-smi">aobj</span>.<span class="pl-smi">gen</span> <span class="pl-k">=</span> [<span class="pl-s"><span class="pl-pds">'</span>msg1<span class="pl-pds">'</span></span>, <span class="pl-s"><span class="pl-pds">'</span>msg11_plus<span class="pl-pds">'</span></span>];
+<span class="pl-smi">aobj</span>.<span class="pl-c1">accept</span> <span class="pl-k">=</span> [<span class="pl-s"><span class="pl-pds">'</span>msg0<span class="pl-pds">'</span></span>];
+<span class="pl-smi">aobj</span>.<span class="pl-smi">chain</span> <span class="pl-k">=</span> [
+                 {
+                     <span class="pl-s"><span class="pl-pds">'</span>duration<span class="pl-pds">'</span></span> <span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">'</span>10sec<span class="pl-pds">'</span></span>, 
+                     <span class="pl-s"><span class="pl-pds">'</span>actions<span class="pl-pds">'</span></span> <span class="pl-k">:</span> [
+                                     {<span class="pl-s"><span class="pl-pds">'</span>x<span class="pl-pds">'</span></span> <span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">'</span>+10<span class="pl-pds">'</span></span>}
+                                 ]
+                 }
+             ];  </pre></div>
+
+  Затем его заставить работать, для этого мы заносим его в дерево ui:
+  
+<div class="highlight highlight-source-js"><pre><span class="pl-smi">ui</span>.<span class="pl-smi">something</span>.<span class="pl-c1">add</span>(<span class="pl-s"><span class="pl-pds">'</span>ao_obj1<span class="pl-pds">'</span></span>,aobj);</pre></div>
+
+  В итоге получаем работающий action_object, к тому же находящийся в нужном месте в дереве:
+  
+<div class="highlight highlight-source-js"><pre><span class="pl-smi">ui</span>.<span class="pl-smi">something</span>.<span class="pl-smi">ao_obj1</span>;</pre></div>
+
+  Естественно `something` - это всего лишь некоторый элемент дерева, не более, то есть `something` это просто некоторый frame.
+<h3>
+<a aria-hidden="true" class="anchor" href="#data-stack" id="user-content-data-stack"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>data stack</h3>
+<p>Стек для хранения промежуточных и глобальных данных. Применяется для передачи данным между секциями кода из разных action_objectов, отрабатывающих на разные состояния. Данные могут быть привязаны как к определённому состоянию, так и быть в глобальном стеке.</p>
+<h4>
+<a aria-hidden="true" class="anchor" href="#%D0%A1%D1%82%D0%B5%D0%BA-%D0%B4%D0%B0%D0%BD%D0%BD%D1%8B%D1%85-%D1%81%D0%BE%D0%BE%D0%B1%D1%89%D0%B5%D0%BD%D0%B8%D1%8F" id="user-content-Стек-данных-сообщения"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Стек данных сообщения</h4>
+<p>Допустим у нас есть два action_object:</p>
+
+<div class="highlight highlight-source-js"><pre><span class="pl-s"><span class="pl-pds">"</span>one<span class="pl-pds">"</span></span> <span class="pl-k">:</span> {
+    <span class="pl-s"><span class="pl-pds">"</span>type<span class="pl-pds">"</span></span> <span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">"</span>action_object<span class="pl-pds">"</span></span>,
+    <span class="pl-s"><span class="pl-pds">"</span>gen<span class="pl-pds">"</span></span> <span class="pl-k">:</span> [<span class="pl-s"><span class="pl-pds">'</span>msg1<span class="pl-pds">'</span></span>],
+    <span class="pl-s"><span class="pl-pds">"</span><span class="pl-en">code</span><span class="pl-pds">"</span></span> <span class="pl-k">:</span> <span class="pl-k">function</span>(<span class="pl-smi">ui</span>, <span class="pl-smi">msg</span>, <span class="pl-smi">stack</span>){
+                 <span class="pl-k">var</span> figa_s_maslom <span class="pl-k">=</span> <span class="pl-s"><span class="pl-pds">"</span>именно она, даже в кармане!<span class="pl-pds">"</span></span>;
+                 <span class="pl-smi">msg</span>.<span class="pl-smi">msg1</span>.<span class="pl-c1">push</span>(<span class="pl-s"><span class="pl-pds">'</span>figa<span class="pl-pds">'</span></span>,figa_s_maslom);
+             }
+},
+<span class="pl-s"><span class="pl-pds">"</span>two<span class="pl-pds">"</span></span> <span class="pl-k">:</span> {
+    <span class="pl-s"><span class="pl-pds">"</span>type<span class="pl-pds">"</span></span> <span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">"</span>action_object<span class="pl-pds">"</span></span>,
+    <span class="pl-s"><span class="pl-pds">"</span>accept<span class="pl-pds">"</span></span> <span class="pl-k">:</span> [<span class="pl-s"><span class="pl-pds">'</span>msg1<span class="pl-pds">'</span></span>],
+    <span class="pl-s"><span class="pl-pds">"</span><span class="pl-en">code</span><span class="pl-pds">"</span></span> <span class="pl-k">:</span> <span class="pl-k">function</span>(<span class="pl-smi">ui</span>, <span class="pl-smi">msg</span>, <span class="pl-smi">stack</span>){
+                 <span class="pl-k">var</span> newlabel;
+                 <span class="pl-smi">newlabel</span>.<span class="pl-c1">text</span> <span class="pl-k">=</span> <span class="pl-smi">msg</span>.<span class="pl-smi">msg1</span>.<span class="pl-smi">figa</span>;
+                 <span class="pl-en">ui</span>(<span class="pl-s"><span class="pl-pds">'</span>label1<span class="pl-pds">'</span></span>).<span class="pl-c1">set</span>(newlabel);
+             }
+}</pre></div>
+
+  ao_one породит состояние state1 и засунет в стек этого состояние объект с именем figa.
+  ao_two, реагируя на состояние stat1, получит объект figa и присвоит его значение полю text у label1.
+  Стек данных сообщения msg1 будет удалён после завершения реагирования всех ao на msg1. То есть после этого, объект data.msg1 не будет существовать.
+<h4>
+<a aria-hidden="true" class="anchor" href="#%D0%93%D0%BB%D0%BE%D0%B1%D0%B0%D0%BB%D1%8C%D0%BD%D1%8B%D0%B9-%D1%81%D1%82%D0%B5%D0%BA-data" id="user-content-Глобальный-стек-data"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Глобальный стек data</h4>
+
+<div class="highlight highlight-source-js"><pre><span class="pl-s"><span class="pl-pds">"</span>one<span class="pl-pds">"</span></span> <span class="pl-k">:</span> {
+    <span class="pl-s"><span class="pl-pds">"</span>type<span class="pl-pds">"</span></span> <span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">"</span>action_object<span class="pl-pds">"</span></span>,
+    <span class="pl-s"><span class="pl-pds">"</span>gen<span class="pl-pds">"</span></span> <span class="pl-k">:</span> [<span class="pl-s"><span class="pl-pds">'</span>msg2<span class="pl-pds">'</span></span>],
+    <span class="pl-s"><span class="pl-pds">"</span><span class="pl-en">code</span><span class="pl-pds">"</span></span> <span class="pl-k">:</span> <span class="pl-k">function</span>(<span class="pl-smi">ui</span>, <span class="pl-smi">msg</span>, <span class="pl-smi">stack</span>){
+                 <span class="pl-k">var</span> figa_s_maslom <span class="pl-k">=</span> <span class="pl-s"><span class="pl-pds">"</span>именно она, даже в кармане!<span class="pl-pds">"</span></span>
+                 <span class="pl-en">ui</span>(<span class="pl-s"><span class="pl-pds">'</span>data<span class="pl-pds">'</span></span>).<span class="pl-c1">push</span>(<span class="pl-s"><span class="pl-pds">'</span>figa<span class="pl-pds">'</span></span>,figa_s_maslom);
+             }
+},
+<span class="pl-s"><span class="pl-pds">"</span>two<span class="pl-pds">"</span></span> <span class="pl-k">:</span> {
+    <span class="pl-s"><span class="pl-pds">"</span>accept<span class="pl-pds">"</span></span> <span class="pl-k">:</span> [<span class="pl-s"><span class="pl-pds">'</span>msg2<span class="pl-pds">'</span></span>],
+    <span class="pl-s"><span class="pl-pds">"</span><span class="pl-en">code</span><span class="pl-pds">"</span></span> <span class="pl-k">:</span> <span class="pl-k">function</span>(<span class="pl-smi">ui</span>, <span class="pl-smi">msg</span>, <span class="pl-smi">stack</span>){
+                 <span class="pl-k">var</span> newlabel;
+                 <span class="pl-smi">newlabel</span>.<span class="pl-c1">text</span> <span class="pl-k">=</span> <span class="pl-en">ui</span>(<span class="pl-s"><span class="pl-pds">'</span>data<span class="pl-pds">'</span></span>).<span class="pl-c1">pop</span>(<span class="pl-s"><span class="pl-pds">'</span>figa<span class="pl-pds">'</span></span>);
+                 <span class="pl-en">ui</span>(<span class="pl-s"><span class="pl-pds">'</span>root.label1<span class="pl-pds">'</span></span>).<span class="pl-c1">set</span>(newlabel);
+             }
+}</pre></div>
+
+  Подобно предыдущему примеру один ao посылает сообщение, но при этом данные засовываются в глобальный стек. И во втором ao по приходу сообщения извлекаются из стека. Метод pop() удаляет данные из глобального стека безвозвратно, однако если его не вызвать, то доступ к этим данным можно будет получить из любого метода code любого ao. Поэтому данный механизм называется глобальным стеком данных. Также можно после pop() засунуть данные обратно с помощью push(name, data).
+<h4>
+<a aria-hidden="true" class="anchor" href="#%D0%A1%D1%82%D0%B5%D0%BA-%D0%B4%D0%B0%D0%BD%D0%BD%D1%8B%D1%85-ao" id="user-content-Стек-данных-ao"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Стек данных ao</h4>
+
+<div class="highlight highlight-source-js"><pre><span class="pl-s"><span class="pl-pds">"</span>one<span class="pl-pds">"</span></span> <span class="pl-k">:</span> {
+   <span class="pl-s"><span class="pl-pds">"</span>type<span class="pl-pds">"</span></span> <span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">"</span>action_object<span class="pl-pds">"</span></span>,
+   <span class="pl-s"><span class="pl-pds">"</span>accept<span class="pl-pds">"</span></span> <span class="pl-k">:</span> [<span class="pl-s"><span class="pl-pds">'</span>one_create<span class="pl-pds">'</span></span>, <span class="pl-s"><span class="pl-pds">'</span>one_toString<span class="pl-pds">'</span></span>],
+   <span class="pl-s"><span class="pl-pds">"</span><span class="pl-en">code</span><span class="pl-pds">"</span></span> <span class="pl-k">:</span> <span class="pl-k">function</span>(<span class="pl-smi">ui</span>,<span class="pl-smi">msg</span>, <span class="pl-smi">stack</span>){
+                <span class="pl-k">if</span> (<span class="pl-en">ui</span>(<span class="pl-s"><span class="pl-pds">'</span>msg<span class="pl-pds">'</span></span>).<span class="pl-smi">accepted</span> <span class="pl-k">==</span> <span class="pl-s"><span class="pl-pds">'</span>one_create<span class="pl-pds">'</span></span>){
+                    <span class="pl-smi">stack</span>.<span class="pl-c1">push</span>(<span class="pl-s"><span class="pl-pds">'</span>ya Veselilko<span class="pl-pds">'</span></span>);
+                } <span class="pl-k">else</span> <span class="pl-k">if</span> ( <span class="pl-en">ui</span>(<span class="pl-s"><span class="pl-pds">'</span>msg<span class="pl-pds">'</span></span>).<span class="pl-smi">accepted</span> <span class="pl-k">==</span> <span class="pl-s"><span class="pl-pds">'</span>one_toString<span class="pl-pds">'</span></span>){
+                    <span class="pl-k">var</span> txt <span class="pl-k">=</span> <span class="pl-smi">stack</span>.<span class="pl-c1">pop</span>());
+                    msg<span class="pl-s"><span class="pl-pds">'</span>.gen(<span class="pl-pds">'</span></span>one_toStringReply<span class="pl-s"><span class="pl-pds">'</span><span class="pl-ii">;</span></span>
+<span class="pl-s">                    msg.one_toStringReply.push(<span class="pl-pds">'</span></span>result<span class="pl-s"><span class="pl-pds">'</span><span class="pl-ii">, txt);</span></span>
+<span class="pl-s"><span class="pl-ii">                }</span></span>
+<span class="pl-s"><span class="pl-ii">            }</span></span>
+<span class="pl-s"><span class="pl-ii">},</span></span>
+<span class="pl-s"></span>
+<span class="pl-s"><span class="pl-ii">"caller" : {</span></span>
+<span class="pl-s"><span class="pl-ii">    "type" : "action_object",</span></span>
+<span class="pl-s">    "accept" : [<span class="pl-pds">'</span></span>start_example<span class="pl-s"><span class="pl-pds">'</span>,<span class="pl-pds">'</span></span>one_toStringReply<span class="pl-s"><span class="pl-pds">'</span><span class="pl-ii">],</span></span>
+<span class="pl-s"><span class="pl-ii">    "code" : function(ui){</span></span>
+<span class="pl-s">        if (msg.accepted == <span class="pl-pds">'</span></span>start_example<span class="pl-s"><span class="pl-pds">'</span><span class="pl-ii">){</span></span>
+<span class="pl-s">            msg.gen(<span class="pl-pds">'</span></span>one_create<span class="pl-s"><span class="pl-pds">'</span><span class="pl-ii">);</span></span>
+<span class="pl-s">            msg.gen(<span class="pl-pds">'</span></span>one_toString<span class="pl-s"><span class="pl-pds">'</span><span class="pl-ii">);      </span></span>
+<span class="pl-s">        } else if (msg.accepted == <span class="pl-pds">'</span></span>one_toStringReply<span class="pl-s"><span class="pl-pds">'</span><span class="pl-ii">){</span></span>
+<span class="pl-s">            var label = ui(<span class="pl-pds">'</span></span>main<span class="pl-s"><span class="pl-pds">'</span><span class="pl-ii">).create(</span></span>
+<span class="pl-s"><span class="pl-ii">                                               { </span></span>
+<span class="pl-s"><span class="pl-ii">                                                   "type" : "text", </span></span>
+<span class="pl-s">                                                   "text" : ui(<span class="pl-pds">'</span></span><span class="pl-smi">data</span>.<span class="pl-smi">one_toStringReply</span><span class="pl-s"><span class="pl-pds">'</span><span class="pl-ii">).pop() </span></span>
+<span class="pl-s"><span class="pl-ii">                                               });</span></span>
+<span class="pl-s">            ui(<span class="pl-pds">'</span></span><span class="pl-smi">root</span>.<span class="pl-smi">main</span><span class="pl-s"><span class="pl-pds">'</span>).add(<span class="pl-pds">'</span></span>otvet<span class="pl-s"><span class="pl-pds">'</span><span class="pl-ii">, label);</span></span>
+<span class="pl-s"><span class="pl-ii">       }</span></span>
+<span class="pl-s"><span class="pl-ii">    }</span></span>
+<span class="pl-s"><span class="pl-ii">}</span></span></pre></div>
+
+  Пример комплексный, поэтому начнём по порядку. Если послать сообщение start_example, откуда-нибудь:), то код в методе code в action_object caller проверит, какое сообщение пришло. И поскольку пришло start_example, то будет сгенерировано два сообщения: one_create и one_toString. Оба сообщения, последовательно поймает action_object one, таким образом отработав два раза, сначала на сообщение one_create, потом на сообщение one_toString.
+  Отработав на сообщение one_create, метод code внесёт ‘ya Veselilko’ в стек данных action_object’а one(этот стек данных доступен только методу one.code, но всякий раз, когда его вызывают. Этакое постоянное хранилище данных конкретного action_object, в данном случае action_object one. Но как и глобальный стек данных, этот стек поддерживает методы push и pop. И как следствие, если данные забрать с помощью pop, то их больше не будет в стеке)
+  Отработав на сообщение one_toString, ao.code вытащит из своего стека данных строку ‘ya Veselilko’, сгененирует сообщение one_toStringReply и прикрепит к нему вытащенную строку.
+  Затем caller.code снова отработает, но уже на сообщение one_toStringReply, вытащит из стека данных сообщение строку ‘ya Veselilko’, создаст во фрейме мейн text с этой строкой. Всё:)
+  Пример ещё можно отобразить с помощью обычного javascript примерно так:
+  
+<div class="highlight highlight-source-js"><pre><span class="pl-k">var</span> one <span class="pl-k">=</span> <span class="pl-en">one_create</span>();
+<span class="pl-smi">main</span>.<span class="pl-c1">add</span>(<span class="pl-k">new</span> <span class="pl-en">text</span>(<span class="pl-smi">one</span>.<span class="pl-c1">toString</span>());</pre></div>
+
+
+        </div>
+
+    </div>]

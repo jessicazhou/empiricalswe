@@ -1,0 +1,49 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <h3>
+<a aria-hidden="true" class="anchor" href="#how-to-control-which-neighbor-receive-which-route-update-" id="user-content-how-to-control-which-neighbor-receive-which-route-update-"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>How to control which neighbor receive which route update ?</h3>
+<p><strong>This feature requires ExaBGP 3.1.14 or higher.</strong></p>
+<p>The neighbor options you can filter on are:</p>
+<ul>
+<li>the neighbor IP (mandatory)</li>
+<li>the TCP connection peer local-ip</li>
+<li>the BGP session local-as</li>
+<li>the BGP session peer-as</li>
+<li>the router-id</li>
+<li>the family-allowed</li>
+</ul>
+<p>The filtering is optional.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#what-do-a-control-line-looks-like-" id="user-content-what-do-a-control-line-looks-like-"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>What do a control line looks like ?</h3>
+<p>The following are valid way to limit a route announcement to only some peers</p>
+<pre><code>announce route 1.0.0.0/24 next-hop 101.1.101.1
+neighbor 127.0.0.1 announce route 1.0.0.0/24 next-hop 101.1.101.1
+neighbor 127.0.0.1 local-as 1 announce route 1.0.0.0/24 next-hop 101.1.101.1
+neighbor 127.0.0.1 peer-as 1 announce route 1.0.0.0/24 next-hop 101.1.101.1
+neighbor 127.0.0.1 local-ip 127.0.0.1 announce route 1.0.0.0/24 next-hop 101.1.101.1
+neighbor 127.0.0.1 router-id 1.2.3.4 announce route 1.0.0.0/24 next-hop 101.1.101.1
+neighbor 127.0.0.1 local-as 1 peer-as 1 local-ip 127.0.0.1 router-id 1.2.3.4 announce route 1.0.0.0/24 next-hop 101.1.101.1
+</code></pre>
+<p>Should not route match the defined session, the route announcement will simply be not performed.</p>
+<p>The family-allowed string can be either :</p>
+<ul>
+<li>"in-open" for non multisession BGP session</li>
+<li>the afi and safi names joined by an hyphen as defined in the family section of the configuration for each of the multisession connections. the AFI "inet" will always be represented as "inet4".</li>
+</ul>
+<p>For example:</p>
+<ul>
+<li>family-allowed in-open</li>
+<li>family-allowed inet4-unicast</li>
+<li>family-allowed inet6-unicast</li>
+</ul>
+<h3>
+<a aria-hidden="true" class="anchor" href="#can-i-sent-to-multiple-peers-at-once-" id="user-content-can-i-sent-to-multiple-peers-at-once-"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Can I sent to multiple peers at once ?</h3>
+<p>Yes, sending to multiple peers is possible, the following are example of way to do it. Please note that a space <em>before</em> AND <em>after</em> the coma is required.</p>
+<pre><code>neighbor 10.0.0.1 , neighbor 10.0.0.2 router-id 1.2.3.4 , neighbor 10.0.0.3 announce route 1.0.0.0/24 next-hop 101.1.101.1
+neighbor 10.0.0.1 , neighbor 10.0.0.2 announce route 1.0.0.0/24 next-hop 101.1.101.1
+neighbor 10.0.0.1 , neighbor 10.0.0.2 router-id 1.2.3.4 , neighbor 10.0.0.3 announce route 1.0.0.0/24 next-hop 101.1.101.
+</code></pre>
+
+        </div>
+
+    </div>]

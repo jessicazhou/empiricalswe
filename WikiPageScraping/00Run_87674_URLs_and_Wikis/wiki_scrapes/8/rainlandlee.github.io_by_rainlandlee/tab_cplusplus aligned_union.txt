@@ -1,0 +1,116 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <h2>
+<a aria-hidden="true" class="anchor" href="#aligned_union-in-c11" id="user-content-aligned_union-in-c11"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>aligned_union in c++11</h2>
+<p>c++11中新增了很多用于控制内存分配与对齐的机制，其中包括aligned_union，相关定义如下：</p>
+<pre><code>header：&lt;type_traits&gt;
+template&lt; std::size_t Len, class... Types &gt;
+struct aligned_union;      // (since C++11)
+</code></pre>
+<p>Provides the member typedef type, which is a POD type of a size and alignment suitable for use as uninitialized storage for an object of any of the types listed in Types. The size of the storage is at least Len. std::aligned_union also determines the strictest (largest) alignment requirement among all Types and makes it available as the constant alignment_value.
+If sizeof...(Types) == 0, the behavior is undefined.</p>
+<h4>
+<a aria-hidden="true" class="anchor" href="#member-types" id="user-content-member-types"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Member types</h4>
+<pre><code>Name	Definition
+type	the POD type suitable for storage of any type from Types
+</code></pre>
+<h4>
+<a aria-hidden="true" class="anchor" href="#possible-implementation" id="user-content-possible-implementation"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Possible implementation</h4>
+<pre><code>#include &lt;algorithm&gt;
+template &lt;std::size_t Len, class... Types&gt;
+struct aligned_union
+{
+    static constexpr std::size_t alignment_value = std::max({alignof(Types)...});
+ 
+    struct type
+    {
+      alignas(alignment_value) char _s[std::max({Len, sizeof(Types)...})];
+    };
+};
+</code></pre>
+<h2>
+<a aria-hidden="true" class="anchor" href="#%E4%BD%BF%E7%94%A8%E5%9C%BA%E6%99%AF" id="user-content-使用场景"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>使用场景</h2>
+<p>如上所述，该结构主要用于为分配空间，分配的空间可以满足参数所列的所有类型的对齐要求，可以配合placement new来使用：先用aligned_union获取存储空间，再用placement new在该空间上构造对象。
+最近在移植libtorrent的DHT代码时，其中就有多处用到此结构，其中之一即上述场景；另一处是使用aligned_union获取所需空间大小，然后使用boost::pool来做内存和空间管理。
+伪代码如下</p>
+<div class="highlight highlight-source-c++"><pre><span class="pl-k">class</span> <span class="pl-en">xxx</span> {
+	aligned_union&lt;<span class="pl-c1">1</span>, A, B, C&gt;::type data;
+
+	<span class="pl-k">void</span> <span class="pl-en">construct</span>(type, value) 
+	{
+		<span class="pl-k">switch</span>(type)
+		{
+			<span class="pl-k">case</span> A: <span class="pl-c1">new</span> (&amp;data) <span class="pl-c1">A</span>(value); <span class="pl-k">break</span>;
+			<span class="pl-k">case</span> B: <span class="pl-c1">new</span> (&amp;data) <span class="pl-c1">B</span>(value); <span class="pl-k">break</span>;
+			<span class="pl-k">case</span> C: <span class="pl-c1">new</span> (&amp;data) <span class="pl-c1">C</span>(value); <span class="pl-k">break</span>;
+		}
+	}	
+	...
+}<span class="pl-ii"></span></pre></div>
+<h2>
+<a aria-hidden="true" class="anchor" href="#%E5%9C%A8c99%E4%B8%AD%E7%9A%84%E7%B1%BB%E4%BC%BC%E5%AE%9E%E7%8E%B0" id="user-content-在c99中的类似实现"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>在C++99中的类似实现</h2>
+<p>由于目前产品代码开发环境不支持C++11，所以移植代码时需要找到其他方法实现类似功能，主要是要保证两个方面，一是获取内存的大小合适，足以容纳指定类型中的任何一种；二是满足各个类型的对齐要求。</p>
+<h4>
+<a aria-hidden="true" class="anchor" href="#%E8%8E%B7%E5%8F%96%E5%90%88%E9%80%82%E5%A4%A7%E5%B0%8F" id="user-content-获取合适大小"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>获取合适大小</h4>
+<p>其实就是获取指定类中最大的类所需要的空间大小，伪代码如下</p>
+<div class="highlight highlight-source-c++"><pre><span class="pl-c"><span class="pl-c">//</span> in .h</span>
+<span class="pl-k">class</span> <span class="pl-en">xxx</span> {
+<span class="pl-k">public:</span>
+	<span class="pl-k">static</span> <span class="pl-c1">size_t</span> <span class="pl-en">get_storage_size</span>()
+	{
+		<span class="pl-c1">size_t</span> szs[] = { <span class="pl-c1">1</span>, <span class="pl-k">sizeof</span>(A), <span class="pl-k">sizeof</span>(B), <span class="pl-k">sizeof</span>(C) };
+		<span class="pl-k">return</span> *<span class="pl-c1">max_element</span>(szs, szs + <span class="pl-k">sizeof</span>(szs) / <span class="pl-k">sizeof</span>(szs[<span class="pl-c1">0</span>]));
+	}
+	
+<span class="pl-k">private:</span>
+	<span class="pl-k">static</span> <span class="pl-k">const</span> <span class="pl-c1">size_t</span> m_storage_size;
+}<span class="pl-ii"></span>
+
+<span class="pl-c"><span class="pl-c">//</span> in .cpp</span>
+<span class="pl-k">const</span> xxx::m_storage_size = xxx::get_storage_size();</pre></div>
+<h4>
+<a aria-hidden="true" class="anchor" href="#%E4%BF%9D%E8%AF%81%E5%90%88%E9%80%82%E7%9A%84%E5%86%85%E5%AD%98%E5%AF%B9%E9%BD%90" id="user-content-保证合适的内存对齐"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>保证合适的内存对齐</h4>
+<p>C++规范保证了通过new或者new []返回的指针符合最严格的对齐要求，这样可以保证指针强制转换为任意类对象的指针时均能保证合适的对齐。
+我们可以利用上述规则使用使用使用new []来获取需要的存储空间，伪代码如下</p>
+<div class="highlight highlight-source-c++"><pre><span class="pl-k">class</span> <span class="pl-en">xxx</span> {
+<span class="pl-k">public:</span>
+	<span class="pl-en">xxx</span>() { <span class="pl-c1">init_storage</span>(); }
+
+	<span class="pl-k">void</span> <span class="pl-en">construct</span>(type, value) 
+	{
+		<span class="pl-k">switch</span>(type)
+		{
+			<span class="pl-k">case</span> A: <span class="pl-c1">new</span> (data) <span class="pl-c1">A</span>(value); <span class="pl-k">break</span>;
+			<span class="pl-k">case</span> B: <span class="pl-c1">new</span> (data) <span class="pl-c1">B</span>(value); <span class="pl-k">break</span>;
+			<span class="pl-k">case</span> C: <span class="pl-c1">new</span> (data) <span class="pl-c1">C</span>(value); <span class="pl-k">break</span>;
+		}
+	}
+
+<span class="pl-k">private:</span>
+	<span class="pl-en">init_storage</span>() { m_pdata.<span class="pl-c1">reset</span>(data = <span class="pl-k">new</span> <span class="pl-c1">uint8_t</span>[m_storage_size]); }
+
+	<span class="pl-c1">uint8_t</span>* data;
+	boost::scope_array&lt;<span class="pl-c1">uint8_t</span>&gt; m_pdata;  <span class="pl-c"><span class="pl-c">//</span> to release data when destroyed</span>
+}<span class="pl-ii"></span></pre></div>
+<p>也可以用vector来提供内存空间，伪代码如下：</p>
+<div class="highlight highlight-source-c++"><pre><span class="pl-k">class</span> <span class="pl-en">xxx</span> {
+<span class="pl-k">public:</span>
+	<span class="pl-en">xxx</span>() { <span class="pl-c1">init_storage</span>(); }
+
+	<span class="pl-k">void</span> <span class="pl-en">construct</span>(type, value) { ... }
+
+<span class="pl-k">private:</span>
+	<span class="pl-en">init_storage</span>() { m_storage.<span class="pl-c1">reserve</span>(m_storage_size); data = m_storage.<span class="pl-c1">data</span>(); }
+
+	<span class="pl-c1">uint8_t</span>* data;
+	vector&lt;<span class="pl-c1">uint8_t</span>&gt; m_storage;
+}<span class="pl-ii"></span></pre></div>
+<p><strong>注意</strong>：</p>
+<ul>
+<li>栈上分配的空间没有相应的对齐保障，因此在栈空间上使用placement new时需要考虑对齐问题；</li>
+<li>placement new如果不对齐，其行为是未定义的！具体情况与CPU架构等相关，在x86上可能就是性能差，在某些CPU架构下甚至可能无法运行。</li>
+</ul>
+
+        </div>
+
+    </div>]

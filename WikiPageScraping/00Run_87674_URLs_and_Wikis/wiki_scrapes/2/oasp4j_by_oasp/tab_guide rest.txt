@@ -1,0 +1,673 @@
+[<div class="wiki-body gollum-asciidoc-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <div>
+<div>Table of Contents</div>
+<ul>
+<li>
+<a href="#rest">REST</a>
+<ul>
+<li><a href="#urls">URLs</a></li>
+<li><a href="#http-methods">HTTP Methods</a></li>
+<li><a href="#http-status-codes">HTTP Status Codes</a></li>
+<li><a href="#metadata">Metadata</a></li>
+<li>
+<a href="#jax-rs">JAX-RS</a>
+<ul>
+<li><a href="#jax-rs-configuration">JAX-RS Configuration</a></li>
+</ul>
+</li>
+<li><a href="#rest-exception-handling">REST Exception Handling</a></li>
+<li>
+<a href="#recommendations-for-rest-requests-and-responses">Recommendations for REST requests and responses</a>
+<ul>
+<li><a href="#unparameterized-loading-of-a-single-resource">Unparameterized loading of a single resource</a></li>
+<li><a href="#unparameterized-loading-of-a-collection-of-resources">Unparameterized loading of a collection of resources</a></li>
+<li><a href="#saving-a-resource">Saving a resource</a></li>
+<li><a href="#parameterized-loading-of-a-resource">Parameterized loading of a resource</a></li>
+<li><a href="#deletion-of-a-resource">Deletion of a resource</a></li>
+<li><a href="#error-results">Error results</a></li>
+</ul>
+</li>
+<li><a href="#rest-media-types">REST Media Types</a></li>
+<li><a href="#rest-testing">REST Testing</a></li>
+<li>
+<a href="#security">Security</a>
+<ul>
+<li><a href="#csrf">CSRF</a></li>
+<li><a href="#json-top-level-arrays">JSON top-level arrays</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</div>
+<h1 id="user-content-rest">
+<a aria-hidden="true" class="anchor" href="#rest" id="user-content-rest"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>REST</h1>
+<div>
+<p>REST (<a href="https://en.wikipedia.org/wiki/Representational_state_transfer" rel="nofollow">REpresentational State Transfer</a>) is an inter-operable protocol for <a href="guide-service-layer">services</a> that is more lightweight than <a href="guide-soap">SOAP</a>.
+However, it is no real standard and can cause confusion. Therefore we define best practices here to guide you.</p>
+</div>
+<div>
+<p><strong>ATTENTION:</strong>
+REST and RESTful often implies very strict and specific rules and conventions. However different people will often have different opinions of such rules. We learned that this leads to "religious discussions" (starting from <code>PUT</code> vs. <code>POST</code> and IDs in path vs. playload up to Hypermedia and <a href="https://en.wikipedia.org/wiki/HATEOAS" rel="nofollow">HATEOAS</a>). These "religious discussions" waste a lot of time and money without adding real value in case of common business applications (if you publish your API on the internet to billions of users this is a different story). Therefore we give best practices that lead to simple, easy and pragmatic "HTTP APIs" (to avoid the term "REST services" and end "religious discussions"). Please also note that we do not want to assault anybody nor force anyone to follow our guidelines. Please read the following best practices carefully and be aware that they might slightly differ from what your first hit on the web will say about REST (see e.g. <a href="http://restcookbook.com/" rel="nofollow">RESTful cookbook</a>).</p>
+</div>
+<div>
+<h2 id="user-content-urls">
+<a aria-hidden="true" class="anchor" href="#urls" id="user-content-urls"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>URLs</h2>
+<div>
+<div>
+<p>URLs are not case sensitive. Hence, we follow the best practice to use only lower-case-letters-with-hypen-to-separate-words.
+For operations in REST we distinguish the following types of URLs:</p>
+</div>
+<div>
+<ul>
+<li>
+<p>A <em>collection URL</em> is build from the rest service URL by appending the name of a collection. This is typically the name of an entity. Such URI identifies the entire collection of all elements of this type. Example: <code>https://mydomain.com/myapp/services/rest/mycomponent/v1/myentity</code></p>
+</li>
+<li>
+<p>An <em>element URL</em> is build from a collection URL by appending an element ID. It identifies a single element (entity) within the collection. Example: <code>https://mydomain.com/myapp/services/rest/mycomponent/v1/myentity/42</code></p>
+</li>
+<li>
+<p>A <em>search URL</em> is build from a collection URL by appending the segment <code>search</code>. The search criteria is send as <code>POST</code>. Example: <code>https://mydomain.com/myapp/services/rest/mycomponent/v1/myentity/search</code></p>
+</li>
+</ul>
+</div>
+<div>
+<p>This fits perfect for <a href="https://en.wikipedia.org/wiki/Create,_read,_update_and_delete" rel="nofollow">CRUD</a> operations. For business operations (processing, calculation, etc.) we simply create a collection URL with the name of the business operation instead of the entity name (use a clear naming convention to avoid collisions). Then we can <code>POST</code> the input for the business operation and get the result back.</p>
+</div>
+<div>
+<p>If you want to provide an entity with a different structure do not append further details to an element URL but create a separate collection URL as base.
+So use <code>https://mydomain.com/myapp/services/rest/mycomponent/v1/myentity-with-details/42</code> instead of <code>https://mydomain.com/myapp/services/rest/mycomponent/v1/myentity/42/with-details</code>.
+For offering a <a href="guide-transferobject#CTO">CTO</a> simply append <code>-cto</code> to the collection URL (e.g. <code>…​/myentity-cto/</code>).</p>
+</div>
+</div>
+</div>
+<div>
+<h2 id="user-content-http-methods">
+<a aria-hidden="true" class="anchor" href="#http-methods" id="user-content-http-methods"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>HTTP Methods</h2>
+<div>
+<div>
+<p>While REST was designed as a pragmatical approach it sometimes leads to "religious discussions" e.g. about using <code>PUT</code> vs. <code>POST</code> (see ATTENTION notice above).
+As the OASP has a strict focus on usual business applications it proposes a more "pragmatic" approach to REST services.</p>
+</div>
+<div>
+<p>On the next table we compare the main differences between the "canonical" REST approach (or RESTful) and the OASP proposal.</p>
+</div>
+<table>
+<caption>Table 1. Usage of HTTP methods</caption>
+<colgroup>
+<col/>
+<col/>
+<col/>
+</colgroup>
+<thead>
+<tr>
+<th><strong>HTTP Method</strong></th>
+<th><strong>RESTful Meaning</strong></th>
+<th><strong>OASP</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><p><code>GET</code></p></td>
+<td>
+<p>Read single element.</p>
+<p>Search on an entity (with parametrized url)</p>
+</td>
+<td><p>Read a single element.</p></td>
+</tr>
+<tr>
+<td><p><code>PUT</code></p></td>
+<td>
+<p>Replace entity data.</p>
+<p>Replace entire collection (typically not supported)</p>
+</td>
+<td><p>Not used</p></td>
+</tr>
+<tr>
+<td><p><code>POST</code></p></td>
+<td><p>Create a new element in the collection</p></td>
+<td>
+<p>Create or update an element in the collection.</p>
+<p>Search on an entity (parametrized post body)</p>
+<p>Bulk deletion.</p>
+</td>
+</tr>
+<tr>
+<td><p><code>DELETE</code></p></td>
+<td>
+<p>Delete an entity.</p>
+<p>Delete an entire collection (typically not supported)</p>
+</td>
+<td>
+<p>Delete an entity.</p>
+<p>Delete an entire collection (typically not supported)</p>
+</td>
+</tr>
+</tbody>
+</table>
+<div>
+<p>Please consider these guidelines and rationales:</p>
+</div>
+<div>
+<ul>
+<li>
+<p>We use <code>POST</code> on the collection URL to save an entity (<code>create</code> if no ID provided in payload otherwise <code>update</code>). This avoids pointless discussions in distinctions between <code>PUT</code> and <code>POST</code> and what to do if a <code>create</code> contains an ID in the payload or if an <code>update</code> is missing the ID property or contains a different ID in payload than in URL.</p>
+</li>
+<li>
+<p>Hence, we do NOT use <code>PUT</code> but always use <code>POST</code> for write operations. As we always have a technical ID for each entity, we can simply distinguish create and update by the presence of the ID property.</p>
+</li>
+<li>
+<p>Please also note that for (large) bulk deletions you may be forced to used <code>POST</code> instead of <code>DELETE</code> as according to the HTTP standard <code>DELETE</code> must not have payload and URLs are limited in length.</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div>
+<h2 id="user-content-http-status-codes">
+<a aria-hidden="true" class="anchor" href="#http-status-codes" id="user-content-http-status-codes"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>HTTP Status Codes</h2>
+<div>
+<div>
+<p>Further we define how to use the HTTP status codes for REST services properly. In general the 4xx codes correspond to an error on the client side and the 5xx codes to an error on the server side.</p>
+</div>
+<table>
+<caption>Table 2. Usage of HTTP status codes</caption>
+<colgroup>
+<col/>
+<col/>
+<col/>
+<col/>
+</colgroup>
+<thead>
+<tr>
+<th><strong>HTTP Code</strong></th>
+<th><strong>Meaning</strong></th>
+<th><strong>Response</strong></th>
+<th><strong>Comment</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><p>200</p></td>
+<td><p>OK</p></td>
+<td><p>requested result</p></td>
+<td><p>Result of successful GET</p></td>
+</tr>
+<tr>
+<td><p>204</p></td>
+<td><p>No Content</p></td>
+<td><p><em>none</em></p></td>
+<td><p>Result of successful POST, DELETE, or PUT (void return)</p></td>
+</tr>
+<tr>
+<td><p>400</p></td>
+<td><p>Bad Request</p></td>
+<td><p>error details</p></td>
+<td><p>The HTTP request is invalid (parse error, validation failed)</p></td>
+</tr>
+<tr>
+<td><p>401</p></td>
+<td><p>Unauthorized</p></td>
+<td><p><em>none</em> (security)</p></td>
+<td><p>Authentication failed</p></td>
+</tr>
+<tr>
+<td><p>403</p></td>
+<td><p>Forbidden</p></td>
+<td><p><em>none</em> (security)</p></td>
+<td><p>Authorization failed</p></td>
+</tr>
+<tr>
+<td><p>404</p></td>
+<td><p>Not found</p></td>
+<td><p><em>none</em></p></td>
+<td><p>Either the service URL is wrong or the requested resource does not exist</p></td>
+</tr>
+<tr>
+<td><p>500</p></td>
+<td><p>Server Error</p></td>
+<td><p>error code, UUID</p></td>
+<td><p>Internal server error occurred (used for all technical exceptions)</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div>
+<h2 id="user-content-metadata">
+<a aria-hidden="true" class="anchor" href="#metadata" id="user-content-metadata"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Metadata</h2>
+<div>
+<div>
+<p>OASP has support for the following metadata in REST service invocations:</p>
+</div>
+<table>
+<colgroup>
+<col/>
+<col/>
+<col/>
+</colgroup>
+<thead>
+<tr>
+<th>Name</th>
+<th>Description</th>
+<th>Further information</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><p>X-Correlation-Id</p></td>
+<td><p>HTTP header for a <em>correlation ID</em> that is a unique identifier to associate different requests belonging to the same session / action</p></td>
+<td><p><a href="guide-logging">Logging guide</a></p></td>
+</tr>
+<tr>
+<td><p>Validation errors</p></td>
+<td><p>Standardized format for a service to communicate validation errors to the client</p></td>
+<td>
+<p>Server-side validation is documented in the <a href="guide-validation">Validation guide</a>.</p>
+<p>The protocol to communicate these validation errors to the client is worked on at <a href="https://github.com/oasp/oasp4j/issues/218">https://github.com/oasp/oasp4j/issues/218</a></p>
+</td>
+</tr>
+<tr>
+<td><p>Pagination</p></td>
+<td><p>Standardized format for a service to offer paginated access to a list of entities</p></td>
+<td><p>Server-side support for pagination is documented in the <a href="guide-dataaccess-layer#pagination">Data-Access Layer Guide</a>.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div>
+<h2 id="user-content-jax-rs">
+<a aria-hidden="true" class="anchor" href="#jax-rs" id="user-content-jax-rs"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>JAX-RS</h2>
+<div>
+<div>
+<p>For implementing REST services we use the <a href="https://jax-rs-spec.java.net/" rel="nofollow">JAX-RS</a> standard. As an implementation we recommend <a href="http://cxf.apache.org/" rel="nofollow">CXF</a>. For <a href="guide-json">JSON</a> bindings we use <a href="http://wiki.fasterxml.com/JacksonHome" rel="nofollow">Jackson</a> while <a href="guide-xml">XML</a> binding works out-of-the-box with <a href="http://www.oracle.com/technetwork/articles/javase/index-140168.html" rel="nofollow">JAXB</a>.
+To implement a service you write an interface with JAX-RS annotations for the API and a regular implementation class annotated with <code>@Named</code> to make it a spring-bean. Here is a simple example:</p>
+</div>
+<div>
+<div>
+<div class="highlight highlight-source-java"><pre><span class="pl-k">@Path</span>(<span class="pl-s"><span class="pl-pds">"</span>/tablemanagement/v1<span class="pl-pds">"</span></span>)
+<span class="pl-k">@Consumes</span>(<span class="pl-smi">MediaType</span><span class="pl-c1"><span class="pl-k">.</span>APPLICATION_JSON</span>)
+<span class="pl-k">@Produces</span>(<span class="pl-smi">MediaType</span><span class="pl-c1"><span class="pl-k">.</span>APPLICATION_JSON</span>)
+<span class="pl-k">public</span> <span class="pl-k">interface</span> <span class="pl-en">TableManagementRestService</span> <span class="pl-k">extends</span> <span class="pl-e">RestService</span> {
+  <span class="pl-k">@GET</span>
+  <span class="pl-k">@Path</span>(<span class="pl-s"><span class="pl-pds">"</span>/table/{id}/<span class="pl-pds">"</span></span>)
+  <span class="pl-k">public</span> <span class="pl-smi">TableEto</span> <span class="pl-en">getTable</span>(<span class="pl-k">@PathParam</span>(<span class="pl-s"><span class="pl-pds">"</span>id<span class="pl-pds">"</span></span>) <span class="pl-k">long</span> <span class="pl-v">id</span>);
+}
+
+<span class="pl-k">@Named</span>
+<span class="pl-k">public</span> <span class="pl-k">class</span> <span class="pl-en">TableManagementRestServiceImpl</span> <span class="pl-k">implements</span> <span class="pl-e">TableManagementRestService</span> {
+  <span class="pl-k">@Inject</span>
+  <span class="pl-k">private</span> <span class="pl-smi">TableManagement</span> tableManagement;
+
+  <span class="pl-k">@Override</span>
+  <span class="pl-k">public</span> <span class="pl-smi">TableEto</span> <span class="pl-en">getTable</span>(<span class="pl-k">@PathParam</span>(<span class="pl-s"><span class="pl-pds">"</span>id<span class="pl-pds">"</span></span>) <span class="pl-k">long</span> <span class="pl-v">id</span>) {
+
+    <span class="pl-k">return</span> <span class="pl-c1">this</span><span class="pl-k">.</span>tableManagement<span class="pl-k">.</span>getTable(idAsLong);
+  }
+}</pre></div>
+</div>
+</div>
+<div>
+<p>Here we can see a REST service for the <a href="architecture#business-architecture">business component</a> <code>tablemanagement</code>. The method <code>getTable</code> can be accessed via HTTP GET (see <code>@GET</code>) under the URL path <code>tablemanagement/table/{id}</code> (see <code>@Path</code> annotations) where <code>{id}</code> is the ID of the requested table and will be extracted from the URL and provided as parameter <code>id</code> to the method <code>getTable</code>. It will return its result (<code>TableEto</code>) as <a href="guide-json">JSON</a> (see <code>@Produces</code> - should already be defined as defaults in <code>RestService</code> marker interface). As you can see it delegates to the <a href="guide-logic-layer">logic</a> component <code>tableManagement</code> that contains the actual business logic while the service itself only exposes this logic via HTTP. The REST service implementation is a regular CDI bean that can use <a href="guide-dependency-injection">dependency injection</a>.
+The separation of the API as a Java interface allows to use it for <a href="guide-client-layer">service client calls</a>.</p>
+</div>
+<div>
+<table>
+<tbody><tr>
+<td>
+<div>Note</div>
+</td>
+<td>
+With JAX-RS it is important to make sure that each service method is annotated with the proper HTTP method (<code>@GET</code>,<code>@POST</code>,etc.) to avoid unnecessary debugging. So you should take care not to forget to specify one of these annotations.
+</td>
+</tr>
+</tbody></table>
+</div>
+<div>
+<h3 id="user-content-jax-rs-configuration">
+<a aria-hidden="true" class="anchor" href="#jax-rs-configuration" id="user-content-jax-rs-configuration"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>JAX-RS Configuration</h3>
+<div>
+<p>Starting from CXF 3.0.0 it is possible to enable the auto-discovery of JAX-RS roots and providers thus avoiding having to specify each service bean in the <code>beans-service.xml</code> file.</p>
+</div>
+<div>
+<p>When the jaxrs server is instantiated all the scanned root and provider beans (beans annotated with <code>javax.ws.rs.Path</code> and <code>javax.ws.rs.ext.Provider</code>) are configured.</p>
+</div>
+</div>
+</div>
+</div>
+<div>
+<h2 id="user-content-rest-exception-handling">
+<a aria-hidden="true" class="anchor" href="#rest-exception-handling" id="user-content-rest-exception-handling"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>REST Exception Handling</h2>
+<div>
+<div>
+<p>For exceptions a service needs to have an exception façade that catches all exceptions and handles them by writing proper log messages and mapping them to a HTTP response with an according <a href="guide-rest#http-status-codes">HTTP status code</a>. Therefore the OASP provides a generic solution via <code>RestServiceExceptionFacade</code>. You need to follow the <a href="guide-exceptions">exception guide</a> so that it works out of the box because the façade needs to be able to distinguish between business and technical exceptions.
+Now your service may throw exceptions but the façade with automatically handle them for you.</p>
+</div>
+</div>
+</div>
+<div>
+<h2 id="user-content-recommendations-for-rest-requests-and-responses">
+<a aria-hidden="true" class="anchor" href="#recommendations-for-rest-requests-and-responses" id="user-content-recommendations-for-rest-requests-and-responses"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Recommendations for REST requests and responses</h2>
+<div>
+<div>
+<p>The OASP proposes, for simplicity, a deviation from the common REST pattern:</p>
+</div>
+<div>
+<ul>
+<li>
+<p>Using <code>POST</code> for updates (instead of <code>PUT</code>)</p>
+</li>
+<li>
+<p>Using the payload for addressing resources on POST (instead of identifier on the <code>URL</code>)</p>
+</li>
+<li>
+<p>Using parametrized <code>POST</code> for searches</p>
+</li>
+</ul>
+</div>
+<div>
+<p>This use of REST will lead to simpler code both on client and on server. We discuss this use on the next points.</p>
+</div>
+<div>
+<p>The following table specifies how to use the HTTP methods (verbs) for collection and element URIs properly (see <a href="http://en.wikipedia.org/wiki/Representational_State_Transfer#Applied_to_web_services" rel="nofollow">wikipedia</a>).</p>
+</div>
+<div>
+<h3 id="user-content-unparameterized-loading-of-a-single-resource">
+<a aria-hidden="true" class="anchor" href="#unparameterized-loading-of-a-single-resource" id="user-content-unparameterized-loading-of-a-single-resource"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Unparameterized loading of a single resource</h3>
+<div>
+<ul>
+<li>
+<p><strong>HTTP Method</strong>: <code>GET</code></p>
+</li>
+<li>
+<p><strong>URL example</strong>: <code>/products/123</code></p>
+</li>
+</ul>
+</div>
+<div>
+<p>For loading of a single resource, embed the <code>identifier</code> of the resource in the URL (for example <code>/products/123</code>).</p>
+</div>
+<div>
+<p>The response contains the resource in JSON format, using a JSON object at the top-level, for example:</p>
+</div>
+<div>
+<div>
+<div class="highlight highlight-source-js"><pre>{
+    <span class="pl-s"><span class="pl-pds">"</span>name<span class="pl-pds">"</span></span><span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">"</span>Steak<span class="pl-pds">"</span></span>,
+    <span class="pl-s"><span class="pl-pds">"</span>color<span class="pl-pds">"</span></span><span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">"</span>brown<span class="pl-pds">"</span></span>
+}</pre></div>
+</div>
+</div>
+</div>
+<div>
+<h3 id="user-content-unparameterized-loading-of-a-collection-of-resources">
+<a aria-hidden="true" class="anchor" href="#unparameterized-loading-of-a-collection-of-resources" id="user-content-unparameterized-loading-of-a-collection-of-resources"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Unparameterized loading of a collection of resources</h3>
+<div>
+<ul>
+<li>
+<p><strong>HTTP Method</strong>: <code>GET</code></p>
+</li>
+<li>
+<p><strong>URL example</strong>: <code>/products</code></p>
+</li>
+</ul>
+</div>
+<div>
+<p>For loading of a collection of resources, make sure that the size of the collection can never exceed a reasonable maximum size. For parameterized loading (searching, pagination), see below.</p>
+</div>
+<div>
+<p>The response contains the collection in JSON format, using a JSON object at the top-level, and the actual collection underneath a <code>result</code> key, for example:</p>
+</div>
+<div>
+<div>
+<div class="highlight highlight-source-js"><pre>{
+    <span class="pl-s"><span class="pl-pds">"</span>result<span class="pl-pds">"</span></span><span class="pl-k">:</span> [
+        {
+            <span class="pl-s"><span class="pl-pds">"</span>name<span class="pl-pds">"</span></span><span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">"</span>Steak<span class="pl-pds">"</span></span>,
+            <span class="pl-s"><span class="pl-pds">"</span>color<span class="pl-pds">"</span></span><span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">"</span>brown<span class="pl-pds">"</span></span>
+        },
+        {
+            <span class="pl-s"><span class="pl-pds">"</span>name<span class="pl-pds">"</span></span><span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">"</span>Broccoli<span class="pl-pds">"</span></span>,
+            <span class="pl-s"><span class="pl-pds">"</span>color<span class="pl-pds">"</span></span><span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">"</span>green<span class="pl-pds">"</span></span>
+        }
+    ]
+}</pre></div>
+</div>
+</div>
+</div>
+<div>
+<h3 id="user-content-saving-a-resource">
+<a aria-hidden="true" class="anchor" href="#saving-a-resource" id="user-content-saving-a-resource"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Saving a resource</h3>
+<div>
+<ul>
+<li>
+<p><strong>HTTP Method</strong>: <code>POST</code></p>
+</li>
+<li>
+<p><strong>URL example</strong>: <code>/products</code></p>
+</li>
+</ul>
+</div>
+<div>
+<p>The resource will be passed via JSON in the request body. If updating an existing resource, include the resource’s <code>identifier</code> in the JSON and not in the URL, in order to avoid ambiguity.</p>
+</div>
+<div>
+<p>If saving was successful, an empty HTTP 204 response is generated.</p>
+</div>
+<div>
+<p>If saving was unsuccessful, refer below for the format to return errors to the client.</p>
+</div>
+</div>
+<div>
+<h3 id="user-content-parameterized-loading-of-a-resource">
+<a aria-hidden="true" class="anchor" href="#parameterized-loading-of-a-resource" id="user-content-parameterized-loading-of-a-resource"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Parameterized loading of a resource</h3>
+<div>
+<ul>
+<li>
+<p><strong>HTTP Method</strong>: <code>POST</code></p>
+</li>
+<li>
+<p><strong>URL example</strong>: <code>/products/search</code></p>
+</li>
+</ul>
+</div>
+<div>
+<p>In order to differentiate from an unparameterized load, a special <em>subpath</em> (for example <code>search</code>) is introduced. The parameters are passed via JSON in the request body. An example of a simple, paginated search would be:</p>
+</div>
+<div>
+<div>
+<div class="highlight highlight-source-js"><pre>{
+    <span class="pl-s"><span class="pl-pds">"</span>status<span class="pl-pds">"</span></span><span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">"</span>OPEN<span class="pl-pds">"</span></span>,
+    <span class="pl-s"><span class="pl-pds">"</span>pagination<span class="pl-pds">"</span></span><span class="pl-k">:</span> {
+        <span class="pl-s"><span class="pl-pds">"</span>page<span class="pl-pds">"</span></span><span class="pl-k">:</span> <span class="pl-c1">2</span>,
+        <span class="pl-s"><span class="pl-pds">"</span>size<span class="pl-pds">"</span></span><span class="pl-k">:</span> <span class="pl-c1">25</span>
+    }
+}</pre></div>
+</div>
+</div>
+<div>
+<p>The response contains the requested page of the collection in JSON format, using a JSON object at the top-level, the actual page underneath a <code>result</code> key, and additional pagination information underneath a <code>pagination</code> key, for example:</p>
+</div>
+<div>
+<div>
+<div class="highlight highlight-source-js"><pre>{
+    <span class="pl-s"><span class="pl-pds">"</span>pagination<span class="pl-pds">"</span></span><span class="pl-k">:</span> {
+        <span class="pl-s"><span class="pl-pds">"</span>page<span class="pl-pds">"</span></span><span class="pl-k">:</span> <span class="pl-c1">2</span>,
+        <span class="pl-s"><span class="pl-pds">"</span>size<span class="pl-pds">"</span></span><span class="pl-k">:</span> <span class="pl-c1">25</span>,
+        <span class="pl-s"><span class="pl-pds">"</span>total<span class="pl-pds">"</span></span><span class="pl-k">:</span> <span class="pl-c1">null</span>
+    },
+    <span class="pl-s"><span class="pl-pds">"</span>result<span class="pl-pds">"</span></span><span class="pl-k">:</span> [
+        {
+            <span class="pl-s"><span class="pl-pds">"</span>name<span class="pl-pds">"</span></span><span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">"</span>Steak<span class="pl-pds">"</span></span>,
+            <span class="pl-s"><span class="pl-pds">"</span>color<span class="pl-pds">"</span></span><span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">"</span>brown<span class="pl-pds">"</span></span>
+        },
+        {
+            <span class="pl-s"><span class="pl-pds">"</span>name<span class="pl-pds">"</span></span><span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">"</span>Broccoli<span class="pl-pds">"</span></span>,
+            <span class="pl-s"><span class="pl-pds">"</span>color<span class="pl-pds">"</span></span><span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">"</span>green<span class="pl-pds">"</span></span>
+        }
+    ]
+}</pre></div>
+</div>
+</div>
+<div>
+<p>Compare the code needed on server side to accept this request:</p>
+</div>
+<div>
+<div>
+<div class="highlight highlight-source-java"><pre> <span class="pl-k">@Path</span>(<span class="pl-s"><span class="pl-pds">"</span>/order<span class="pl-pds">"</span></span>)
+ <span class="pl-k">@POST</span>
+ <span class="pl-k">public</span> <span class="pl-k">List&lt;<span class="pl-smi">OrderCto</span>&gt;</span> findOrders(<span class="pl-smi">OrderSearchCriteriaTo</span> criteria) {
+    <span class="pl-k">return</span> <span class="pl-c1">this</span><span class="pl-k">.</span>salesManagement<span class="pl-k">.</span>findOrderCtos(criteria);
+ }</pre></div>
+</div>
+</div>
+<div>
+<p>With the equivalent code required if doing it the RESTful way by issuing a <code>GET</code> request:</p>
+</div>
+<div>
+<div>
+<div class="highlight highlight-source-java"><pre>  <span class="pl-k">@Path</span>(<span class="pl-s"><span class="pl-pds">"</span>/order<span class="pl-pds">"</span></span>)
+  <span class="pl-k">@GET</span>
+  <span class="pl-k">public</span> <span class="pl-k">List&lt;<span class="pl-smi">OrderCto</span>&gt;</span> findOrders(<span class="pl-k">@Context</span> <span class="pl-smi">UriInfo</span> info) {
+
+    <span class="pl-smi">RequestParameters</span> parameters <span class="pl-k">=</span> <span class="pl-smi">RequestParameters</span><span class="pl-k">.</span>fromQuery(info);
+    <span class="pl-smi">OrderSearchCriteriaTo</span> criteria <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-smi">OrderSearchCriteriaTo</span>();
+    criteria<span class="pl-k">.</span>setTableId(parameters<span class="pl-k">.</span>get(<span class="pl-s"><span class="pl-pds">"</span>tableId<span class="pl-pds">"</span></span>, <span class="pl-smi">Long</span><span class="pl-k">.</span>class, <span class="pl-c1">false</span>));
+    criteria<span class="pl-k">.</span>setState(parameters<span class="pl-k">.</span>get(<span class="pl-s"><span class="pl-pds">"</span>state<span class="pl-pds">"</span></span>, <span class="pl-smi">OrderState</span><span class="pl-k">.</span>class, <span class="pl-c1">false</span>));
+    <span class="pl-k">return</span> <span class="pl-c1">this</span><span class="pl-k">.</span>salesManagement<span class="pl-k">.</span>findOrderCtos(criteria);
+  }</pre></div>
+</div>
+</div>
+<div>
+<h4 id="user-content-pagination-details">
+<a aria-hidden="true" class="anchor" href="#pagination-details" id="user-content-pagination-details"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Pagination details</h4>
+<div>
+<p>The client can choose to request a count of the total size of the collection, for example to calculate the total number of available pages. It does so, by specifying the <code>pagination.total</code> property with a value of <code>true</code>.</p>
+</div>
+<div>
+<p>The service is free to honour this request. If it chooses to do so, it returns the total count as the <code>pagination.total</code> property in the response.</p>
+</div>
+</div>
+</div>
+<div>
+<h3 id="user-content-deletion-of-a-resource">
+<a aria-hidden="true" class="anchor" href="#deletion-of-a-resource" id="user-content-deletion-of-a-resource"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Deletion of a resource</h3>
+<div>
+<ul>
+<li>
+<p><strong>HTTP Method</strong>: <code>DELETE</code></p>
+</li>
+<li>
+<p><strong>URL example</strong>: <code>/products/123</code></p>
+</li>
+</ul>
+</div>
+<div>
+<p>For deletion of a single resource, embed the <code>identifier</code> of the resource in the URL (for example <code>/products/123</code>).</p>
+</div>
+</div>
+<div>
+<h3 id="user-content-error-results">
+<a aria-hidden="true" class="anchor" href="#error-results" id="user-content-error-results"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Error results</h3>
+<div>
+<p>The general format for returning an error to the client is as follows:</p>
+</div>
+<div>
+<div>
+<div class="highlight highlight-source-js"><pre>{
+    <span class="pl-s"><span class="pl-pds">"</span>message<span class="pl-pds">"</span></span><span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">"</span>A human-readable message describing the error<span class="pl-pds">"</span></span>,
+    <span class="pl-s"><span class="pl-pds">"</span>code<span class="pl-pds">"</span></span><span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">"</span>A code identifying the concrete error<span class="pl-pds">"</span></span>,
+    <span class="pl-s"><span class="pl-pds">"</span>uuid<span class="pl-pds">"</span></span><span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">"</span>An identifier (generally the correlation id) to help identify corresponding requests in logs<span class="pl-pds">"</span></span>
+}</pre></div>
+</div>
+</div>
+<div>
+<p>If the error is caused by a failed validation of the entity, the above format is extended to also include the list of individual validation errors:</p>
+</div>
+<div>
+<div>
+<div class="highlight highlight-source-js"><pre>{
+    <span class="pl-s"><span class="pl-pds">"</span>message<span class="pl-pds">"</span></span><span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">"</span>A human-readable message describing the error<span class="pl-pds">"</span></span>,
+    <span class="pl-s"><span class="pl-pds">"</span>code<span class="pl-pds">"</span></span><span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">"</span>A code identifying the concrete error<span class="pl-pds">"</span></span>,
+    <span class="pl-s"><span class="pl-pds">"</span>uuid<span class="pl-pds">"</span></span><span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">"</span>An identifier (generally the correlation id) to help identify corresponding requests in logs<span class="pl-pds">"</span></span>,
+    <span class="pl-s"><span class="pl-pds">"</span>errors<span class="pl-pds">"</span></span><span class="pl-k">:</span> {
+        <span class="pl-s"><span class="pl-pds">"</span>property failing validation<span class="pl-pds">"</span></span><span class="pl-k">:</span> [
+            <span class="pl-s"><span class="pl-pds">"</span>First error message on this property<span class="pl-pds">"</span></span>,
+            <span class="pl-s"><span class="pl-pds">"</span>Second error message on this property<span class="pl-pds">"</span></span>
+        ],
+        <span class="pl-c"><span class="pl-c">//</span> ....</span>
+    }
+}</pre></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div>
+<h2 id="user-content-rest-media-types">
+<a aria-hidden="true" class="anchor" href="#rest-media-types" id="user-content-rest-media-types"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>REST Media Types</h2>
+<div>
+<div>
+<p>The payload of a REST service can be in any format as REST by itself does not specify this. The most established ones that the OASP recommends are <a href="guide-xml">XML</a> and <a href="guide-json">JSON</a>. Follow these links for further details and guidance how to use them properly. <code>JAX-RS</code> and <code>CXF</code> properly support these formats (<code>MediaType.APPLICATION_JSON</code> and <code>MediaType.APPLICATION_XML</code> can be specified for <code>@Produces</code> or <code>@Consumes</code>). Try to decide for a single format for all services if possible and NEVER mix different formats in a service.</p>
+</div>
+</div>
+</div>
+<div>
+<h2 id="user-content-rest-testing">
+<a aria-hidden="true" class="anchor" href="#rest-testing" id="user-content-rest-testing"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>REST Testing</h2>
+<div>
+<div>
+<p>For testing REST services in general consult the <a href="guide-testing">testing guide</a>.</p>
+</div>
+<div>
+<p>For manual testing REST services there are browser plugins:</p>
+</div>
+<div>
+<ul>
+<li>
+<p>Firefox: <a href="https://addons.mozilla.org/en-US/firefox/addon/httprequester/" rel="nofollow">httprequester</a> (or <a href="https://addons.mozilla.org/en-US/firefox/addon/poster/" rel="nofollow">poster</a>)</p>
+</li>
+<li>
+<p>Chrome: <a href="http://www.getpostman.com/" rel="nofollow">postman</a> (<a href="https://chrome.google.com/webstore/detail/advanced-rest-client/hgmloofddffdnphfgcellkdfbfbjeloo" rel="nofollow">advanced-rest-client</a>)</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div>
+<h2 id="user-content-security">
+<a aria-hidden="true" class="anchor" href="#security" id="user-content-security"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Security</h2>
+<div>
+<div>
+<p>Your services are the major entry point to your application. Hence security considerations are important here.</p>
+</div>
+<div>
+<h3 id="user-content-csrf">
+<a aria-hidden="true" class="anchor" href="#csrf" id="user-content-csrf"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>CSRF</h3>
+<div>
+<p>A common security threat is <a href="https://www.owasp.org/index.php/Top_10_2013-A8-Cross-Site_Request_Forgery_(CSRF)" rel="nofollow">CSRF</a> for REST services. Therefore all REST operations that are performing modifications (PUT, POST, DELETE, etc. - all except GET) have to be secured against CSRF attacks. In OASP4J we are using spring-security that already solves CSRF token generation and verification. The integration is part of the application template as well as the sample-application.</p>
+</div>
+<div>
+<p>For testing in development environment the CSRF protection can be disabled using the JVM option <code>-DCsrfDisabled=true</code> when starting the application.</p>
+</div>
+</div>
+<div>
+<h3 id="user-content-json-top-level-arrays">
+<a aria-hidden="true" class="anchor" href="#json-top-level-arrays" id="user-content-json-top-level-arrays"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>JSON top-level arrays</h3>
+<div>
+<p>OWASP suggests to prevent returning JSON arrays at the top-level, to prevent attacks (see <a href="https://www.owasp.org/index.php/OWASP_AJAX_Security_Guidelines" rel="nofollow">https://www.owasp.org/index.php/OWASP_AJAX_Security_Guidelines</a>). However, no rationale is given at OWASP. We digged deep and found <a href="http://haacked.com/archive/2008/11/20/anatomy-of-a-subtle-json-vulnerability.aspx/" rel="nofollow">anatomy-of-a-subtle-json-vulnerability</a>. To sum it up the attack is many years old and does not work in any recent or relevant browser. Hence it is fine to use arrays as top-level result in a JSON REST service (means you can return <code>List&lt;Foo&gt;</code> in a Java JAX-RS service).</p>
+</div>
+</div>
+</div>
+</div>
+        </div>
+
+        <div class="wiki-footer gollum-markdown-content boxed-group" id="wiki-footer">
+          <div class="boxed-group-inner wiki-auxiliary-content markdown-body">
+            <p><a href="http://creativecommons.org/licenses/by-nd/4.0/" rel="nofollow"><img alt="Creative Commons License Agreement" data-canonical-src="http://i.creativecommons.org/l/by-nd/4.0/88x31.png" src="https://camo.githubusercontent.com/171d004f9ccb9199e35ac8ec3d99ede916037a9f/687474703a2f2f692e6372656174697665636f6d6d6f6e732e6f72672f6c2f62792d6e642f342e302f38387833312e706e67"/></a><br/><span>This documentation</span> is licensed under the <a href="http://creativecommons.org/licenses/by-nd/4.0/" rel="nofollow">Creative Commons License (Attribution-NoDerivatives 4.0 International)</a>.</p>
+
+          </div>
+        </div>
+    </div>]

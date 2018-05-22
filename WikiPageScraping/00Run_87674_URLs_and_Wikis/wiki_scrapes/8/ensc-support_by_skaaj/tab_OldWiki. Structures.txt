@@ -1,0 +1,93 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>Que faut-il savoir sur les structures ?</p>
+<ul>
+<li>Elles permettent d'encapsuler d'autres variables.</li>
+<li>Elles sont de types valeurs (cf. <a href="https://github.com/skaaj/ensc-support/wiki/Fonctions">Fonctions</a>)</li>
+</ul>
+<p>Comment fonctionnent-elles ?</p>
+<div class="highlight highlight-source-cs"><pre><span class="pl-k">public</span> <span class="pl-k">class</span> <span class="pl-en">Program</span>
+{
+    <span class="pl-k">struct</span> <span class="pl-en">Personne</span>
+    {
+        <span class="pl-k">public</span> <span class="pl-k">string</span> <span class="pl-smi">prenom</span>; <span class="pl-c"><span class="pl-c">//</span> N'oubliez pas d'ajouter "public"</span>
+        <span class="pl-k">public</span> <span class="pl-k">string</span> <span class="pl-smi">nom</span>;
+        <span class="pl-k">public</span> <span class="pl-k">int</span> <span class="pl-smi">age</span>;
+    }
+
+    <span class="pl-k">static</span> <span class="pl-k">void</span> <span class="pl-en">Main</span>(<span class="pl-k">string</span>[] <span class="pl-smi">args</span>)
+    {
+        <span class="pl-c"><span class="pl-c">//</span> 1. Instanciation</span>
+        <span class="pl-c"><span class="pl-c">//</span> 1.1 En utilisant "new"</span>
+        <span class="pl-en">Personne</span> <span class="pl-smi">p1</span> <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-en">Personne</span>();
+        <span class="pl-c"><span class="pl-c">//</span> p1 est remplit avec les valeurs par défaut des types:</span>
+        <span class="pl-c"><span class="pl-c">//</span>    prenom = "" | car c'est un string</span>
+        <span class="pl-c"><span class="pl-c">//</span>    nom = ""    | idem</span>
+        <span class="pl-c"><span class="pl-c">//</span>    age = 0     |car c'est un entier</span>
+        <span class="pl-en">AfficherPersonne</span>(<span class="pl-smi">p1</span>); <span class="pl-c"><span class="pl-c">//</span> Affiche : "  0 ans"</span>
+        <span class="pl-c"><span class="pl-c">//</span> 1.2 En assignant tous les champs</span>
+        <span class="pl-en">Personne</span> <span class="pl-smi">p2</span>;
+        <span class="pl-smi">p2</span>.<span class="pl-smi">prenom</span> <span class="pl-k">=</span> <span class="pl-s"><span class="pl-pds">"</span>Benjamin<span class="pl-pds">"</span></span>; <span class="pl-c"><span class="pl-c">//</span> On accède aux variables encapsulée en utilisant un point (".")</span>
+        <span class="pl-smi">p2</span>.<span class="pl-smi">nom</span>    <span class="pl-k">=</span> <span class="pl-s"><span class="pl-pds">"</span>Denom<span class="pl-pds">"</span></span>;
+        <span class="pl-smi">p2</span>.<span class="pl-smi">age</span>    <span class="pl-k">=</span> <span class="pl-c1">22</span>;
+        <span class="pl-en">AfficherPersonne</span>(<span class="pl-smi">p2</span>); <span class="pl-c"><span class="pl-c">//</span> Affiche : "Benjamin Denom 22 ans"</span>
+
+        <span class="pl-c"><span class="pl-c">//</span> 2. Exemple d'utilisation</span>
+        <span class="pl-c"><span class="pl-c">//</span> 2.1 Exemple simple</span>
+        <span class="pl-en">Anniversaire</span>(<span class="pl-k">ref</span> <span class="pl-smi">p2</span>); <span class="pl-c"><span class="pl-c">//</span> On oublie pas le "ref" car une structure est un type valeur !</span>
+        <span class="pl-en">AfficherPersonne</span>(<span class="pl-smi">p2</span>); <span class="pl-c"><span class="pl-c">//</span> Affiche : "Benjamin Denom 23 ans"</span>
+            
+        <span class="pl-c"><span class="pl-c">//</span> 2.2 Chargement depuis un fichier</span>
+        <span class="pl-c"><span class="pl-c">//</span> Admettons qu'on ait un fichier "personnes.csv" ayant ce contenu :</span>
+        <span class="pl-c"><span class="pl-c">//</span>   PRENOM;NOM;AGE</span>
+        <span class="pl-c"><span class="pl-c">//</span>   Benjamin;Denom;22</span>
+        <span class="pl-c"><span class="pl-c">//</span>   Random;Dude;85</span>
+        <span class="pl-c"><span class="pl-c">//</span> On souhaite le stocker dans notre programme</span>
+
+        <span class="pl-k">string</span>[] <span class="pl-smi">lignes</span> <span class="pl-k">=</span> <span class="pl-smi">System</span>.<span class="pl-smi">IO</span>.<span class="pl-smi">File</span>.<span class="pl-en">ReadAllLines</span>(<span class="pl-s"><span class="pl-pds">"</span>../../personnes.csv<span class="pl-pds">"</span></span>);
+        <span class="pl-c"><span class="pl-c">//</span> On a nos lignes brutes mais on aimerait mieux structurer nos données grâce aux ...</span>
+        <span class="pl-c"><span class="pl-c">//</span> ... structures.</span>
+        <span class="pl-en">Personne</span>[] <span class="pl-smi">personnes</span> <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-en">Personne</span>[<span class="pl-smi">lignes</span>.<span class="pl-smi">Length</span> <span class="pl-k">-</span> <span class="pl-c1">1</span>]; <span class="pl-c"><span class="pl-c">//</span> - 1 car on ne veut pas garder l'entête "PRENOM;NOM;AGE"</span>
+        <span class="pl-k">for</span> (<span class="pl-k">int</span> <span class="pl-smi">i</span> <span class="pl-k">=</span> <span class="pl-c1">1</span>; <span class="pl-smi">i</span> <span class="pl-k">&lt;</span> <span class="pl-smi">lignes</span>.<span class="pl-smi">Length</span>; <span class="pl-smi">i</span><span class="pl-k">++</span>) <span class="pl-c"><span class="pl-c">//</span> de même, on ne commence pas à 0 mais 1 pour éviter l'entête</span>
+        {
+            <span class="pl-c"><span class="pl-c">//</span>  D'abord on découpe notre ligne comme ceci :</span>
+            <span class="pl-k">string</span>[] <span class="pl-smi">ligneDecoupee</span> <span class="pl-k">=</span> <span class="pl-smi">lignes</span>[<span class="pl-smi">i</span>].<span class="pl-en">Split</span>(<span class="pl-s">';'</span>); <span class="pl-c"><span class="pl-c">//</span> On découpe notre ligne grâce au caractère séparateur ";"</span>
+            <span class="pl-c"><span class="pl-c">//</span> Ici ligneDecoupee vaut quelque chose comme </span>
+            <span class="pl-c"><span class="pl-c">//</span>   [0] = "Random"</span>
+            <span class="pl-c"><span class="pl-c">//</span>   [1] = "Dude"</span>
+            <span class="pl-c"><span class="pl-c">//</span>   [2] = "85"</span>
+
+            <span class="pl-c"><span class="pl-c">//</span> On a plus qu'à mettre à jour notre i-ème personne</span>
+            <span class="pl-c"><span class="pl-c">//</span> Attention, on itère sur i et comme on commence à un pour enlever l'entête</span>
+            <span class="pl-c"><span class="pl-c">//</span> on doit enlever 1 ici pour ne pas dépasser notre tableau de personnes (qui est d'une case plus petit que le tableau lignes)</span>
+            <span class="pl-smi">personnes</span>[<span class="pl-smi">i</span> <span class="pl-k">-</span> <span class="pl-c1">1</span>].<span class="pl-smi">prenom</span> <span class="pl-k">=</span> <span class="pl-smi">ligneDecoupee</span>[<span class="pl-c1">0</span>];
+            <span class="pl-smi">personnes</span>[<span class="pl-smi">i</span> <span class="pl-k">-</span> <span class="pl-c1">1</span>].<span class="pl-smi">nom</span>    <span class="pl-k">=</span> <span class="pl-smi">ligneDecoupee</span>[<span class="pl-c1">1</span>];
+            <span class="pl-smi">personnes</span>[<span class="pl-smi">i</span> <span class="pl-k">-</span> <span class="pl-c1">1</span>].<span class="pl-smi">age</span>    <span class="pl-k">=</span> <span class="pl-smi">int</span>.<span class="pl-en">Parse</span>(<span class="pl-smi">ligneDecoupee</span>[<span class="pl-c1">2</span>]); <span class="pl-c"><span class="pl-c">//</span> on oublie pas de transformer notre string "22" en un entier 22</span>
+        }
+
+        <span class="pl-c"><span class="pl-c">//</span> À cet endroit du code on a bien chargé notre fichier de personnes dans un tableau de "Personne"</span>
+        <span class="pl-c"><span class="pl-c">//</span> L'avantage est qu'on a pas un tableau par colonne (prénoms, noms, ages)</span>
+        <span class="pl-c"><span class="pl-c">//</span> Par exemple si je veux afficher le prénom de la deuxième personne il me suffit de faire :</span>
+        <span class="pl-smi">Console</span>.<span class="pl-en">WriteLine</span>(<span class="pl-smi">personnes</span>[<span class="pl-c1">1</span>].<span class="pl-smi">prenom</span>); <span class="pl-c"><span class="pl-c">//</span> Affiche : "Random"</span>
+        <span class="pl-c"><span class="pl-c">//</span> Et si c'est son anniversaire :</span>
+        <span class="pl-en">Anniversaire</span>(<span class="pl-k">ref</span> <span class="pl-smi">personnes</span>[<span class="pl-c1">1</span>]);
+        <span class="pl-en">AfficherPersonne</span>(<span class="pl-smi">personnes</span>[<span class="pl-c1">1</span>]); <span class="pl-c"><span class="pl-c">//</span> Affiche : "Random Dude 86 ans"</span>
+
+        <span class="pl-smi">Console</span>.<span class="pl-en">ReadLine</span>();
+    }
+
+    <span class="pl-k">static</span> <span class="pl-k">void</span> <span class="pl-en">Anniversaire</span>(<span class="pl-k">ref</span> <span class="pl-en">Personne</span> <span class="pl-smi">p</span>)
+    {
+        <span class="pl-smi">p</span>.<span class="pl-smi">age</span><span class="pl-k">++</span>;
+    }
+
+    <span class="pl-k">static</span> <span class="pl-k">void</span> <span class="pl-en">AfficherPersonne</span>(<span class="pl-en">Personne</span> <span class="pl-smi">p</span>)
+    {
+        <span class="pl-smi">Console</span>.<span class="pl-en">WriteLine</span>(<span class="pl-smi">p</span>.<span class="pl-smi">prenom</span> <span class="pl-k">+</span> <span class="pl-s">' '</span> <span class="pl-k">+</span> <span class="pl-smi">p</span>.<span class="pl-smi">nom</span> <span class="pl-k">+</span> <span class="pl-s">' '</span> <span class="pl-k">+</span> <span class="pl-smi">p</span>.<span class="pl-smi">age</span> <span class="pl-k">+</span> <span class="pl-s"><span class="pl-pds">"</span> ans<span class="pl-pds">"</span></span>);
+    }
+}</pre></div>
+<p>Le code est disponible dans le repository associé à ce wiki.</p>
+
+        </div>
+
+    </div>]

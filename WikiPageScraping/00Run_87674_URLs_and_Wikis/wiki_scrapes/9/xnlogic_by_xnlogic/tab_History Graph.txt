@@ -1,0 +1,51 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>xnlogic allows you to get a snapshot of your data at any point in time.
+And it does it efficiently!</p>
+<ul>
+<li>Built on top of the <a href="http://www.datomic.com/" rel="nofollow">Datomic</a> database.</li>
+<li>Integrates with external big-data stores to support analytics on large-scale systems.</li>
+</ul>
+<h2>
+<a aria-hidden="true" class="anchor" href="#the-history-graph" id="user-content-the-history-graph"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>The History Graph</h2>
+<p>We can get a reference to the history graph from the application.</p>
+<div class="highlight highlight-source-ruby"><pre>jruby<span class="pl-k">-</span><span class="pl-c1">1.7</span>.<span class="pl-c1">16</span> :<span class="pl-c1">098</span> <span class="pl-k">&gt;</span> hg <span class="pl-k">=</span> app.history_graph</pre></div>
+<p>Since the history graph is just like any other Pacer graph, we can query it as usual:</p>
+<div class="highlight highlight-source-ruby"><pre>jruby<span class="pl-k">-</span><span class="pl-c1">1.7</span>.<span class="pl-c1">16</span> :<span class="pl-c1">099</span> <span class="pl-k">&gt;</span> sam <span class="pl-k">=</span> hg.v(<span class="pl-c1">M</span>::<span class="pl-c1">Student</span>, <span class="pl-c1">name:</span> <span class="pl-s"><span class="pl-pds">'</span>Sam<span class="pl-pds">'</span></span>).first
+ =&gt; <span class="pl-c"><span class="pl-c">#</span>&lt;V[73] Sam&gt; </span></pre></div>
+<h2>
+<a aria-hidden="true" class="anchor" href="#the-pacertemporal-extension" id="user-content-the-pacertemporal-extension"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>The <code>Pacer::Temporal</code> extension</h2>
+<p>In order to view historic data, we will need to extend vertices with the <code>Pacer::Temporal</code> extension:</p>
+<div class="highlight highlight-source-ruby"><pre>jruby<span class="pl-k">-</span><span class="pl-c1">1.7</span>.<span class="pl-c1">16</span> :<span class="pl-c1">100</span> <span class="pl-k">&gt;</span> sam <span class="pl-k">=</span> hg.v(<span class="pl-c1">M</span>::<span class="pl-c1">Student</span>, <span class="pl-c1">Pacer</span>::<span class="pl-c1">Temporal</span>, <span class="pl-c1">name:</span> <span class="pl-s"><span class="pl-pds">'</span>Sam<span class="pl-pds">'</span></span>).first
+ =&gt; <span class="pl-c"><span class="pl-c">#</span>&lt;V[73] Sam&gt; </span></pre></div>
+<p><code>Pacer::Temporal</code> extends vertices with the following methods:</p>
+<ul>
+<li><code>transaction</code></li>
+<li><code>previous_transaction</code></li>
+<li><code>next_transaction</code></li>
+<li><code>first_transaction</code></li>
+</ul>
+<p>All of these methods return a transaction object (or nil).
+Let's see how we can use these transaction objects to access historic data.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#accessing-historic-data" id="user-content-accessing-historic-data"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Accessing historic data</h2>
+<p>The following queries indicate that the last transaction to affect Sam occurred on Jan 14 2015 at 2:04 pm. We can also see that Sam is currently not enrolled in any courses.</p>
+<div class="highlight highlight-source-ruby"><pre>jruby<span class="pl-k">-</span><span class="pl-c1">1.7</span>.<span class="pl-c1">16</span> :<span class="pl-c1">106</span> <span class="pl-k">&gt;</span> sam.transaction
+ =&gt; <span class="pl-c"><span class="pl-c">#</span>&lt;McFly [2015-01-14 14:04:07 -0500] CLIENT_NAME&gt;</span>
+
+jruby<span class="pl-k">-</span><span class="pl-c1">1.7</span>.<span class="pl-c1">16</span> :<span class="pl-c1">112</span> <span class="pl-k">&gt;</span> sam.courses
+<span class="pl-c1">Total:</span> <span class="pl-c1">0</span></pre></div>
+<p>Using <code>previous_transaction</code> we can see that, on January 14 2015 at 2:13 pm, Sam was enrolled in the Graph Theory course:</p>
+<div class="highlight highlight-source-ruby"><pre>jruby<span class="pl-k">-</span><span class="pl-c1">1.7</span>.<span class="pl-c1">16</span> :<span class="pl-c1">113</span> <span class="pl-k">&gt;</span> t <span class="pl-k">=</span> sam.previous_transaction
+ =&gt; <span class="pl-c"><span class="pl-c">#</span>&lt;McFly [2015-01-14 14:03:09 -0500] CLIENT_NAME&gt; </span>
+
+jruby<span class="pl-k">-</span><span class="pl-c1">1.7</span>.<span class="pl-c1">16</span> :<span class="pl-c1">114</span> <span class="pl-k">&gt;</span> sam.at_time(t.time).courses
+<span class="pl-c"><span class="pl-c">#</span>&lt;V[76] Graph Theory&gt;</span>
+<span class="pl-c1">Total:</span> <span class="pl-c1">1</span></pre></div>
+<p>Notice that the <code>at_time</code> method can be applied to a single vertex, as well as a route of vertices:</p>
+<div class="highlight highlight-source-ruby"><pre>jruby<span class="pl-k">-</span><span class="pl-c1">1.7</span>.<span class="pl-c1">16</span> :<span class="pl-c1">130</span> <span class="pl-k">&gt;</span> hg.v(<span class="pl-c1">M</span>::<span class="pl-c1">Student</span>, <span class="pl-c1">Pacer</span>::<span class="pl-c1">Temporal</span>).at_time(t.time)
+<span class="pl-c"><span class="pl-c">#</span>&lt;V[71] Johnny&gt;   #&lt;V[73] Sam&gt;      #&lt;V[72] Michelle&gt;</span></pre></div>
+
+        </div>
+
+    </div>]

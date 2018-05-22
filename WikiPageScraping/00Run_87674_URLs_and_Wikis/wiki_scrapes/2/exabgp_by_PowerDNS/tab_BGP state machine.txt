@@ -1,0 +1,28 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p><a href="http://www.netcraftsmen.net/resources/archived-articles/384.html" rel="nofollow">Reference</a></p>
+<p><strong>1. Idle</strong></p>
+<p>Waiting for Start event, normally initiated by operator (establishing new BGP session or resetting an existing session). After errors, BGP falls back to the Idle state.</p>
+<p>After a Start event, BGP initializes, resets connect retry timer, initiates TCP transport connection, and listens for connections initiated by a remote peer.</p>
+<hr/>
+<p><strong>2. Connect</strong></p>
+<p>BGP is waiting for transport protocol connection to complete. If TCP transport succeeds, transition to State 4, OpenSent, and send OPEN. If not, transition to Active. If the connect retry timer expires, remain in Connect, reset the timer, and initiate a transport connection. In case of any other event, transition back to Idle.</p>
+<hr/>
+<p><strong>3. Active</strong></p>
+<p>BGP is trying to initiate a transport protocol connection and acquire a peer. If successful, transition to OpenSent and send OPEN. If connect retry expires, restart the timer and fall back to the Connect state. Also actively listen for connection by another peer. Go back to idle in case of other events.</p>
+<p>Connect to Active flip-flops indicates a TCP transport problem, e.g. TCP retransmissions or unreachability of a peer.</p>
+<hr/>
+<p><strong>4. OpenSent</strong></p>
+<p>BGP is waiting for an OPEN message from its peer. When one is received, it is checked for correctness (version number, AS number, password). If not correct, an error NOTIFICATION is sent and the system goes to Idle. If no error, then send KEEPALIVE and reset the keepalive timer. Negotiate hold time, smaller value wins. If zero, hold timer and keepalive timer are not restarted.</p>
+<p>This state is where EBGP versus IBGP is determined, based on AS number.</p>
+<hr/>
+<p><strong>5. OpenConfirm</strong></p>
+<p>BGP waits for KEEPALIVE or NOTIFICATION. If KEEPALIVE is received, transition to Established. If UPDATE or KEEPALIVE is received, restart the hold timer (unless the negotiated hold time is zero). If NOTIFICATION is received, transition to Idle.</p>
+<p>Periodic KEEPALIVE messages are sent. If transport disconnect is received, transition to Idle. If an error occurs, send a NOTIFICATION with error code, then go to Idle.</p>
+<hr/>
+<p><strong>6. Established</strong></p>
+<p>This is the final stage of neighbor negotiation. BGP exchanges updates with its peers. If a NOTIFICATION is received, the system transitions to Idle. Updates are checked for errors. If an error is found, a NOTIFICATION is sent, and the system goes to Idle. In case of hold time expiration, disconnect by transport, Stop event received, or other such events, the system falls back to Idle.</p>
+
+        </div>
+
+    </div>]

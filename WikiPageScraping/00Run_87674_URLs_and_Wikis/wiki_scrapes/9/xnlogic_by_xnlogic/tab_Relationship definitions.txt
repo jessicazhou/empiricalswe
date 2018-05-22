@@ -1,0 +1,141 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>Relationships in XN are represented as edges in the graph.<br/>
+Since edges are directed, we need to specify the direction of the relation. We can specify four types of relations:</p>
+<ul>
+<li>One to one</li>
+<li>One to Many</li>
+<li>Many to one</li>
+<li>Many to Many</li>
+</ul>
+<h2>
+<a aria-hidden="true" class="anchor" href="#basic-example" id="user-content-basic-example"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Basic Example</h2>
+<pre><code>module User
+  # ...
+  to_many :Message
+end
+
+module Message
+  # ...
+  from_one :User
+end
+</code></pre>
+<p>In the example above, we declared a one-to-many relation between Users and Messages.
+Note that we must declare the related part as a symbol, to avoid circular dependencies.
+Let's see how we might use this relation.</p>
+<p>Get a single user's messages</p>
+<pre><code>g.v(User).first.messages
+</code></pre>
+<p>Get a single message's user</p>
+<pre><code>g.v(Message).first.user
+</code></pre>
+<p>Before we move on, let's see exactly what happened here.</p>
+<ul>
+<li>In the <code>User</code> module, we have declared <code>to_many :Message</code>.</li>
+<li>XN automatically extends the <code>User</code> part (i.e. every vertex that is wrapped with a <code>User</code> extension) with a <code>messages</code> method.
+<ul>
+<li>The name of the method is determined by converting the related part's name to lower-case (and changing CamelCase to underscore_separated_words)</li>
+<li>Notice that, since a user has a relation to many messages, XN defines the method <code>messages</code> and not <code>message</code>.</li>
+</ul>
+</li>
+<li>On the other hand, since a message has a relation to one user, XN extends the <code>Message</code> part with a <code>user</code> method.</li>
+</ul>
+<p>We can follow relations from a route (i.e. collection of elements), not just a single element.<br/>
+For example, getting messages from all users.</p>
+<pre><code>g.v(User).messages
+</code></pre>
+<p>Or, getting users from all messages</p>
+<pre><code>g.v(Message).users
+</code></pre>
+<h4>
+<a aria-hidden="true" class="anchor" href="#plural-inflection" id="user-content-plural-inflection"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Plural inflection</h4>
+<p>Notice that in the second example, we use the plural version <code>users</code>, instead of <code>user</code>. That is because <code>g.v(Message)</code> is a route, that possibly contains multiple messages, so we expect to get a</p>
+<p>The table below summarizes the way XN uses relation definition to extend elements and routes.</p>
+<table>
+<thead>
+<tr>
+<th>Relation</th>
+<th>Method Name (for a vertex)</th>
+<th>Method Name (for a route)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>to_many :RelatedPart</code></td>
+<td><code>related_parts</code></td>
+<td><code>related_parts</code></td>
+</tr>
+<tr>
+<td><code>to_one :RelatedPart</code></td>
+<td><code>related_part</code></td>
+<td><code>related_parts</code></td>
+</tr>
+</tbody>
+</table>
+<h2>
+<a aria-hidden="true" class="anchor" href="#named-relations" id="user-content-named-relations"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Named Relations</h2>
+<p>What if we want to have different relations between users and messages?<br/>
+For example, we want to maintain a relation between a user and the messages they posted,
+but we may also want to maintain a relation between a user and the messages they liked.<br/>
+As you might expect, XN lets you define a name for each relation.</p>
+<p>Let's update our example ...</p>
+<pre><code>module User
+  # ...
+  to_many :Message, to: :posted
+  to_many :Message, to: :liked
+  
+end
+
+module Message
+  # ...
+  from_one :User, to: :posted
+  from_many :Message, to: :liked
+end
+</code></pre>
+<p>The <code>to</code> argument is used by XN to match the to-relation with the corresponding from-relation.</p>
+<p>In this case, we do not want XN to inflect plural form on the generated method names, so we can do the following:</p>
+<pre><code>ActiveSupport::Inflector.inflections do |inflect|
+    inflect.uncountable 'posted'
+    inflect.uncountable 'liked'
+end
+</code></pre>
+<p>Let's see how we can use our named relations.</p>
+<pre><code># Get a single user
+u = g.v(User).first
+# Get all messages posted by u
+u.posted
+# Get all users who liked a message that was posted by u
+u.posted.liked.uniq
+# Get all of the message that they posted
+u.posted.liked.uniq.posted
+</code></pre>
+<p>There is one problem with the code above - Using the same name for the from-relation and the to-relation is not ideal. Let's fix this problem.</p>
+<pre><code>module User
+  # ...
+  to_many :Message, to: :posted
+  to_many :Message, to: :liked
+  
+end
+
+module Message
+  # ...
+  from_one :User, to: :posted, from: posted_by
+  from_many :Message, to: :liked, from: liked_by
+end
+</code></pre>
+<p>Notice that XN still needs to be able to match a to-relation with the corresponding from-relation, and it uses the <code>to</code> argument for that. The <code>from</code> argument is just a convenient alias.<br/>
+With this change, our example from before becomes</p>
+<pre><code>u.posted.liked_by.uniq.posted
+</code></pre>
+<p>Here are a few other example.</p>
+<pre><code># Messages that were liked by someone who liked one of u's posts
+u.posted.liked_by.uniq.liked
+# Messages that were liked by someone who posted a message that u likes
+u.liked.posted_by.liked
+# Users who liked a message that u likes
+u.liked.liked_by.uniq
+</code></pre>
+
+        </div>
+
+    </div>]

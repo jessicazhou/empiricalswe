@@ -1,0 +1,236 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <h1>
+<a aria-hidden="true" class="anchor" href="#vector-data-representation-for-webgl" id="user-content-vector-data-representation-for-webgl"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Vector data representation for WebGL</h1>
+<h2>
+<a aria-hidden="true" class="anchor" href="#introduction" id="user-content-introduction"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Introduction</h2>
+<p>WebGL provides access to the GPU.  GPUs are very different to CPUs: GPUs are effectively massively parallel SIMD processors. That this, they apply the same instruction to multiple data.  Not just to exploit the high performance on large vector data sets that WebGL enables, but simply to get reasonable performance even on small vector data sets, it is necessary to structure the vector data so that it can be consumed effectively by the GPU.  These same strucures will likely also have a small but positive effect on performance of canvas-based renderers.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#how-webgl-renders" id="user-content-how-webgl-renders"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>How WebGL renders</h2>
+<p>WebGL is a low-level API.  It is only capable of drawing circular points, 1-pixel wide lines, and triangles.  In all but the most trivial cases, every geometry type must be converted into triangles before it is drawn.  For example, to draw a line, it is converted into a long thin rectangle, which is then cut into two triangles.</p>
+<p>WebGL is designed for batch processing of tens of thousands of triangles with each call.  The overhead of each call is non-trivial, and so drawing triangles one-by-one is extremely slow.  Before a triangle can be rendered by WebGL, it must first be copied to the graphics card memory, which is also a slow operation.  For data sets that do not change, WebGL provides a mechanism to copy the data once and then re-use them.</p>
+<p>The data must be structured to allow this batch processing.  Here is a worked example for two lines or rectangular polygon features, in pseudocode.  To simplify the explanation, the functions used in the pseudocode do not correspond exactly to indvidual WebGL functions, but instead represent how WebGL behaves.</p>
+<p>We represent each of our features as two triangles, and label the vertices:</p>
+<pre><code>A-----B  E-----F
+| \   |  | \   |
+|   \ |  |   \ |
+C-----D  G-----H
+</code></pre>
+<p>This contains four triangles: ABD, ACD, EFH, EGH</p>
+<p>We can render each triangle individually:</p>
+<div class="highlight highlight-source-js"><pre><span class="pl-k">function</span> <span class="pl-en">render</span>() {
+  <span class="pl-en">drawTriangle</span>(<span class="pl-c1">A</span>, <span class="pl-c1">B</span>, <span class="pl-c1">D</span>);
+  <span class="pl-en">drawTriangle</span>(<span class="pl-c1">A</span>, <span class="pl-c1">D</span>, <span class="pl-c1">C</span>);
+  <span class="pl-en">drawTriangle</span>(<span class="pl-c1">E</span>, <span class="pl-c1">F</span>, <span class="pl-c1">H</span>);
+  <span class="pl-en">drawTriangle</span>(<span class="pl-c1">E</span>, <span class="pl-c1">H</span>, <span class="pl-c1">G</span>);
+}</pre></div>
+<p>However, this has very poor performance: we pay the overhead of calling <code>drawTriangle</code> four times, and we copy all vertices to the graphics card memory every time we draw.</p>
+<p>An improvement is to pack all the vertices into a single array and pass this to WebGL to draw all four triangles with a single call:</p>
+<div class="highlight highlight-source-js"><pre><span class="pl-k">function</span> <span class="pl-en">render</span>() {
+  <span class="pl-en">drawTrianglesArray</span>([<span class="pl-c1">A</span>, <span class="pl-c1">B</span>, <span class="pl-c1">D</span>, <span class="pl-c1">A</span>, <span class="pl-c1">D</span>, <span class="pl-c1">C</span>, <span class="pl-c1">E</span>, <span class="pl-c1">F</span>, <span class="pl-c1">H</span>, <span class="pl-c1">E</span>, <span class="pl-c1">H</span>, <span class="pl-c1">G</span>]);
+}</pre></div>
+<p>WebGL automatically takes successive triples of vertices to define each coordinate.  Here we only pay the cost of calling <code>drawTrianglesArray</code> once, but the array is large and we still copy it to the graphics card memory every time we draw.</p>
+<p>The next step is to avoid passing duplicate vertices by passing two arrays: one containing the unique vertices, and the second containing a list of integer indexes into that array:</p>
+<div class="highlight highlight-source-js"><pre><span class="pl-k">function</span> <span class="pl-en">render</span>() {
+  <span class="pl-en">drawTriangles</span>({
+    vertices<span class="pl-k">:</span> [<span class="pl-c1">A</span>, <span class="pl-c1">B</span>, <span class="pl-c1">C</span>, <span class="pl-c1">D</span>, <span class="pl-c1">E</span>, <span class="pl-c1">F</span>, <span class="pl-c1">G</span>, <span class="pl-c1">H</span>],
+    indexes<span class="pl-k">:</span> [<span class="pl-c1">0</span>, <span class="pl-c1">1</span>, <span class="pl-c1">2</span>, <span class="pl-c1">0</span>, <span class="pl-c1">3</span>, <span class="pl-c1">2</span>, <span class="pl-c1">4</span>, <span class="pl-c1">5</span>, <span class="pl-c1">7</span>, <span class="pl-c1">4</span>, <span class="pl-c1">7</span>, <span class="pl-c1">6</span>]
+  });
+}</pre></div>
+<p>Here there is a single call.  Although it slightly more data is copied to the graphics card (indexes are 16-bit unsigned integers, and so half the size of 32-bit floats), the graphics card can be more efficient as it only needs to transform each unique vertex once.  When a vertex is shared between multiple triangles (as is the case when complex polygons are triangulated) this results in a significant speed-up, and also reduces the amount of memory that must be copied to the graphics card.</p>
+<p>Finally, we can avoid copying the data each time:</p>
+<div class="highlight highlight-source-js"><pre><span class="pl-k">var</span> indexArrayRef, vertexArrayRef;
+
+<span class="pl-k">function</span> <span class="pl-en">init</span>() {
+  <span class="pl-c"><span class="pl-c">//</span> copy data to GPU, return reference to copied array</span>
+  vertexArrayRef <span class="pl-k">=</span> <span class="pl-en">createVertexArray</span>([<span class="pl-c1">A</span>, <span class="pl-c1">B</span>, <span class="pl-c1">C</span>, <span class="pl-c1">D</span>, <span class="pl-c1">E</span>, <span class="pl-c1">F</span>, <span class="pl-c1">G</span>, <span class="pl-c1">H</span>]);
+  indexArrayRef <span class="pl-k">=</span> <span class="pl-en">createIndexArray</span>([<span class="pl-c1">0</span>, <span class="pl-c1">1</span>, <span class="pl-c1">2</span>, <span class="pl-c1">0</span>, <span class="pl-c1">3</span>, <span class="pl-c1">2</span>, <span class="pl-c1">4</span>, <span class="pl-c1">5</span>, <span class="pl-c1">7</span>, <span class="pl-c1">4</span>, <span class="pl-c1">7</span>, <span class="pl-c1">6</span>]);
+}
+
+<span class="pl-k">function</span> <span class="pl-en">render</span>() {
+  <span class="pl-en">drawTrianglesWithArrays</span>(vertexArrayRef, indexArrayRef);
+}</pre></div>
+<p>This has excellent performance: we copy the data to the graphics card only once, and we issue a single draw call to draw all the triangles.  Using this technique, WebGL can draw up to 65536 / 3 = 21845 triangles with a single call.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#styling" id="user-content-styling"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Styling</h2>
+<p>In the above example, all the triangles are drawn with the same style.  We can add extra arrays to contain styling information, e.g. color, so that each triangle is drawn in a different style.  Because of the way that WebGL works, we need to repeat the color for each vertex.  In pseudocode:</p>
+<div class="highlight highlight-source-js"><pre><span class="pl-k">var</span> indexArrayRef, vertexArrayRef, colorArrayRef;
+
+<span class="pl-k">function</span> <span class="pl-en">init</span>() {
+  <span class="pl-c"><span class="pl-c">//</span> copy data to GPU, return reference to copied array</span>
+  vertexArrayRef <span class="pl-k">=</span> <span class="pl-en">createVertexArray</span>([<span class="pl-c1">A</span>, <span class="pl-c1">B</span>, <span class="pl-c1">C</span>, <span class="pl-c1">D</span>, <span class="pl-c1">E</span>, <span class="pl-c1">F</span>, <span class="pl-c1">G</span>, <span class="pl-c1">H</span>]);
+  indexArrayRef <span class="pl-k">=</span> <span class="pl-en">createIndexArray</span>([<span class="pl-c1">0</span>, <span class="pl-c1">1</span>, <span class="pl-c1">2</span>, <span class="pl-c1">0</span>, <span class="pl-c1">3</span>, <span class="pl-c1">2</span>, <span class="pl-c1">4</span>, <span class="pl-c1">5</span>, <span class="pl-c1">7</span>, <span class="pl-c1">4</span>, <span class="pl-c1">7</span>, <span class="pl-c1">6</span>]);
+  colorArrayRef <span class="pl-k">=</span> <span class="pl-en">createColorArray</span>([<span class="pl-s"><span class="pl-pds">'</span>red<span class="pl-pds">'</span></span>, <span class="pl-s"><span class="pl-pds">'</span>red<span class="pl-pds">'</span></span>, <span class="pl-s"><span class="pl-pds">'</span>red<span class="pl-pds">'</span></span>, <span class="pl-s"><span class="pl-pds">'</span>green<span class="pl-pds">'</span></span>, <span class="pl-s"><span class="pl-pds">'</span>green<span class="pl-pds">'</span></span>, <span class="pl-s"><span class="pl-pds">'</span>green<span class="pl-pds">'</span></span>,
+                                    <span class="pl-s"><span class="pl-pds">'</span>blue<span class="pl-pds">'</span></span>, <span class="pl-s"><span class="pl-pds">'</span>blue<span class="pl-pds">'</span></span>, <span class="pl-s"><span class="pl-pds">'</span>blue<span class="pl-pds">'</span></span>, <span class="pl-s"><span class="pl-pds">'</span>white<span class="pl-pds">'</span></span>, <span class="pl-s"><span class="pl-pds">'</span>white<span class="pl-pds">'</span></span>, <span class="pl-s"><span class="pl-pds">'</span>white<span class="pl-pds">'</span></span>]);
+}
+
+<span class="pl-k">function</span> <span class="pl-en">render</span>() {
+  <span class="pl-en">drawTrianglesWithArraysAndColor</span>(vertexArrayRef, indexArrayRef, colorArrayRef);
+}</pre></div>
+<p>This demonstrates the principle of how per-triangle styles can be implemented.  Furthermore, if we change the style of an element, we only need to re-upload the color array to the GPU, allowing us to be responsive to style changes.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#performance-gains-for-non-webgl-renderers" id="user-content-performance-gains-for-non-webgl-renderers"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Performance gains for non-WebGL renderers</h2>
+<p>These same structures will bring performance benefits to non-WebGL renderers.  These include:</p>
+<ul>
+<li>the ability to batch feature drawing, including minimising changes in the canvas state</li>
+<li>efficient loops that can be optimized well by the JavaScript VM and access memory in a linear fashion</li>
+<li>if re-projection is required, then each unique vertex need only be transformed once</li>
+<li>hit-testing against polygonal features is easier if they are cut into triangles</li>
+</ul>
+<h2>
+<a aria-hidden="true" class="anchor" href="#efficiency-of-implementation" id="user-content-efficiency-of-implementation"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Efficiency of implementation</h2>
+<p>For efficiency, a good implementation should have the following properties:</p>
+<ul>
+<li>when parsing vector formats, the vertices should be stored directly in an array suitable for upload to the GPU</li>
+<li>when features or styles are modified, the changes should be tracked so that only the mimimum changes are uploaded to the graphics card</li>
+</ul>
+<h2>
+<a aria-hidden="true" class="anchor" href="#real-life-examples" id="user-content-real-life-examples"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Real life examples</h2>
+<p>These best practices are well demonstrated in Cesium's <a href="https://github.com/AnalyticalGraphicsInc/cesium/blob/master/Source/Scene/PolylineCollection.js">PolylineCollection</a> and <a href="https://github.com/AnalyticalGraphicsInc/cesium/blob/master/Source/Scene/BillboardCollection.js">BillboardCollection</a>.</p>
+<h1>
+<a aria-hidden="true" class="anchor" href="#concrete-implementation" id="user-content-concrete-implementation"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Concrete implementation</h1>
+<h2>
+<a aria-hidden="true" class="anchor" href="#objective" id="user-content-objective"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Objective</h2>
+<p>The objective of this section is to outline a vector data representation that will allow the implementation of efficient Canvas 2D and WebGL renderers.  "Efficient" in this context means:</p>
+<ul>
+<li>coordinates do not need to be copied into new data structures, the data structures are usable directly by both Canvas 2D and WebGL</li>
+<li>styling information does not need to be copied into data structures or re-calculated</li>
+<li>when geometries are added, updated, or deleted, the changes to the data structures are minimised</li>
+<li>when styles are updated, changes to the data structures are minimised</li>
+</ul>
+<p>This document primarily focuses on geometries, although some suggestions as to how styling can be implemented will be given.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#high-level-view" id="user-content-high-level-view"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>High level view</h2>
+<p>Canvas 2D is a sequential renderer: features are rendered one at a time, in sequence.  WebGL rendering is parallel: multiple features are rendered simultaneously.  Therefore, we store related geometries in "collections" that can be passed as a unit to the WebGL renderer, and trivially iterated over in the Canvas 2D renderer.  In general, all geometries in a collection will be of the same type (e.g. point, linestring, polygon).</p>
+<p>It remains to be decided how many collections are used.  As an initial guideline, a vector source will likely have one collection per type of geometry present in the source.</p>
+<p>A collection contains:</p>
+<ul>
+<li>Meta information about the type of geometry stored.</li>
+<li>An <code>Array.&lt;number&gt;</code> containing the raw, unpacked coordinates (e.g. <code>[x1, y1, x2, y2, ...]</code>), called the vertex array, length 2N where N is the number of coordinates.</li>
+<li>For linestring and polygon collections, an <code>Array.&lt;number&gt;</code> containing indexes 0..N-1 into the vertex array, whose length will vary according to the geometries present.</li>
+<li>One or more <code>Array.&lt;number&gt;</code>s containing cached styling information (e.g. line width, point size, color components).  For point collections, this will have as many elements as there are vertices.  For linestring and polygon collections, this will have as many elements as the index array.</li>
+<li>Further meta information to allow the extraction and modification of individual geometries in the collection.</li>
+</ul>
+<h2>
+<a aria-hidden="true" class="anchor" href="#reading-external-data" id="user-content-reading-external-data"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Reading external data</h2>
+<p>Format parsers should create collections directly, or extend existing collections.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#rendering-points" id="user-content-rendering-points"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Rendering points</h2>
+<p>Point collections contain a vertex array of unpacked coordinates and zero or more styling arrays.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#canvas-2d" id="user-content-canvas-2d"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Canvas 2D</h3>
+<p>The renderer loops over the vertex arrays, drawing points according to the contents of the styling array(s). Points are drawn in series.  The styling arrays can be used to avoid unnecessary canvas state changes.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#webgl" id="user-content-webgl"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>WebGL</h3>
+<p>The renderer uploads the vertex arrays and styling array(s) to the GPU, and tells the GPU to draw the points in parallel.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#rendering-linestrings" id="user-content-rendering-linestrings"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Rendering linestrings</h2>
+<p>A linestring collection contains multiple linestrings.  They contain a vertex array of unpacked coordinates, an index array for Canvas 2D, an index array for WebGL, and zero or more styling arrays. The WebGL-specific index array should be created only if needed. For example, consider the linestrings:</p>
+<pre><code>A
+ \   D----E
+  \
+   B---C 
+</code></pre>
+<p>In this case, the vertex array contains:</p>
+<pre><code>[Ax, Ay, Bx, By, Cx, Cy, Dx, Dy, Ex, Ey]
+</code></pre>
+<p>We populate the index array with successive pairs of start and stop indexes in the vertex array for each linestring.  That is, it contains a linestring using vertices [0..3) (i.e. A, B, C) and a linestring using vertices [3, 5) (i.e. D, E):</p>
+<pre><code>[0, 3, 3, 5]
+</code></pre>
+<h3>
+<a aria-hidden="true" class="anchor" href="#canvas-2d-1" id="user-content-canvas-2d-1"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Canvas 2D</h3>
+<p>The Canvas 2D renderer iterates over the pairs of indexes in the index array, drawing lines one by one. The style arrays can be used to avoid unnecessary state changes.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#webgl-1" id="user-content-webgl-1"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>WebGL</h3>
+<p>The following is subject to change as rendering styled lines in WebGL is non-trivial.</p>
+<h4>
+<a aria-hidden="true" class="anchor" href="#approach-1-rendering-simple-lines-with-a-single-style" id="user-content-approach-1-rendering-simple-lines-with-a-single-style"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Approach 1: rendering simple lines with a single style</h4>
+<p>WebGL can draw simple line segments.  Nominally these can be of any width, but practically only width 1 is widely supported.  We compute an index array with pairs of line vertices. For example:</p>
+<pre><code>[0, 1, 1, 2, 2, 3, 4, 5]
+</code></pre>
+<p>The vertex array and index arrays are uploaded to the GPU, and the line segments are drawn in parallel.</p>
+<h4>
+<a aria-hidden="true" class="anchor" href="#approach-2-rendering-lines-with-two-triangles" id="user-content-approach-2-rendering-lines-with-two-triangles"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Approach 2: rendering lines with two triangles</h4>
+<p>See <a href="http://www.codeproject.com/Articles/199525/Drawing-nearly-perfect-2D-line-segments-in-OpenGL" rel="nofollow">drawing nearly perfect 2D line segments in OpenGL</a> for one promising technique.  It may be possible to calculate the triangle vertices in the vertex shader, and therefore avoid having to calculate them in JavaScript.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#rendering-polygons" id="user-content-rendering-polygons"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Rendering polygons</h2>
+<p>A polygon collection contains multiple polygons.  Once again we use a common vertex array, and renderer-specific index arrays.  In this description, we do not consider polygons with holes, but this does not preclude the implementation of polygons with holes in the future.</p>
+<p>Consider the polygons:</p>
+<pre><code>A----B     E
+|    |    / \
+|    |   /   \
+D----C  G-----F
+</code></pre>
+<p>The vertex array contains the unpacked vertices:</p>
+<pre><code>[Ax, Ay, Bx, By, Cx, Cy, Dx, Dy, Ex, Ey, Fx, Fy, Gx, Gy]
+</code></pre>
+<p>During construction of polygon collection, we specify which vertices belong to which polygon:</p>
+<pre><code>[[0, 1, 2, 3], [4, 5, 6]]
+</code></pre>
+<p>These nested arrays can equivalently be represented as two arrays, the first containing the vertex indexes and the second containing successive pairs of ranges:</p>
+<pre><code>[0, 1, 2, 3, 4, 5, 6]
+[0, 4, 4, 7]
+</code></pre>
+<h3>
+<a aria-hidden="true" class="anchor" href="#canvas-2d-2" id="user-content-canvas-2d-2"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Canvas 2D</h3>
+<p>The canvas 2D renderer loops over the polygons, drawing them one by one.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#webgl-2" id="user-content-webgl-2"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>WebGL</h3>
+<p>As described above, the WebGL renderer will need to split polygons into triangles.  The polygons above would be split as:</p>
+<pre><code>A----B     E
+| \  |    / \
+|  \ |   /   \
+D----C  G-----F
+</code></pre>
+<p>We can re-use the existing vertex array and the triangulation step need only output a new index array in which successive triples of indexes represent triangles:</p>
+<pre><code>[0, 1, 2, 0, 2, 3, 4, 5, 6]
+</code></pre>
+<p>Note that a suitably advanced triangulation algorithm can cope with polygons with holes.</p>
+<p>We upload the vertex array, the index array and the styling arrays to the GPU, and WebGL draws the triangles in parallel.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#updating-geometries" id="user-content-updating-geometries"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Updating geometries</h2>
+<p>Vertex, index and style arrays only need to re-uploaded to the GPU if they change.  Re-scanning a geometry collection to see if anything has changed is clearly expensive and undesirable.  Therefore, a suitable API is needed to efficiently flag when the array elements have changed.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#extracting-the-original-geometries" id="user-content-extracting-the-original-geometries"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Extracting the original geometries</h2>
+<p>It is clearly necessary to be able to extract the original geometries from the collection, e.g. to be able to return them to the server as GeoJSON objects.  Necessary metadata needs to be stored in the collection to enable this.  Renderers, however, should use the arrays directly for efficiency.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#notes" id="user-content-notes"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Notes</h2>
+<h3>
+<a aria-hidden="true" class="anchor" href="#geometry-editing" id="user-content-geometry-editing"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Geometry editing</h3>
+<p>Typically a user will only edit one geometry at time, while the other geometries remain constant.  To avoid re-drawing all features while a single geometry is being changed, the following technique should work well:</p>
+<ol>
+<li>Temporarily disable the geometry in its collection.</li>
+<li>Add the geometry to a new collection (layer), containing only that geometry.</li>
+<li>While editing proceeds, only the collection (layer) containing the editable feature needs to be redrawn.</li>
+<li>When editing is complete, remove the temporary collection (layer) and re-insert the geometry in the original collection.</li>
+</ol>
+<p>This also has the nice side effect of ensuring that the edited feature is always on top.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#avoiding-floating-point-errors-in-webgl" id="user-content-avoiding-floating-point-errors-in-webgl"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Avoiding floating point errors in WebGL</h3>
+<p>WebGL internally uses 32-bit floating point values.  These are insufficiently precise for geographical coordinates.  A work around is to give each collection a local origin and make its coordinates relative to this local origin.</p>
+<p>The same technique could be used in the canvas renderer, allowing 32-bit floats to be used for geographical coordinates and therefore halving memory usage.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#garbage-collection" id="user-content-garbage-collection"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Garbage collection</h3>
+<p>Although this structure of arrays is more complex to manage, it places much less load on the garbage collector since there are far fewer objects created.  Good JavaScript implementations will recognize that the arrays only contain number values, and therefore not traverse them during the mark and sweep phase.  Contrast this with the GC impact of arrays of <code>ol.Coordinate</code>s.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#topojson" id="user-content-topojson"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>TopoJSON</h3>
+<p><a href="https://github.com/mbostock/topojson/">TopoJSON</a> uses shared vertices for significant speed and size improvements over GeoJSON.  It is not possible to take advantage TopoJSON without using a shared coordinate array.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#binary-representation-of-vector-data" id="user-content-binary-representation-of-vector-data"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Binary representation of vector data</h3>
+<p>As more and more vector features are added, the overhead of XML or JSON parsing can become significant.  Using <a href="https://developer.mozilla.org/en-US/docs/JavaScript/Typed_arrays/ArrayBuffer" rel="nofollow">ArrayBuffers</a>, it is possible to read vertex and index data directly into a typed array and therefore avoid all parsing overhead.  This is one of the techniques used by <a href="http://here.com/50.0508706,-1.3870925,4,0,0,3d.day" rel="nofollow">Here (Nokia) Maps 3D</a> to achieve such high performance.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#3d-terrain-and-models" id="user-content-3d-terrain-and-models"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>3D terrain and models</h3>
+<p>3D models, e.g. Triangular Irregular Network elevation tiles and buildings, are typically generated on the server and served to the client as an array of vertices and an array of triangle indexes.  With the above representation, the same vector representation can be used for 2D vector data, 3D models and terrain tiles.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#not-covered-in-this-document" id="user-content-not-covered-in-this-document"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Not covered in this document</h2>
+<ul>
+<li>howto handle polygons with holes</li>
+<li>how to structure metadata so that multipoints, multilinestrings and multipolygons can be extracted</li>
+<li>how to draw non-trivial lines in WebGL</li>
+<li>how to symbolize points with an image</li>
+<li>how to implement hit detection</li>
+</ul>
+
+        </div>
+
+    </div>]

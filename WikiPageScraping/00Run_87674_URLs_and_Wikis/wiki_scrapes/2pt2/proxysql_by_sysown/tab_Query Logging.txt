@@ -1,0 +1,47 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <h1>
+<a aria-hidden="true" class="anchor" href="#query-logging" id="user-content-query-logging"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Query Logging</h1>
+<p>proxySQL is able to log queries that pass through.  Logging is configured with Query Rules.  This allows very broad or granular logging.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#setup" id="user-content-setup"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Setup</h2>
+<p>First, enable logging globally</p>
+<div class="highlight highlight-source-sql"><pre><span class="pl-k">SET</span> mysql<span class="pl-k">-</span>eventslog_filename<span class="pl-k">=</span><span class="pl-s"><span class="pl-pds">'</span>queries.log<span class="pl-pds">'</span></span>;</pre></div>
+<p>The variable needs to be loaded at runtime, and eventually saved to disk:</p>
+<div class="highlight highlight-source-sql"><pre>LOAD MYSQL VARIABLES TO RUNTIME;
+SAVE MYSQL VARIABLES TO DISK;</pre></div>
+<p>Next, create query rules to match your logging desires.  If you need to Log ALL queries, a simple rule will work:</p>
+<div class="highlight highlight-source-sql"><pre><span class="pl-k">INSERT INTO</span> mysql_query_rules (rule_id, active, match_digest, log,apply) <span class="pl-k">VALUES</span> (<span class="pl-c1">1</span>,<span class="pl-c1">1</span>,<span class="pl-s"><span class="pl-pds">'</span>.<span class="pl-pds">'</span></span>,<span class="pl-c1">1</span>,<span class="pl-c1">0</span>);</pre></div>
+<p>If you don't trust Bob, you can log all of Bob's queries:</p>
+<div class="highlight highlight-source-sql"><pre><span class="pl-k">INSERT INTO</span> mysql_query_rules (rule_id, active, username, match_pattern, log,apply) <span class="pl-k">VALUES</span> (<span class="pl-c1">1</span>, <span class="pl-c1">1</span>, <span class="pl-s"><span class="pl-pds">'</span>Bob<span class="pl-pds">'</span></span>, <span class="pl-s"><span class="pl-pds">'</span>.<span class="pl-pds">'</span></span>, <span class="pl-c1">1</span>, <span class="pl-c1">0</span>);</pre></div>
+<p>Now, make the rules active and persistent:</p>
+<div class="highlight highlight-source-sql"><pre>LOAD MYSQL QUERY RULES TO RUNTIME;
+SAVE MYSQL QUERY RULES TO DISK;</pre></div>
+<h2>
+<a aria-hidden="true" class="anchor" href="#reading-logged-queries" id="user-content-reading-logged-queries"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Reading Logged Queries</h2>
+<p>The queries are logged in binary format.  There is a sample app included in source that can read the binary files and output plain text.</p>
+<div class="highlight highlight-source-shell"><pre>$ ./tools/eventslog_reader_sample /var/lib/proxysql/file1.log.00001258
+ProxySQL LOG QUERY: thread_id=<span class="pl-s"><span class="pl-pds">"</span>2<span class="pl-pds">"</span></span> username=<span class="pl-s"><span class="pl-pds">"</span>root<span class="pl-pds">"</span></span> schemaname=information_schema<span class="pl-s"><span class="pl-pds">"</span> client=<span class="pl-pds">"</span></span>127.0.0.1:58307<span class="pl-s"><span class="pl-pds">"</span> HID=0 server=<span class="pl-pds">"</span></span>127.0.0.1:3306<span class="pl-s"><span class="pl-pds">"</span> starttime=<span class="pl-pds">"</span></span>2016-10-23 12:34:37.132509<span class="pl-s"><span class="pl-pds">"</span> endtime=<span class="pl-pds">"</span></span>2016-10-23 12:34:38.347527<span class="pl-s"><span class="pl-pds">"</span> duration=1215018us digest=<span class="pl-pds">"</span></span>0xC5C3C490CA0825C1<span class="pl-s"><span class="pl-pds">"</span></span>
+<span class="pl-s">select sleep(1)</span>
+<span class="pl-s">ProxySQL LOG QUERY: thread_id=<span class="pl-pds">"</span></span>2<span class="pl-s"><span class="pl-pds">"</span> username=<span class="pl-pds">"</span></span>root<span class="pl-s"><span class="pl-pds">"</span> schemaname=information_schema<span class="pl-pds">"</span></span> client=<span class="pl-s"><span class="pl-pds">"</span>127.0.0.1:58307<span class="pl-pds">"</span></span> HID=0 server=<span class="pl-s"><span class="pl-pds">"</span>127.0.0.1:3306<span class="pl-pds">"</span></span> starttime=<span class="pl-s"><span class="pl-pds">"</span>2016-10-23 12:41:38.604244<span class="pl-pds">"</span></span> endtime=<span class="pl-s"><span class="pl-pds">"</span>2016-10-23 12:41:38.813587<span class="pl-pds">"</span></span> duration=209343us digest=<span class="pl-s"><span class="pl-pds">"</span>0xE9D6D71A620B328F<span class="pl-pds">"</span></span>
+SELECT <span class="pl-en">DATABASE</span>()
+ProxySQL LOG QUERY: thread_id=<span class="pl-s"><span class="pl-pds">"</span>2<span class="pl-pds">"</span></span> username=<span class="pl-s"><span class="pl-pds">"</span>root<span class="pl-pds">"</span></span> schemaname=test<span class="pl-s"><span class="pl-pds">"</span> client=<span class="pl-pds">"</span></span>127.0.0.1:58307<span class="pl-s"><span class="pl-pds">"</span> HID=0 server=<span class="pl-pds">"</span></span>127.0.0.1:3306<span class="pl-s"><span class="pl-pds">"</span> starttime=<span class="pl-pds">"</span></span>2016-10-23 12:42:38.511849<span class="pl-s"><span class="pl-pds">"</span> endtime=<span class="pl-pds">"</span></span>2016-10-23 12:42:38.712609<span class="pl-s"><span class="pl-pds">"</span> duration=200760us digest=<span class="pl-pds">"</span></span>0x524DB8D7A9B4C132<span class="pl-s"><span class="pl-pds">"</span></span>
+<span class="pl-s">select aaaaaaa</span></pre></div>
+<p><a href="https://github.com/sysown/proxysql/tree/v1.4.4/tools">https://github.com/sysown/proxysql/tree/v1.4.4/tools</a></p>
+<p>To build the sample app:</p>
+<ul>
+<li>Clone the repo / Download the source</li>
+<li>Change to tools directory</li>
+<li>execute <code>make</code>
+</li>
+</ul>
+<h2>
+<a aria-hidden="true" class="anchor" href="#related-issues-and-feature-requests" id="user-content-related-issues-and-feature-requests"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Related Issues and Feature Requests</h2>
+<p>Here's some related discussion on this feature.</p>
+<p><a href="https://github.com/sysown/proxysql/issues/561">Issue #561</a> -- Logging all queries.</p>
+<p><a href="https://github.com/sysown/proxysql/issues/871">Feature Request #871</a> -- Logging in JSON format for Splunk/ElasticStack, etc.</p>
+<p><a href="https://github.com/sysown/proxysql/issues/1184">Feature Request #1184</a> -- Logging to Embedded Database.</p>
+
+        </div>
+
+    </div>]

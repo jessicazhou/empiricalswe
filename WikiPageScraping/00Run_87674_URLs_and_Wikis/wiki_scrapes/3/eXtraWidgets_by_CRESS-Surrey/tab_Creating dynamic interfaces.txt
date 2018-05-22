@@ -1,0 +1,92 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>One advantage of the eXtraWidgets extension over the regular NetLogo interface is that it is possible to generate your interface in different ways, depending on the circumstances.</p>
+<p>Generating a varying number of rows of widgets, that act together as a sort of table for entering data, is an example of that. In order to do that, you can start by creating widgets for entering the parameters that will be used to generate the rest of the interface:</p>
+<div class="highlight highlight-source-lisp"><pre>extensions [xw]
+
+to startup
+  xw:clear-all
+  xw:create-tab <span class="pl-s"><span class="pl-pds">"</span>t1<span class="pl-pds">"</span></span> [
+    xw:set-title <span class="pl-s"><span class="pl-pds">"</span>Turtle Definitions<span class="pl-pds">"</span></span>
+  ]
+  xw:create-slider <span class="pl-s"><span class="pl-pds">"</span>nb-rows<span class="pl-pds">"</span></span> [
+    xw:set-label <span class="pl-s"><span class="pl-pds">"</span>Number of turtles<span class="pl-pds">"</span></span>
+    xw:set-opaque? false
+    xw:set-value <span class="pl-c1">10</span>
+    xw:set-width <span class="pl-c1">200</span>
+  ]
+  xw:create-button <span class="pl-s"><span class="pl-pds">"</span>generate<span class="pl-pds">"</span></span> [
+    xw:set-label <span class="pl-s"><span class="pl-pds">"</span>Generate rows<span class="pl-pds">"</span></span>
+    xw:set-x [ xw:x + xw:width + <span class="pl-c1">10</span> ] xw:of <span class="pl-s"><span class="pl-pds">"</span>nb-rows<span class="pl-pds">"</span></span>
+    xw:set-commands <span class="pl-s"><span class="pl-pds">"</span>generate-rows<span class="pl-pds">"</span></span>
+    xw:set-width <span class="pl-c1">140</span>
+  ]
+  xw:create-button <span class="pl-s"><span class="pl-pds">"</span>setup<span class="pl-pds">"</span></span> [
+    xw:set-label <span class="pl-s"><span class="pl-pds">"</span>Setup<span class="pl-pds">"</span></span>
+    xw:set-x [ xw:x + xw:width + <span class="pl-c1">10</span> ] xw:of <span class="pl-s"><span class="pl-pds">"</span>generate<span class="pl-pds">"</span></span>
+    xw:set-commands <span class="pl-s"><span class="pl-pds">"</span>setup<span class="pl-pds">"</span></span>
+    xw:set-width <span class="pl-c1">90</span>
+  ]
+  xw:select-tab <span class="pl-c1">2</span> <span class="pl-c"><span class="pl-c">;</span> go to the extra tab on startup</span>
+end</pre></div>
+<p>Note that we are <a href="Creating-your-interface-at-startup">creating the interface at startup</a>.</p>
+<p>Here is the result on Linux:</p>
+<p><img alt="" src="https://github.com/CRESS-Surrey/eXtraWidgets/raw/master/doc/dynamic-gen-header.png"/></p>
+<p>You first set the number of turtles you want via the slider. The <strong>Generate rows</strong> button can then call the <code>generate-rows</code> procedure, which generates one row of widgets for each turtle that we want to define. Here it is:</p>
+<div class="highlight highlight-source-lisp"><pre>to generate-rows
+  foreach xw:widgets xw:with [
+    not member? xw:key [<span class="pl-s"><span class="pl-pds">"</span>nb-rows<span class="pl-pds">"</span></span> <span class="pl-s"><span class="pl-pds">"</span>generate<span class="pl-pds">"</span></span> <span class="pl-s"><span class="pl-pds">"</span>setup<span class="pl-pds">"</span></span>]
+  ] xw:remove
+  foreach n-values xw:get <span class="pl-s"><span class="pl-pds">"</span>nb-rows<span class="pl-pds">"</span></span> [ ? ] [
+    <span class="pl-k">let</span> y (? * <span class="pl-c1">50</span>) + [ xw:y + xw:height + <span class="pl-c1">20</span> ] xw:of <span class="pl-s"><span class="pl-pds">"</span>nb-rows<span class="pl-pds">"</span></span>
+    <span class="pl-k">let</span> label-key word <span class="pl-s"><span class="pl-pds">"</span>label-<span class="pl-pds">"</span></span> ?
+    xw:create-text-input label-key [
+      xw:set-label <span class="pl-s"><span class="pl-pds">"</span>Label<span class="pl-pds">"</span></span>
+      xw:set-text (word ?)
+      xw:set-y y
+    ]
+    <span class="pl-k">let</span> shape-key word <span class="pl-s"><span class="pl-pds">"</span>shape-<span class="pl-pds">"</span></span> ?
+    xw:create-chooser shape-key [
+      xw:set-label <span class="pl-s"><span class="pl-pds">"</span>Shape<span class="pl-pds">"</span></span>
+      xw:set-items [<span class="pl-s"><span class="pl-pds">"</span>airplane<span class="pl-pds">"</span></span> <span class="pl-s"><span class="pl-pds">"</span>arrow<span class="pl-pds">"</span></span> <span class="pl-s"><span class="pl-pds">"</span>bug<span class="pl-pds">"</span></span> <span class="pl-s"><span class="pl-pds">"</span>butterfly<span class="pl-pds">"</span></span> <span class="pl-s"><span class="pl-pds">"</span>turtle<span class="pl-pds">"</span></span>]
+      xw:set-selected-item one-of xw:items
+      xw:set-x [ xw:x + xw:width ] xw:of label-key
+      xw:set-y y
+    ]
+    <span class="pl-k">let</span> size-key word <span class="pl-s"><span class="pl-pds">"</span>size-<span class="pl-pds">"</span></span> ?
+    xw:create-slider size-key [
+      xw:set-label <span class="pl-s"><span class="pl-pds">"</span>Size<span class="pl-pds">"</span></span>
+      xw:set-minimum <span class="pl-c1">1</span>
+      xw:set-maximum <span class="pl-c1">5</span>
+      xw:set-value <span class="pl-c1">1</span> + random <span class="pl-c1">5</span> 
+      xw:set-x [ xw:x + xw:width ] xw:of shape-key
+      xw:set-y y
+    ]
+    xw:ask (<span class="pl-c1">list</span> label-key size-key shape-key) [
+      <span class="pl-c"><span class="pl-c">;</span> alternate between yellow and green rows</span>
+      xw:set-color (yellow + <span class="pl-c1">3</span>) + (<span class="pl-c1">10</span> * (? mod <span class="pl-c1">2</span>))
+    ]
+  ]
+end</pre></div>
+<p>Here is the resulting table for 5 rows:</p>
+<p><img alt="" src="https://github.com/CRESS-Surrey/eXtraWidgets/raw/master/doc/dynamic-gen-rows.png"/></p>
+<p>Finally, the <strong>Setup</strong> button calls the <code>setup</code> procedure, which uses the values entered in our "table" to actually create the turtles:</p>
+<div class="highlight highlight-source-lisp"><pre>to setup
+  clear-all
+  <span class="pl-k">let</span> n length xw:text-inputs
+  foreach n-values n [ ? ] [
+    create-turtles <span class="pl-c1">1</span> [
+      set label xw:get word <span class="pl-s"><span class="pl-pds">"</span>label-<span class="pl-pds">"</span></span> ?
+      set shape xw:get word <span class="pl-s"><span class="pl-pds">"</span>shape-<span class="pl-pds">"</span></span> ?
+      set size xw:get word <span class="pl-s"><span class="pl-pds">"</span>size-<span class="pl-pds">"</span></span> ?
+      setxy random-xcor random-ycor
+    ]
+  ]
+  xw:select-tab <span class="pl-c1">1</span> <span class="pl-c"><span class="pl-c">;</span> go back to regular interface</span>
+end</pre></div>
+<p>Note the <code>xw:select-tab 1</code> command, which takes us back to the regular interface tab, where the view is, so we can see the result of what we just did, which can be something like:</p>
+<p><img alt="" src="https://github.com/CRESS-Surrey/eXtraWidgets/raw/master/doc/dynamic-gen-result.png"/></p>
+
+        </div>
+
+    </div>]

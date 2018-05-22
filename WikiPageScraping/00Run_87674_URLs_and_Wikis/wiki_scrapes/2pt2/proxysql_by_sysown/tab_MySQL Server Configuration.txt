@@ -1,0 +1,374 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <h1>
+<a aria-hidden="true" class="anchor" href="#configuring-backend-mysql-servers-in-proxysql" id="user-content-configuring-backend-mysql-servers-in-proxysql"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Configuring Backend MySQL Servers in ProxySQL</h1>
+<p>MySQL Servers are configured in the <code>mysql_servers</code> and (optionally) <code>mysql_replication_hostgroups</code> tables.</p>
+<p><strong>Note</strong>: Before reading the following section, please make sure you understand the <a href="Multi-layer-configuration-system">multi-layer configuration system</a> used by ProxySQL.<br/>
+Specifically:</p>
+<ul>
+<li>changes in <code>mysql_servers</code> and <code>mysql_replication_hostgroups</code> tables <strong>do not take effect</strong> without running <code>LOAD MYSQL SERVERS TO RUNTIME</code>
+</li>
+<li>changes in <code>mysql_servers</code> and <code>mysql_replication_hostgroups</code> tables <strong>are lost</strong> after a restart/crash if not saved to disk running <code>SAVE MYSQL SERVERS TO DISK</code>
+</li>
+</ul>
+<p>All changes in <code>mysql_servers</code> and <code>mysql_replication_hostgroups</code> tables <strong>do not take effect</strong> until <code>LOAD MYSQL SERVERS TO RUNTIME</code> is executed, and are not persistent unless <code>SAVE MYSQL SERVERS TO DISK</code> is executed.<br/>
+Changes to <code>mysql_servers</code> and <code>mysql_replication_hostgroups</code> are to be considered as editing a config file without saving it or reloading the service.</p>
+<p><strong>IMPORTANT</strong>: all the examples below <strong>do not take effect</strong> until <code>LOAD MYSQL SERVERS TO RUNTIME</code> is executed. <code>SAVE MYSQL SERVERS TO DISK</code> is required to persist the configuration across ProxySQL restarts.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#copying-mysql-servers-from-memory-to-runtime" id="user-content-copying-mysql-servers-from-memory-to-runtime"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Copying mysql servers from memory to runtime</h2>
+<p>loads MySQL servers and replication hostgroups from the in-memory database to the runtime data structures</p>
+<div class="highlight highlight-source-sql"><pre>Admin<span class="pl-k">&gt;</span> LOAD MYSQL SERVERS TO RUNTIME;</pre></div>
+<p>Other alias accepted:</p>
+<ul>
+<li><code>LOAD MYSQL SERVERS TO RUN</code></li>
+<li><code>LOAD MYSQL SERVERS FROM MEM</code></li>
+<li><code>LOAD MYSQL SERVERS FROM MEMORY</code></li>
+</ul>
+<h2>
+<a aria-hidden="true" class="anchor" href="#copying-mysql-servers-from-memory-to-disk" id="user-content-copying-mysql-servers-from-memory-to-disk"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Copying mysql servers from memory to disk</h2>
+<p>persists the MySQL servers and replication hostgroups from the in-memory database to the on-disk database</p>
+<div class="highlight highlight-source-sql"><pre>Admin<span class="pl-k">&gt;</span> SAVE MYSQL SERVERS TO DISK;</pre></div>
+<p>Other alias accepted:</p>
+<ul>
+<li><code>SAVE MYSQL SERVERS FROM MEM</code></li>
+<li><code>SAVE MYSQL SERVERS FROM MEMORY</code></li>
+</ul>
+<h2>
+<a aria-hidden="true" class="anchor" href="#copying-mysql-servers-from-runtime-to-memory" id="user-content-copying-mysql-servers-from-runtime-to-memory"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Copying mysql servers from runtime to memory</h2>
+<p>persists the MySQL servers and replication hostgroups from the runtime data structures to the in-memory database</p>
+<div class="highlight highlight-source-sql"><pre>Admin<span class="pl-k">&gt;</span> SAVE MYSQL SERVERS TO MEMORY;</pre></div>
+<p>Other alias accepted:</p>
+<ul>
+<li><code>SAVE MYSQL SERVERS TO MEM</code></li>
+<li><code>SAVE MYSQL SERVERS FROM RUN</code></li>
+<li><code>SAVE MYSQL SERVERS FROM RUNTIME</code></li>
+</ul>
+<h2>
+<a aria-hidden="true" class="anchor" href="#copying-mysql-servers-from-disk-to-memory" id="user-content-copying-mysql-servers-from-disk-to-memory"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Copying mysql servers from disk to memory</h2>
+<p>loads MySQL servers and replication hostgroups from the on-disk database to the in-memory database</p>
+<div class="highlight highlight-source-sql"><pre>Admin<span class="pl-k">&gt;</span> LOAD MYSQL SERVERS TO MEMORY;</pre></div>
+<p>Other alias accepted:</p>
+<ul>
+<li><code>LOAD MYSQL SERVERS TO MEM</code></li>
+<li><code>LOAD MYSQL SERVERS FROM DISK</code></li>
+</ul>
+<h2>
+<a aria-hidden="true" class="anchor" href="#adding-a-new-server" id="user-content-adding-a-new-server"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Adding a new server</h2>
+<p>In order to add a new server, it must be defined inserting a new row in <code>mysql_servers</code> table.<br/>
+Note that the table has several column with defaults.</p>
+<p>The following adds a new backend with all default configuration:</p>
+<div class="highlight highlight-source-sql"><pre>Admin<span class="pl-k">&gt;</span> <span class="pl-k">SELECT</span> <span class="pl-k">*</span> <span class="pl-k">FROM</span> mysql_servers;
+Empty <span class="pl-k">set</span> (<span class="pl-c1">0</span>.<span class="pl-c1">00</span> sec)
+
+Admin<span class="pl-k">&gt;</span> <span class="pl-k">INSERT INTO</span> mysql_servers (hostname) <span class="pl-k">VALUES</span> (<span class="pl-s"><span class="pl-pds">'</span>172.16.0.1<span class="pl-pds">'</span></span>);
+Query OK, <span class="pl-c1">1</span> row affected (<span class="pl-c1">0</span>.<span class="pl-c1">00</span> sec)
+
+Admin<span class="pl-k">&gt;</span> <span class="pl-k">SELECT</span> <span class="pl-k">*</span> <span class="pl-k">FROM</span> mysql_servers\G
+<span class="pl-k">***************************</span> <span class="pl-c1">1</span>. row <span class="pl-k">***************************</span>
+       hostgroup_id: <span class="pl-c1">0</span>
+           hostname: <span class="pl-c1">172</span>.<span class="pl-c1">16</span>.<span class="pl-c1">0</span>.<span class="pl-c1">1</span>
+               port: <span class="pl-c1">3306</span>
+             status: ONLINE
+             weight: <span class="pl-c1">1</span>
+        compression: <span class="pl-c1">0</span>
+    max_connections: <span class="pl-c1">1000</span>
+max_replication_lag: <span class="pl-c1">0</span>
+            use_ssl: <span class="pl-c1">0</span>
+     max_latency_ms: <span class="pl-c1">0</span>
+            comment:
+<span class="pl-c1">1</span> row <span class="pl-k">in</span> <span class="pl-k">set</span> (<span class="pl-c1">0</span>.<span class="pl-c1">00</span> sec)</pre></div>
+<h2>
+<a aria-hidden="true" class="anchor" href="#adding-new-servers-to-a-hostgroup" id="user-content-adding-new-servers-to-a-hostgroup"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Adding new servers to a hostgroup</h2>
+<div class="highlight highlight-source-sql"><pre>Admin<span class="pl-k">&gt;</span> <span class="pl-k">SELECT</span> hostgroup_id,hostname <span class="pl-k">FROM</span> mysql_servers;
+<span class="pl-k">+</span><span class="pl-c"><span class="pl-c">--</span>------------+------------+</span>
+| hostgroup_id | hostname   |
+<span class="pl-k">+</span><span class="pl-c"><span class="pl-c">--</span>------------+------------+</span>
+| <span class="pl-c1">0</span>            | <span class="pl-c1">172</span>.<span class="pl-c1">16</span>.<span class="pl-c1">0</span>.<span class="pl-c1">1</span> |
+<span class="pl-k">+</span><span class="pl-c"><span class="pl-c">--</span>------------+------------+</span>
+<span class="pl-c1">1</span> row <span class="pl-k">in</span> <span class="pl-k">set</span> (<span class="pl-c1">0</span>.<span class="pl-c1">00</span> sec)
+
+Admin<span class="pl-k">&gt;</span> <span class="pl-k">INSERT INTO</span> mysql_servers (hostgroup_id, hostname) <span class="pl-k">VALUES</span> (<span class="pl-c1">1</span>, <span class="pl-s"><span class="pl-pds">'</span>172.16.0.2<span class="pl-pds">'</span></span>), (<span class="pl-c1">1</span>,<span class="pl-s"><span class="pl-pds">'</span>172.16.0.3<span class="pl-pds">'</span></span>);
+Query OK, <span class="pl-c1">2</span> rows affected (<span class="pl-c1">0</span>.<span class="pl-c1">00</span> sec)
+
+Admin<span class="pl-k">&gt;</span> <span class="pl-k">SELECT</span> hostgroup_id,hostname <span class="pl-k">FROM</span> mysql_servers;
+<span class="pl-k">+</span><span class="pl-c"><span class="pl-c">--</span>------------+------------+</span>
+| hostgroup_id | hostname   |
+<span class="pl-k">+</span><span class="pl-c"><span class="pl-c">--</span>------------+------------+</span>
+| <span class="pl-c1">0</span>            | <span class="pl-c1">172</span>.<span class="pl-c1">16</span>.<span class="pl-c1">0</span>.<span class="pl-c1">1</span> |
+| <span class="pl-c1">1</span>            | <span class="pl-c1">172</span>.<span class="pl-c1">16</span>.<span class="pl-c1">0</span>.<span class="pl-c1">2</span> |
+| <span class="pl-c1">1</span>            | <span class="pl-c1">172</span>.<span class="pl-c1">16</span>.<span class="pl-c1">0</span>.<span class="pl-c1">3</span> |
+<span class="pl-k">+</span><span class="pl-c"><span class="pl-c">--</span>------------+------------+</span>
+<span class="pl-c1">3</span> rows <span class="pl-k">in</span> <span class="pl-k">set</span> (<span class="pl-c1">0</span>.<span class="pl-c1">00</span> sec)</pre></div>
+<h2>
+<a aria-hidden="true" class="anchor" href="#limiting-the-number-of-connections-to-a-backend" id="user-content-limiting-the-number-of-connections-to-a-backend"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Limiting the number of connections to a backend</h2>
+<div class="highlight highlight-source-sql"><pre>Admin<span class="pl-k">&gt;</span> <span class="pl-k">SELECT</span> hostgroup_id,hostname,max_connections <span class="pl-k">FROM</span> mysql_servers;
+<span class="pl-k">+</span><span class="pl-c"><span class="pl-c">--</span>------------+------------+-----------------+</span>
+| hostgroup_id | hostname   | max_connections |
+<span class="pl-k">+</span><span class="pl-c"><span class="pl-c">--</span>------------+------------+-----------------+</span>
+| <span class="pl-c1">0</span>            | <span class="pl-c1">172</span>.<span class="pl-c1">16</span>.<span class="pl-c1">0</span>.<span class="pl-c1">1</span> | <span class="pl-c1">1000</span>            |
+| <span class="pl-c1">1</span>            | <span class="pl-c1">172</span>.<span class="pl-c1">16</span>.<span class="pl-c1">0</span>.<span class="pl-c1">2</span> | <span class="pl-c1">1000</span>            |
+| <span class="pl-c1">1</span>            | <span class="pl-c1">172</span>.<span class="pl-c1">16</span>.<span class="pl-c1">0</span>.<span class="pl-c1">3</span> | <span class="pl-c1">1000</span>            |
+<span class="pl-k">+</span><span class="pl-c"><span class="pl-c">--</span>------------+------------+-----------------+</span>
+<span class="pl-c1">3</span> rows <span class="pl-k">in</span> <span class="pl-k">set</span> (<span class="pl-c1">0</span>.<span class="pl-c1">00</span> sec)
+
+Admin<span class="pl-k">&gt;</span> <span class="pl-k">UPDATE</span> mysql_servers <span class="pl-k">SET</span> max_connections<span class="pl-k">=</span><span class="pl-c1">10</span> <span class="pl-k">WHERE</span> hostname<span class="pl-k">=</span><span class="pl-s"><span class="pl-pds">'</span>172.16.0.2<span class="pl-pds">'</span></span>;
+Query OK, <span class="pl-c1">1</span> row affected (<span class="pl-c1">0</span>.<span class="pl-c1">00</span> sec)
+
+Admin<span class="pl-k">&gt;</span> <span class="pl-k">SELECT</span> hostgroup_id,hostname,max_connections <span class="pl-k">FROM</span> mysql_servers;
+<span class="pl-k">+</span><span class="pl-c"><span class="pl-c">--</span>------------+------------+-----------------+</span>
+| hostgroup_id | hostname   | max_connections |
+<span class="pl-k">+</span><span class="pl-c"><span class="pl-c">--</span>------------+------------+-----------------+</span>
+| <span class="pl-c1">0</span>            | <span class="pl-c1">172</span>.<span class="pl-c1">16</span>.<span class="pl-c1">0</span>.<span class="pl-c1">1</span> | <span class="pl-c1">1000</span>            |
+| <span class="pl-c1">1</span>            | <span class="pl-c1">172</span>.<span class="pl-c1">16</span>.<span class="pl-c1">0</span>.<span class="pl-c1">2</span> | <span class="pl-c1">10</span>              |
+| <span class="pl-c1">1</span>            | <span class="pl-c1">172</span>.<span class="pl-c1">16</span>.<span class="pl-c1">0</span>.<span class="pl-c1">3</span> | <span class="pl-c1">1000</span>            |
+<span class="pl-k">+</span><span class="pl-c"><span class="pl-c">--</span>------------+------------+-----------------+</span>
+<span class="pl-c1">3</span> rows <span class="pl-k">in</span> <span class="pl-k">set</span> (<span class="pl-c1">0</span>.<span class="pl-c1">00</span> sec)</pre></div>
+<h2>
+<a aria-hidden="true" class="anchor" href="#prioritizing-traffic-by-changing-the-weight-of-a-backend" id="user-content-prioritizing-traffic-by-changing-the-weight-of-a-backend"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Prioritizing traffic by changing the weight of a backend</h2>
+<p>Weights are relevant only within a hostgroup</p>
+<div class="highlight highlight-source-sql"><pre>Admin<span class="pl-k">&gt;</span> <span class="pl-k">SELECT</span> hostgroup_id,hostname,weight <span class="pl-k">FROM</span> mysql_servers;
+<span class="pl-k">+</span><span class="pl-c"><span class="pl-c">--</span>------------+------------+--------+</span>
+| hostgroup_id | hostname   | weight |
+<span class="pl-k">+</span><span class="pl-c"><span class="pl-c">--</span>------------+------------+--------+</span>
+| <span class="pl-c1">0</span>            | <span class="pl-c1">172</span>.<span class="pl-c1">16</span>.<span class="pl-c1">0</span>.<span class="pl-c1">1</span> | <span class="pl-c1">1</span>      |
+| <span class="pl-c1">1</span>            | <span class="pl-c1">172</span>.<span class="pl-c1">16</span>.<span class="pl-c1">0</span>.<span class="pl-c1">2</span> | <span class="pl-c1">1</span>      |
+| <span class="pl-c1">1</span>            | <span class="pl-c1">172</span>.<span class="pl-c1">16</span>.<span class="pl-c1">0</span>.<span class="pl-c1">3</span> | <span class="pl-c1">1</span>      |
+<span class="pl-k">+</span><span class="pl-c"><span class="pl-c">--</span>------------+------------+--------+</span>
+<span class="pl-c1">3</span> rows <span class="pl-k">in</span> <span class="pl-k">set</span> (<span class="pl-c1">0</span>.<span class="pl-c1">00</span> sec)
+
+Admin<span class="pl-k">&gt;</span> <span class="pl-k">UPDATE</span> mysql_servers <span class="pl-k">SET</span> weight<span class="pl-k">=</span><span class="pl-c1">1000</span> <span class="pl-k">WHERE</span> hostname NOT <span class="pl-k">IN</span> (<span class="pl-s"><span class="pl-pds">'</span>172.16.0.2<span class="pl-pds">'</span></span>, <span class="pl-s"><span class="pl-pds">'</span>172.16.0.1<span class="pl-pds">'</span></span>) <span class="pl-k">AND</span> hostgroup_id<span class="pl-k">=</span><span class="pl-c1">1</span>;
+Query OK, <span class="pl-c1">1</span> row affected (<span class="pl-c1">0</span>.<span class="pl-c1">00</span> sec)
+
+Admin<span class="pl-k">&gt;</span> <span class="pl-k">SELECT</span> hostgroup_id,hostname,weight <span class="pl-k">FROM</span> mysql_servers;
+<span class="pl-k">+</span><span class="pl-c"><span class="pl-c">--</span>------------+------------+--------+</span>
+| hostgroup_id | hostname   | weight |
+<span class="pl-k">+</span><span class="pl-c"><span class="pl-c">--</span>------------+------------+--------+</span>
+| <span class="pl-c1">0</span>            | <span class="pl-c1">172</span>.<span class="pl-c1">16</span>.<span class="pl-c1">0</span>.<span class="pl-c1">1</span> | <span class="pl-c1">1</span>      |
+| <span class="pl-c1">1</span>            | <span class="pl-c1">172</span>.<span class="pl-c1">16</span>.<span class="pl-c1">0</span>.<span class="pl-c1">2</span> | <span class="pl-c1">1</span>      |
+| <span class="pl-c1">1</span>            | <span class="pl-c1">172</span>.<span class="pl-c1">16</span>.<span class="pl-c1">0</span>.<span class="pl-c1">3</span> | <span class="pl-c1">1000</span>   |
+<span class="pl-k">+</span><span class="pl-c"><span class="pl-c">--</span>------------+------------+--------+</span>
+<span class="pl-c1">3</span> rows <span class="pl-k">in</span> <span class="pl-k">set</span> (<span class="pl-c1">0</span>.<span class="pl-c1">00</span> sec)</pre></div>
+<h2>
+<a aria-hidden="true" class="anchor" href="#using-ssl-connections-for-a-specific-backend" id="user-content-using-ssl-connections-for-a-specific-backend"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Using SSL connections for a specific backend</h2>
+<p>This example shows how to configure SSL for a backend. Although does not show how to globally configure SSL. Check <a href="SSL-Support">here</a> for details on how to globally configure SSL.</p>
+<div class="highlight highlight-source-sql"><pre>Admin<span class="pl-k">&gt;</span> <span class="pl-k">SELECT</span> hostgroup_id,hostname,use_ssl <span class="pl-k">FROM</span> mysql_servers;
+<span class="pl-k">+</span><span class="pl-c"><span class="pl-c">--</span>------------+------------+---------+</span>
+| hostgroup_id | hostname   | use_ssl |
+<span class="pl-k">+</span><span class="pl-c"><span class="pl-c">--</span>------------+------------+---------+</span>
+| <span class="pl-c1">0</span>            | <span class="pl-c1">172</span>.<span class="pl-c1">16</span>.<span class="pl-c1">0</span>.<span class="pl-c1">1</span> | <span class="pl-c1">1</span>       |
+| <span class="pl-c1">1</span>            | <span class="pl-c1">172</span>.<span class="pl-c1">16</span>.<span class="pl-c1">0</span>.<span class="pl-c1">2</span> | <span class="pl-c1">0</span>       |
+| <span class="pl-c1">1</span>            | <span class="pl-c1">172</span>.<span class="pl-c1">16</span>.<span class="pl-c1">0</span>.<span class="pl-c1">3</span> | <span class="pl-c1">0</span>       |
+<span class="pl-k">+</span><span class="pl-c"><span class="pl-c">--</span>------------+------------+---------+</span>
+<span class="pl-c1">3</span> rows <span class="pl-k">in</span> <span class="pl-k">set</span> (<span class="pl-c1">0</span>.<span class="pl-c1">00</span> sec)</pre></div>
+<h2>
+<a aria-hidden="true" class="anchor" href="#automatically-shunning-slaves-with-replication-lag" id="user-content-automatically-shunning-slaves-with-replication-lag"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Automatically shunning slaves with replication lag</h2>
+<p>The Monitor module regularly check replication lag if a server has <code>max_replication_lag</code> set to a non-zero value.</p>
+<pre><code>Admin&gt; SELECT hostgroup_id,hostname,max_replication_lag FROM mysql_servers;
++--------------+------------+---------------------+
+| hostgroup_id | hostname   | max_replication_lag |
++--------------+------------+---------------------+
+| 0            | 172.16.0.1 | 0                   |
+| 1            | 172.16.0.2 | 0                   |
+| 1            | 172.16.0.3 | 0                   |
++--------------+------------+---------------------+
+3 rows in set (0.00 sec)
+
+Admin&gt; UPDATE mysql_servers SET max_replication_lag=30 WHERE hostname='172.16.0.3';
+Query OK, 1 row affected (0.00 sec)
+
+Admin&gt; SELECT hostgroup_id,hostname,max_replication_lag FROM mysql_servers;
++--------------+------------+---------------------+
+| hostgroup_id | hostname   | max_replication_lag |
++--------------+------------+---------------------+
+| 0            | 172.16.0.1 | 0                   |
+| 1            | 172.16.0.2 | 0                   |
+| 1            | 172.16.0.3 | 30                  |
++--------------+------------+---------------------+
+3 rows in set (0.00 sec)
+</code></pre>
+<p>With this configuration, server 172.16.0.3 will only be shunned in case replication delay exceeds 30 seconds behind master. In case max_replication_lag is set to zero (SET max_replication_lag=0), the Monitor module will not check replication lag at all i.e. with max_replication_lag set to 0 a host won't be shunned if the replication lag exceeds the threshold, see <a href="https://github.com/sysown/proxysql/wiki/Global-variables#mysql-monitor_slave_lag_when_null">mysql-monitor_slave_lag_when_null</a> for more info.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#adding-a-server-to-two-different-hostgroups" id="user-content-adding-a-server-to-two-different-hostgroups"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Adding a server to two different hostgroups</h2>
+<p>The primary key on <code>mysql_servers</code> table is defined as <code>PRIMARY KEY (hostgroup_id, hostname, port)</code>. That means that the same server can be present in two different hostgroups, and there are multiple reasons why you want to configure that.<br/>
+For example, in a replication topology with one master and 2 slaves, you would like to send reads to the master if for any reason the slaves disappear (because they die, or because they lag too much).<br/>
+Here an example:</p>
+<div class="highlight highlight-source-sql"><pre>Admin<span class="pl-k">&gt;</span> <span class="pl-k">SELECT</span> hostgroup_id,hostname,weight,max_replication_lag <span class="pl-k">FROM</span> mysql_servers;
+<span class="pl-k">+</span><span class="pl-c"><span class="pl-c">--</span>------------+------------+--------+---------------------+</span>
+| hostgroup_id | hostname   | weight | max_replication_lag |
+<span class="pl-k">+</span><span class="pl-c"><span class="pl-c">--</span>------------+------------+--------+---------------------+</span>
+| <span class="pl-c1">0</span>            | <span class="pl-c1">172</span>.<span class="pl-c1">16</span>.<span class="pl-c1">0</span>.<span class="pl-c1">1</span> | <span class="pl-c1">1</span>      | <span class="pl-c1">0</span>                   |
+| <span class="pl-c1">1</span>            | <span class="pl-c1">172</span>.<span class="pl-c1">16</span>.<span class="pl-c1">0</span>.<span class="pl-c1">2</span> | <span class="pl-c1">1</span>      | <span class="pl-c1">0</span>                   |
+| <span class="pl-c1">1</span>            | <span class="pl-c1">172</span>.<span class="pl-c1">16</span>.<span class="pl-c1">0</span>.<span class="pl-c1">3</span> | <span class="pl-c1">1000</span>   | <span class="pl-c1">30</span>                  |
+<span class="pl-k">+</span><span class="pl-c"><span class="pl-c">--</span>------------+------------+--------+---------------------+</span>
+<span class="pl-c1">3</span> rows <span class="pl-k">in</span> <span class="pl-k">set</span> (<span class="pl-c1">0</span>.<span class="pl-c1">00</span> sec)
+
+Admin<span class="pl-k">&gt;</span> <span class="pl-k">INSERT INTO</span> mysql_servers(hostgroup_id,hostname) <span class="pl-k">VALUES</span> (<span class="pl-c1">1</span>,<span class="pl-s"><span class="pl-pds">'</span>172.16.0.1<span class="pl-pds">'</span></span>);
+Query OK, <span class="pl-c1">1</span> row affected (<span class="pl-c1">0</span>.<span class="pl-c1">00</span> sec)
+
+Admin<span class="pl-k">&gt;</span> <span class="pl-k">SELECT</span> hostgroup_id,hostname,weight,max_replication_lag <span class="pl-k">FROM</span> mysql_servers;
+<span class="pl-k">+</span><span class="pl-c"><span class="pl-c">--</span>------------+------------+--------+---------------------+</span>
+| hostgroup_id | hostname   | weight | max_replication_lag |
+<span class="pl-k">+</span><span class="pl-c"><span class="pl-c">--</span>------------+------------+--------+---------------------+</span>
+| <span class="pl-c1">0</span>            | <span class="pl-c1">172</span>.<span class="pl-c1">16</span>.<span class="pl-c1">0</span>.<span class="pl-c1">1</span> | <span class="pl-c1">1</span>      | <span class="pl-c1">0</span>                   |
+| <span class="pl-c1">1</span>            | <span class="pl-c1">172</span>.<span class="pl-c1">16</span>.<span class="pl-c1">0</span>.<span class="pl-c1">2</span> | <span class="pl-c1">1</span>      | <span class="pl-c1">0</span>                   |
+| <span class="pl-c1">1</span>            | <span class="pl-c1">172</span>.<span class="pl-c1">16</span>.<span class="pl-c1">0</span>.<span class="pl-c1">3</span> | <span class="pl-c1">1000</span>   | <span class="pl-c1">30</span>                  |
+| <span class="pl-c1">1</span>            | <span class="pl-c1">172</span>.<span class="pl-c1">16</span>.<span class="pl-c1">0</span>.<span class="pl-c1">1</span> | <span class="pl-c1">1</span>      | <span class="pl-c1">0</span>                   |
+<span class="pl-k">+</span><span class="pl-c"><span class="pl-c">--</span>------------+------------+--------+---------------------+</span>
+<span class="pl-c1">4</span> rows <span class="pl-k">in</span> <span class="pl-k">set</span> (<span class="pl-c1">0</span>.<span class="pl-c1">00</span> sec)
+
+Admin<span class="pl-k">&gt;</span> <span class="pl-k">UPDATE</span> mysql_servers <span class="pl-k">SET</span> max_replication_lag<span class="pl-k">=</span><span class="pl-c1">30</span>, weight<span class="pl-k">=</span><span class="pl-c1">1000</span>;
+Query OK, <span class="pl-c1">4</span> rows affected (<span class="pl-c1">0</span>.<span class="pl-c1">00</span> sec)
+
+Admin<span class="pl-k">&gt;</span> <span class="pl-k">UPDATE</span> mysql_servers <span class="pl-k">SET</span> weight<span class="pl-k">=</span><span class="pl-c1">1</span> <span class="pl-k">WHERE</span> hostname<span class="pl-k">=</span><span class="pl-s"><span class="pl-pds">'</span>172.16.0.1<span class="pl-pds">'</span></span> <span class="pl-k">AND</span> hostgroup_id<span class="pl-k">=</span><span class="pl-c1">1</span>;
+Query OK, <span class="pl-c1">1</span> row affected (<span class="pl-c1">0</span>.<span class="pl-c1">00</span> sec)
+
+Admin<span class="pl-k">&gt;</span> <span class="pl-k">SELECT</span> hostgroup_id,hostname,weight,max_replication_lag <span class="pl-k">FROM</span> mysql_servers;
+<span class="pl-k">+</span><span class="pl-c"><span class="pl-c">--</span>------------+------------+--------+---------------------+</span>
+| hostgroup_id | hostname   | weight | max_replication_lag |
+<span class="pl-k">+</span><span class="pl-c"><span class="pl-c">--</span>------------+------------+--------+---------------------+</span>
+| <span class="pl-c1">0</span>            | <span class="pl-c1">172</span>.<span class="pl-c1">16</span>.<span class="pl-c1">0</span>.<span class="pl-c1">1</span> | <span class="pl-c1">1000</span>   | <span class="pl-c1">30</span>                  |
+| <span class="pl-c1">1</span>            | <span class="pl-c1">172</span>.<span class="pl-c1">16</span>.<span class="pl-c1">0</span>.<span class="pl-c1">2</span> | <span class="pl-c1">1000</span>   | <span class="pl-c1">30</span>                  |
+| <span class="pl-c1">1</span>            | <span class="pl-c1">172</span>.<span class="pl-c1">16</span>.<span class="pl-c1">0</span>.<span class="pl-c1">3</span> | <span class="pl-c1">1000</span>   | <span class="pl-c1">30</span>                  |
+| <span class="pl-c1">1</span>            | <span class="pl-c1">172</span>.<span class="pl-c1">16</span>.<span class="pl-c1">0</span>.<span class="pl-c1">1</span> | <span class="pl-c1">1</span>      | <span class="pl-c1">30</span>                  |
+<span class="pl-k">+</span><span class="pl-c"><span class="pl-c">--</span>------------+------------+--------+---------------------+</span>
+<span class="pl-c1">4</span> rows <span class="pl-k">in</span> <span class="pl-k">set</span> (<span class="pl-c1">0</span>.<span class="pl-c1">00</span> sec)</pre></div>
+<p>In the example above, if we configure HG1 to serve <em>read</em> traffic, 99.95% of the traffic will be sent to 172.16.0.2 and 172.16.0.3, while 0.05% of the traffic will be normally send to 172.16.0.1 . If 172.16.0.2 and 172.16.0.3 become unavailable, 172.16.0.1 will take all the <em>read</em> traffic.<br/>
+Note: <code>max_replication_lag</code> applies only to slaves. If a server doesn't have replication enabled, Monitor won't take any action.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#enable-compression-on-a-backend-server" id="user-content-enable-compression-on-a-backend-server"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Enable compression on a backend server</h2>
+<p>To enable compression it is enough to set <code>mysql_servers</code>.<code>compression</code> to a non-zero value. Note that compression will only be used for new connections initiated after the setting is loaded to runtime.</p>
+<div class="highlight highlight-source-sql"><pre>Admin<span class="pl-k">&gt;</span> <span class="pl-k">SELECT</span> hostgroup_id,hostname,compression <span class="pl-k">FROM</span> mysql_servers;
+<span class="pl-k">+</span><span class="pl-c"><span class="pl-c">--</span>------------+------------+-------------+</span>
+| hostgroup_id | hostname   | compression |
+<span class="pl-k">+</span><span class="pl-c"><span class="pl-c">--</span>------------+------------+-------------+</span>
+| <span class="pl-c1">0</span>            | <span class="pl-c1">172</span>.<span class="pl-c1">16</span>.<span class="pl-c1">0</span>.<span class="pl-c1">1</span> | <span class="pl-c1">0</span>           |
+| <span class="pl-c1">1</span>            | <span class="pl-c1">172</span>.<span class="pl-c1">16</span>.<span class="pl-c1">0</span>.<span class="pl-c1">2</span> | <span class="pl-c1">0</span>           |
+| <span class="pl-c1">1</span>            | <span class="pl-c1">172</span>.<span class="pl-c1">16</span>.<span class="pl-c1">0</span>.<span class="pl-c1">3</span> | <span class="pl-c1">0</span>           |
+| <span class="pl-c1">1</span>            | <span class="pl-c1">172</span>.<span class="pl-c1">16</span>.<span class="pl-c1">0</span>.<span class="pl-c1">1</span> | <span class="pl-c1">0</span>           |
+<span class="pl-k">+</span><span class="pl-c"><span class="pl-c">--</span>------------+------------+-------------+</span>
+<span class="pl-c1">4</span> rows <span class="pl-k">in</span> <span class="pl-k">set</span> (<span class="pl-c1">0</span>.<span class="pl-c1">00</span> sec)
+
+Admin<span class="pl-k">&gt;</span> <span class="pl-k">UPDATE</span> mysql_servers <span class="pl-k">SET</span> compression<span class="pl-k">=</span><span class="pl-c1">1</span> <span class="pl-k">WHERE</span> hostname<span class="pl-k">=</span><span class="pl-s"><span class="pl-pds">'</span>172.16.0.2<span class="pl-pds">'</span></span> <span class="pl-k">AND</span> hostgroup_id<span class="pl-k">=</span><span class="pl-c1">1</span>;
+Query OK, <span class="pl-c1">1</span> row affected (<span class="pl-c1">0</span>.<span class="pl-c1">00</span> sec)
+
+Admin<span class="pl-k">&gt;</span> <span class="pl-k">SELECT</span> hostgroup_id,hostname,compression <span class="pl-k">FROM</span> mysql_servers;
+<span class="pl-k">+</span><span class="pl-c"><span class="pl-c">--</span>------------+------------+-------------+</span>
+| hostgroup_id | hostname   | compression |
+<span class="pl-k">+</span><span class="pl-c"><span class="pl-c">--</span>------------+------------+-------------+</span>
+| <span class="pl-c1">0</span>            | <span class="pl-c1">172</span>.<span class="pl-c1">16</span>.<span class="pl-c1">0</span>.<span class="pl-c1">1</span> | <span class="pl-c1">0</span>           |
+| <span class="pl-c1">1</span>            | <span class="pl-c1">172</span>.<span class="pl-c1">16</span>.<span class="pl-c1">0</span>.<span class="pl-c1">2</span> | <span class="pl-c1">1</span>           |
+| <span class="pl-c1">1</span>            | <span class="pl-c1">172</span>.<span class="pl-c1">16</span>.<span class="pl-c1">0</span>.<span class="pl-c1">3</span> | <span class="pl-c1">0</span>           |
+| <span class="pl-c1">1</span>            | <span class="pl-c1">172</span>.<span class="pl-c1">16</span>.<span class="pl-c1">0</span>.<span class="pl-c1">1</span> | <span class="pl-c1">0</span>           |
+<span class="pl-k">+</span><span class="pl-c"><span class="pl-c">--</span>------------+------------+-------------+</span>
+<span class="pl-c1">4</span> rows <span class="pl-k">in</span> <span class="pl-k">set</span> (<span class="pl-c1">0</span>.<span class="pl-c1">00</span> sec)</pre></div>
+<h2>
+<a aria-hidden="true" class="anchor" href="#gracefully-disabling-a-backend-server" id="user-content-gracefully-disabling-a-backend-server"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Gracefully disabling a backend server</h2>
+<p>To gracefully disable a backend server it is required to change its <code>status</code> to <code>OFFLINE_SOFT</code>. Active transactions and connections will still be used, but no new traffic will be send to the node.</p>
+<div class="highlight highlight-source-sql"><pre>Admin<span class="pl-k">&gt;</span> <span class="pl-k">SELECT</span> hostgroup_id,hostname,status <span class="pl-k">FROM</span> mysql_servers;
+<span class="pl-k">+</span><span class="pl-c"><span class="pl-c">--</span>------------+------------+--------+</span>
+| hostgroup_id | hostname   | status |
+<span class="pl-k">+</span><span class="pl-c"><span class="pl-c">--</span>------------+------------+--------+</span>
+| <span class="pl-c1">0</span>            | <span class="pl-c1">172</span>.<span class="pl-c1">16</span>.<span class="pl-c1">0</span>.<span class="pl-c1">1</span> | ONLINE |
+| <span class="pl-c1">1</span>            | <span class="pl-c1">172</span>.<span class="pl-c1">16</span>.<span class="pl-c1">0</span>.<span class="pl-c1">2</span> | ONLINE |
+| <span class="pl-c1">1</span>            | <span class="pl-c1">172</span>.<span class="pl-c1">16</span>.<span class="pl-c1">0</span>.<span class="pl-c1">3</span> | ONLINE |
+| <span class="pl-c1">1</span>            | <span class="pl-c1">172</span>.<span class="pl-c1">16</span>.<span class="pl-c1">0</span>.<span class="pl-c1">1</span> | ONLINE |
+<span class="pl-k">+</span><span class="pl-c"><span class="pl-c">--</span>------------+------------+--------+</span>
+<span class="pl-c1">4</span> rows <span class="pl-k">in</span> <span class="pl-k">set</span> (<span class="pl-c1">0</span>.<span class="pl-c1">00</span> sec)
+
+Admin<span class="pl-k">&gt;</span> <span class="pl-k">UPDATE</span> mysql_servers <span class="pl-k">SET</span> status<span class="pl-k">=</span><span class="pl-s"><span class="pl-pds">'</span>OFFLINE_SOFT<span class="pl-pds">'</span></span> <span class="pl-k">WHERE</span> hostname<span class="pl-k">=</span><span class="pl-s"><span class="pl-pds">'</span>172.16.0.2<span class="pl-pds">'</span></span>;
+Query OK, <span class="pl-c1">1</span> row affected (<span class="pl-c1">0</span>.<span class="pl-c1">00</span> sec)
+
+Admin<span class="pl-k">&gt;</span> <span class="pl-k">SELECT</span> hostgroup_id,hostname,status <span class="pl-k">FROM</span> mysql_servers;
+<span class="pl-k">+</span><span class="pl-c"><span class="pl-c">--</span>------------+------------+--------------+</span>
+| hostgroup_id | hostname   | status       |
+<span class="pl-k">+</span><span class="pl-c"><span class="pl-c">--</span>------------+------------+--------------+</span>
+| <span class="pl-c1">0</span>            | <span class="pl-c1">172</span>.<span class="pl-c1">16</span>.<span class="pl-c1">0</span>.<span class="pl-c1">1</span> | ONLINE       |
+| <span class="pl-c1">1</span>            | <span class="pl-c1">172</span>.<span class="pl-c1">16</span>.<span class="pl-c1">0</span>.<span class="pl-c1">2</span> | OFFLINE_SOFT |
+| <span class="pl-c1">1</span>            | <span class="pl-c1">172</span>.<span class="pl-c1">16</span>.<span class="pl-c1">0</span>.<span class="pl-c1">3</span> | ONLINE       |
+| <span class="pl-c1">1</span>            | <span class="pl-c1">172</span>.<span class="pl-c1">16</span>.<span class="pl-c1">0</span>.<span class="pl-c1">1</span> | ONLINE       |
+<span class="pl-k">+</span><span class="pl-c"><span class="pl-c">--</span>------------+------------+--------------+</span>
+<span class="pl-c1">4</span> rows <span class="pl-k">in</span> <span class="pl-k">set</span> (<span class="pl-c1">0</span>.<span class="pl-c1">00</span> sec)</pre></div>
+<h2>
+<a aria-hidden="true" class="anchor" href="#immediately-disabling-a-backend-server" id="user-content-immediately-disabling-a-backend-server"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Immediately disabling a backend server</h2>
+<p>To immediately disable a backend server it is required to change its <code>status</code> to <code>OFFLINE_HARD</code>. All the current traffic will be immediately terminated, and no new traffic will be sent.</p>
+<div class="highlight highlight-source-sql"><pre>Admin<span class="pl-k">&gt;</span> <span class="pl-k">SELECT</span> hostgroup_id,hostname,status <span class="pl-k">FROM</span> mysql_servers;
+<span class="pl-k">+</span><span class="pl-c"><span class="pl-c">--</span>------------+------------+--------------+</span>
+| hostgroup_id | hostname   | status       |
+<span class="pl-k">+</span><span class="pl-c"><span class="pl-c">--</span>------------+------------+--------------+</span>
+| <span class="pl-c1">0</span>            | <span class="pl-c1">172</span>.<span class="pl-c1">16</span>.<span class="pl-c1">0</span>.<span class="pl-c1">1</span> | ONLINE       |
+| <span class="pl-c1">1</span>            | <span class="pl-c1">172</span>.<span class="pl-c1">16</span>.<span class="pl-c1">0</span>.<span class="pl-c1">2</span> | OFFLINE_SOFT |
+| <span class="pl-c1">1</span>            | <span class="pl-c1">172</span>.<span class="pl-c1">16</span>.<span class="pl-c1">0</span>.<span class="pl-c1">3</span> | ONLINE       |
+| <span class="pl-c1">1</span>            | <span class="pl-c1">172</span>.<span class="pl-c1">16</span>.<span class="pl-c1">0</span>.<span class="pl-c1">1</span> | ONLINE       |
+<span class="pl-k">+</span><span class="pl-c"><span class="pl-c">--</span>------------+------------+--------------+</span>
+<span class="pl-c1">4</span> rows <span class="pl-k">in</span> <span class="pl-k">set</span> (<span class="pl-c1">0</span>.<span class="pl-c1">00</span> sec)
+
+Admin<span class="pl-k">&gt;</span> <span class="pl-k">UPDATE</span> mysql_servers <span class="pl-k">SET</span> status<span class="pl-k">=</span><span class="pl-s"><span class="pl-pds">'</span>OFFLINE_HARD<span class="pl-pds">'</span></span> <span class="pl-k">WHERE</span> hostname<span class="pl-k">=</span><span class="pl-s"><span class="pl-pds">'</span>172.16.0.1<span class="pl-pds">'</span></span> <span class="pl-k">AND</span> hostgroup_id<span class="pl-k">=</span><span class="pl-c1">1</span>;
+Query OK, <span class="pl-c1">1</span> row affected (<span class="pl-c1">0</span>.<span class="pl-c1">00</span> sec)
+
+Admin<span class="pl-k">&gt;</span> <span class="pl-k">SELECT</span> hostgroup_id,hostname,status <span class="pl-k">FROM</span> mysql_servers;
+<span class="pl-k">+</span><span class="pl-c"><span class="pl-c">--</span>------------+------------+--------------+</span>
+| hostgroup_id | hostname   | status       |
+<span class="pl-k">+</span><span class="pl-c"><span class="pl-c">--</span>------------+------------+--------------+</span>
+| <span class="pl-c1">0</span>            | <span class="pl-c1">172</span>.<span class="pl-c1">16</span>.<span class="pl-c1">0</span>.<span class="pl-c1">1</span> | ONLINE       |
+| <span class="pl-c1">1</span>            | <span class="pl-c1">172</span>.<span class="pl-c1">16</span>.<span class="pl-c1">0</span>.<span class="pl-c1">2</span> | OFFLINE_SOFT |
+| <span class="pl-c1">1</span>            | <span class="pl-c1">172</span>.<span class="pl-c1">16</span>.<span class="pl-c1">0</span>.<span class="pl-c1">3</span> | ONLINE       |
+| <span class="pl-c1">1</span>            | <span class="pl-c1">172</span>.<span class="pl-c1">16</span>.<span class="pl-c1">0</span>.<span class="pl-c1">1</span> | OFFLINE_HARD |
+<span class="pl-k">+</span><span class="pl-c"><span class="pl-c">--</span>------------+------------+--------------+</span>
+<span class="pl-c1">4</span> rows <span class="pl-k">in</span> <span class="pl-k">set</span> (<span class="pl-c1">0</span>.<span class="pl-c1">00</span> sec)</pre></div>
+<h2>
+<a aria-hidden="true" class="anchor" href="#re-enabling-an-offline--disabled-backend-server" id="user-content-re-enabling-an-offline--disabled-backend-server"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Re-enabling an offline / disabled backend server</h2>
+<p>To re-enable on offline backend it is enough to change its status back to <code>ONLINE</code>:</p>
+<div class="highlight highlight-source-sql"><pre>Admin<span class="pl-k">&gt;</span> <span class="pl-k">SELECT</span> hostgroup_id,hostname,status <span class="pl-k">FROM</span> mysql_servers;
+<span class="pl-k">+</span><span class="pl-c"><span class="pl-c">--</span>------------+------------+--------------+</span>
+| hostgroup_id | hostname   | status       |
+<span class="pl-k">+</span><span class="pl-c"><span class="pl-c">--</span>------------+------------+--------------+</span>
+| <span class="pl-c1">0</span>            | <span class="pl-c1">172</span>.<span class="pl-c1">16</span>.<span class="pl-c1">0</span>.<span class="pl-c1">1</span> | ONLINE       |
+| <span class="pl-c1">1</span>            | <span class="pl-c1">172</span>.<span class="pl-c1">16</span>.<span class="pl-c1">0</span>.<span class="pl-c1">2</span> | OFFLINE_SOFT |
+| <span class="pl-c1">1</span>            | <span class="pl-c1">172</span>.<span class="pl-c1">16</span>.<span class="pl-c1">0</span>.<span class="pl-c1">3</span> | ONLINE       |
+| <span class="pl-c1">1</span>            | <span class="pl-c1">172</span>.<span class="pl-c1">16</span>.<span class="pl-c1">0</span>.<span class="pl-c1">1</span> | OFFLINE_HARD |
+<span class="pl-k">+</span><span class="pl-c"><span class="pl-c">--</span>------------+------------+--------------+</span>
+<span class="pl-c1">4</span> rows <span class="pl-k">in</span> <span class="pl-k">set</span> (<span class="pl-c1">0</span>.<span class="pl-c1">00</span> sec)
+
+Admin<span class="pl-k">&gt;</span> <span class="pl-k">UPDATE</span> mysql_servers <span class="pl-k">SET</span> status<span class="pl-k">=</span><span class="pl-s"><span class="pl-pds">'</span>ONLINE<span class="pl-pds">'</span></span> <span class="pl-k">WHERE</span> status NOT <span class="pl-k">IN</span> (<span class="pl-s"><span class="pl-pds">'</span>ONLINE<span class="pl-pds">'</span></span>);
+Query OK, <span class="pl-c1">2</span> rows affected (<span class="pl-c1">0</span>.<span class="pl-c1">00</span> sec)
+
+Admin<span class="pl-k">&gt;</span> <span class="pl-k">SELECT</span> hostgroup_id,hostname,status <span class="pl-k">FROM</span> mysql_servers;
+<span class="pl-k">+</span><span class="pl-c"><span class="pl-c">--</span>------------+------------+--------+</span>
+| hostgroup_id | hostname   | status |
+<span class="pl-k">+</span><span class="pl-c"><span class="pl-c">--</span>------------+------------+--------+</span>
+| <span class="pl-c1">0</span>            | <span class="pl-c1">172</span>.<span class="pl-c1">16</span>.<span class="pl-c1">0</span>.<span class="pl-c1">1</span> | ONLINE |
+| <span class="pl-c1">1</span>            | <span class="pl-c1">172</span>.<span class="pl-c1">16</span>.<span class="pl-c1">0</span>.<span class="pl-c1">2</span> | ONLINE |
+| <span class="pl-c1">1</span>            | <span class="pl-c1">172</span>.<span class="pl-c1">16</span>.<span class="pl-c1">0</span>.<span class="pl-c1">3</span> | ONLINE |
+| <span class="pl-c1">1</span>            | <span class="pl-c1">172</span>.<span class="pl-c1">16</span>.<span class="pl-c1">0</span>.<span class="pl-c1">1</span> | ONLINE |
+<span class="pl-k">+</span><span class="pl-c"><span class="pl-c">--</span>------------+------------+--------+</span>
+<span class="pl-c1">4</span> rows <span class="pl-k">in</span> <span class="pl-k">set</span> (<span class="pl-c1">0</span>.<span class="pl-c1">00</span> sec)</pre></div>
+<h2>
+<a aria-hidden="true" class="anchor" href="#removing-a-backend-server" id="user-content-removing-a-backend-server"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Removing a backend server</h2>
+<p>It is possible to completely remove a backend server deleting it from <code>mysql_servers</code> table.</p>
+<div class="highlight highlight-source-sql"><pre>Admin<span class="pl-k">&gt;</span> <span class="pl-k">SELECT</span> hostgroup_id,hostname,status <span class="pl-k">FROM</span> mysql_servers;
+<span class="pl-k">+</span><span class="pl-c"><span class="pl-c">--</span>------------+------------+--------+</span>
+| hostgroup_id | hostname   | status |
+<span class="pl-k">+</span><span class="pl-c"><span class="pl-c">--</span>------------+------------+--------+</span>
+| <span class="pl-c1">0</span>            | <span class="pl-c1">172</span>.<span class="pl-c1">16</span>.<span class="pl-c1">0</span>.<span class="pl-c1">1</span> | ONLINE |
+| <span class="pl-c1">1</span>            | <span class="pl-c1">172</span>.<span class="pl-c1">16</span>.<span class="pl-c1">0</span>.<span class="pl-c1">2</span> | ONLINE |
+| <span class="pl-c1">1</span>            | <span class="pl-c1">172</span>.<span class="pl-c1">16</span>.<span class="pl-c1">0</span>.<span class="pl-c1">3</span> | ONLINE |
+| <span class="pl-c1">1</span>            | <span class="pl-c1">172</span>.<span class="pl-c1">16</span>.<span class="pl-c1">0</span>.<span class="pl-c1">1</span> | ONLINE |
+<span class="pl-k">+</span><span class="pl-c"><span class="pl-c">--</span>------------+------------+--------+</span>
+<span class="pl-c1">4</span> rows <span class="pl-k">in</span> <span class="pl-k">set</span> (<span class="pl-c1">0</span>.<span class="pl-c1">00</span> sec)
+
+Admin<span class="pl-k">&gt;</span> <span class="pl-k">DELETE</span> <span class="pl-k">FROM</span> mysql_servers <span class="pl-k">WHERE</span> hostgroup_id<span class="pl-k">=</span><span class="pl-c1">1</span> <span class="pl-k">AND</span> hostname <span class="pl-k">IN</span> (<span class="pl-s"><span class="pl-pds">'</span>172.16.0.1<span class="pl-pds">'</span></span>,<span class="pl-s"><span class="pl-pds">'</span>172.16.0.2<span class="pl-pds">'</span></span>);
+Query OK, <span class="pl-c1">2</span> rows affected (<span class="pl-c1">0</span>.<span class="pl-c1">00</span> sec)
+
+Admin<span class="pl-k">&gt;</span> <span class="pl-k">SELECT</span> hostgroup_id,hostname,status <span class="pl-k">FROM</span> mysql_servers;
+<span class="pl-k">+</span><span class="pl-c"><span class="pl-c">--</span>------------+------------+--------+</span>
+| hostgroup_id | hostname   | status |
+<span class="pl-k">+</span><span class="pl-c"><span class="pl-c">--</span>------------+------------+--------+</span>
+| <span class="pl-c1">0</span>            | <span class="pl-c1">172</span>.<span class="pl-c1">16</span>.<span class="pl-c1">0</span>.<span class="pl-c1">1</span> | ONLINE |
+| <span class="pl-c1">1</span>            | <span class="pl-c1">172</span>.<span class="pl-c1">16</span>.<span class="pl-c1">0</span>.<span class="pl-c1">3</span> | ONLINE |
+<span class="pl-k">+</span><span class="pl-c"><span class="pl-c">--</span>------------+------------+--------+</span>
+<span class="pl-c1">2</span> rows <span class="pl-k">in</span> <span class="pl-k">set</span> (<span class="pl-c1">0</span>.<span class="pl-c1">00</span> sec)</pre></div>
+<p>Internally, deleting a backend or setting it <code>OFFLINE_HARD</code> are handled in the same way. When <code>LOAD MYSQL SERVERS TO RUNTIME</code> is executed, the Hostgroup_Manager will detect that a backend server was deleted and internally mark it as <code>OFFLINE_HARD</code>.</p>
+
+        </div>
+
+    </div>]

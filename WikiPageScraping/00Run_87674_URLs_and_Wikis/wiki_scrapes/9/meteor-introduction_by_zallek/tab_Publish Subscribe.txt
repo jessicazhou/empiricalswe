@@ -1,0 +1,36 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <div class="highlight highlight-source-js"><pre><span class="pl-c"><span class="pl-c">//</span> Server: Publish messages for a given room</span>
+<span class="pl-smi">Meteor</span>.<span class="pl-en">publish</span>(<span class="pl-s"><span class="pl-pds">"</span>messages<span class="pl-pds">"</span></span>, <span class="pl-k">function</span> (<span class="pl-smi">roomId</span>) {
+  <span class="pl-en">check</span>(roomId, <span class="pl-c1">Number</span>);
+  <span class="pl-k">return</span> <span class="pl-smi">Messages</span>.<span class="pl-c1">find</span>({room<span class="pl-k">:</span> roomId});
+});
+
+<span class="pl-c"><span class="pl-c">//</span> Client: Subscribe to a room</span>
+<span class="pl-c"><span class="pl-c">//</span> Subscription is automatically updated </span>
+<span class="pl-c"><span class="pl-c">//</span> when roomId session variable change</span>
+<span class="pl-smi">Session</span>.<span class="pl-c1">set</span>(<span class="pl-s"><span class="pl-pds">"</span>roomId<span class="pl-pds">"</span></span>, <span class="pl-s"><span class="pl-pds">"</span>7<span class="pl-pds">"</span></span>);
+<span class="pl-smi">Tracker</span>.<span class="pl-en">autorun</span>(<span class="pl-k">function</span> () {
+  <span class="pl-smi">Meteor</span>.<span class="pl-en">subscribe</span>(<span class="pl-s"><span class="pl-pds">"</span>messages<span class="pl-pds">"</span></span>, <span class="pl-smi">Session</span>.<span class="pl-c1">get</span>(<span class="pl-s"><span class="pl-pds">"</span>roomId<span class="pl-pds">"</span></span>));
+});
+
+<span class="pl-c"><span class="pl-c">//</span> Server: Define rules</span>
+<span class="pl-smi">Messages</span>.<span class="pl-en">allow</span>({
+  <span class="pl-en">insert</span><span class="pl-k">:</span> <span class="pl-k">function</span> (<span class="pl-smi">userId</span>, <span class="pl-smi">message</span>) {
+    <span class="pl-c"><span class="pl-c">//</span> can only create a message in your room and</span>
+    <span class="pl-c"><span class="pl-c">//</span> creator should match your userId</span>
+    <span class="pl-k">return</span> userId <span class="pl-k">&amp;&amp;</span> <span class="pl-smi">message</span>.<span class="pl-smi">createdBy</span> <span class="pl-k">===</span> userId <span class="pl-k">&amp;&amp;</span>
+           <span class="pl-smi">message</span>.<span class="pl-smi">room</span> <span class="pl-k">===</span> <span class="pl-smi">Session</span>.<span class="pl-c1">get</span>(<span class="pl-s"><span class="pl-pds">"</span>roomId<span class="pl-pds">"</span></span>, userId);
+  },
+  <span class="pl-en">update</span><span class="pl-k">:</span> <span class="pl-k">function</span> (<span class="pl-smi">userId</span>, <span class="pl-smi">doc</span>, <span class="pl-smi">fields</span>, <span class="pl-smi">modifier</span>) {
+    <span class="pl-c"><span class="pl-c">//</span> can only change your own posts</span>
+    <span class="pl-k">return</span> <span class="pl-smi">doc</span>.<span class="pl-smi">createdBy</span> <span class="pl-k">===</span> userId;
+  },
+  <span class="pl-en">remove</span><span class="pl-k">:</span> <span class="pl-k">function</span> (<span class="pl-smi">userId</span>, <span class="pl-smi">doc</span>) {
+    <span class="pl-k">return</span> <span class="pl-c1">true</span>;
+  },
+});</pre></div>
+
+        </div>
+
+    </div>]

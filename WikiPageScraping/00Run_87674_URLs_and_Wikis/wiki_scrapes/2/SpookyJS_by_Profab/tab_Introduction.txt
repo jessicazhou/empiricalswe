@@ -1,0 +1,125 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>SpookyJS makes it possible to drive CasperJS suites from Node.js. At a high
+level, Spooky accomplishes this by spawning Casper as a child process and
+controlling it via RPC.</p>
+<p>Specifically, each Spooky instance spawns a child Casper process that runs a
+<a href="https://github.com/WaterfallEngineering/SpookyJS/blob/master/lib/bootstrap.js">bootstrap
+script</a>.
+The bootstrap script sets up a JSON-RPC server that listens for commands from
+the parent Spooky instance over a <em>transport</em> (either HTTP or stdin). The script
+also sets up a JSON-RPC client that sends events to the parent Spooky instance
+via stdout.</p>
+<h1>
+<a aria-hidden="true" class="anchor" href="#javascript-environments" id="user-content-javascript-environments"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>JavaScript Environments</h1>
+<p>The tricky part of this arrangement is that there are now <em>three</em> distinct
+JavaScript environments to consider: Spooky (Node.js), Casper (PhantomJS), and
+the web page under test.</p>
+<div class="highlight highlight-source-js"><pre><span class="pl-smi">spooky</span>.<span class="pl-c1">start</span>(<span class="pl-s"><span class="pl-pds">'</span>http://example.com/the-page.html<span class="pl-pds">'</span></span>);
+
+<span class="pl-smi">spooky</span>.<span class="pl-c1">then</span>(<span class="pl-k">function</span> () {
+  <span class="pl-c"><span class="pl-c">//</span> this function runs in Casper's environment</span>
+});
+
+<span class="pl-smi">spooky</span>.<span class="pl-en">thenEvaluate</span>(<span class="pl-k">function</span> () {
+  <span class="pl-c"><span class="pl-c">//</span> this function runs in the page's environment</span>
+})
+
+<span class="pl-c"><span class="pl-c">//</span> this function (and the three spooky calls above) runs in Spooky's environment</span>
+<span class="pl-smi">spooky</span>.<span class="pl-en">run</span>();</pre></div>
+<h2>
+<a aria-hidden="true" class="anchor" href="#javascript-environments-are-isolated" id="user-content-javascript-environments-are-isolated"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>JavaScript environments are isolated</h2>
+<p>The Node.js, PhantomJS, and web page JavaScript environments are isolated from one another.
+It is not possible to reference values in one environment from another. Spooky serializes the functions it is passed and sends them to the child, which deserializes them in its environment. This means that variables can appear to be in scope when in fact they aren't even in the same JavaScript environment!</p>
+<div class="highlight highlight-source-js"><pre><span class="pl-k">var</span> x <span class="pl-k">=</span> <span class="pl-s"><span class="pl-pds">'</span>spooky<span class="pl-pds">'</span></span>;
+<span class="pl-smi">spooky</span>.<span class="pl-c1">start</span>(<span class="pl-s"><span class="pl-pds">'</span>http://example.com/the-page.html<span class="pl-pds">'</span></span>);
+
+<span class="pl-smi">spooky</span>.<span class="pl-c1">then</span>(<span class="pl-k">function</span> () {
+  <span class="pl-k">var</span> y <span class="pl-k">=</span> <span class="pl-s"><span class="pl-pds">'</span>casper<span class="pl-pds">'</span></span>;
+  <span class="pl-en">console</span>.<span class="pl-c1">log</span>(<span class="pl-s"><span class="pl-pds">'</span>x:<span class="pl-pds">'</span></span>, x); <span class="pl-c"><span class="pl-c">//</span> -&gt; x: undefined</span>
+});
+
+<span class="pl-smi">spooky</span>.<span class="pl-en">thenEvaluate</span>(<span class="pl-k">function</span> () {
+  <span class="pl-en">console</span>.<span class="pl-c1">log</span>(<span class="pl-s"><span class="pl-pds">'</span>x:<span class="pl-pds">'</span></span>, x); <span class="pl-c"><span class="pl-c">//</span> -&gt; x: undefined</span>
+  <span class="pl-en">console</span>.<span class="pl-c1">log</span>(<span class="pl-s"><span class="pl-pds">'</span>y:<span class="pl-pds">'</span></span>, y); <span class="pl-c"><span class="pl-c">//</span> -&gt; y: undefined</span>
+});
+
+<span class="pl-smi">spooky</span>.<span class="pl-en">run</span>();</pre></div>
+<h2>
+<a aria-hidden="true" class="anchor" href="#passing-values-between-javascript-environments" id="user-content-passing-values-between-javascript-environments"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Passing values between JavaScript environments</h2>
+<p>However, it <em>is</em> possible to <em>copy</em> values from one environment to another -
+provided the value can be serialized to JSON. Spooky provides two ways to do this.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#argument-hashes" id="user-content-argument-hashes"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Argument hashes</h3>
+<p>First, Spooky's analogues of Casper methods that accept an argument hash also accept a hash. Spooky does not yet support the new calling convention introduced in Casper 1.0; see <a href="https://github.com/WaterfallEngineering/SpookyJS/issues/68">#68</a>.</p>
+<div class="highlight highlight-source-js"><pre><span class="pl-k">var</span> x <span class="pl-k">=</span> <span class="pl-s"><span class="pl-pds">'</span>spooky<span class="pl-pds">'</span></span>;
+
+<span class="pl-c"><span class="pl-c">//</span> spooky.thenEvaluate accepts an options argument (just like Casper)</span>
+<span class="pl-smi">spooky</span>.<span class="pl-en">thenEvaluate</span>(<span class="pl-k">function</span> (<span class="pl-smi">x</span>) {
+  <span class="pl-en">console</span>.<span class="pl-c1">log</span>(<span class="pl-s"><span class="pl-pds">'</span>x:<span class="pl-pds">'</span></span>, x); <span class="pl-c"><span class="pl-c">//</span> -&gt; x: spooky</span>
+}, {
+  x<span class="pl-k">:</span> x
+});</pre></div>
+<h3>
+<a aria-hidden="true" class="anchor" href="#function-tuples" id="user-content-function-tuples"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Function tuples</h3>
+<p>Second, wherever a Casper method accepts a function, its Spooky analogue accepts a <strong>function tuple</strong>. A function tuple is an array of length two. The first element is an argument hash. The second is the function that will be passed to the Casper method. Each key in the argument hash is made available as a variable of the same name in the function's scope, initialized to the key's value in the hash. This makes it possible to use a function tuple and an argument hash in the same call.</p>
+<div class="highlight highlight-source-js"><pre><span class="pl-k">var</span> x <span class="pl-k">=</span> <span class="pl-s"><span class="pl-pds">'</span>spooky<span class="pl-pds">'</span></span>;
+<span class="pl-k">var</span> y <span class="pl-k">=</span> <span class="pl-s"><span class="pl-pds">'</span>kooky<span class="pl-pds">'</span></span>;
+
+<span class="pl-c"><span class="pl-c">//</span> spooky.then accepts a function tuple</span>
+<span class="pl-smi">spooky</span>.<span class="pl-c1">then</span>([{
+  x<span class="pl-k">:</span> x
+}, <span class="pl-k">function</span> () {
+  <span class="pl-en">console</span>.<span class="pl-c1">log</span>(<span class="pl-s"><span class="pl-pds">'</span>x:<span class="pl-pds">'</span></span>, x); <span class="pl-c"><span class="pl-c">//</span> -&gt; x: spooky</span>
+}]);
+
+<span class="pl-c"><span class="pl-c">//</span> spooky.thenEvaluate accepts both a function tuple and an argument hash</span>
+<span class="pl-smi">spooky</span>.<span class="pl-en">thenEvaluate</span>([{
+  y<span class="pl-k">:</span> y
+}, <span class="pl-k">function</span> (<span class="pl-smi">x</span>) {
+  <span class="pl-en">console</span>.<span class="pl-c1">log</span>(<span class="pl-s"><span class="pl-pds">'</span>x:<span class="pl-pds">'</span></span>, x); <span class="pl-c"><span class="pl-c">//</span> -&gt; x: spooky</span>
+  <span class="pl-en">console</span>.<span class="pl-c1">log</span>(<span class="pl-s"><span class="pl-pds">'</span>y:<span class="pl-pds">'</span></span>, y); <span class="pl-c"><span class="pl-c">//</span> -&gt; y: kooky</span>
+}], {
+  x<span class="pl-k">:</span> x
+});</pre></div>
+<h3>
+<a aria-hidden="true" class="anchor" href="#arguments-are-passed-by-value" id="user-content-arguments-are-passed-by-value"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Arguments are passed by value</h3>
+<p>Remember that function tuples receive the <strong>value</strong> of any variables passed to them. If the function modifies its copy, that change is not observed in Spooky's environment. This is true of argument hashes as well.</p>
+<div class="highlight highlight-source-js"><pre><span class="pl-k">var</span> x <span class="pl-k">=</span> <span class="pl-s"><span class="pl-pds">'</span>spooky<span class="pl-pds">'</span></span>;
+
+<span class="pl-smi">spooky</span>.<span class="pl-c1">then</span>([{
+  x<span class="pl-k">:</span> x
+}, <span class="pl-k">function</span> () {
+  x <span class="pl-k">=</span> <span class="pl-s"><span class="pl-pds">'</span>casper<span class="pl-pds">'</span></span>;
+  <span class="pl-en">console</span>.<span class="pl-c1">log</span>(<span class="pl-s"><span class="pl-pds">'</span>x:<span class="pl-pds">'</span></span>, x); <span class="pl-c"><span class="pl-c">//</span> -&gt; x: casper</span>
+}]);
+
+<span class="pl-en">console</span>.<span class="pl-c1">log</span>(<span class="pl-s"><span class="pl-pds">'</span>x:<span class="pl-pds">'</span></span>, x); <span class="pl-c"><span class="pl-c">//</span> -&gt; x: spooky</span></pre></div>
+<h3>
+<a aria-hidden="true" class="anchor" href="#putting-it-all-together" id="user-content-putting-it-all-together"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Putting it all together</h3>
+<p>It's possible to do complicated things with these tools, but use restraint: it can quickly become difficult to keep the scopes and environments straight.</p>
+<div class="highlight highlight-source-js"><pre><span class="pl-smi">spooky</span>.<span class="pl-c1">start</span>(<span class="pl-s"><span class="pl-pds">'</span>http://example.com/the-page.html<span class="pl-pds">'</span></span>);
+
+<span class="pl-k">var</span> x <span class="pl-k">=</span> <span class="pl-s"><span class="pl-pds">'</span>spooky<span class="pl-pds">'</span></span>;
+<span class="pl-smi">spooky</span>.<span class="pl-c1">then</span>([{
+  x<span class="pl-k">:</span> x
+}, <span class="pl-k">function</span> () {
+  <span class="pl-k">var</span> y <span class="pl-k">=</span> <span class="pl-s"><span class="pl-pds">'</span>casper<span class="pl-pds">'</span></span>;
+  <span class="pl-k">var</span> z <span class="pl-k">=</span> <span class="pl-c1">this</span>.<span class="pl-c1">evaluate</span>(<span class="pl-k">function</span> (<span class="pl-smi">x</span>, <span class="pl-smi">y</span>) {
+    <span class="pl-en">console</span>.<span class="pl-c1">log</span>(<span class="pl-s"><span class="pl-pds">'</span>x:<span class="pl-pds">'</span></span>, x); <span class="pl-c"><span class="pl-c">//</span> -&gt; x: spooky</span>
+    <span class="pl-en">console</span>.<span class="pl-c1">log</span>(<span class="pl-s"><span class="pl-pds">'</span>y:<span class="pl-pds">'</span></span>, y); <span class="pl-c"><span class="pl-c">//</span> -&gt; y: casper</span>
+
+    <span class="pl-k">return</span> [x, y, <span class="pl-s"><span class="pl-pds">'</span>and the-page.html<span class="pl-pds">'</span></span>].<span class="pl-c1">join</span>(<span class="pl-s"><span class="pl-pds">'</span>, <span class="pl-pds">'</span></span>);
+  }, {
+    x<span class="pl-k">:</span> x,
+    y<span class="pl-k">:</span> y
+  });
+
+  <span class="pl-en">console</span>.<span class="pl-c1">log</span>(<span class="pl-s"><span class="pl-pds">'</span>z:<span class="pl-pds">'</span></span>, z); <span class="pl-c"><span class="pl-c">//</span> -&gt; z: spooky, casper, and the-page.html</span>
+}]);
+
+<span class="pl-smi">spooky</span>.<span class="pl-en">run</span>();</pre></div>
+
+        </div>
+
+    </div>]

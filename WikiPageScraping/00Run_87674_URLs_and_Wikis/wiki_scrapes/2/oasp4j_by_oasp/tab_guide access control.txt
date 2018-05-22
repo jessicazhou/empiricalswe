@@ -1,0 +1,530 @@
+[<div class="wiki-body gollum-asciidoc-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <div>
+<div>Table of Contents</div>
+<ul>
+<li>
+<a href="#access-control">Access-Control</a>
+<ul>
+<li>
+<a href="#authentication">Authentication</a>
+<ul>
+<li><a href="#mechanisms">Mechanisms</a></li>
+<li><a href="#preserve-original-request-anchors-after-form-login-redirect">Preserve original request anchors after form login redirect</a></li>
+<li><a href="#users-vs-systems">Users vs. Systems</a></li>
+</ul>
+</li>
+<li>
+<a href="#authorization">Authorization</a>
+<ul>
+<li><a href="#clarification-of-terms">Clarification of terms</a></li>
+<li><a href="#suggestions-on-the-access-model">Suggestions on the access model</a></li>
+<li><a href="#oasp4j-security">oasp4j-security</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</div>
+<h1 id="user-content-access-control">
+<a aria-hidden="true" class="anchor" href="#access-control" id="user-content-access-control"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Access-Control</h1>
+<div>
+<p>Access-Control is a central and important aspect of <a href="guide-security">Security</a>. It consists of two major aspects:</p>
+</div>
+<div>
+<ul>
+<li>
+<p><a href="#authentication">Authentication</a> (Who tries to access?)</p>
+</li>
+<li>
+<p><a href="#authorization">Authorization</a> (Is the one accessing allowed to do what he wants to do?)</p>
+</li>
+</ul>
+</div>
+<div>
+<h2 id="user-content-authentication">
+<a aria-hidden="true" class="anchor" href="#authentication" id="user-content-authentication"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Authentication</h2>
+<div>
+<div>
+<p>Definition:</p>
+</div>
+<div>
+<blockquote>
+<div>
+<p>Authentication is the verification that somebody interacting with the system is the actual subject for whom he claims to be.</p>
+</div>
+</blockquote>
+</div>
+<div>
+<p>The one authenticated is properly called <em>subject</em> or <a href="http://docs.oracle.com/javase/7/docs/api/java/security/Principal.html" rel="nofollow"><em>principal</em></a>. However, for simplicity we use the common term <em>user</em> even though it may not be a human (e.g. in case of a service call from an external system).</p>
+</div>
+<div>
+<p>To prove his authenticity the user provides some secret called <em>credentials</em>. The most simple form of credentials is a password.</p>
+</div>
+<div>
+<table>
+<tbody><tr>
+<td>
+<div>Note</div>
+</td>
+<td>
+Please never implement your own authentication mechanism or credential store. You have to be aware of implicit demands such as salting and hashing credentials, password life-cycle with recovery, expiry, and renewal including email notification confirmation tokens, central password policies, etc. This is the domain of access managers and identity management systems. In a business context you will typically already find a system for this purpose that you have to integrate (e.g. via LDAP).
+</td>
+</tr>
+</tbody></table>
+</div>
+<div>
+<p>oasp4j uses Spring Security as a framework for authentication purposes. Therefore you need to define an authentication provider implementing the <code>org.springframework.security.authentication.AuthenticationProvider</code> interface from Spring Security. The implemented authentication provider can be registered as main authentication provider using the authentication-manager declaration.</p>
+</div>
+<div>
+<div>
+<div class="highlight highlight-text-xml"><pre>&lt;<span class="pl-ent">beans</span><span class="pl-ent">:</span><span class="pl-ent">beans</span> <span class="pl-e">xmlns</span>=<span class="pl-s"><span class="pl-pds">"</span>http://www.springframework.org/schema/security<span class="pl-pds">"</span></span> <span class="pl-e">xmlns</span><span class="pl-e">:</span><span class="pl-e">beans</span>=<span class="pl-s"><span class="pl-pds">"</span>http://www.springframework.org/schema/beans<span class="pl-pds">"</span></span>&gt;
+
+  &lt;<span class="pl-ent">beans</span><span class="pl-ent">:</span><span class="pl-ent">bean</span> <span class="pl-e">id</span>=<span class="pl-s"><span class="pl-pds">"</span>restaurantAuthenticationProvider<span class="pl-pds">"</span></span>
+              <span class="pl-e">class</span>=<span class="pl-s"><span class="pl-pds">"</span>io.oasp.gastronomy.restaurant.general.common.api.security.ServletAuthenticationProvider<span class="pl-pds">"</span></span>/&gt;
+
+  &lt;<span class="pl-ent">authentication-manager</span> <span class="pl-e">alias</span>=<span class="pl-s"><span class="pl-pds">"</span>restaurantAuthenticationManager<span class="pl-pds">"</span></span> <span class="pl-e">erase-credentials</span>=<span class="pl-s"><span class="pl-pds">"</span>false<span class="pl-pds">"</span></span>&gt;
+    &lt;<span class="pl-ent">authentication-provider</span> <span class="pl-e">ref</span>=<span class="pl-s"><span class="pl-pds">"</span>restaurantAuthenticationProvider<span class="pl-pds">"</span></span>/&gt;
+  &lt;/<span class="pl-ent">authentication-manager</span>&gt;
+&lt;/<span class="pl-ent">beans</span><span class="pl-ent">:</span><span class="pl-ent">beans</span>&gt;</pre></div>
+</div>
+</div>
+<div>
+<h3 id="user-content-mechanisms">
+<a aria-hidden="true" class="anchor" href="#mechanisms" id="user-content-mechanisms"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Mechanisms</h3>
+<div>
+<h4 id="user-content-basic">
+<a aria-hidden="true" class="anchor" href="#basic" id="user-content-basic"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Basic</h4>
+<div>
+<p>Http-Basic authentication can be easily implemented with this configuration:</p>
+</div>
+<div>
+<div>
+<div class="highlight highlight-text-xml"><pre>&lt;<span class="pl-ent">http</span> <span class="pl-e">auto-config</span>=<span class="pl-s"><span class="pl-pds">"</span>true<span class="pl-pds">"</span></span> <span class="pl-e">use-expressions</span>=<span class="pl-s"><span class="pl-pds">"</span>true<span class="pl-pds">"</span></span>&gt;
+  ...
+  &lt;<span class="pl-ent">http-basic</span>/&gt;
+  ...
+&lt;/<span class="pl-ent">http</span>&gt;</pre></div>
+</div>
+</div>
+</div>
+<div>
+<h4 id="user-content-form-login">
+<a aria-hidden="true" class="anchor" href="#form-login" id="user-content-form-login"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Form Login</h4>
+<div>
+<p>For a form login the spring security implementation might look like this:</p>
+</div>
+<div>
+<div>
+<div class="highlight highlight-text-xml"><pre>&lt;<span class="pl-ent">http</span> <span class="pl-e">auto-config</span>=<span class="pl-s"><span class="pl-pds">"</span>false<span class="pl-pds">"</span></span> <span class="pl-e">use-expressions</span>=<span class="pl-s"><span class="pl-pds">"</span>true<span class="pl-pds">"</span></span>&gt;
+    ...
+    &lt;<span class="pl-ent">form-login</span> <span class="pl-e">login-page</span>=<span class="pl-s"><span class="pl-pds">"</span>/login<span class="pl-pds">"</span></span> <span class="pl-e">authentication-failure-url</span>=<span class="pl-s"><span class="pl-pds">"</span>/login?authentication_failed=1<span class="pl-pds">"</span></span>
+      <span class="pl-e">login-processing-url</span>=<span class="pl-s"><span class="pl-pds">"</span>/j_spring_security_login<span class="pl-pds">"</span></span> <span class="pl-e">default-target-url</span>=<span class="pl-s"><span class="pl-pds">"</span>/services<span class="pl-pds">"</span></span>/&gt;
+    &lt;<span class="pl-ent">logout</span> <span class="pl-e">logout-url</span>=<span class="pl-s"><span class="pl-pds">"</span>/j_spring_security_logout<span class="pl-pds">"</span></span> <span class="pl-e">logout-success-url</span>=<span class="pl-s"><span class="pl-pds">"</span>/login?logout=1<span class="pl-pds">"</span></span> <span class="pl-e">invalidate-session</span>=<span class="pl-s"><span class="pl-pds">"</span>true<span class="pl-pds">"</span></span>/&gt;
+    &lt;<span class="pl-ent">access-denied-handler</span> <span class="pl-e">error-page</span>=<span class="pl-s"><span class="pl-pds">"</span>/login?access_denied=1<span class="pl-pds">"</span></span>/&gt;
+    ...
+&lt;/<span class="pl-ent">http</span>&gt;</pre></div>
+</div>
+</div>
+<div>
+<p>The interesting part is, that there is a login-processing-url, which should be adressed to handle the internal spring security authentication and similarly there is a logout-url, which has to be called to logout a user.</p>
+</div>
+</div>
+</div>
+<div>
+<h3 id="user-content-preserve-original-request-anchors-after-form-login-redirect">
+<a aria-hidden="true" class="anchor" href="#preserve-original-request-anchors-after-form-login-redirect" id="user-content-preserve-original-request-anchors-after-form-login-redirect"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Preserve original request anchors after form login redirect</h3>
+<div>
+<p>Spring Security will automatically redirect any unauthorized access to the defined login-page. After sucuessful login, the user will be redirected to the original requested URL. The only pitfall is, that anchors in the request URL will not be transmitted to server and thus cannot be restored after successful login. Therefore the oasp4j-security module provides the RetainAnchorFilter, which is able to inject javascript code to the source page and to the target page of any redirection. Using javascript this filter is able to retrieve the requested anchors and store them into a cookie. Heading the target URL this cookie will be used to restore the original anchors again.</p>
+</div>
+<div>
+<p>To enable this mechanism you have to integrate the RetainAnchorFilter as follows:
+First, declare the filter with</p>
+</div>
+<div>
+<ul>
+<li>
+<p><code>storeUrlPattern</code>: an regular expression matching the URL, where anchors should be stored</p>
+</li>
+<li>
+<p><code>restoreUrlPattern</code>: an regular expression matching the URL, where anchors should be restored</p>
+</li>
+<li>
+<p><code>cookieName</code>: the name of the cookie to save the anchors in the intermediate time</p>
+</li>
+</ul>
+</div>
+<div>
+<div>
+<div class="highlight highlight-text-xml"><pre>&lt;<span class="pl-ent">beans</span><span class="pl-ent">:</span><span class="pl-ent">bean</span> <span class="pl-e">id</span>=<span class="pl-s"><span class="pl-pds">"</span>retainAnchorFilter<span class="pl-pds">"</span></span> <span class="pl-e">class</span>=<span class="pl-s"><span class="pl-pds">"</span>io.oasp.module.security.common.web.api.RetainAnchorFilter<span class="pl-pds">"</span></span>&gt;
+    <span class="pl-c"><span class="pl-c">&lt;!--</span> first [^/]+ part describes host name and possibly port, second [^/]+ is the application name <span class="pl-c">--&gt;</span></span>
+    &lt;<span class="pl-ent">beans</span><span class="pl-ent">:</span><span class="pl-ent">property</span> <span class="pl-e">name</span>=<span class="pl-s"><span class="pl-pds">"</span>storeUrlPattern<span class="pl-pds">"</span></span> <span class="pl-e">value</span>=<span class="pl-s"><span class="pl-pds">"</span>http://[^/]+/[^/]+/login.*<span class="pl-pds">"</span></span>/&gt;
+    &lt;<span class="pl-ent">beans</span><span class="pl-ent">:</span><span class="pl-ent">property</span> <span class="pl-e">name</span>=<span class="pl-s"><span class="pl-pds">"</span>restoreUrlPattern<span class="pl-pds">"</span></span> <span class="pl-e">value</span>=<span class="pl-s"><span class="pl-pds">"</span>http://[^/]+/[^/]+/.*<span class="pl-pds">"</span></span>/&gt;
+    &lt;<span class="pl-ent">beans</span><span class="pl-ent">:</span><span class="pl-ent">property</span> <span class="pl-e">name</span>=<span class="pl-s"><span class="pl-pds">"</span>cookieName<span class="pl-pds">"</span></span> <span class="pl-e">value</span>=<span class="pl-s"><span class="pl-pds">"</span>TARGETANCHOR<span class="pl-pds">"</span></span>/&gt;
+&lt;/<span class="pl-ent">beans</span><span class="pl-ent">:</span><span class="pl-ent">bean</span>&gt;</pre></div>
+</div>
+</div>
+<div>
+<p>Second, register the filter as first filter in the request filter chain. You might want to use the before="FIRST" or after="FIRST" attribute if you have multiple request filters, which should be run before the default filters.</p>
+</div>
+<div>
+<div>simple Spring Security filter insertion</div>
+<div>
+<div class="highlight highlight-text-xml"><pre>&lt;<span class="pl-ent">http</span> <span class="pl-e">auto-config</span>=<span class="pl-s"><span class="pl-pds">"</span>false<span class="pl-pds">"</span></span> <span class="pl-e">use-expressions</span>=<span class="pl-s"><span class="pl-pds">"</span>true<span class="pl-pds">"</span></span>&gt;
+    &lt;<span class="pl-ent">custom-filter</span> <span class="pl-e">ref</span>=<span class="pl-s"><span class="pl-pds">"</span>retainAnchorFilter<span class="pl-pds">"</span></span> <span class="pl-e">after</span>=<span class="pl-s"><span class="pl-pds">"</span>FIRST<span class="pl-pds">"</span></span>/&gt;
+&lt;/<span class="pl-ent">http</span>&gt;</pre></div>
+</div>
+</div>
+<div>
+<p>Nevertheless, the oasp4j follows a different approach. The simple interface of Spring Security for inserting custom filters as stated above is driven by a relative alignment of the different filters been executed. You relatively can insert custom filters before or after existing ones and also at the beginning or at the end. You might easily see, that the real filter chain will get more and more invisible. Thus the oasp4j follows the default ordering of the Spring Security filter chain, such that it gets more transparent for any developer, which filters will be executed in which order and at which position a new custom filter may be inserted.</p>
+</div>
+<div>
+<p>This documentation depends on Spring Security v3.2.5.RELEASE:</p>
+</div>
+<div>
+<ul>
+<li>
+<p><a href="http://docs.spring.io/spring-security/site/docs/3.2.5.RELEASE/reference/htmlsingle/#filter-ordering" rel="nofollow">general filter ordering</a></p>
+</li>
+<li>
+<p><a href="http://docs.spring.io/spring-security/site/docs/3.2.5.RELEASE/reference/htmlsingle/#ns-custom-filters" rel="nofollow">detailed filter ordering</a></p>
+</li>
+</ul>
+</div>
+<div>
+<p>These lists will be maintained each release, which will include a Spring Security upgrade. Thus first, we will not loose any changes from the possibly updated default filter chain of Spring Security. Second, due to the absolute declaration of the filter order, you might not get any strange behavior in your system after upgrading to a new version of Spring Security.</p>
+</div>
+</div>
+<div>
+<h3 id="user-content-users-vs-systems">
+<a aria-hidden="true" class="anchor" href="#users-vs-systems" id="user-content-users-vs-systems"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Users vs. Systems</h3>
+<div>
+<p>If we are talking about authentication we have to distinguish two forms of principals:</p>
+</div>
+<div>
+<ul>
+<li>
+<p>human users</p>
+</li>
+<li>
+<p>autonomous systems</p>
+</li>
+</ul>
+</div>
+<div>
+<p>While e.g. a Kerberos/SPNEGO Single-Sign-On makes sense for human users it is pointless for authenticating autonomous systems. So always keep this in mind when you design your authentication mechanisms and separate access for human users from access for systems.</p>
+</div>
+</div>
+</div>
+</div>
+<div>
+<h2 id="user-content-authorization">
+<a aria-hidden="true" class="anchor" href="#authorization" id="user-content-authorization"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Authorization</h2>
+<div>
+<div>
+<p><strong>Definition:</strong></p>
+</div>
+<div>
+<blockquote>
+<div>
+<p>Authorization is the verification that an authenticated user is allowed to perform the operation he intends to invoke.</p>
+</div>
+</blockquote>
+</div>
+<div>
+<h3 id="user-content-clarification-of-terms">
+<a aria-hidden="true" class="anchor" href="#clarification-of-terms" id="user-content-clarification-of-terms"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Clarification of terms</h3>
+<div>
+<p>For clarification we also want to give a common understanding of related terms that have no unique definition and consistent usage in the wild.</p>
+</div>
+<table>
+<caption>Table 1. Security terms related to authorization</caption>
+<colgroup>
+<col/>
+<col/>
+</colgroup>
+<thead>
+<tr>
+<th><strong>Term</strong></th>
+<th><strong>Meaning and comment</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><p>Permission</p></td>
+<td><p>A permission is an object that allows a principal to perform an operation in the system. This permission can be <em>granted</em> (give) or <em>revoked</em> (taken away). Sometimes people also use the term <em>right</em> what is actually wrong as a right (such as the right to be free) can not be revoked.</p></td>
+</tr>
+<tr>
+<td><p>Group</p></td>
+<td><p>We use the term group in this context for an object that contains permissions. A group may also contain other groups. Then the group represents the set of all recursively contained permissions.</p></td>
+</tr>
+<tr>
+<td><p>Role</p></td>
+<td>
+<p>We consider a role as a specific form of group that also contains permissions. A role identifies a specific function of a principal. A user can act in a role.</p>
+<p>For simple scenarios a principal has a single role associated. In more complex situations a principal can have multiple roles but has only one active role at a time that he can choose out of his assigned roles. For KISS it is sometimes sufficient to avoid this by creating multiple accounts for the few users with multiple roles. Otherwise at least avoid switching roles at runtime in clients as this may cause problems with related states. Simply restart the client with the new role as parameter in case the user wants to switch his role.</p>
+</td>
+</tr>
+<tr>
+<td><p>Access Control</p></td>
+<td><p>Any permission, group, role, etc., which declares a control for access management.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div>
+<h3 id="user-content-suggestions-on-the-access-model">
+<a aria-hidden="true" class="anchor" href="#suggestions-on-the-access-model" id="user-content-suggestions-on-the-access-model"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Suggestions on the access model</h3>
+<div>
+<p>The access model provided by oasp4j-security follows this suggestions:</p>
+</div>
+<div>
+<ul>
+<li>
+<p>Each Access Control (permission, group, role, …​) is uniquely identified by a human readable string.</p>
+</li>
+<li>
+<p>We create a unique permission for each use-case.</p>
+</li>
+<li>
+<p>We define groups that combine permissions to typical and useful sets for the users.</p>
+</li>
+<li>
+<p>We define roles as specific groups as required by our business demands.</p>
+</li>
+<li>
+<p>We allow to associate users with a list of Access Controls.</p>
+</li>
+<li>
+<p>For authorization of an implemented use case we determine the required permission. Furthermore, we determine the current user and verify that the required permission is contained in the tree spanned by all his associated Access Controls. If the user does not have the permission we throw a security exception and thus abort the operation and transaction.</p>
+</li>
+<li>
+<p>We try to avoid negative permissions, that is a user has no permission by default but only those granted to him additively permit him for executing use cases.</p>
+</li>
+<li>
+<p>Technically we consider permissions as a secret of the application. Administrators shall not fiddle with individual permissions but grant them via groups. So the access management provides a list of strings identifying the Access Controls of a user. The individual application itself contains these Access Controls in a structured way, whereas each group forms a permission tree.</p>
+</li>
+</ul>
+</div>
+</div>
+<div>
+<h3 id="user-content-oasp4j-security">
+<a aria-hidden="true" class="anchor" href="#oasp4j-security" id="user-content-oasp4j-security"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>oasp4j-security</h3>
+<div>
+<p>The OASP provides a ready to use module oasp4j-security that is based on <a href="http://projects.spring.io/spring-security/" rel="nofollow">spring-security</a> and makes your life a lot easier.</p>
+</div>
+<div>
+<div>
+<a href="images/Security-AccessControl.png"><img alt="access-control" src="images/Security-AccessControl.png" width="450"/></a>
+</div>
+<div>Figure 1. OASP4J Security Model</div>
+</div>
+<div>
+<p>The diagram shows the model of oasp4j-security that separates two different aspects:</p>
+</div>
+<div>
+<ul>
+<li>
+<p>The <em>Indentity- and Access-Management</em> is provided by according products and typically already available in the enterprise landscape (e.g. an active directory). It provides a hierarchy of <em>primary access control objects</em> (roles and groups) of a user. An administrator can grant and revoke permissions (indirectly) via this way.</p>
+</li>
+<li>
+<p>The application security is using oasp4j-security defines a hierarchy of <em>secondary access control objects</em> (groups and permissions) in the file access-control-schema.xml (see <a href="https://github.com/oasp/oasp4j/blob/develop/oasp4j-samples/oasp4j-sample-core/src/main/resources/config/app/security/access-control-schema.xml">example from sample app</a>). This hierarchy defines the application internal access control schema that should be an implementation secret of the application. Only the top-level access control objects are public and define the interface to map from the primary to secondary access control objects. This mapping is simply done by using the same names for access control objects to match.</p>
+</li>
+</ul>
+</div>
+<div>
+<h4 id="user-content-access-control-schema">
+<a aria-hidden="true" class="anchor" href="#access-control-schema" id="user-content-access-control-schema"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Access Control Schema</h4>
+<div>
+<p>The <code>oasp4j-security</code> module provides a simple and efficient way to define permissions and roles. The file <code>access-control-schema.xml</code> is used to define the mapping from groups to permissions. The general terms discussed above can be mapped to the implementation as follows:</p>
+</div>
+<table>
+<caption>Table 2. General security terms related to oasp4j access control schema</caption>
+<colgroup>
+<col/>
+<col/>
+<col/>
+</colgroup>
+<thead>
+<tr>
+<th><strong>Term</strong></th>
+<th><strong>oasp4j-security implementation</strong></th>
+<th><strong>Comment</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><p>Permission</p></td>
+<td><p><code>AccessControlPermission</code></p></td>
+<td></td>
+</tr>
+<tr>
+<td><p>Group</p></td>
+<td><p><code>AccessControlGroup</code></p></td>
+<td><p>When considering different levels of groups of different meanings, declare <code>type</code> attribute, e.g. as "group".</p></td>
+</tr>
+<tr>
+<td><p>Role</p></td>
+<td><p><code>AccessControlGroup</code></p></td>
+<td><p>With <code>type="role"</code>.</p></td>
+</tr>
+<tr>
+<td><p>Access Control</p></td>
+<td><p><code>AccessControl</code></p></td>
+<td><p>Super type that represents a tree of <code>AccessControlGroups</code> and <code>AccessControlPermissions</code>. If a principal "has" a <code>AccessControl</code> he also "has" all <code>AccessControls</code> with according permissions in the spanned sub-tree.</p></td>
+</tr>
+</tbody>
+</table>
+<div>
+<div>Example access-control-schema.xml</div>
+<div>
+<div class="highlight highlight-text-xml"><pre>&lt;?<span class="pl-ent">xml</span><span class="pl-e"> version</span>=<span class="pl-s"><span class="pl-pds">"</span>1.0<span class="pl-pds">"</span></span><span class="pl-e"> encoding</span>=<span class="pl-s"><span class="pl-pds">"</span>UTF-8<span class="pl-pds">"</span></span>?&gt;
+&lt;<span class="pl-ent">access-control-schema</span>&gt;
+  &lt;<span class="pl-ent">group</span> <span class="pl-e">id</span>=<span class="pl-s"><span class="pl-pds">"</span>ReadMasterData<span class="pl-pds">"</span></span> <span class="pl-e">type</span>=<span class="pl-s"><span class="pl-pds">"</span>group<span class="pl-pds">"</span></span>&gt;
+    &lt;<span class="pl-ent">permissions</span>&gt;
+      &lt;<span class="pl-ent">permission</span> <span class="pl-e">id</span>=<span class="pl-s"><span class="pl-pds">"</span>OfferManagement_GetOffer<span class="pl-pds">"</span></span>/&gt;
+      &lt;<span class="pl-ent">permission</span> <span class="pl-e">id</span>=<span class="pl-s"><span class="pl-pds">"</span>OfferManagement_GetProduct<span class="pl-pds">"</span></span>/&gt;
+      &lt;<span class="pl-ent">permission</span> <span class="pl-e">id</span>=<span class="pl-s"><span class="pl-pds">"</span>TableManagement_GetTable<span class="pl-pds">"</span></span>/&gt;
+      &lt;<span class="pl-ent">permission</span> <span class="pl-e">id</span>=<span class="pl-s"><span class="pl-pds">"</span>StaffManagement_GetStaffMember<span class="pl-pds">"</span></span>/&gt;
+    &lt;/<span class="pl-ent">permissions</span>&gt;
+  &lt;/<span class="pl-ent">group</span>&gt;
+
+  &lt;<span class="pl-ent">group</span> <span class="pl-e">id</span>=<span class="pl-s"><span class="pl-pds">"</span>Waiter<span class="pl-pds">"</span></span> <span class="pl-e">type</span>=<span class="pl-s"><span class="pl-pds">"</span>role<span class="pl-pds">"</span></span>&gt;
+    &lt;<span class="pl-ent">inherits</span>&gt;
+      &lt;<span class="pl-ent">group-ref</span>&gt;Barkeeper&lt;/<span class="pl-ent">group-ref</span>&gt;
+    &lt;/<span class="pl-ent">inherits</span>&gt;
+    &lt;<span class="pl-ent">permissions</span>&gt;
+      &lt;<span class="pl-ent">permission</span> <span class="pl-e">id</span>=<span class="pl-s"><span class="pl-pds">"</span>TableManagement_ChangeTable<span class="pl-pds">"</span></span>/&gt;
+    &lt;/<span class="pl-ent">permissions</span>&gt;
+  &lt;/<span class="pl-ent">group</span>&gt;
+  ...
+&lt;/<span class="pl-ent">access-control-schema</span>&gt;</pre></div>
+</div>
+</div>
+<div>
+<p>This example <code>access-control-schema.xml</code> declares</p>
+</div>
+<div>
+<ul>
+<li>
+<p>a group named <code>ReadMasterData</code>, which grants four different permissions, e.g., <code>OfferManagement_GetOffer</code></p>
+</li>
+<li>
+<p>a group named <code>Waiter</code>, which</p>
+<div>
+<ul>
+<li>
+<p>also grants all permissions from the group <code>Barkeeper</code></p>
+</li>
+<li>
+<p>in addition grants the permission <code>TableManagement_ChangeTable</code></p>
+</li>
+<li>
+<p>is marked to be a <code>role</code> for further application needs.</p>
+</li>
+</ul>
+</div>
+</li>
+</ul>
+</div>
+<div>
+<p>The oasp4j-security module automatically validates the schema configuration and will throw an exception if invalid.</p>
+</div>
+<div>
+<p>Unfortunately, Spring Security does not provide differentiated interfaces for authentication and authorization. Thus we have to provide an <code>AuthenticationProvider</code>, which is provided from Spring Security as an interface for authentication and authorization simultaneously.
+To integrate the oasp4j-security provided access control schema, you can simply inherit your own implementation from the oasp4j-security provided abstract class <code>AbstractAccessControlBasedAuthenticationProvider</code> and register your <code>ApplicationAuthenticationProvider</code> as an <code>AuthenticationManager</code>. Doing so, you also have to declare the two Beans <code>AccessControlProvider</code> and <code>AccessControlSchemaProvider</code> as listed below, which are precondition for the <code>AbstractAccessControlBasedAuthenticationProvider</code>.</p>
+</div>
+<div>
+<div>Example integration of oasp4j-security access control schema</div>
+<div>
+<div class="highlight highlight-text-xml"><pre>&lt;<span class="pl-ent">bean</span> <span class="pl-e">id</span>=<span class="pl-s"><span class="pl-pds">"</span>AuthenticationManager<span class="pl-pds">"</span></span> <span class="pl-e">class</span>=<span class="pl-s"><span class="pl-pds">"</span>org.springframework.security.authentication.ProviderManager<span class="pl-pds">"</span></span>&gt;
+    &lt;<span class="pl-ent">constructor-arg</span>&gt;
+      &lt;<span class="pl-ent">list</span>&gt;
+        &lt;<span class="pl-ent">ref</span> <span class="pl-e">bean</span>=<span class="pl-s"><span class="pl-pds">"</span>ApplicationAuthenticationProvider<span class="pl-pds">"</span></span>/&gt;
+      &lt;/<span class="pl-ent">list</span>&gt;
+    &lt;/<span class="pl-ent">constructor-arg</span>&gt;
+&lt;/<span class="pl-ent">bean</span>&gt;
+
+&lt;<span class="pl-ent">bean</span> <span class="pl-e">id</span>=<span class="pl-s"><span class="pl-pds">"</span>AccessControlProvider<span class="pl-pds">"</span></span> <span class="pl-e">class</span>=<span class="pl-s"><span class="pl-pds">"</span>io.oasp.module.security.common.impl.accesscontrol.AccessControlProviderImpl<span class="pl-pds">"</span></span>/&gt;
+&lt;<span class="pl-ent">bean</span> <span class="pl-e">id</span>=<span class="pl-s"><span class="pl-pds">"</span>AccessControlSchemaProvider<span class="pl-pds">"</span></span> <span class="pl-e">class</span>=<span class="pl-s"><span class="pl-pds">"</span>io.oasp.module.security.common.impl.accesscontrol.AccessControlSchemaProviderImpl<span class="pl-pds">"</span></span>/&gt;</pre></div>
+</div>
+</div>
+</div>
+<div>
+<h4 id="user-content-configuration-on-url-level">
+<a aria-hidden="true" class="anchor" href="#configuration-on-url-level" id="user-content-configuration-on-url-level"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Configuration on URL level</h4>
+<div>
+<p>The authorization (in terms of Spring security "access management") can be enabled seperately for different url patterns, the request will be matched against. The order of these url patterns is essential as the first matching pattern will declare the access restriction for the incoming request (see access attribute). Here an example:</p>
+</div>
+<div>
+<div>Extensive example of authorization on URL level</div>
+<div>
+<div class="highlight highlight-text-xml"><pre>&lt;<span class="pl-ent">bean</span> <span class="pl-e">id</span>=<span class="pl-s"><span class="pl-pds">"</span>FilterSecurityInterceptor<span class="pl-pds">"</span></span> <span class="pl-e">class</span>=<span class="pl-s"><span class="pl-pds">"</span>org.springframework.security.web.access.intercept.FilterSecurityInterceptor<span class="pl-pds">"</span></span>&gt;
+    &lt;<span class="pl-ent">property</span> <span class="pl-e">name</span>=<span class="pl-s"><span class="pl-pds">"</span>authenticationManager<span class="pl-pds">"</span></span> <span class="pl-e">ref</span>=<span class="pl-s"><span class="pl-pds">"</span>AuthenticationManager<span class="pl-pds">"</span></span>/&gt;
+    &lt;<span class="pl-ent">property</span> <span class="pl-e">name</span>=<span class="pl-s"><span class="pl-pds">"</span>accessDecisionManager<span class="pl-pds">"</span></span> <span class="pl-e">ref</span>=<span class="pl-s"><span class="pl-pds">"</span>FilterAccessDecisionManager<span class="pl-pds">"</span></span>/&gt;
+    &lt;<span class="pl-ent">property</span> <span class="pl-e">name</span>=<span class="pl-s"><span class="pl-pds">"</span>securityMetadataSource<span class="pl-pds">"</span></span>&gt;
+      &lt;<span class="pl-ent">security</span><span class="pl-ent">:</span><span class="pl-ent">filter-security-metadata-source</span> <span class="pl-e">use-expressions</span>=<span class="pl-s"><span class="pl-pds">"</span>true<span class="pl-pds">"</span></span>&gt;
+        &lt;<span class="pl-ent">security</span><span class="pl-ent">:</span><span class="pl-ent">intercept-url</span> <span class="pl-e">pattern</span>=<span class="pl-s"><span class="pl-pds">"</span>/<span class="pl-pds">"</span></span> <span class="pl-e">access</span>=<span class="pl-s"><span class="pl-pds">"</span>isAnonymous()<span class="pl-pds">"</span></span>/&gt;
+        &lt;<span class="pl-ent">security</span><span class="pl-ent">:</span><span class="pl-ent">intercept-url</span> <span class="pl-e">pattern</span>=<span class="pl-s"><span class="pl-pds">"</span>/index.jsp<span class="pl-pds">"</span></span> <span class="pl-e">access</span>=<span class="pl-s"><span class="pl-pds">"</span>isAnonymous()<span class="pl-pds">"</span></span>/&gt;
+        &lt;<span class="pl-ent">security</span><span class="pl-ent">:</span><span class="pl-ent">intercept-url</span> <span class="pl-e">pattern</span>=<span class="pl-s"><span class="pl-pds">"</span>/security/login*<span class="pl-pds">"</span></span> <span class="pl-e">access</span>=<span class="pl-s"><span class="pl-pds">"</span>isAnonymous()<span class="pl-pds">"</span></span>/&gt;
+        &lt;<span class="pl-ent">security</span><span class="pl-ent">:</span><span class="pl-ent">intercept-url</span> <span class="pl-e">pattern</span>=<span class="pl-s"><span class="pl-pds">"</span>/j_spring_security_login*<span class="pl-pds">"</span></span> <span class="pl-e">access</span>=<span class="pl-s"><span class="pl-pds">"</span>isAnonymous()<span class="pl-pds">"</span></span>/&gt;
+        &lt;<span class="pl-ent">security</span><span class="pl-ent">:</span><span class="pl-ent">intercept-url</span> <span class="pl-e">pattern</span>=<span class="pl-s"><span class="pl-pds">"</span>/j_spring_security_logout*<span class="pl-pds">"</span></span> <span class="pl-e">access</span>=<span class="pl-s"><span class="pl-pds">"</span>isAnonymous()<span class="pl-pds">"</span></span>/&gt;
+        &lt;<span class="pl-ent">security</span><span class="pl-ent">:</span><span class="pl-ent">intercept-url</span> <span class="pl-e">pattern</span>=<span class="pl-s"><span class="pl-pds">"</span>/services/rest/security/currentuser/<span class="pl-pds">"</span></span> <span class="pl-e">access</span>=<span class="pl-s"><span class="pl-pds">"</span>isAnonymous() or isAuthenticated()<span class="pl-pds">"</span></span>/&gt;
+        &lt;<span class="pl-ent">security</span><span class="pl-ent">:</span><span class="pl-ent">intercept-url</span> <span class="pl-e">pattern</span>=<span class="pl-s"><span class="pl-pds">"</span>/**<span class="pl-pds">"</span></span> <span class="pl-e">access</span>=<span class="pl-s"><span class="pl-pds">"</span>isAuthenticated()<span class="pl-pds">"</span></span>/&gt;
+      &lt;/<span class="pl-ent">security</span><span class="pl-ent">:</span><span class="pl-ent">filter-security-metadata-source</span>&gt;
+    &lt;/<span class="pl-ent">property</span>&gt;
+&lt;/<span class="pl-ent">bean</span>&gt;
+
+&lt;<span class="pl-ent">bean</span> <span class="pl-e">id</span>=<span class="pl-s"><span class="pl-pds">"</span>FilterAccessDecisionManager<span class="pl-pds">"</span></span> <span class="pl-e">class</span>=<span class="pl-s"><span class="pl-pds">"</span>org.springframework.security.access.vote.UnanimousBased<span class="pl-pds">"</span></span>&gt;
+    &lt;<span class="pl-ent">constructor-arg</span>&gt;
+      &lt;<span class="pl-ent">list</span>&gt;
+        &lt;<span class="pl-ent">bean</span> <span class="pl-e">class</span>=<span class="pl-s"><span class="pl-pds">"</span>org.springframework.security.web.access.expression.WebExpressionVoter<span class="pl-pds">"</span></span>/&gt;
+      &lt;/<span class="pl-ent">list</span>&gt;
+    &lt;/<span class="pl-ent">constructor-arg</span>&gt;
+&lt;/<span class="pl-ent">bean</span>&gt;</pre></div>
+</div>
+</div>
+</div>
+<div>
+<h4 id="user-content-configuration-on-java-method-level">
+<a aria-hidden="true" class="anchor" href="#configuration-on-java-method-level" id="user-content-configuration-on-java-method-level"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Configuration on Java Method level</h4>
+<div>
+<p>As state of the art oasp4j will focus on role-based authorization to cope with authorization for executing use case of an application.
+We will use the JSR250 annotations, mainly <code>@RolesAllowed</code>, for authorizing method calls against the permissions defined in the annotation body. This has to be done for each use-case method in logic layer. Here is an example:</p>
+</div>
+<div>
+<div>
+<div class="highlight highlight-source-java"><pre><span class="pl-k">public</span> <span class="pl-k">class</span> <span class="pl-en">UcFindTableImpl</span> <span class="pl-k">extends</span> <span class="pl-e">AbstractTableUc</span> <span class="pl-k">implements</span> <span class="pl-e">UcFindTable</span> {
+
+  <span class="pl-k">@RolesAllowed</span>(<span class="pl-smi">PermissionConstants</span><span class="pl-c1"><span class="pl-k">.</span>FIND_TABLE</span>)
+  <span class="pl-k">public</span> <span class="pl-smi">TableEto</span> <span class="pl-en">findTable</span>(<span class="pl-smi">Long</span> <span class="pl-v">id</span>) {
+
+    <span class="pl-k">return</span> getBeanMapper()<span class="pl-k">.</span>map(getTableDao()<span class="pl-k">.</span>findOne(id), <span class="pl-smi">TableEto</span><span class="pl-k">.</span>class);
+  }
+}</pre></div>
+</div>
+</div>
+<div>
+<p>Now this method can only be called if a user is logged-in that has the permission <code>FIND_TABLE</code>.</p>
+</div>
+</div>
+<div>
+<h4 id="user-content-check-data-based-permissions">
+<a aria-hidden="true" class="anchor" href="#check-data-based-permissions" id="user-content-check-data-based-permissions"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Check Data-based Permissions</h4>
+<div>
+<p>Currently, we have no best practices and reference implementations to apply permission based access on an application’s data.
+Nevertheless, this is a very important topic due to the high standards of data privacy &amp; protection especially in germany. We will further investigate this topic and we will adress it in one of the next releases. For further tracking have a look at <a href="https://github.com/oasp/oasp4j/issues/125">issue #125</a>.</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+        </div>
+
+        <div class="wiki-footer gollum-markdown-content boxed-group" id="wiki-footer">
+          <div class="boxed-group-inner wiki-auxiliary-content markdown-body">
+            <p><a href="http://creativecommons.org/licenses/by-nd/4.0/" rel="nofollow"><img alt="Creative Commons License Agreement" data-canonical-src="http://i.creativecommons.org/l/by-nd/4.0/88x31.png" src="https://camo.githubusercontent.com/171d004f9ccb9199e35ac8ec3d99ede916037a9f/687474703a2f2f692e6372656174697665636f6d6d6f6e732e6f72672f6c2f62792d6e642f342e302f38387833312e706e67"/></a><br/><span>This documentation</span> is licensed under the <a href="http://creativecommons.org/licenses/by-nd/4.0/" rel="nofollow">Creative Commons License (Attribution-NoDerivatives 4.0 International)</a>.</p>
+
+          </div>
+        </div>
+    </div>]

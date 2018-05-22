@@ -1,0 +1,36 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <h2>
+<a aria-hidden="true" class="anchor" href="#preparation" id="user-content-preparation"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Preparation</h2>
+<p>Before compiling the Deadline and CFQ modules, we have to move a header file out of the way:</p>
+<pre><code>mv include/asm-arm/div64.h include/asm-arm/div64.h.orig
+cp include/asm-generic/div64.h include/asm-arm/div64.h
+</code></pre>
+<p>We have to do this because the original version hardcodes a short-call (in assembler: <code>BL</code>) to a kernel function (symbol <code>__do_div64</code>). If compiled with the original include, the CFQ module will produce this error message:</p>
+<p><code>cfq_iosched: relocation out of range, section 92 reloc 0 sym '__do_div64'</code></p>
+<p>The "wrong" call type can be easily spotted using an ARM version of objdump. If compiled with the original include, we observe this:</p>
+<pre><code>$ ./objdump -r cfq-iosched.ko | grep div
+0000023c R_ARM_CALL        __do_div64
+</code></pre>
+<p>The generic version shows this instead:</p>
+<pre><code>$ ./objdump -r cfq-iosched.ko | grep div
+000004bc R_ARM_ABS32       __div64_32
+</code></pre>
+<p>The error message stems from the fact that an <code>R_ARM_CALL</code> can't be relocated far enough to allow the module to be loaded. By using the generic version of <code>div64.h</code> which is implemented in pure C, the method call becomes an <code>R_ARM_ABS32</code>, which can be relocated far enough by the kernel module loader.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#menuconfig" id="user-content-menuconfig"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Menuconfig</h2>
+<pre><code>Block layer  ---&gt;
+  IO Schedulers  ---&gt;
+    &lt;M&gt; Deadline I/O scheduler
+    &lt;M&gt; CFQ I/O scheduler     
+</code></pre>
+<h2>
+<a aria-hidden="true" class="anchor" href="#files" id="user-content-files"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Files</h2>
+<ul>
+<li>block/cfq-iosched.ko</li>
+<li>block/deadline-iosched.ko</li>
+</ul>
+
+        </div>
+
+    </div>]

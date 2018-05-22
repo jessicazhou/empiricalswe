@@ -1,0 +1,373 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>Install GNOME 3.14 (with OpenRC) onto an existing Gentoo system!</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#installation-procedure" id="user-content-installation-procedure"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Installation Procedure</h2>
+<p>I'm going to assume that, having followed the vanilla <a href="https://wiki.gentoo.org/wiki/Handbook:AMD64#Installing_Gentoo" rel="nofollow">"Installing Gentoo" process from the Handbook</a>, you are currently running a stock amd64 Gentoo system, and would now like to use GNOME 3.14 under OpenRC.</p>
+<blockquote>
+<p>Note - <code>amd64</code> covers Intel-based x86_64 systems too, the reference to AMD is an historical artefact.</p>
+</blockquote>
+<h3>
+<a aria-hidden="true" class="anchor" href="#process-outline" id="user-content-process-outline"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Process Outline</h3>
+<p>The overall process is as follows:</p>
+<ol>
+<li>If necessary, migrate to <code>~amd64</code>, and update <code>@world</code>;</li>
+<li>Set up the <code>layman</code> tool, and install the two necessary overlays using it;</li>
+<li>Select the new, custom profile;</li>
+<li>Modify your Portage configuration;</li>
+<li>Perform an <code>@world</code> update;</li>
+<li>
+<code>emerge</code> GNOME!</li>
+<li>Ensure you have the necessary kernel settings;</li>
+<li>Configure GNOME startup;</li>
+<li>Reboot and enjoy!</li>
+</ol>
+<p>Let's go!</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#step-1-migrate-to-amd64-if-necessary" id="user-content-step-1-migrate-to-amd64-if-necessary"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Step 1: Migrate to <code>~amd64</code>, if Necessary</h3>
+<p>If you installed Gentoo on the 'stable' branch (<code>amd64</code>, with no tilde; the <a href="https://wiki.gentoo.org/wiki/Handbook:AMD64/Portage/Branches#Stable" rel="nofollow">default</a> if you have followed the Gentoo Handbook process), then you should migrate to <code>~amd64</code> before doing anything else (of course, if you have done this already, you can skip directly to step 2 now).</p>
+<p>To migrate, issue (as root):</p>
+<pre><code># nano -w /etc/portage/make.conf
+</code></pre>
+<p>and then add the following lines to the file:</p>
+<pre><code># Use the 'testing' branch
+ACCEPT_KEYWORDS="~amd64"
+</code></pre>
+<p>Save, and exit <code>nano</code>. Then issue:</p>
+<pre><code># emerge --sync
+# emerge --verbose --deep --with-bdeps=y --newuse --update @world
+</code></pre>
+<p>Let the process run to successful completion, run <code>dispatch-conf</code> if necessary, and then (for safety) reboot your machine.</p>
+<blockquote>
+<p>This is just a 'vanilla' migration to <code>~amd64</code>, so it should go through fine. If you have any problems, you can search for assistance on the <a href="https://forums.gentoo.org" rel="nofollow">Gentoo forums</a>.</p>
+</blockquote>
+<h3>
+<a aria-hidden="true" class="anchor" href="#step-2-set-up-layman-and-install-the-overlays" id="user-content-step-2-set-up-layman-and-install-the-overlays"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Step 2: Set up layman, and Install the Overlays</h3>
+<p>Next, if you haven't already installed <strong>layman</strong>(8) (Gentoo's overlay tool), do so now. Issue:</p>
+<pre><code># emerge --ask --verbose app-portage/layman
+# echo 'source "/var/lib/layman/make.conf"' &gt;&gt; /etc/portage/make.conf
+</code></pre>
+<p>Then, you need to set up two custom layman entries, for the <code>funtoo-gnome-overlay</code> and <code>funtoo-2-gentoo</code> overlays. Issue:</p>
+<pre><code># nano -w /etc/layman/overlays/funtoo-gnome-gentoo.xml
+</code></pre>
+<p>And put the following text in the file:</p>
+<pre><code>&lt;?xml version="1.0" encoding="UTF-8"?&gt;
+&lt;!DOCTYPE repositories SYSTEM "/dtd/repositories.dtd"&gt;
+&lt;repositories xmlns="" version="1.0"&gt;
+        &lt;repo priority="60" quality="experimental" status="unofficial"&gt;
+                &lt;name&gt;funtoo-gnome-gentoo&lt;/name&gt;
+                &lt;description&gt;Funtoo's Gnome overlay (by Dantrell B. et al) remapped for Gentoo.&lt;/description&gt;
+                &lt;owner&gt; 
+                        &lt;email&gt;sakaki@deciban.com&lt;/email&gt;
+                        &lt;name&gt;sakaki&lt;/name&gt;
+                &lt;/owner&gt;
+                &lt;source type="git"&gt;https://github.com/sakaki-/funtoo-gnome-overlay.git&lt;/source&gt;
+        &lt;/repo&gt;
+&lt;/repositories&gt;
+</code></pre>
+<p>Save, and exit <code>nano</code>. Then, issue:</p>
+<pre><code># nano -w /etc/layman/overlays/funtoo-2-gentoo.xml
+</code></pre>
+<p>and put the following text in that file:</p>
+<pre><code>&lt;?xml version="1.0" encoding="UTF-8"?&gt;
+&lt;!DOCTYPE repositories SYSTEM "/dtd/repositories.dtd"&gt;
+&lt;repositories xmlns="" version="1.0"&gt;
+        &lt;repo priority="70" quality="experimental" status="unofficial"&gt;
+                &lt;name&gt;funtoo-2-gentoo&lt;/name&gt;
+                &lt;description&gt;Allow use of Funtoo's Gnome overlay in Gentoo.&lt;/description&gt;
+                &lt;owner&gt; 
+                        &lt;email&gt;sakaki@deciban.com&lt;/email&gt;
+                        &lt;name&gt;sakaki&lt;/name&gt;
+                &lt;/owner&gt;
+                &lt;source type="git"&gt;https://github.com/sakaki-/funtoo-2-gentoo.git&lt;/source&gt;
+        &lt;/repo&gt;
+&lt;/repositories&gt;
+</code></pre>
+<p>Save, and exit <code>nano</code>. Then run the following, so <code>layman</code> picks up the new overlays, and starts using them:</p>
+<pre><code># layman --sync-all
+# layman --add="funtoo-gnome-gentoo"
+# layman --add="funtoo-2-gentoo"
+</code></pre>
+<h3></h3>
+<h2>
+<a aria-hidden="true" class="anchor" href="#step-3-select-the-new-custom-profile" id="user-content-step-3-select-the-new-custom-profile"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Step 3: Select the New Custom Profile</h2>
+<p>The <code>funtoo-2-gentoo</code> overlay makes a new, custom profile available for your use. This profile provides the files <code>make.defaults</code>, <code>package.mask</code>, <code>package.unmask</code>, <code>package.use</code> and <code>use.mask</code>, containing a compendium of settings copied over from Funtoo (which itself uses a different, more modular profile system than Gentoo).</p>
+<blockquote>
+<p>These notes have been tested using a 'base' <code>default/linux/amd64/13.0</code> installation as a starting point. As such, if you are attempting to come across from e.g., an existing <code>systemd</code> profile, you may experience some issues not mentioned here. (Of course, if you <em>have</em> managed to perform a 'crossgrade' of this type, please feel free to post information about it on this wiki, to help out others who may want to do a similar thing.)</p>
+</blockquote>
+<p>Begin by listing your currently available profiles. Issue:</p>
+<pre><code># eselect profile list
+  [1]   default/linux/amd64/13.0 *
+  [2]   default/linux/amd64/13.0/selinux
+  [3]   default/linux/amd64/13.0/desktop
+  [4]   default/linux/amd64/13.0/desktop/gnome
+  [5]   default/linux/amd64/13.0/desktop/gnome/systemd
+... additional output suppressed ...
+  [20]  hardened/linux/uclibc/amd64
+  [21]  funtoo-2-gentoo:default/linux/amd64/13.0/desktop/gnome/funtoo
+
+</code></pre>
+<p>The output line with the asterisk denotes your currently selected profile. Note the new <code>default/linux/amd64/13.0/desktop/gnome/funtoo</code> profile available as item 21 in the above (the numbering on your system may differ). Select that profile now; issue:</p>
+<pre><code># eselect profile set 21
+</code></pre>
+<blockquote>
+<p>If the custom profile was listed under a different index number on your system, substitute that for <code>21</code> in the above.</p>
+</blockquote>
+<p>Check the new profile is now set correctly:</p>
+<pre><code># eselect profile show
+Current /etc/portage/make.profile symlink:
+  funtoo-2-gentoo:default/linux/amd64/13.0/desktop/gnome/funtoo
+</code></pre>
+<p>As its name suggests, in addition to supplying custom information related to the use of the Funtoo overlay, this profile also inherits settings (transitively) from the existing <code>default/linux/amd64/13.0/desktop/gnome</code> profile.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#step-4-modify-your-portage-configuration" id="user-content-step-4-modify-your-portage-configuration"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Step 4: Modify your Portage Configuration</h3>
+<p>Next, there are a few changes you will need to make to your Portage configuration files, before you are able to <code>emerge</code> GNOME.</p>
+<p>First, (assuming you have <code>ACCEPT_LICENSE="-* @FREE"</code> set in <code>/etc/portage/make.conf</code>) you need to permit a few additional licenses; these are benign. Issue:</p>
+<pre><code># nano -w /etc/portage/package.license
+</code></pre>
+<p>and append the following lines to the file (if not already present):</p>
+<pre><code># required for kernel build
+sys-kernel/gentoo-sources freedist
+# required if not deblobbing
+sys-kernel/linux-firmware freedist
+# required by GNOME 3.14 (Funtoo)
+&gt;=x11-themes/adwaita-icon-theme-3.12.0 CC-Sampling-Plus-1.0
+&gt;=gnome-base/gdm-3.14.1 CC-Sampling-Plus-1.0
+&gt;=x11-themes/gnome-icon-theme-3.12.0 CC-Sampling-Plus-1.0
+</code></pre>
+<p>save and exit <code>nano</code>.</p>
+<p>Next, you will need to make some changes to your <code>/etc/portage/make.conf</code> file. Issue:</p>
+<pre><code># nano -w /etc/portage/make.conf
+</code></pre>
+<p>Then, modify (or add if not present) the lines setting the <code>VIDEO_CARDS</code> and <code>INPUT_DEVICES</code> variables, to suit your system. For example, if your machine is a typical Ultrabook laptop (with integrated Intel HD graphics), you could specify (still in <code>/etc/portage/make.conf</code>):</p>
+<pre><code>VIDEO_CARDS="intel i915 i965"
+INPUT_DEVICES="evdev synaptics"
+</code></pre>
+<p>whereas if it is a desktop machine with an NVIDIA card (and you wanted to use open-source drivers), you could instead use:</p>
+<pre><code>VIDEO_CARDS="nouveau"
+INPUT_DEVICES="evdev"
+</code></pre>
+<p>Once you have made the edit, save and exit <code>nano</code>.</p>
+<blockquote>
+<p>Note: given that the GNOME <code>emerge</code> is very lengthy, you might want to consider setting up parallel building before continuing. See <a href="https://www.preney.ca/paul/archives/341" rel="nofollow">this article</a> for some good pointers.</p>
+</blockquote>
+<p>Next, ensure that you have an <code>/etc/portage/repos.conf</code> file. If you do not, issue:</p>
+<pre><code># nano -w /etc/portage/repos.conf
+</code></pre>
+<p>and place the following text in the file:</p>
+<pre><code>[DEFAULT]
+main-repo = gentoo
+
+[gentoo]
+location = /usr/portage
+sync-type = rsync
+
+sync-uri = rsync://rsync.uk.gentoo.org/gentoo-portage
+</code></pre>
+<blockquote>
+<p>Obviously, modify the <code>sync-uri</code> value to suit your location; it should be the same as the <code>SYNC</code> variable in your <code>/etc/portage/make.conf</code> file.</p>
+</blockquote>
+<p>Save, and exit <code>nano</code>.</p>
+<p>Finally, check you have a UTF-8 locale selected:</p>
+<pre><code># eselect locale list
+Available targets for the LANG variable:
+  [1]   C
+  [2]   POSIX
+  [3]   en_GB
+  [4]   en_GB.iso88591
+  [5]   en_GB.utf8 *
+  [ ]   (free form)
+</code></pre>
+<p>(your output may well vary from the above, which shows a valid setup for a UK machine).</p>
+<p>If you do not have a UTF-8 locale selected, follow <a href="https://wiki.gentoo.org/wiki/Handbook:AMD64/Installation/Base#Configure_locales" rel="nofollow">these Handbook instructions</a> to create (if necessary) and set one now.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#step-5-perform-an-world-update" id="user-content-step-5-perform-an-world-update"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Step 5: Perform an <code>@world</code> Update</h3>
+<p>Now, before going any further, it is <strong>very important</strong> to update your software, since the profile change will have introduced significant USE flag changes, modifications to the <code>@system</code> set, etc.</p>
+<blockquote>
+<p>Important: do not skip this step; if you do, the GNOME <code>emerge</code> in step 6 will probably fail.</p>
+</blockquote>
+<p>Issue:</p>
+<pre><code># emerge --sync
+# emerge --verbose --deep --with-bdeps=y --newuse --update --pretend @world &amp;&amp; echo 'Good to go!'
+</code></pre>
+<p>Assuming that displays <code>Good to go!</code>, issue:</p>
+<pre><code># for ((i=0;i&lt;5;i++)); do emerge --verbose --deep --with-bdeps=y --newuse --update @world &amp;&amp; echo 'All done!' &amp;&amp; break; done
+</code></pre>
+<p>This may take some time to complete! If you get the message <code>All done!</code>, the update has finished successfully.</p>
+<blockquote>
+<p>Note: because this is such a large <code>emerge</code>, it is possible that you will encounter some problems, particularly if using build parallelism, which can be solved with a re-try. That's why, although slightly inelegant, I have put the <code>emerge</code> above in a <code>bash</code> <code>for</code> loop. Feel free to modify if desired.</p>
+</blockquote>
+<blockquote>
+<p>It is possible that you may lose network connectivity during the above, due to a re-install of <code>net-misc/dhcpcd</code>. If so, simply try restarting this service (and then, if necessary, trying the <code>emerge</code> loop again).</p>
+</blockquote>
+<blockquote>
+<p>Lastly, even if you receive (non-fatal) warnings about certain installed packages being masked, I would avoid performing any <code>emerge --depclean</code> until you have an operational system, at the end of step 9.</p>
+</blockquote>
+<p>Finally, deal with any configuration-file clashes:</p>
+<pre><code># dispatch-conf
+</code></pre>
+<h3>
+<a aria-hidden="true" class="anchor" href="#step-6-emerge-gnome" id="user-content-step-6-emerge-gnome"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Step 6: <code>emerge</code> GNOME!</h3>
+<p>OK, you are now ready to <code>emerge</code> GNOME! First, check that Portage thinks everything is in order - issue:</p>
+<pre><code># emerge --verbose --noreplace --keep-going --pretend  gnome-base/gnome &amp;&amp; echo 'Good to go!'
+</code></pre>
+<p>assuming that reports <code>Good to go!</code>, issue:</p>
+<pre><code># for ((i=0;i&lt;5;i++)); do emerge --verbose --noreplace --keep-going gnome-base/gnome &amp;&amp; echo 'All done!' &amp;&amp; break; done
+</code></pre>
+<p>This will take a <strong>long</strong> time to run, on the order of half a day, even on modern machines. If you see the message <code>All done!</code>, it has completed successfully.</p>
+<blockquote>
+<p>I have again used a <code>bash</code> <code>for</code> loop for robustness. Feel free to modify if desired.</p>
+</blockquote>
+<blockquote>
+<p>If you still have problems, and you <strong>are</strong> using build parallelism, you could try temporarily inhibiting this, using <code>MAKEOPTS="" EMERGE_DEFAULT_OPTS="" emerge --ask --verbose --keep-going gnome-base/gnome</code> instead (some packages have problems with parallel make, and it is also possible to run out of memory). However, for most machines, the standard invocation above should work.</p>
+</blockquote>
+<p>When complete, please <strong>double-check</strong> that you have the necessary X11 drivers emerged - it is possible for these to sometimes get dropped during the <code>gnome-base/gnome</code> emerge, yet the process still report that it has finished correctly. You should ensure you have <code>x11-drivers/xf86-input-evdev</code> (most machines), <code>x11-drivers/xf86-input-synaptics</code> (for machines with a touchpad), and the necessary video driver (e.g., <code>x11-drivers/xf86-video-intel</code>, <code>x11-drivers/xf86-video-nouveau</code>, <code>x11-drivers/xf86-video-virtualbox</code> etc., as appropriate for your system). These <em>should</em> all have been automatically emerged (to match the values you placed into <code>VIDEO_CARDS</code> and <code>INPUT_DEVICES</code> in <code>/etc/portage/make.conf</code> during step 4), but you must check, as without them, X11 (and hence GNOME) will not start up correctly.</p>
+<blockquote>
+<p>If you do have problems, particularly with video drivers, try issuing:</p>
+</blockquote>
+<pre><code># pushd /usr/src/linux
+# make modules_prepare
+# popd
+</code></pre>
+<p>and then re-emerge the missing modules explicitly.</p>
+<p>Deal with any configuration file clashes:</p>
+<pre><code># dispatch-conf
+</code></pre>
+<h3>
+<a aria-hidden="true" class="anchor" href="#step-7-ensure-your-kernel-settings-are-correct" id="user-content-step-7-ensure-your-kernel-settings-are-correct"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Step 7: Ensure Your Kernel Settings are Correct</h3>
+<p>Next, you will need to ensure your kernel has the necessary drivers and options to support the graphics hardware used on your system. If your current kernel already has this set up correctly, on boot-up you'll most likely see the console switch to a nice 'high-resolution' version, prior to being offered the initial (textual) login prompt. If you see this, skip directly to step 8 now.</p>
+<p>However, if you <em>don't</em> (and are currently working on fallback 'low-res' console mode on your machine), you almost certainly need to modify your kernel configuration. GNOME will not start up unless you address this.</p>
+<p>Fortunately,  if you built your initial kernel using the <code>genkernel</code> tool, per <a href="https://wiki.gentoo.org/wiki/Handbook:AMD64/Installation/Kernel#Alternative:_Using_genkernel" rel="nofollow">these Gentoo Handbook instructions</a>, the process is very easy. Simply issue:</p>
+<pre><code># genkernel --menuconfig --no-clean all
+</code></pre>
+<p>Eventually, this will bring you to the kernel build system's <code>menuconfig</code> interface, where you can select relevant kernel options. The most important ones (for our current purposes) are those under <code>Device Drivers -&gt; Graphics support -&gt; Direct Rendering Manager</code> (CONFIG_DRM). Make sure you select or modularize everything relevant to your hardware. For example, on an Ultrabook with integrated Intel graphics, you would need to choose as follows:</p>
+<p><img alt="Selecting Intel graphics options in menuconfig" src="https://raw.githubusercontent.com/sakaki-/resources/master/funtoo-2-gentoo/images/Setting_intel_graphics.png"/></p>
+<p>As above, be sure to select any 'modesetting' options, if available.</p>
+<blockquote>
+<p>Obviously, choose settings appropriate for your particular hardware.</p>
+</blockquote>
+<p>It is also recommended to have up-to-date firmware on your system (so that Wi-Fi, Bluetooth etc. will work properly); to <code>emerge</code> this, issue:</p>
+<pre><code># emerge --ask --verbose --noreplace sys-kernel/linux-firmware
+</code></pre>
+<p>Reboot once done, and make sure you now see the switch to a high-res textual display during boot.</p>
+<blockquote>
+<p>If you are familiar with the kernel build process, you can of course use your preferred workflow here, in place of <code>genkernel</code>. The important thing is to ensure that your system is running a kernel with the appropriate drivers available (at least as modules), prior to attempting to run GNOME for the first time.</p>
+</blockquote>
+<h3>
+<a aria-hidden="true" class="anchor" href="#step-8-configure-gnome-startup" id="user-content-step-8-configure-gnome-startup"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Step 8: Configure GNOME Startup</h3>
+<p>If you have reached this point, congratulations, you are ready to try out GNOME 3.14 under OpenRC!</p>
+<p>I'm going to assume that you have (in accordance with <a href="https://wiki.gentoo.org/wiki/Handbook:AMD64/Installation/Finalizing#Adding_a_user_for_daily_use" rel="nofollow">Chapter 11</a> of the Gentoo Handbook) created at least one 'regular' user on your system. I'll use "sakaki" as that user's name in the below, obviously, substitute your own regular username.</p>
+<p>First, start Bluetooth and printing services, and ensure that they come up on boot too. Issue:</p>
+<pre><code># rc-update add bluetooth default
+# rc-update add cupsd default
+# rc
+</code></pre>
+<p>Next, if you are runing <code>dhcpcd</code>, per <a href="https://wiki.gentoo.org/wiki/NetworkManager#OpenRC" rel="nofollow">these notes</a> it is strongly recommended that you remove it, since it clashes with NetworkManager in certain situations. To do this, issue:</p>
+<pre><code># /etc/init.d/dhcpcd stop
+# rc-update del dhcpcd default
+# emerge --ask --verbose --depclean net-misc/dhcpcd
+# pkill dhcpcd
+</code></pre>
+<p>and also, remove any other managed connections:</p>
+<pre><code># for service in $(rc-update show default | grep 'net\.' | awk '{ print $1 }'); do rc-update del $service default; done
+</code></pre>
+<p>Lastly, due to some start-up dependencies, we need to make sure that <code>net.lo</code> provides the <code>net</code> service. Issue:</p>
+<pre><code># echo 'rc_provide="net"' &gt;&gt; /etc/conf.d/net.lo
+</code></pre>
+<p>Right, now we can start NetworkManager, and make sure it comes up on boot too. Issue:</p>
+<pre><code># rc-update add NetworkManager default
+# rc
+</code></pre>
+<p>Ensure your regular user is in the appropriate groups:</p>
+<pre><code># usermod -a -G lp,audio,video,cdrom,usb,users,portage,wheel sakaki
+</code></pre>
+<blockquote>
+<p>If running under VirtualBox, you should also <code>emerge -av app-emulation/virtualbox-guest-additions</code>, and then add your user to the <code>vboxguest</code> and <code>vboxsf</code> groups.</p>
+</blockquote>
+<p>Next, become your regular user, and then set their <code>~/.xinitrc</code> file appropriately (this is only necessary for this test run):</p>
+<pre><code># su - sakaki
+sakaki&gt; nano -w ~/.xinitrc
+</code></pre>
+<p>and edit that file so it reads:</p>
+<pre><code>export XDG_MENU_PREFIX=gnome-
+exec ck-launch-session gnome-session
+</code></pre>
+<p>Save and exit <code>nano</code>.</p>
+<p>Now you can try running GNOME manually. Still as the regular user, issue:</p>
+<pre><code>sakaki&gt; startx
+</code></pre>
+<p>And hopefully you should be dropped into a GNOME session, logged in as your regular user (you may need to move the mouse to unblank the screen)!</p>
+<blockquote>
+<p>If you get presented with one or more 'Authentication Required' dialogs, just click cancel to dismiss them.</p>
+</blockquote>
+<p>If that works, simply log out of the GNOME session (click on the menu in the top right of the screen, then click on your user name to reveal the option), and you should be dropped back to your regular user's text prompt (with a lot of X11 output!).</p>
+<p>Come back out to be <code>root</code> and set the GNOME display manager, <code>gdm</code>, up to run on boot, so you will have a graphical login automatically; issue:</p>
+<pre><code>sakaki&gt; exit
+# nano -w /etc/conf.d/xdm
+</code></pre>
+<p>and edit the line that defines the <code>DISPLAYMANGER</code> variable, so that it reads:</p>
+<pre><code>DISPLAYMANAGER="gdm"
+</code></pre>
+<p>Save and exit <code>nano</code>.</p>
+<blockquote>
+<p>Note that this should have been set <em>automatically</em> for you by the install, but it is best to check.</p>
+</blockquote>
+<p>Then issue:</p>
+<pre><code># rc-update add xdm default
+</code></pre>
+<p>to ensure that the display manager starts at boot.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#step-9-reboot-and-enjoy" id="user-content-step-9-reboot-and-enjoy"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Step 9: Reboot and Enjoy!</h3>
+<p>Lastly, issue:</p>
+<pre><code># reboot
+</code></pre>
+<p>When your machine comes back up, you should be prompted with a GNOME graphical login screen (if you get a blank screen, be sure to try moving the mouse / pressing some keys). Have fun ^-^</p>
+<blockquote>
+<p>If you have any issues with the password entry on login, it may be due to incorrect keyboard settings in GNOME, which you haven't configured yet. Use the 'man in a circle' icon to bring up an on-screen keyboard, and enter the password for your first login using that. Once successfully logged in, you can easily <a href="https://wiki.gentoo.org/wiki/Sakaki's_EFI_Install_Guide/Setting_up_the_GNOME_3_Desktop#GNOME_Keyboard_Settings" rel="nofollow">adjust the keyboard settings</a> within GNOME itself.</p>
+</blockquote>
+<p>Note that to play MP4 videos in GNOME (in <code>Totem</code> and <code>Web</code>), you'll need to install the <code>gst-plugins-libav</code> package (<code>emerge --ask --verbose media-plugins/gst-plugins-libav</code>, as <code>root</code>).</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#next-steps" id="user-content-next-steps"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Next Steps</h2>
+<p>You may wish to clean up your installation at this point (to remove any warnings about emerged masked packages etc.). This is optional, but to proceed, open a terminal within GNOME, get <code>root</code>, then issue:</p>
+<pre><code># emerge --ask --depclean
+# emerge --ask --verbose @preserved-rebuild
+</code></pre>
+<p>I also recommend you install the <code>eix</code> tool. This not only makes it simple to review packages' USE flags, versions etc., it also enables you to synchronize your main Portage tree, and any installed overlays, with a single operation.</p>
+<p>To install <code>eix</code>, issue:</p>
+<pre><code># emerge --ask --verbose app-portage/eix
+</code></pre>
+<p>Next, issue:</p>
+<pre><code># nano -w /etc/eix-sync.conf
+</code></pre>
+<p>and place the following text in that file:</p>
+<pre><code># Per https://wiki.gentoo.org/wiki/Overlay#eix_integration
+# Sync all overlays
+*
+  
+# Regenerate overlay metadata
+@emerge --regen || true
+</code></pre>
+<p>save and exit <code>nano</code>.</p>
+<p>Next issue:</p>
+<pre><code># nano -w /etc/eixrc/01-cache
+</code></pre>
+<p>and put the following text in that file:</p>
+<pre><code># Per https://wiki.gentoo.org/wiki/Overlay#eix_integration
+OVERLAY_CACHE_METHOD="assign"
+</code></pre>
+<p>Finally, to ensure <code>eix</code> produces sane colour output on a GNOME terminal, issue:</p>
+<pre><code># echo 'SOLARIZED=true' &gt; /etc/eixrc/99-colour
+</code></pre>
+<p>Next, see <a class="internal present" href="/sakaki-/funtoo-2-gentoo/wiki/Keeping-Up-to-Date">these notes</a> about using <code>eix</code> to keep your system up to date.</p>
+
+        </div>
+
+        <div class="wiki-footer gollum-markdown-content boxed-group" id="wiki-footer">
+          <div class="boxed-group-inner wiki-auxiliary-content markdown-body">
+            <p><a href="https://github.com/sakaki-/funtoo-2-gentoo">Project Home</a> / <a class="internal present" href="/sakaki-/funtoo-2-gentoo/wiki/Home">Wiki Home</a></p>
+<p><img alt="Creative Commons License" data-canonical-src="https://i.creativecommons.org/l/by-sa/4.0/80x15.png" src="https://camo.githubusercontent.com/d1b3cb5c3bc0b0de6fb5445b1657c03464125482/68747470733a2f2f692e6372656174697665636f6d6d6f6e732e6f72672f6c2f62792d73612f342e302f38307831352e706e67"/>
+Wiki content license: <a href="http://creativecommons.org/licenses/by-sa/4.0/" rel="nofollow">Creative Commons Attribution-ShareAlike 4.0 International License</a></p>
+
+          </div>
+        </div>
+    </div>]

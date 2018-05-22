@@ -1,0 +1,153 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <h1>
+<a aria-hidden="true" class="anchor" href="#how-to-cross-compile-an-application-for-openwrt" id="user-content-how-to-cross-compile-an-application-for-openwrt"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>How to cross compile an application for OpenWRT</h1>
+<p>Firstly, we will explain what cross-compilation is and why we do need this for our OpenWRT system.
+Secondly, We will create a very simple example, a "Hello World" application.</p>
+<ul>
+<li><a href="#about">About Cross-compilation</a></li>
+<li><a href="#hello">"Hello Netbeast World" example application</a></li>
+<li><a href="#src">Source file</a></li>
+<li><a href="#ccr">Cross-compiler</a></li>
+<li><a href="#ccrpi">RPi toolchain</a></li>
+<li><a href="#ccrow">OpenWRT toolchain</a></li>
+<li><a href="#cc">Cross-compilation</a></li>
+<li><a href="#ccpi">Cross-compilation with RPi toolchain</a></li>
+<li><a href="#ccow">Cross-compilation with OpenWRT toolchain</a></li>
+</ul>
+<hr/>
+<a name="user-content-about">
+## About Cross-compilation
+</a>
+<p>OpenWrt is described as a Linux distribution for embedded devices.</p>
+<p>However, you can't compile some applications like you do in Linux distributions (Ubuntu,Debian...) because OpenWRT doesn't have a make utility.</p>
+<p>If we want to compile an application that need a make utility we need to use a cross-compiler.</p>
+<p>A cross-compiler is a compiler capable of creating executable code for a platform other than the one on which the compiler is running.</p>
+<p>Look at this scheme.</p>
+<pre><code>SOURCE ---------&gt; CROSS COMPILER -------&gt; COMPILED SOURCE
+</code></pre>
+<p>For this example we had:</p>
+<ol>
+<li>
+<p>A computer with debian and intel cpu architecture.</p>
+</li>
+<li>
+<p>A RPi2 with OpenWRT and arm cpu architecture.</p>
+</li>
+</ol>
+<ul>
+<li>We can't compile the "Source" file in the rpi because it doesn't have the make utility.</li>
+<li>We can't compile the "Source" file in our pc and then copy that in the rpi because they have different cpu architectures (intel vs arm) and it doesn't work.</li>
+</ul>
+<p>We need a cross-compiler that simulates RPi's arm architecture and compile it on our pc.</p>
+<p>The result will be a compiled source file which works in the arm platform.</p>
+<hr/>
+<a name="user-content-hello">
+## "Hello Netbeast World" example application
+</a>
+<p>We need a source file and a cross-compiler as we saw before.</p>
+<a name="user-content-src">
+### Source File
+</a>
+<p>In this case, we will use a simple hello world application programmed in c.</p>
+<p>Copy this code and save it as example.c</p>
+<pre><code>#include&lt;stdio.h&gt;
+
+int main () {
+	printf("Hello Netbeast World\n");
+	return 0;
+}
+</code></pre>
+<a name="user-content-ccr">
+### Cross-Compiler
+</a>
+<p>We will use two different cross-compilers (If you have a RPi use the first one, use the second one in other cases)</p>
+<a name="user-content-ccrpi">
+#### RPi toolchain
+</a>
+<p>This cross-compiler has been made for cross-compiling for the RPI. This <strong>ONLY</strong> works with this kind of device.</p>
+<p>You can download it here :  <a href="https://github.com/raspberrypi/tools">Rpi cross-compiler </a></p>
+<pre><code>git clone https://github.com/raspberrypi/tools
+</code></pre>
+<a name="user-content-ccrow">
+#### OpenWRT toolchain
+</a>
+<p>This cross-compiler has been provided by OpenWRT developers. This tool can support a lot of architectures (RPi included). You can check this <a href="http://wiki.openwrt.org/toh/start" rel="nofollow">Table of Hardware</a> and find out if your device is supported.</p>
+<p>You need to download the OpenWRT system</p>
+<pre><code>git clone git://git.openwrt.org/15.05/openwrt.git
+</code></pre>
+<p>Prepare system for compilation:</p>
+<pre><code>cd openwrt
+./scripts/feeds update -a
+./scripts/feeds install -a
+</code></pre>
+<p>Select your system architecture</p>
+<pre><code>make menuconfig
+</code></pre>
+<p>If no errors pop up a shell script menu will be showed.</p>
+<p>Choose your correct system architecture:</p>
+<p><img alt="menu" src="https://github.com/netbeast-co/router/raw/master/img/menuToolchain.png"/></p>
+<p>Choose Package the OpenWrt-based toolchain (This is the most important thing because this is the cross compiler)</p>
+<p><img alt="toolchain" src="https://github.com/netbeast-co/router/raw/master/img/packageToolchain.png"/></p>
+<p>Exit and save</p>
+<p><img alt="exit_toolchain" src="https://github.com/netbeast-co/router/raw/master/img/saveToolchain.png"/></p>
+<p>Compile</p>
+<pre><code>make
+</code></pre>
+<p>Now relax. After some time, you will get your toolchain compiled for your selected architecture.</p>
+<a name="user-content-cc">
+### Cross-compilation
+</a>
+<p>If you want to do this with the Raspberry pi Toolchain go to <a href="#ccpi">this section</a></p>
+<p>If you want to do this with the OpenWRT Toolchain go to <a href="#ccow">this section</a></p>
+<a name="user-content-ccpi">
+#### Cross-Compilation With RPI toolchain
+</a>
+<p>We have to choose the gcc compiler. Gcc is used for compiling C applications</p>
+<pre><code>tools/arm-bcm2708/gcc-linaro-arm-linux-gnuebihf-raspbian/bin/arm-linux-gnueabihf-gcc -static hello_world.c
+</code></pre>
+<p>The -static option allows to compile the application with required libraries statically. The result will be an a.out file. Copy it to your OpenWRT system and execute it</p>
+<pre><code>./a.out
+</code></pre>
+<p>You will see</p>
+<pre><code>"Hello Netbeast World"
+</code></pre>
+<p>You have cross-compiled your first application successfully.</p>
+<a name="user-content-ccow">
+#### Cross-Compilation with OpenWRT toolchain
+</a>
+<p>We have to choose the gcc compiler. As we said before, it is used for compiling C applications</p>
+<pre><code>openwrt/staging_dir/toochain-NAMEOFYOURARCHITETURE--SOMESTUFF/bin/yoursystem-gcc -static hello_world.c 
+</code></pre>
+<p>The -static option allow to compile the application with required libraries statically.</p>
+<p>The result will be an a.out file.</p>
+<p>Copy that to your OpenWRT sytem and execute it</p>
+<pre><code>./a.out
+</code></pre>
+<p>You will see</p>
+<pre><code>"Hello Netbeast World"
+</code></pre>
+<p>You have cross-compiled your first application successfully.</p>
+<hr/>
+
+        </div>
+
+        <div class="wiki-footer gollum-markdown-content boxed-group" id="wiki-footer">
+          <div class="boxed-group-inner wiki-auxiliary-content markdown-body">
+            <p># <code>warning</code>: now our docs are being published in our gitbook and available on our website. Visit <a href="http://docs.netbeast.co/" rel="nofollow">http://docs.netbeast.co/</a></p>
+<h1>
+<a aria-hidden="true" class="anchor" href="#contact" id="user-content-contact"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Contact</h1>
+<ul>
+<li>Visit our site <a href="https://netbeast.co" rel="nofollow">https://netbeast.co</a>
+</li>
+<li>Mail us: staff [at] netbeast.co</li>
+<li>Report a bug or enter discussion at <a href="https://github.com/netbeast-co/docs/issues">issues</a>
+</li>
+<li>Other resources: <a href="https://github.com/netbeast-co/dashboard">Dashboard</a>, Netbeast <a href="https://github.com/netbeast-co/API">API</a>
+</li>
+</ul>
+<p><a href="https://gitter.im/netbeast-co/xway?utm_source=badge&amp;utm_medium=badge&amp;utm_campaign=pr-badge" rel="nofollow"><img alt="Gitter" data-canonical-src="https://badges.gitter.im/Join%20Chat.svg" src="https://camo.githubusercontent.com/da2edb525cde1455a622c58c0effc3a90b9a181c/68747470733a2f2f6261646765732e6769747465722e696d2f4a6f696e253230436861742e737667"/></a></p>
+
+          </div>
+        </div>
+    </div>]

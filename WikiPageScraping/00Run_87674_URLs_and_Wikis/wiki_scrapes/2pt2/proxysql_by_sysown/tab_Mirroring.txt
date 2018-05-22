@@ -1,0 +1,443 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <h1>
+<a aria-hidden="true" class="anchor" href="#mirroring" id="user-content-mirroring"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Mirroring</h1>
+<p>Mirroring in ProxySQL should be considered experimental:</p>
+<ul>
+<li>specifications can change at any time.</li>
+<li>this hasn't been extensively tested</li>
+<li>upgrades from previous versions that do not support mirroring will lose any previously defined query rules</li>
+<li>It doesn't support prepared statements</li>
+</ul>
+<h3>
+<a aria-hidden="true" class="anchor" href="#extensions-to-mysql_query_rules" id="user-content-extensions-to-mysql_query_rules"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Extensions to mysql_query_rules</h3>
+<p>Table <code>mysql_query_rules</code> was modified to add 2 more columns:</p>
+<ul>
+<li><code>mirror_flagOUT</code></li>
+<li><code>mirror_hostgroup</code></li>
+</ul>
+<p>Therefore, the new table definition of <code>mysql_query_rules</code> becomes:</p>
+<div class="highlight highlight-source-sql"><pre>mysql<span class="pl-k">&gt;</span> show create table mysql_query_rules\G
+<span class="pl-k">***************************</span> <span class="pl-c1">1</span>. row <span class="pl-k">***************************</span>
+       table: mysql_query_rules
+Create Table: CREATE TABLE mysql_query_rules (
+rule_id <span class="pl-k">INTEGER</span> <span class="pl-k">PRIMARY KEY</span> AUTOINCREMENT <span class="pl-k">NOT NULL</span>,
+active <span class="pl-k">INT</span> <span class="pl-k">CHECK</span> (active <span class="pl-k">IN</span> (<span class="pl-c1">0</span>,<span class="pl-c1">1</span>)) <span class="pl-k">NOT NULL</span> DEFAULT <span class="pl-c1">0</span>,
+username <span class="pl-k">VARCHAR</span>,
+schemaname <span class="pl-k">VARCHAR</span>,
+flagIN <span class="pl-k">INT</span> <span class="pl-k">NOT NULL</span> DEFAULT <span class="pl-c1">0</span>,
+match_digest <span class="pl-k">VARCHAR</span>,
+match_pattern <span class="pl-k">VARCHAR</span>,
+negate_match_pattern <span class="pl-k">INT</span> <span class="pl-k">CHECK</span> (negate_match_pattern <span class="pl-k">IN</span> (<span class="pl-c1">0</span>,<span class="pl-c1">1</span>)) <span class="pl-k">NOT NULL</span> DEFAULT <span class="pl-c1">0</span>,
+flagOUT <span class="pl-k">INT</span>,
+replace_pattern <span class="pl-k">VARCHAR</span>,
+destination_hostgroup <span class="pl-k">INT</span> DEFAULT <span class="pl-k">NULL</span>,
+cache_ttl <span class="pl-k">INT</span> <span class="pl-k">CHECK</span>(cache_ttl <span class="pl-k">&gt;</span> <span class="pl-c1">0</span>),
+reconnect <span class="pl-k">INT</span> <span class="pl-k">CHECK</span> (reconnect <span class="pl-k">IN</span> (<span class="pl-c1">0</span>,<span class="pl-c1">1</span>)) DEFAULT <span class="pl-k">NULL</span>,
+timeout <span class="pl-k">INT</span> UNSIGNED,
+delay <span class="pl-k">INT</span> UNSIGNED,
+mirror_flagOUT <span class="pl-k">INT</span> UNSIGNED,
+mirror_hostgroup <span class="pl-k">INT</span> UNSIGNED,
+error_msg <span class="pl-k">VARCHAR</span>,
+apply <span class="pl-k">INT</span> <span class="pl-k">CHECK</span>(apply <span class="pl-k">IN</span> (<span class="pl-c1">0</span>,<span class="pl-c1">1</span>)) <span class="pl-k">NOT NULL</span> DEFAULT <span class="pl-c1">0</span>)
+<span class="pl-c1">1</span> row <span class="pl-k">in</span> <span class="pl-k">set</span> (<span class="pl-c1">0</span>.<span class="pl-c1">00</span> sec)
+</pre></div>
+<h2>
+<a aria-hidden="true" class="anchor" href="#implementation-overview" id="user-content-implementation-overview"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Implementation overview</h2>
+<p>When either <code>mirror_flagOUT</code> or <code>mirror_hostgroup</code> are set for a matching query, real time query mirroring is automatically enabled.<br/>
+Note that mirroring is enabled for the the final query, if the original was rewritten: if the query was rewritten along the way, the mirroring logic applies to the rewritten query. Although, the mirrored query can be rewritten and modified again. Details below.<br/>
+If a source query is matched against multiple query rules, it is possible that <code>mirror_flagOUT</code> or <code>mirror_hostgroup</code> are changed multiple times.<br/>
+The mirroring logic is the following:</p>
+<ul>
+<li>if <code>mirror_flagOUT</code> or <code>mirror_hostgroup</code> are set while processing the source query, a new mysql session is created</li>
+<li>the new mysql session will get all the same properties of the original mysql session : same credentials, schemaname, default hostgroup, etc (note: charset is currently not copied)</li>
+<li>if <code>mirror_hostgroup</code> was set in the original session, the new session will change its default hostgroup to <code>mirror_hostgroup</code>
+</li>
+<li>if <code>mirror_flagOUT</code> is not set, the new session will execute the <em>original</em> query against the defined <code>mirror_hostgroup</code>
+</li>
+<li>if <code>mirror_flagOUT</code> was set in the original session, the new mysql session will try to match the query from the original session against <code>mysql_query_rules</code> starting from a value of <code>FlagIN=mirror_flagOUT</code> : in this way it is possible to modify the query, like rewriting it, or changing again the hostgroup</li>
+</ul>
+<h2>
+<a aria-hidden="true" class="anchor" href="#examples" id="user-content-examples"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Examples</h2>
+<h3>
+<a aria-hidden="true" class="anchor" href="#mirror-selects-to-same-hostgroup" id="user-content-mirror-selects-to-same-hostgroup"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Mirror selects to same hostgroup</h3>
+<p>In this very simple example we will just send all <code>SELECT</code> statements to hostgroup2, both the original and the mirror ones.</p>
+<div class="highlight highlight-source-sql"><pre>Admin<span class="pl-k">&gt;</span> <span class="pl-k">INSERT INTO</span> mysql_query_rules (rule_id,active,match_pattern,destination_hostgroup,mirror_hostgroup,apply) <span class="pl-k">VALUES</span> (<span class="pl-c1">5</span>,<span class="pl-c1">1</span>,<span class="pl-s"><span class="pl-pds">'</span>^SELECT<span class="pl-pds">'</span></span>,<span class="pl-c1">2</span>,<span class="pl-c1">2</span>,<span class="pl-c1">1</span>);
+Query OK, <span class="pl-c1">1</span> row affected (<span class="pl-c1">0</span>.<span class="pl-c1">01</span> sec)
+
+Admin<span class="pl-k">&gt;</span> LOAD MYSQL QUERY RULES TO RUNTIME;                                                                                                                                 Query OK, <span class="pl-c1">0</span> rows affected (<span class="pl-c1">0</span>.<span class="pl-c1">01</span> sec)</pre></div>
+<p>From a mysql session we will run some queries:</p>
+<div class="highlight highlight-source-sql"><pre>mysql<span class="pl-k">&gt;</span> use sbtest;
+Reading table information for completion of table <span class="pl-k">and</span> column names
+You can turn off this feature to get a quicker startup with <span class="pl-k">-</span>A
+
+Database changed
+mysql<span class="pl-k">&gt;</span> SHOW TABLES;
+<span class="pl-k">+</span><span class="pl-c"><span class="pl-c">--</span>----------------+</span>
+| Tables_in_sbtest |
+<span class="pl-k">+</span><span class="pl-c"><span class="pl-c">--</span>----------------+</span>
+| longtable        |
+| sbtest1          |
+| sbtest2          |
+| sbtest3          |
+| sbtest4          |
+<span class="pl-k">+</span><span class="pl-c"><span class="pl-c">--</span>----------------+</span>
+<span class="pl-c1">5</span> rows <span class="pl-k">in</span> <span class="pl-k">set</span> (<span class="pl-c1">0</span>.<span class="pl-c1">00</span> sec)
+
+mysql<span class="pl-k">&gt;</span> <span class="pl-k">SELECT</span> id <span class="pl-k">FROM</span> sbtest1 <span class="pl-k">LIMIT</span> <span class="pl-c1">3</span>;
+<span class="pl-k">+</span><span class="pl-c"><span class="pl-c">--</span>----+</span>
+| id   |
+<span class="pl-k">+</span><span class="pl-c"><span class="pl-c">--</span>----+</span>
+| <span class="pl-c1">6204</span> |
+| <span class="pl-c1">3999</span> |
+| <span class="pl-c1">6650</span> |
+<span class="pl-k">+</span><span class="pl-c"><span class="pl-c">--</span>----+</span>
+<span class="pl-c1">3</span> rows <span class="pl-k">in</span> <span class="pl-k">set</span> (<span class="pl-c1">0</span>.<span class="pl-c1">02</span> sec)</pre></div>
+<p>Back to the admin interface, we can see that the SELECT statement was executed twice:</p>
+<div class="highlight highlight-source-sql"><pre>Admin<span class="pl-k">&gt;</span> <span class="pl-k">select</span> hostgroup,count_star,schemaname,digest_text <span class="pl-k">from</span> stats_mysql_query_digest <span class="pl-k">ORDER BY</span> digest;
+<span class="pl-k">+</span><span class="pl-c"><span class="pl-c">--</span>---------+------------+--------------------+----------------------------------+</span>
+| hostgroup | count_star | schemaname         | digest_text                      |
+<span class="pl-k">+</span><span class="pl-c"><span class="pl-c">--</span>---------+------------+--------------------+----------------------------------+</span>
+| <span class="pl-c1">2</span>         | <span class="pl-c1">2</span>          | sbtest             | <span class="pl-k">SELECT</span> id <span class="pl-k">FROM</span> sbtest1 <span class="pl-k">LIMIT</span> ?   |
+| <span class="pl-c1">1</span>         | <span class="pl-c1">1</span>          | information_schema | <span class="pl-k">select</span> @@version_comment <span class="pl-k">limit</span> ? |
+| <span class="pl-c1">2</span>         | <span class="pl-c1">2</span>          | information_schema | <span class="pl-k">SELECT</span> DATABASE()                |
+<span class="pl-k">+</span><span class="pl-c"><span class="pl-c">--</span>---------+------------+--------------------+----------------------------------+</span>
+<span class="pl-c1">3</span> rows <span class="pl-k">in</span> <span class="pl-k">set</span> (<span class="pl-c1">0</span>.<span class="pl-c1">00</span> sec)</pre></div>
+<p>As an additional test we re-run the same query:</p>
+<div class="highlight highlight-source-sql"><pre>mysql<span class="pl-k">&gt;</span> <span class="pl-k">SELECT</span> id <span class="pl-k">FROM</span> sbtest1 <span class="pl-k">LIMIT</span> <span class="pl-c1">3</span>;
+<span class="pl-k">+</span><span class="pl-c"><span class="pl-c">--</span>----+</span>
+| id   |
+<span class="pl-k">+</span><span class="pl-c"><span class="pl-c">--</span>----+</span>
+| <span class="pl-c1">6204</span> |
+| <span class="pl-c1">3999</span> |
+| <span class="pl-c1">6650</span> |
+<span class="pl-k">+</span><span class="pl-c"><span class="pl-c">--</span>----+</span>
+<span class="pl-c1">3</span> rows <span class="pl-k">in</span> <span class="pl-k">set</span> (<span class="pl-c1">0</span>.<span class="pl-c1">00</span> sec)</pre></div>
+<p>On admin interface:</p>
+<div class="highlight highlight-source-sql"><pre>Admin<span class="pl-k">&gt;</span> <span class="pl-k">select</span> hostgroup,count_star,schemaname,digest_text <span class="pl-k">from</span> stats_mysql_query_digest <span class="pl-k">ORDER BY</span> digest;
+<span class="pl-k">+</span><span class="pl-c"><span class="pl-c">--</span>---------+------------+--------------------+----------------------------------+</span>
+| hostgroup | count_star | schemaname         | digest_text                      |
+<span class="pl-k">+</span><span class="pl-c"><span class="pl-c">--</span>---------+------------+--------------------+----------------------------------+</span>
+| <span class="pl-c1">2</span>         | <span class="pl-c1">4</span>          | sbtest             | <span class="pl-k">SELECT</span> id <span class="pl-k">FROM</span> sbtest1 <span class="pl-k">LIMIT</span> ?   |
+| <span class="pl-c1">1</span>         | <span class="pl-c1">1</span>          | information_schema | <span class="pl-k">select</span> @@version_comment <span class="pl-k">limit</span> ? |
+| <span class="pl-c1">2</span>         | <span class="pl-c1">2</span>          | information_schema | <span class="pl-k">SELECT</span> DATABASE()                |
+<span class="pl-k">+</span><span class="pl-c"><span class="pl-c">--</span>---------+------------+--------------------+----------------------------------+</span>
+<span class="pl-c1">3</span> rows <span class="pl-k">in</span> <span class="pl-k">set</span> (<span class="pl-c1">0</span>.<span class="pl-c1">00</span> sec)</pre></div>
+<p><code>count_star</code> is double the number of times we executed the queries, because it is mirrored.
+It is important to note that ProxySQL collects metrics both for the original query and the mirrors.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#mirror-select-to-different-hostgroup" id="user-content-mirror-select-to-different-hostgroup"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Mirror SELECT to different hostgroup</h3>
+<p>In this example, we will re-configure proxysql to send all the <code>SELECT</code> statements to hostgroup1, but to mirror them on hostgroup2 :</p>
+<div class="highlight highlight-source-sql"><pre>Admin<span class="pl-k">&gt;</span> <span class="pl-k">DELETE</span> <span class="pl-k">FROM</span> mysql_query_rules;
+Query OK, <span class="pl-c1">1</span> row affected (<span class="pl-c1">0</span>.<span class="pl-c1">00</span> sec)
+
+Admin<span class="pl-k">&gt;</span> <span class="pl-k">INSERT INTO</span> mysql_query_rules (rule_id,active,match_pattern,destination_hostgroup,mirror_hostgroup,apply) <span class="pl-k">VALUES</span> (<span class="pl-c1">5</span>,<span class="pl-c1">1</span>,<span class="pl-s"><span class="pl-pds">'</span>^SELECT<span class="pl-pds">'</span></span>,<span class="pl-c1">1</span>,<span class="pl-c1">2</span>,<span class="pl-c1">1</span>);
+Query OK, <span class="pl-c1">1</span> row affected (<span class="pl-c1">0</span>.<span class="pl-c1">00</span> sec)
+
+Admin<span class="pl-k">&gt;</span> LOAD MYSQL QUERY RULES TO RUNTIME;                                                                                                                                 Query OK, <span class="pl-c1">0</span> rows affected (<span class="pl-c1">0</span>.<span class="pl-c1">00</span> sec)</pre></div>
+<p>We also empty <code>stats_mysql_query_digest</code> to have a fresh stats:</p>
+<div class="highlight highlight-source-sql"><pre>Admin<span class="pl-k">&gt;</span> <span class="pl-k">SELECT</span> <span class="pl-c1">COUNT</span>(<span class="pl-k">*</span>) <span class="pl-k">FROM</span> stats_mysql_query_digest_reset;
+<span class="pl-k">+</span><span class="pl-c"><span class="pl-c">--</span>--------+</span>
+| <span class="pl-c1">COUNT</span>(<span class="pl-k">*</span>) |
+<span class="pl-k">+</span><span class="pl-c"><span class="pl-c">--</span>--------+</span>
+| <span class="pl-c1">3</span>        |
+<span class="pl-k">+</span><span class="pl-c"><span class="pl-c">--</span>--------+</span>
+<span class="pl-c1">1</span> row <span class="pl-k">in</span> <span class="pl-k">set</span> (<span class="pl-c1">0</span>.<span class="pl-c1">00</span> sec)
+
+Admin<span class="pl-k">&gt;</span> <span class="pl-k">select</span> hostgroup,count_star,schemaname,digest_text <span class="pl-k">from</span> stats_mysql_query_digest <span class="pl-k">ORDER BY</span> digest;
+Empty <span class="pl-k">set</span> (<span class="pl-c1">0</span>.<span class="pl-c1">00</span> sec)</pre></div>
+<p>From the mysql client we can now run some queries (for simplicity, we run the same):</p>
+<div class="highlight highlight-source-sql"><pre>mysql<span class="pl-k">&gt;</span> <span class="pl-k">SELECT</span> id <span class="pl-k">FROM</span> sbtest1 <span class="pl-k">LIMIT</span> <span class="pl-c1">3</span>;
+<span class="pl-k">+</span><span class="pl-c"><span class="pl-c">--</span>----+</span>
+| id   |
+<span class="pl-k">+</span><span class="pl-c"><span class="pl-c">--</span>----+</span>
+| <span class="pl-c1">6204</span> |
+| <span class="pl-c1">3999</span> |
+| <span class="pl-c1">6650</span> |
+<span class="pl-k">+</span><span class="pl-c"><span class="pl-c">--</span>----+</span>
+<span class="pl-c1">3</span> rows <span class="pl-k">in</span> <span class="pl-k">set</span> (<span class="pl-c1">0</span>.<span class="pl-c1">00</span> sec)</pre></div>
+<p>In Admin we can now verify what happened:</p>
+<div class="highlight highlight-source-sql"><pre>Admin<span class="pl-k">&gt;</span> <span class="pl-k">select</span> hostgroup,count_star,sum_time,digest_text <span class="pl-k">from</span> stats_mysql_query_digest <span class="pl-k">ORDER BY</span> digest;
+<span class="pl-k">+</span><span class="pl-c"><span class="pl-c">--</span>---------+------------+----------+--------------------------------+</span>
+| hostgroup | count_star | sum_time | digest_text                    |
+<span class="pl-k">+</span><span class="pl-c"><span class="pl-c">--</span>---------+------------+----------+--------------------------------+</span>
+| <span class="pl-c1">1</span>         | <span class="pl-c1">1</span>          | <span class="pl-c1">2995</span>     | <span class="pl-k">SELECT</span> id <span class="pl-k">FROM</span> sbtest1 <span class="pl-k">LIMIT</span> ? |
+| <span class="pl-c1">2</span>         | <span class="pl-c1">1</span>          | <span class="pl-c1">921</span>      | <span class="pl-k">SELECT</span> id <span class="pl-k">FROM</span> sbtest1 <span class="pl-k">LIMIT</span> ? |
+<span class="pl-k">+</span><span class="pl-c"><span class="pl-c">--</span>---------+------------+----------+--------------------------------+</span>
+<span class="pl-c1">2</span> rows <span class="pl-k">in</span> <span class="pl-k">set</span> (<span class="pl-c1">0</span>.<span class="pl-c1">00</span> sec)</pre></div>
+<p>The same identical query was sent to both hostgroup1 and hostgroup2!</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#rewrite-both-source-query-and-mirror" id="user-content-rewrite-both-source-query-and-mirror"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>rewrite both source query and mirror</h3>
+<p>In this example, we will rewrite the original query, and then mirror it:
+For simplicity, we rewrite <code>sbtest[0-9]+</code> to <code>sbtest3</code> :</p>
+<div class="highlight highlight-source-sql"><pre>Admin<span class="pl-k">&gt;</span> <span class="pl-k">DELETE</span> <span class="pl-k">FROM</span> mysql_query_rules;
+Query OK, <span class="pl-c1">1</span> row affected (<span class="pl-c1">0</span>.<span class="pl-c1">00</span> sec)
+
+Admin<span class="pl-k">&gt;</span> <span class="pl-k">INSERT INTO</span> mysql_query_rules (rule_id,active,match_pattern,destination_hostgroup,replace_pattern,mirror_hostgroup,apply) <span class="pl-k">VALUES</span> (<span class="pl-c1">5</span>,<span class="pl-c1">1</span>,<span class="pl-s"><span class="pl-pds">'</span>sbtest[0-9]+<span class="pl-pds">'</span></span>,<span class="pl-c1">1</span>,<span class="pl-s"><span class="pl-pds">'</span>sbtest3<span class="pl-pds">'</span></span>,<span class="pl-c1">2</span>,<span class="pl-c1">1</span>);
+Query OK, <span class="pl-c1">1</span> row affected (<span class="pl-c1">0</span>.<span class="pl-c1">00</span> sec)
+
+Admin<span class="pl-k">&gt;</span> LOAD MYSQL QUERY RULES TO RUNTIME;
+Query OK, <span class="pl-c1">0</span> rows affected (<span class="pl-c1">0</span>.<span class="pl-c1">00</span> sec)</pre></div>
+<p>Again, we reset <code>stats_mysql_query_digest</code> :</p>
+<div class="highlight highlight-source-sql"><pre>Admin<span class="pl-k">&gt;</span> <span class="pl-k">SELECT</span> <span class="pl-c1">COUNT</span>(<span class="pl-k">*</span>) <span class="pl-k">FROM</span> stats_mysql_query_digest_reset;</pre></div>
+<p>From the mysql client we can run the usual query:</p>
+<div class="highlight highlight-source-sql"><pre>mysql<span class="pl-k">&gt;</span> <span class="pl-k">SELECT</span> id <span class="pl-k">FROM</span> sbtest1 <span class="pl-k">LIMIT</span> <span class="pl-c1">3</span>;
+<span class="pl-k">+</span><span class="pl-c"><span class="pl-c">--</span>-----+</span>
+| id    |
+<span class="pl-k">+</span><span class="pl-c"><span class="pl-c">--</span>-----+</span>
+| <span class="pl-c1">24878</span> |
+|  <span class="pl-c1">8995</span> |
+| <span class="pl-c1">33622</span> |
+<span class="pl-k">+</span><span class="pl-c"><span class="pl-c">--</span>-----+</span>
+<span class="pl-c1">3</span> rows <span class="pl-k">in</span> <span class="pl-k">set</span> (<span class="pl-c1">0</span>.<span class="pl-c1">03</span> sec)</pre></div>
+<p>As expected, the output is different from previous one because now the original query was rewritten.
+Let's check <code>stats_mysql_query_digest</code> :</p>
+<div class="highlight highlight-source-sql"><pre>Admin<span class="pl-k">&gt;</span> <span class="pl-k">select</span> hostgroup,count_star,sum_time,digest_text <span class="pl-k">from</span> stats_mysql_query_digest <span class="pl-k">ORDER BY</span> digest;                                                                    <span class="pl-k">+</span><span class="pl-c"><span class="pl-c">--</span>---------+------------+----------+--------------------------------+</span>
+| hostgroup | count_star | sum_time | digest_text                    |
+<span class="pl-k">+</span><span class="pl-c"><span class="pl-c">--</span>---------+------------+----------+--------------------------------+</span>
+| <span class="pl-c1">2</span>         | <span class="pl-c1">1</span>          | <span class="pl-c1">30018</span>    | <span class="pl-k">SELECT</span> id <span class="pl-k">FROM</span> sbtest3 <span class="pl-k">LIMIT</span> ? |
+| <span class="pl-c1">1</span>         | <span class="pl-c1">1</span>          | <span class="pl-c1">27227</span>    | <span class="pl-k">SELECT</span> id <span class="pl-k">FROM</span> sbtest3 <span class="pl-k">LIMIT</span> ? |
+<span class="pl-k">+</span><span class="pl-c"><span class="pl-c">--</span>---------+------------+----------+--------------------------------+</span>
+<span class="pl-c1">2</span> rows <span class="pl-k">in</span> <span class="pl-k">set</span> (<span class="pl-c1">0</span>.<span class="pl-c1">00</span> sec)</pre></div>
+<p>As expected, the modified query was executed on both hostgroups</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#rewrite-mirror-query-only" id="user-content-rewrite-mirror-query-only"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>rewrite mirror query only</h3>
+<p>In this example we will rewrite only the mirrored query.<br/>
+This is very useful, if for example, we want to understand the performance of the rewritten query, or if a new index will improve performance.</p>
+<p>In this example we will compare the performance of the same queries with and without the use of indexes.
+We will also send the queries to same hostgroups.</p>
+<p>The following creates a rule (<code>rule_id=5</code>) that:</p>
+<ul>
+<li>matches <code>FROM sbtest1</code>
+</li>
+<li>sets <code>destination hostgroup=2</code>
+</li>
+<li>sets <code>mirror_flagOUT=100</code>
+</li>
+<li>does NOT set a <code>mirror_hostgroup</code>
+</li>
+</ul>
+<div class="highlight highlight-source-sql"><pre>Admin<span class="pl-k">&gt;</span> <span class="pl-k">DELETE</span> <span class="pl-k">FROM</span> mysql_query_rules;
+Query OK, <span class="pl-c1">1</span> row affected (<span class="pl-c1">0</span>.<span class="pl-c1">00</span> sec)
+
+Admin<span class="pl-k">&gt;</span> <span class="pl-k">INSERT INTO</span> mysql_query_rules (rule_id,active,match_pattern,destination_hostgroup,mirror_flagOUT,apply) <span class="pl-k">VALUES</span> (<span class="pl-c1">5</span>,<span class="pl-c1">1</span>,<span class="pl-s"><span class="pl-pds">'</span>FROM sbtest1 <span class="pl-pds">'</span></span>,<span class="pl-c1">2</span>,<span class="pl-c1">100</span>,<span class="pl-c1">1</span>);
+Query OK, <span class="pl-c1">1</span> row affected (<span class="pl-c1">0</span>.<span class="pl-c1">00</span> sec)</pre></div>
+<p>Because <code>mirror_flagOUT</code> is set, a new session will be created to run the same query. However, <code>mirror_hostgroup</code> was not set, so the query will be sent to the default hostgroup for the specific user, according to <code>mysql_users</code>. Instead, we want to send the mirror query to the same hostgroup as the original. We could do this either setting <code>mirror_hostgroup</code> in rule with <code>rule_id=5</code> , or create a new rule. We will also create a new rule to rewrite the query:</p>
+<div class="highlight highlight-source-sql"><pre>Admin<span class="pl-k">&gt;</span> <span class="pl-k">INSERT INTO</span> mysql_query_rules (rule_id,active,flagIN,match_pattern,destination_hostgroup,replace_pattern,apply) <span class="pl-k">VALUES</span> (<span class="pl-c1">10</span>,<span class="pl-c1">1</span>,<span class="pl-c1">100</span>,<span class="pl-s"><span class="pl-pds">'</span>FROM sbtest1 <span class="pl-pds">'</span></span>,<span class="pl-c1">2</span>,<span class="pl-s"><span class="pl-pds">'</span>FROM sbtest1 IGNORE INDEX(k_1) <span class="pl-pds">'</span></span>,<span class="pl-c1">1</span>);
+Query OK, <span class="pl-c1">1</span> row affected (<span class="pl-c1">0</span>.<span class="pl-c1">00</span> sec)
+
+Admin<span class="pl-k">&gt;</span> <span class="pl-k">SELECT</span> <span class="pl-k">*</span> <span class="pl-k">FROM</span> mysql_query_rules\G
+<span class="pl-k">***************************</span> <span class="pl-c1">1</span>. row <span class="pl-k">***************************</span>
+              rule_id: <span class="pl-c1">5</span>
+               active: <span class="pl-c1">1</span>
+             username: <span class="pl-k">NULL</span>
+           schemaname: <span class="pl-k">NULL</span>
+               flagIN: <span class="pl-c1">0</span>
+         match_digest: <span class="pl-k">NULL</span>
+        match_pattern: <span class="pl-k">FROM</span> sbtest1
+ negate_match_pattern: <span class="pl-c1">0</span>
+              flagOUT: <span class="pl-k">NULL</span>
+      replace_pattern: <span class="pl-k">NULL</span>
+destination_hostgroup: <span class="pl-c1">2</span>
+            cache_ttl: <span class="pl-k">NULL</span>
+            reconnect: <span class="pl-k">NULL</span>
+              timeout: <span class="pl-k">NULL</span>
+                delay: <span class="pl-k">NULL</span>
+       mirror_flagOUT: <span class="pl-c1">100</span>
+     mirror_hostgroup: <span class="pl-k">NULL</span>
+            error_msg: <span class="pl-k">NULL</span>
+                apply: <span class="pl-c1">1</span>
+<span class="pl-k">***************************</span> <span class="pl-c1">2</span>. row <span class="pl-k">***************************</span>
+              rule_id: <span class="pl-c1">10</span>
+               active: <span class="pl-c1">1</span>
+             username: <span class="pl-k">NULL</span>
+           schemaname: <span class="pl-k">NULL</span>
+               flagIN: <span class="pl-c1">100</span>
+         match_digest: <span class="pl-k">NULL</span>
+        match_pattern: <span class="pl-k">FROM</span> sbtest1
+ negate_match_pattern: <span class="pl-c1">0</span>
+              flagOUT: <span class="pl-k">NULL</span>
+      replace_pattern: <span class="pl-k">FROM</span> sbtest1 IGNORE INDEX(k_1)
+destination_hostgroup: <span class="pl-c1">2</span>
+            cache_ttl: <span class="pl-k">NULL</span>
+            reconnect: <span class="pl-k">NULL</span>
+              timeout: <span class="pl-k">NULL</span>
+                delay: <span class="pl-k">NULL</span>
+       mirror_flagOUT: <span class="pl-k">NULL</span>
+     mirror_hostgroup: <span class="pl-k">NULL</span>
+            error_msg: <span class="pl-k">NULL</span>
+                apply: <span class="pl-c1">1</span>
+<span class="pl-c1">2</span> rows <span class="pl-k">in</span> <span class="pl-k">set</span> (<span class="pl-c1">0</span>.<span class="pl-c1">00</span> sec)
+
+Admin<span class="pl-k">&gt;</span> LOAD MYSQL QUERY RULES TO RUNTIME;
+Query OK, <span class="pl-c1">0</span> rows affected (<span class="pl-c1">0</span>.<span class="pl-c1">00</span> sec)</pre></div>
+<p>It is important to note that in the rule with <code>rule_id=10</code> , the one the mirrored query will match against, we need to set <code>destination_hostgroup</code> and not <code>mirror_hostgroup</code> : <code>mirror_hostgroup</code> should be set only for the original query in order to immediately specify where the mirror query should be sent, without the need of extra rules in <code>mysql_query_rules</code> .</p>
+<p>Let's reset <code>stats_mysql_query_digest</code>:</p>
+<div class="highlight highlight-source-sql"><pre>Admin<span class="pl-k">&gt;</span> <span class="pl-k">SELECT</span> <span class="pl-c1">COUNT</span>(<span class="pl-k">*</span>) <span class="pl-k">FROM</span> stats_mysql_query_digest_reset;</pre></div>
+<p>And run some test from mysql client:</p>
+<div class="highlight highlight-source-sql"><pre>mysql<span class="pl-k">&gt;</span> <span class="pl-k">SELECT</span> id <span class="pl-k">FROM</span> sbtest1 <span class="pl-k">ORDER BY</span> k <span class="pl-k">DESC</span> <span class="pl-k">LIMIT</span> <span class="pl-c1">3</span>;
+<span class="pl-k">+</span><span class="pl-c"><span class="pl-c">--</span>-----+</span>
+| id    |
+<span class="pl-k">+</span><span class="pl-c"><span class="pl-c">--</span>-----+</span>
+| <span class="pl-c1">26372</span> |
+| <span class="pl-c1">81250</span> |
+| <span class="pl-c1">60085</span> |
+<span class="pl-k">+</span><span class="pl-c"><span class="pl-c">--</span>-----+</span>
+<span class="pl-c1">3</span> rows <span class="pl-k">in</span> <span class="pl-k">set</span> (<span class="pl-c1">0</span>.<span class="pl-c1">01</span> sec)
+
+mysql<span class="pl-k">&gt;</span> <span class="pl-k">SELECT</span> id,k <span class="pl-k">FROM</span> sbtest1 <span class="pl-k">ORDER BY</span> k <span class="pl-k">DESC</span> <span class="pl-k">LIMIT</span> <span class="pl-c1">3</span>;
+<span class="pl-k">+</span><span class="pl-c"><span class="pl-c">--</span>-----+-------+</span>
+| id    | k     |
+<span class="pl-k">+</span><span class="pl-c"><span class="pl-c">--</span>-----+-------+</span>
+| <span class="pl-c1">26372</span> | <span class="pl-c1">80626</span> |
+| <span class="pl-c1">81250</span> | <span class="pl-c1">79947</span> |
+| <span class="pl-c1">60085</span> | <span class="pl-c1">79142</span> |
+<span class="pl-k">+</span><span class="pl-c"><span class="pl-c">--</span>-----+-------+</span>
+<span class="pl-c1">3</span> rows <span class="pl-k">in</span> <span class="pl-k">set</span> (<span class="pl-c1">0</span>.<span class="pl-c1">01</span> sec)
+</pre></div>
+<p>Let's check <code>stats_mysql_query_digest</code> :</p>
+<div class="highlight highlight-source-sql"><pre>Admin<span class="pl-k">&gt;</span> <span class="pl-k">select</span> hostgroup,count_star,sum_time,digest_text <span class="pl-k">from</span> stats_mysql_query_digest <span class="pl-k">ORDER BY</span> sum_time <span class="pl-k">DESC</span>;
+<span class="pl-k">+</span><span class="pl-c"><span class="pl-c">--</span>---------+------------+----------+--------------------------------------------------------------------+</span>
+| hostgroup | count_star | sum_time | digest_text                                                        |
+<span class="pl-k">+</span><span class="pl-c"><span class="pl-c">--</span>---------+------------+----------+--------------------------------------------------------------------+</span>
+| <span class="pl-c1">2</span>         | <span class="pl-c1">1</span>          | <span class="pl-c1">1135673</span>  | <span class="pl-k">SELECT</span> id,k <span class="pl-k">FROM</span> sbtest1 IGNORE INDEX(k_1) <span class="pl-k">ORDER BY</span> k <span class="pl-k">DESC</span> <span class="pl-k">LIMIT</span> ? |
+| <span class="pl-c1">2</span>         | <span class="pl-c1">1</span>          | <span class="pl-c1">683906</span>   | <span class="pl-k">SELECT</span> id <span class="pl-k">FROM</span> sbtest1 IGNORE INDEX(k_1) <span class="pl-k">ORDER BY</span> k <span class="pl-k">DESC</span> <span class="pl-k">LIMIT</span> ?   |
+| <span class="pl-c1">2</span>         | <span class="pl-c1">1</span>          | <span class="pl-c1">7478</span>     | <span class="pl-k">SELECT</span> id,k <span class="pl-k">FROM</span> sbtest1 <span class="pl-k">ORDER BY</span> k <span class="pl-k">DESC</span> <span class="pl-k">LIMIT</span> ?                   |
+| <span class="pl-c1">2</span>         | <span class="pl-c1">1</span>          | <span class="pl-c1">4422</span>     | <span class="pl-k">SELECT</span> id <span class="pl-k">FROM</span> sbtest1 <span class="pl-k">ORDER BY</span> k <span class="pl-k">DESC</span> <span class="pl-k">LIMIT</span> ?                     |
+<span class="pl-k">+</span><span class="pl-c"><span class="pl-c">--</span>---------+------------+----------+--------------------------------------------------------------------+</span>
+<span class="pl-c1">4</span> rows <span class="pl-k">in</span> <span class="pl-k">set</span> (<span class="pl-c1">0</span>.<span class="pl-c1">00</span> sec)</pre></div>
+<p>Table <code>stats_mysql_query_digest</code> confirms that:</p>
+<ul>
+<li>queries were mirrored</li>
+<li>the original query was not rewritten</li>
+<li>the mirrored query was rewritten</li>
+<li>the mirrored query was much slower because ignored the index</li>
+</ul>
+<h3>
+<a aria-hidden="true" class="anchor" href="#advanced-example-use-mirroring-to-test-query-rewrite" id="user-content-advanced-example-use-mirroring-to-test-query-rewrite"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Advanced example: use mirroring to test query rewrite</h3>
+<p>While working on mirroring I was asked a completely different question, related to query rewrite: how one could know if the given regex matches a given query, and verify that the rewrite pattern is correct?<br/>
+To be more specific, the problem is to understand if the rewrite is correct without affecting live traffic.<br/>
+Although mirroring wasn't initially designed for that, it can answer this question.</p>
+<p>In this example, we will write a rule to match all the <code>SELECT</code> , "mirror" them , and try to rewrite them .</p>
+<div class="highlight highlight-source-sql"><pre>Admin<span class="pl-k">&gt;</span> <span class="pl-k">DELETE</span> <span class="pl-k">FROM</span> mysql_query_rules;                                                                                                                                        Query OK, <span class="pl-c1">2</span> rows affected (<span class="pl-c1">0</span>.<span class="pl-c1">00</span> sec)
+
+Admin<span class="pl-k">&gt;</span> <span class="pl-k">INSERT INTO</span> mysql_query_rules (rule_id,active,match_pattern,destination_hostgroup,mirror_flagOUT,apply) <span class="pl-k">VALUES</span> (<span class="pl-c1">5</span>,<span class="pl-c1">1</span>,<span class="pl-s"><span class="pl-pds">'</span>^SELECT <span class="pl-pds">'</span></span>,<span class="pl-c1">2</span>,<span class="pl-c1">100</span>,<span class="pl-c1">1</span>);
+Query OK, <span class="pl-c1">1</span> row affected (<span class="pl-c1">0</span>.<span class="pl-c1">00</span> sec)
+
+Admin<span class="pl-k">&gt;</span> <span class="pl-k">INSERT INTO</span> mysql_query_rules (rule_id,active,flagIN,match_pattern,destination_hostgroup,replace_pattern,apply) <span class="pl-k">VALUES</span> (<span class="pl-c1">10</span>,<span class="pl-c1">1</span>,<span class="pl-c1">100</span>,<span class="pl-s"><span class="pl-pds">'</span>^SELECT DISTINCT c FROM sbtest([0-9]{1,2}) WHERE id BETWEEN ([0-9]+) AND ([0-9]+)<span class="pl-cce">\+</span>([0-9]+) ORDER BY c$<span class="pl-pds">'</span></span>,<span class="pl-c1">2</span>,<span class="pl-s"><span class="pl-pds">'</span>SELECT DISTINCT c FROM sbtest<span class="pl-cce">\1</span> WHERE id = <span class="pl-cce">\3</span> <span class="pl-cce">\+</span> <span class="pl-cce">\4</span> ORDER BY c<span class="pl-pds">'</span></span>,<span class="pl-c1">1</span>);
+Query OK, <span class="pl-c1">1</span> row affected (<span class="pl-c1">0</span>.<span class="pl-c1">00</span> sec)
+
+Admin<span class="pl-k">&gt;</span> LOAD MYSQL QUERY RULES TO RUNTIME;
+Query OK, <span class="pl-c1">0</span> rows affected (<span class="pl-c1">0</span>.<span class="pl-c1">00</span> sec)</pre></div>
+<p>The regex above are quite complex, and this is why mirroring helps instead of rewriting live traffic.</p>
+<p>Let's reset <code>stats_mysql_query_digest</code>:</p>
+<div class="highlight highlight-source-sql"><pre>Admin<span class="pl-k">&gt;</span> <span class="pl-k">SELECT</span> <span class="pl-c1">COUNT</span>(<span class="pl-k">*</span>) <span class="pl-k">FROM</span> stats_mysql_query_digest_reset;</pre></div>
+<p>And run some tests from the mysql client:</p>
+<div class="highlight highlight-source-sql"><pre>mysql<span class="pl-k">&gt;</span> <span class="pl-k">SELECT DISTINCT</span> c <span class="pl-k">FROM</span> sbtest1 <span class="pl-k">WHERE</span> id BETWEEN <span class="pl-c1">10</span> <span class="pl-k">AND</span> <span class="pl-c1">10</span><span class="pl-k">+</span><span class="pl-c1">2</span> <span class="pl-k">ORDER BY</span> c;
+<span class="pl-k">+</span><span class="pl-c"><span class="pl-c">--</span>-----------------------------------------------------------------------------------------------------------------------+</span>
+| c                                                                                                                       |
+<span class="pl-k">+</span><span class="pl-c"><span class="pl-c">--</span>-----------------------------------------------------------------------------------------------------------------------+</span>
+| <span class="pl-c1">41189576069</span><span class="pl-k">-</span><span class="pl-c1">45553989496</span><span class="pl-k">-</span><span class="pl-c1">19463022727</span><span class="pl-k">-</span><span class="pl-c1">28789271530</span><span class="pl-k">-</span><span class="pl-c1">61175755423</span><span class="pl-k">-</span><span class="pl-c1">36502565636</span><span class="pl-k">-</span><span class="pl-c1">61804003878</span><span class="pl-k">-</span><span class="pl-c1">85903592313</span><span class="pl-k">-</span><span class="pl-c1">68207739135</span><span class="pl-k">-</span><span class="pl-c1">17129930980</span> |
+| <span class="pl-c1">48090103407</span><span class="pl-k">-</span><span class="pl-c1">09222928184</span><span class="pl-k">-</span><span class="pl-c1">34050945574</span><span class="pl-k">-</span><span class="pl-c1">85418069333</span><span class="pl-k">-</span><span class="pl-c1">36966673537</span><span class="pl-k">-</span><span class="pl-c1">23363106719</span><span class="pl-k">-</span><span class="pl-c1">15284068881</span><span class="pl-k">-</span><span class="pl-c1">04674238815</span><span class="pl-k">-</span><span class="pl-c1">26203696337</span><span class="pl-k">-</span><span class="pl-c1">24037044694</span> |
+| <span class="pl-c1">74234360637</span><span class="pl-k">-</span><span class="pl-c1">48574588774</span><span class="pl-k">-</span><span class="pl-c1">94392661281</span><span class="pl-k">-</span><span class="pl-c1">55267159983</span><span class="pl-k">-</span><span class="pl-c1">87261567077</span><span class="pl-k">-</span><span class="pl-c1">93953988073</span><span class="pl-k">-</span><span class="pl-c1">73238443191</span><span class="pl-k">-</span><span class="pl-c1">61462412385</span><span class="pl-k">-</span><span class="pl-c1">80374300764</span><span class="pl-k">-</span><span class="pl-c1">69242108888</span> |
+<span class="pl-k">+</span><span class="pl-c"><span class="pl-c">--</span>-----------------------------------------------------------------------------------------------------------------------+</span>
+<span class="pl-c1">3</span> rows <span class="pl-k">in</span> <span class="pl-k">set</span> (<span class="pl-c1">0</span>.<span class="pl-c1">01</span> sec)</pre></div>
+<p>The query ran successfully. As said, we didn't modify the original traffic.</p>
+<p>What about in <code>stats_mysql_query_digest</code> ?</p>
+<div class="highlight highlight-source-sql"><pre>Admin<span class="pl-k">&gt;</span> <span class="pl-k">select</span> hostgroup,count_star,sum_time,digest_text <span class="pl-k">from</span> stats_mysql_query_digest <span class="pl-k">ORDER BY</span> digest_text;
+<span class="pl-k">+</span><span class="pl-c"><span class="pl-c">--</span>---------+------------+----------+----------------------------------------------------------------------+</span>
+| hostgroup | count_star | sum_time | digest_text                                                          |
+<span class="pl-k">+</span><span class="pl-c"><span class="pl-c">--</span>---------+------------+----------+----------------------------------------------------------------------+</span>
+| <span class="pl-c1">2</span>         | <span class="pl-c1">2</span>          | <span class="pl-c1">25461</span>    | <span class="pl-k">SELECT DISTINCT</span> c <span class="pl-k">FROM</span> sbtest1 <span class="pl-k">WHERE</span> id BETWEEN ? <span class="pl-k">AND</span> ?<span class="pl-k">+</span>? <span class="pl-k">ORDER BY</span> c |
+<span class="pl-k">+</span><span class="pl-c"><span class="pl-c">--</span>---------+------------+----------+----------------------------------------------------------------------+</span>
+<span class="pl-c1">1</span> row <span class="pl-k">in</span> <span class="pl-k">set</span> (<span class="pl-c1">0</span>.<span class="pl-c1">00</span> sec)</pre></div>
+<p>The original query was executed twice, so something didn't run correctly.
+We can note that both queries were sent to hostgroup2 : we should assume that <code>rule_id=10</code> was a match, but didn't rewrite the query.
+Let's verify it was a match:</p>
+<div class="highlight highlight-source-sql"><pre>Admin<span class="pl-k">&gt;</span> <span class="pl-k">SELECT</span> <span class="pl-k">*</span> <span class="pl-k">from</span> stats_mysql_query_rules;
+<span class="pl-k">+</span><span class="pl-c"><span class="pl-c">--</span>-------+------+</span>
+| rule_id | hits |
+<span class="pl-k">+</span><span class="pl-c"><span class="pl-c">--</span>-------+------+</span>
+| <span class="pl-c1">5</span>       | <span class="pl-c1">1</span>    |
+| <span class="pl-c1">10</span>      | <span class="pl-c1">1</span>    |
+<span class="pl-k">+</span><span class="pl-c"><span class="pl-c">--</span>-------+------+</span>
+<span class="pl-c1">2</span> rows <span class="pl-k">in</span> <span class="pl-k">set</span> (<span class="pl-c1">0</span>.<span class="pl-c1">00</span> sec)</pre></div>
+<p>Rule with <code>rule_id=10</code> was a match according to <code>hits</code> in <code>stats_mysql_query_rules</code>.<br/>
+Then why wasn't the query rewritten? The error log has this information:</p>
+<pre><code>re2/re2.cc:881: invalid rewrite pattern: SELECT DISTINCT c FROM sbtest\1 WHERE id = \3 \+ \4 ORDER BY c
+</code></pre>
+<p>Indeed, it is invalid syntax , let's fix this:</p>
+<div class="highlight highlight-source-sql"><pre>Admin<span class="pl-k">&gt;</span> <span class="pl-k">UPDATE</span> mysql_query_rules <span class="pl-k">SET</span> replace_pattern<span class="pl-k">=</span><span class="pl-s"><span class="pl-pds">'</span>SELECT DISTINCT c FROM sbtest<span class="pl-cce">\1</span> WHERE id = <span class="pl-cce">\3</span> + <span class="pl-cce">\4</span> ORDER BY c<span class="pl-pds">'</span></span> <span class="pl-k">WHERE</span> rule_id<span class="pl-k">=</span><span class="pl-c1">10</span>;
+Query OK, <span class="pl-c1">1</span> row affected (<span class="pl-c1">0</span>.<span class="pl-c1">00</span> sec)
+
+Admin<span class="pl-k">&gt;</span> LOAD MYSQL QUERY RULES TO RUNTIME;
+Query OK, <span class="pl-c1">0</span> rows affected (<span class="pl-c1">0</span>.<span class="pl-c1">00</span> sec)
+
+Admin<span class="pl-k">&gt;</span> <span class="pl-k">SELECT</span> <span class="pl-c1">COUNT</span>(<span class="pl-k">*</span>) <span class="pl-k">FROM</span> stats_mysql_query_digest_reset;</pre></div>
+<p>Let's re-execute the query from mysql client:</p>
+<div class="highlight highlight-source-sql"><pre>mysql<span class="pl-k">&gt;</span> <span class="pl-k">SELECT DISTINCT</span> c <span class="pl-k">FROM</span> sbtest1 <span class="pl-k">WHERE</span> id BETWEEN <span class="pl-c1">10</span> <span class="pl-k">AND</span> <span class="pl-c1">10</span><span class="pl-k">+</span><span class="pl-c1">2</span> <span class="pl-k">ORDER BY</span> c;
+<span class="pl-k">+</span><span class="pl-c"><span class="pl-c">--</span>-----------------------------------------------------------------------------------------------------------------------+</span>
+| c                                                                                                                       |
+<span class="pl-k">+</span><span class="pl-c"><span class="pl-c">--</span>-----------------------------------------------------------------------------------------------------------------------+</span>
+| <span class="pl-c1">41189576069</span><span class="pl-k">-</span><span class="pl-c1">45553989496</span><span class="pl-k">-</span><span class="pl-c1">19463022727</span><span class="pl-k">-</span><span class="pl-c1">28789271530</span><span class="pl-k">-</span><span class="pl-c1">61175755423</span><span class="pl-k">-</span><span class="pl-c1">36502565636</span><span class="pl-k">-</span><span class="pl-c1">61804003878</span><span class="pl-k">-</span><span class="pl-c1">85903592313</span><span class="pl-k">-</span><span class="pl-c1">68207739135</span><span class="pl-k">-</span><span class="pl-c1">17129930980</span> |
+| <span class="pl-c1">48090103407</span><span class="pl-k">-</span><span class="pl-c1">09222928184</span><span class="pl-k">-</span><span class="pl-c1">34050945574</span><span class="pl-k">-</span><span class="pl-c1">85418069333</span><span class="pl-k">-</span><span class="pl-c1">36966673537</span><span class="pl-k">-</span><span class="pl-c1">23363106719</span><span class="pl-k">-</span><span class="pl-c1">15284068881</span><span class="pl-k">-</span><span class="pl-c1">04674238815</span><span class="pl-k">-</span><span class="pl-c1">26203696337</span><span class="pl-k">-</span><span class="pl-c1">24037044694</span> |
+| <span class="pl-c1">74234360637</span><span class="pl-k">-</span><span class="pl-c1">48574588774</span><span class="pl-k">-</span><span class="pl-c1">94392661281</span><span class="pl-k">-</span><span class="pl-c1">55267159983</span><span class="pl-k">-</span><span class="pl-c1">87261567077</span><span class="pl-k">-</span><span class="pl-c1">93953988073</span><span class="pl-k">-</span><span class="pl-c1">73238443191</span><span class="pl-k">-</span><span class="pl-c1">61462412385</span><span class="pl-k">-</span><span class="pl-c1">80374300764</span><span class="pl-k">-</span><span class="pl-c1">69242108888</span> |
+<span class="pl-k">+</span><span class="pl-c"><span class="pl-c">--</span>-----------------------------------------------------------------------------------------------------------------------+</span>
+<span class="pl-c1">3</span> rows <span class="pl-k">in</span> <span class="pl-k">set</span> (<span class="pl-c1">0</span>.<span class="pl-c1">00</span> sec)</pre></div>
+<p>And now let's verify if the query was rewritten correctly:</p>
+<div class="highlight highlight-source-sql"><pre>Admin<span class="pl-k">&gt;</span> <span class="pl-k">select</span> hostgroup,count_star,sum_time,digest_text <span class="pl-k">from</span> stats_mysql_query_digest <span class="pl-k">ORDER BY</span> digest_text;                                                                  <span class="pl-k">+</span><span class="pl-c"><span class="pl-c">--</span>---------+------------+----------+----------------------------------------------------------------------+</span>
+| hostgroup | count_star | sum_time | digest_text                                                          |
+<span class="pl-k">+</span><span class="pl-c"><span class="pl-c">--</span>---------+------------+----------+----------------------------------------------------------------------+</span>
+| <span class="pl-c1">2</span>         | <span class="pl-c1">1</span>          | <span class="pl-c1">2756</span>     | <span class="pl-k">SELECT DISTINCT</span> c <span class="pl-k">FROM</span> sbtest1 <span class="pl-k">WHERE</span> id <span class="pl-k">=</span> ? <span class="pl-k">+</span> ? <span class="pl-k">ORDER BY</span> c           |
+| <span class="pl-c1">2</span>         | <span class="pl-c1">1</span>          | <span class="pl-c1">891</span>      | <span class="pl-k">SELECT DISTINCT</span> c <span class="pl-k">FROM</span> sbtest1 <span class="pl-k">WHERE</span> id BETWEEN ? <span class="pl-k">AND</span> ?<span class="pl-k">+</span>? <span class="pl-k">ORDER BY</span> c |
+<span class="pl-k">+</span><span class="pl-c"><span class="pl-c">--</span>---------+------------+----------+----------------------------------------------------------------------+</span></pre></div>
+<p>Well, yes, the query was rewritten correctly, and was also executed :-)</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#advanced-example-use-mirroring-and-firewall-to-test-query-rewrite" id="user-content-advanced-example-use-mirroring-and-firewall-to-test-query-rewrite"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Advanced example: use mirroring and firewall to test query rewrite</h3>
+<p>Taking the previous example/exercise a bit forward: is it possible to know how a query will be rewritten without executing it? YES!<br/>
+To achieve this, we will set <code>error_msg</code> for the mirrored query: in this way ProxySQL will process the query, but it will filter it without sending it to any mysql servers. As stated in the very beginning, the mirrored query can be modified, and firewall it is an example of modifying the mirrored query.</p>
+<p>Example:</p>
+<div class="highlight highlight-source-sql"><pre>Admin<span class="pl-k">&gt;</span> <span class="pl-k">UPDATE</span> mysql_query_rules <span class="pl-k">SET</span> error_msg<span class="pl-k">=</span><span class="pl-s"><span class="pl-pds">"</span>random error, blah blah<span class="pl-pds">"</span></span> <span class="pl-k">WHERE</span> rule_id<span class="pl-k">=</span><span class="pl-c1">10</span>;
+Query OK, <span class="pl-c1">1</span> row affected (<span class="pl-c1">0</span>.<span class="pl-c1">00</span> sec)
+
+Admin<span class="pl-k">&gt;</span> LOAD MYSQL QUERY RULES TO RUNTIME;
+Query OK, <span class="pl-c1">0</span> rows affected (<span class="pl-c1">0</span>.<span class="pl-c1">01</span> sec)
+
+Admin<span class="pl-k">&gt;</span> <span class="pl-k">SELECT</span> <span class="pl-c1">COUNT</span>(<span class="pl-k">*</span>) <span class="pl-k">FROM</span> stats_mysql_query_digest_reset;</pre></div>
+<p>Let's rerun the query in mysql client:</p>
+<div class="highlight highlight-source-sql"><pre>mysql<span class="pl-k">&gt;</span> <span class="pl-k">SELECT DISTINCT</span> c <span class="pl-k">FROM</span> sbtest1 <span class="pl-k">WHERE</span> id BETWEEN <span class="pl-c1">10</span> <span class="pl-k">AND</span> <span class="pl-c1">10</span><span class="pl-k">+</span><span class="pl-c1">2</span> <span class="pl-k">ORDER BY</span> c;
+<span class="pl-k">+</span><span class="pl-c"><span class="pl-c">--</span>-----------------------------------------------------------------------------------------------------------------------+</span>
+| c                                                                                                                       |
+<span class="pl-k">+</span><span class="pl-c"><span class="pl-c">--</span>-----------------------------------------------------------------------------------------------------------------------+</span>
+| <span class="pl-c1">41189576069</span><span class="pl-k">-</span><span class="pl-c1">45553989496</span><span class="pl-k">-</span><span class="pl-c1">19463022727</span><span class="pl-k">-</span><span class="pl-c1">28789271530</span><span class="pl-k">-</span><span class="pl-c1">61175755423</span><span class="pl-k">-</span><span class="pl-c1">36502565636</span><span class="pl-k">-</span><span class="pl-c1">61804003878</span><span class="pl-k">-</span><span class="pl-c1">85903592313</span><span class="pl-k">-</span><span class="pl-c1">68207739135</span><span class="pl-k">-</span><span class="pl-c1">17129930980</span> |
+| <span class="pl-c1">48090103407</span><span class="pl-k">-</span><span class="pl-c1">09222928184</span><span class="pl-k">-</span><span class="pl-c1">34050945574</span><span class="pl-k">-</span><span class="pl-c1">85418069333</span><span class="pl-k">-</span><span class="pl-c1">36966673537</span><span class="pl-k">-</span><span class="pl-c1">23363106719</span><span class="pl-k">-</span><span class="pl-c1">15284068881</span><span class="pl-k">-</span><span class="pl-c1">04674238815</span><span class="pl-k">-</span><span class="pl-c1">26203696337</span><span class="pl-k">-</span><span class="pl-c1">24037044694</span> |
+| <span class="pl-c1">74234360637</span><span class="pl-k">-</span><span class="pl-c1">48574588774</span><span class="pl-k">-</span><span class="pl-c1">94392661281</span><span class="pl-k">-</span><span class="pl-c1">55267159983</span><span class="pl-k">-</span><span class="pl-c1">87261567077</span><span class="pl-k">-</span><span class="pl-c1">93953988073</span><span class="pl-k">-</span><span class="pl-c1">73238443191</span><span class="pl-k">-</span><span class="pl-c1">61462412385</span><span class="pl-k">-</span><span class="pl-c1">80374300764</span><span class="pl-k">-</span><span class="pl-c1">69242108888</span> |
+<span class="pl-k">+</span><span class="pl-c"><span class="pl-c">--</span>-----------------------------------------------------------------------------------------------------------------------+</span>
+<span class="pl-c1">3</span> rows <span class="pl-k">in</span> <span class="pl-k">set</span> (<span class="pl-c1">0</span>.<span class="pl-c1">00</span> sec)</pre></div>
+<p>And now let's check statistics:</p>
+<div class="highlight highlight-source-sql"><pre>Admin<span class="pl-k">&gt;</span> <span class="pl-k">select</span> hostgroup,count_star,sum_time,digest_text <span class="pl-k">from</span> stats_mysql_query_digest <span class="pl-k">ORDER BY</span> digest_text;                                                                  <span class="pl-k">+</span><span class="pl-c"><span class="pl-c">--</span>---------+------------+----------+----------------------------------------------------------------------+</span>
+| hostgroup | count_star | sum_time | digest_text                                                          |
+<span class="pl-k">+</span><span class="pl-c"><span class="pl-c">--</span>---------+------------+----------+----------------------------------------------------------------------+</span>
+| <span class="pl-k">-</span><span class="pl-c1">1</span>        | <span class="pl-c1">1</span>          | <span class="pl-c1">0</span>        | <span class="pl-k">SELECT DISTINCT</span> c <span class="pl-k">FROM</span> sbtest1 <span class="pl-k">WHERE</span> id <span class="pl-k">=</span> ? <span class="pl-k">+</span> ? <span class="pl-k">ORDER BY</span> c           |
+| <span class="pl-c1">2</span>         | <span class="pl-c1">1</span>          | <span class="pl-c1">3219</span>     | <span class="pl-k">SELECT DISTINCT</span> c <span class="pl-k">FROM</span> sbtest1 <span class="pl-k">WHERE</span> id BETWEEN ? <span class="pl-k">AND</span> ?<span class="pl-k">+</span>? <span class="pl-k">ORDER BY</span> c |
+<span class="pl-k">+</span><span class="pl-c"><span class="pl-c">--</span>---------+------------+----------+----------------------------------------------------------------------+</span>
+<span class="pl-c1">2</span> rows <span class="pl-k">in</span> <span class="pl-k">set</span> (<span class="pl-c1">0</span>.<span class="pl-c1">00</span> sec)
+
+Admin<span class="pl-k">&gt;</span> <span class="pl-k">SELECT</span> <span class="pl-k">*</span> <span class="pl-k">from</span> stats_mysql_query_rules;                                                                                                                                <span class="pl-k">+</span><span class="pl-c"><span class="pl-c">--</span>-------+------+</span>
+| rule_id | hits |
+<span class="pl-k">+</span><span class="pl-c"><span class="pl-c">--</span>-------+------+</span>
+| <span class="pl-c1">5</span>       | <span class="pl-c1">1</span>    |
+| <span class="pl-c1">10</span>      | <span class="pl-c1">1</span>    |
+<span class="pl-k">+</span><span class="pl-c"><span class="pl-c">--</span>-------+------+</span>
+<span class="pl-c1">2</span> rows <span class="pl-k">in</span> <span class="pl-k">set</span> (<span class="pl-c1">0</span>.<span class="pl-c1">00</span> sec)</pre></div>
+<p>Great! We know that the query was rewritten, but actually not sent anywhere:</p>
+<ul>
+<li>
+<code>sum_time=0</code> because the response was immediate</li>
+<li>
+<code>hostgroup=-1</code> has the special meaning of "not sent anywhere"</li>
+</ul>
+
+        </div>
+
+    </div>]

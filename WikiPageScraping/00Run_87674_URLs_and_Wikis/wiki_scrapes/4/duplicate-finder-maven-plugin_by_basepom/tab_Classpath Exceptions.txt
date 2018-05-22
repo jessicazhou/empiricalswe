@@ -1,0 +1,309 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>Managing exceptions is an important aspect for the duplicate finder
+plugin. Often, third-party dependencies, that can not be changed have
+conflicts or include classes and resources that are duplicate with
+other classpath elements.</p>
+<p>The duplicate finder plugin allows listing and excluding these
+conflicts.</p>
+<div class="highlight highlight-text-xml"><pre>&lt;<span class="pl-ent">configuration</span>&gt;
+    &lt;<span class="pl-ent">exceptions</span>&gt;
+        &lt;<span class="pl-ent">exception</span>&gt;
+            &lt;<span class="pl-ent">conflictingDependencies</span>&gt;
+                &lt;<span class="pl-ent">dependency</span>&gt;
+                    &lt;<span class="pl-ent">artifactId</span>&gt;...&lt;/<span class="pl-ent">artifactId</span>&gt;
+                    &lt;<span class="pl-ent">groupId</span>&gt;...&lt;/<span class="pl-ent">groupId</span>&gt;
+                    &lt;<span class="pl-ent">version</span>&gt;...&lt;/<span class="pl-ent">version</span>&gt;
+                    &lt;<span class="pl-ent">type</span>&gt;...&lt;/<span class="pl-ent">type</span>&gt;
+                    &lt;<span class="pl-ent">classifier</span>&gt;...&lt;/<span class="pl-ent">classifier</span>&gt;
+                &lt;/<span class="pl-ent">dependency</span>&gt;
+                ...
+            &lt;/<span class="pl-ent">conflictingDependencies</span>&gt;
+            &lt;<span class="pl-ent">currentProject</span>&gt;false&lt;/<span class="pl-ent">currentProject</span>&gt;
+
+            <span class="pl-c"><span class="pl-c">&lt;!--</span> Version 1.1.1+ <span class="pl-c">--&gt;</span></span>
+            &lt;<span class="pl-ent">bootClasspath</span>&gt;false&lt;/<span class="pl-ent">bootClasspath</span>&gt;
+            <span class="pl-c"><span class="pl-c">&lt;!--</span> Version 1.1.1+ <span class="pl-c">--&gt;</span></span>
+
+            &lt;<span class="pl-ent">resourcePatterns</span>&gt;
+                &lt;<span class="pl-ent">resourcePattern</span>&gt;...&lt;/<span class="pl-ent">resourcePattern</span>&gt;
+            &lt;/<span class="pl-ent">resourcePatterns</span>&gt;
+            &lt;<span class="pl-ent">classes</span>&gt;
+                &lt;<span class="pl-ent">class</span>&gt;...&lt;/<span class="pl-ent">class</span>&gt;
+            &lt;/<span class="pl-ent">classes</span>&gt;
+            &lt;<span class="pl-ent">packages</span>&gt;
+                &lt;<span class="pl-ent">package</span>&gt;...&lt;/<span class="pl-ent">package</span>&gt;
+            &lt;/<span class="pl-ent">packages</span>&gt;
+            &lt;<span class="pl-ent">resources</span>&gt;
+                &lt;<span class="pl-ent">resource</span>&gt;...&lt;/<span class="pl-ent">resource</span>&gt;
+            &lt;/<span class="pl-ent">resources</span>&gt;
+        &lt;/<span class="pl-ent">exception</span>&gt;
+    &lt;/<span class="pl-ent">exceptions</span>&gt;
+&lt;/<span class="pl-ent">configuration</span>&gt;</pre></div>
+<h3>
+<a aria-hidden="true" class="anchor" href="#exception-overview" id="user-content-exception-overview"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Exception overview</h3>
+<p>Within the plugin configuration, one or more exceptions can be listed
+in the <code>&lt;exceptions&gt;</code> element. Each exception is applied to all
+classpath scopes (compile, runtime and test).</p>
+<p>Each exception lists its conflicting dependencies in the <code>conflictingDependencies</code>
+element and then optionally the specific conflicting classes and
+resources. Any conflict covered by an exception will not be reported
+or fail the build.</p>
+<p>If an exception only contains a <code>conflictingDependencies</code> element (no
+<code>classes</code>, <code>packages</code>, <code>resources</code> or <code>resourcePatterns</code>), <em>any</em>
+duplicate between all the listed dependencies is ignored. If any of
+these elements is present, <em>only</em> the listed classes or resources will
+be ignored.</p>
+<p><strong>Warning!</strong> The presence of any of these elements will turn off the
+wildcard behavior of an exception. Especially the presence of a
+<code>classes</code> or <code>packages</code> element will also turn off the wildcard
+behavior for resources and the presence of a <code>resources</code> or
+<code>resourcePatterns</code> element will turn off the wildcard behavior for
+classes. This was undefined in previous versions of the duplicate
+finder plugin.</p>
+<h4>
+<a aria-hidden="true" class="anchor" href="#the-conflictingdependencies-element" id="user-content-the-conflictingdependencies-element"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>The <code>conflictingDependencies</code> element</h4>
+<p>The <code>conflictingDependencies</code> element lists all artifacts considered
+for an exception as [<code>dependency</code>](Describing Dependencies) elements. Each
+<code>dependency</code> can be fully or partially defined.</p>
+<h4>
+<a aria-hidden="true" class="anchor" href="#the-currentproject-flag" id="user-content-the-currentproject-flag"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>The <code>currentProject</code> flag</h4>
+<p>The <code>currentProject</code> flag signals that the current project should be
+added to the exception as a dependency. Any resource or class that is
+duplicate between the current project and the listed dependencies will
+be ignored.</p>
+<p>The option is equivalent to having the current project listed as a
+dependency in the <code>conflictingDependencies</code> element.</p>
+<p>If the <code>conflictingDependencies</code> element already contains a dependency
+for the current project, the flag has no effect.</p>
+<p><strong>Warning!</strong> This flag can lead to surprising behavior, especially if
+it is used in the root POM of a multi-module build or a parent
+pom. The 'current project' is evaluated at runtime and in a
+multi-module build it will be applied each time when the plugin is
+executed on a sub-project. It is recommended to use this flag
+specifically in the project POM where conflicts are expected.</p>
+<h5>
+<a aria-hidden="true" class="anchor" href="#examples" id="user-content-examples"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Examples</h5>
+<p>In a mult-module build with two sub-projects, sub-project
+<code>sub-project-a</code> has a conflict with <code>commons-lang:commons-lang</code> and
+<code>sub-project-b</code> has a conflict with
+<code>commons-collections:commons-collections</code>. It would be possible to
+configure the duplicate finder plugin to ignore these by adding
+exceptions to the project root POM:</p>
+<div class="highlight highlight-text-xml"><pre>&lt;<span class="pl-ent">modules</span>&gt;
+    &lt;<span class="pl-ent">module</span>&gt;sub-project-a&lt;/<span class="pl-ent">module</span>&gt;
+    &lt;<span class="pl-ent">module</span>&gt;sub-project-b&lt;/<span class="pl-ent">module</span>&gt;
+&lt;/<span class="pl-ent">modules</span>&gt;
+
+&lt;<span class="pl-ent">build</span>&gt;
+    &lt;<span class="pl-ent">plugins</span>&gt;
+        &lt;<span class="pl-ent">plugin</span>&gt;
+            &lt;<span class="pl-ent">groupId</span>&gt;org.basepom.maven&lt;/<span class="pl-ent">groupId</span>&gt;
+            &lt;<span class="pl-ent">artifactId</span>&gt;duplicate-finder-maven-plugin&lt;/<span class="pl-ent">artifactId</span>&gt;
+            &lt;<span class="pl-ent">configuration</span>&gt;
+                &lt;<span class="pl-ent">exceptions</span>&gt;
+                    &lt;<span class="pl-ent">exception</span>&gt;
+                        &lt;<span class="pl-ent">currentProject</span>&gt;true&lt;/<span class="pl-ent">currentProject</span>&gt;
+                        &lt;<span class="pl-ent">conflictingDependencies</span>&gt;
+                            &lt;<span class="pl-ent">dependency</span>&gt;
+                                &lt;<span class="pl-ent">groupId</span>&gt;commons-lang&lt;/<span class="pl-ent">groupId</span>&gt;
+                                &lt;<span class="pl-ent">artifactId</span>&gt;commons-lang&lt;/<span class="pl-ent">artifactId</span>&gt;
+                            &lt;/<span class="pl-ent">dependency</span>&gt;
+                        &lt;/<span class="pl-ent">conflictingDependencies</span>&gt;
+                    &lt;/<span class="pl-ent">exception</span>&gt;
+                    &lt;<span class="pl-ent">exception</span>&gt;
+                        &lt;<span class="pl-ent">currentProject</span>&gt;true&lt;/<span class="pl-ent">currentProject</span>&gt;
+                        &lt;<span class="pl-ent">conflictingDependencies</span>&gt;
+                            &lt;<span class="pl-ent">dependency</span>&gt;
+                                &lt;<span class="pl-ent">groupId</span>&gt;commons-collections&lt;/<span class="pl-ent">groupId</span>&gt;
+                                &lt;<span class="pl-ent">artifactId</span>&gt;commons-collections&lt;/<span class="pl-ent">artifactId</span>&gt;
+                            &lt;/<span class="pl-ent">dependency</span>&gt;
+                        &lt;/<span class="pl-ent">conflictingDependencies</span>&gt;
+                    &lt;/<span class="pl-ent">exception</span>&gt;
+                &lt;/<span class="pl-ent">exceptions</span>&gt;
+            &lt;/<span class="pl-ent">configuration</span>&gt;
+        &lt;/<span class="pl-ent">plugin</span>&gt;
+    &lt;/<span class="pl-ent">plugins</span>&gt;
+&lt;/<span class="pl-ent">build</span>&gt;</pre></div>
+<p>In this case, each of the sub projects (<code>sub-project-a</code> and
+<code>sub-project-b</code>) will have any possible conflicts to
+<code>commons-lang:commons-lang</code> and
+<code>commons-collections:commons-collections</code> excluded. However, this
+would also exclude possible conflicts between <code>sub-project-a</code> and
+<code>commons-collections:commons-collections</code> or <code>sub-project-b</code> and
+<code>commons-lang:commons-lang</code> even though each probably should have been
+flagged.</p>
+<p>A better way to solve this is moving the exceptions to the actual
+sub-project POMs:</p>
+<p>Root POM:</p>
+<div class="highlight highlight-text-xml"><pre>&lt;<span class="pl-ent">modules</span>&gt;
+    &lt;<span class="pl-ent">module</span>&gt;sub-project-a&lt;/<span class="pl-ent">module</span>&gt;
+    &lt;<span class="pl-ent">module</span>&gt;sub-project-b&lt;/<span class="pl-ent">module</span>&gt;
+&lt;/<span class="pl-ent">modules</span>&gt;
+
+&lt;<span class="pl-ent">build</span>&gt;
+    &lt;<span class="pl-ent">pluginManagement</span>&gt;
+        &lt;<span class="pl-ent">plugins</span>&gt;
+            &lt;<span class="pl-ent">plugin</span>&gt;
+                &lt;<span class="pl-ent">groupId</span>&gt;org.basepom.maven&lt;/<span class="pl-ent">groupId</span>&gt;
+                &lt;<span class="pl-ent">artifactId</span>&gt;duplicate-finder-maven-plugin&lt;/<span class="pl-ent">artifactId</span>&gt;
+            &lt;/<span class="pl-ent">plugin</span>&gt;
+        &lt;/<span class="pl-ent">plugins</span>&gt;
+    &lt;/<span class="pl-ent">pluginManagement</span>&gt;
+&lt;/<span class="pl-ent">build</span>&gt;</pre></div>
+<p>Sub-project POM <code>sub-project-a</code>:</p>
+<div class="highlight highlight-text-xml"><pre>&lt;<span class="pl-ent">build</span>&gt;
+    &lt;<span class="pl-ent">plugins</span>&gt;
+        &lt;<span class="pl-ent">plugin</span>&gt;
+            &lt;<span class="pl-ent">groupId</span>&gt;org.basepom.maven&lt;/<span class="pl-ent">groupId</span>&gt;
+            &lt;<span class="pl-ent">artifactId</span>&gt;duplicate-finder-maven-plugin&lt;/<span class="pl-ent">artifactId</span>&gt;
+            &lt;<span class="pl-ent">configuration</span>&gt;
+                &lt;<span class="pl-ent">exceptions</span>&gt;
+                    &lt;<span class="pl-ent">exception</span>&gt;
+                        &lt;<span class="pl-ent">currentProject</span>&gt;true&lt;/<span class="pl-ent">currentProject</span>&gt;
+                        &lt;<span class="pl-ent">conflictingDependencies</span>&gt;
+                            &lt;<span class="pl-ent">dependency</span>&gt;
+                                &lt;<span class="pl-ent">groupId</span>&gt;commons-lang&lt;/<span class="pl-ent">groupId</span>&gt;
+                                &lt;<span class="pl-ent">artifactId</span>&gt;commons-lang&lt;/<span class="pl-ent">artifactId</span>&gt;
+                            &lt;/<span class="pl-ent">dependency</span>&gt;
+                        &lt;/<span class="pl-ent">conflictingDependencies</span>&gt;
+                    &lt;/<span class="pl-ent">exception</span>&gt;
+                &lt;/<span class="pl-ent">exceptions</span>&gt;
+            &lt;/<span class="pl-ent">configuration</span>&gt;
+        &lt;/<span class="pl-ent">plugin</span>&gt;
+    &lt;/<span class="pl-ent">plugins</span>&gt;
+&lt;/<span class="pl-ent">build</span>&gt;</pre></div>
+<p>Sub-project POM <code>sub-project-b</code>:</p>
+<div class="highlight highlight-text-xml"><pre>&lt;<span class="pl-ent">build</span>&gt;
+    &lt;<span class="pl-ent">plugins</span>&gt;
+        &lt;<span class="pl-ent">plugin</span>&gt;
+            &lt;<span class="pl-ent">groupId</span>&gt;org.basepom.maven&lt;/<span class="pl-ent">groupId</span>&gt;
+            &lt;<span class="pl-ent">artifactId</span>&gt;duplicate-finder-maven-plugin&lt;/<span class="pl-ent">artifactId</span>&gt;
+            &lt;<span class="pl-ent">configuration</span>&gt;
+                &lt;<span class="pl-ent">exceptions</span>&gt;
+                    &lt;<span class="pl-ent">exception</span>&gt;
+                        &lt;<span class="pl-ent">currentProject</span>&gt;true&lt;/<span class="pl-ent">currentProject</span>&gt;
+                        &lt;<span class="pl-ent">conflictingDependencies</span>&gt;
+                            &lt;<span class="pl-ent">dependency</span>&gt;
+                                &lt;<span class="pl-ent">groupId</span>&gt;commons-collections&lt;/<span class="pl-ent">groupId</span>&gt;
+                                &lt;<span class="pl-ent">artifactId</span>&gt;commons-collections&lt;/<span class="pl-ent">artifactId</span>&gt;
+                            &lt;/<span class="pl-ent">dependency</span>&gt;
+                        &lt;/<span class="pl-ent">conflictingDependencies</span>&gt;
+                    &lt;/<span class="pl-ent">exception</span>&gt;
+                &lt;/<span class="pl-ent">exceptions</span>&gt;
+            &lt;/<span class="pl-ent">configuration</span>&gt;
+        &lt;/<span class="pl-ent">plugin</span>&gt;
+    &lt;/<span class="pl-ent">plugins</span>&gt;
+&lt;/<span class="pl-ent">build</span>&gt;</pre></div>
+<p>Now, <code>sub-project-a</code> will have its conflicts with
+<code>commons-lang:commons-lang</code> excluded and <code>sub-project-b</code> will have its
+conflicts with <code>commons-collections:commons-collections</code> excluded
+while any other conflict will still be flagged correctly.</p>
+<h4>
+<a aria-hidden="true" class="anchor" href="#the-bootclasspath-flag" id="user-content-the-bootclasspath-flag"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>The <code>bootClasspath</code> flag</h4>
+<p>** Available in plugin version 1.1.1 and later! **</p>
+<p>The <code>bootClasspath</code> flag signals that an exception to elements on the
+boot classpath is defined. Any match between classes or resources in
+the listed artifacts and the boot classpath elements is ignored.</p>
+<p>This flag can be combined with the <code>currentProject</code> flag.</p>
+<div class="highlight highlight-text-xml"><pre>&lt;<span class="pl-ent">exception</span>&gt;
+    &lt;<span class="pl-ent">currentProject</span>&gt;false&lt;/<span class="pl-ent">currentProject</span>&gt;
+    &lt;<span class="pl-ent">bootClasspath</span>&gt;false&lt;/<span class="pl-ent">bootClasspath</span>&gt;
+&lt;/<span class="pl-ent">exception</span>&gt;</pre></div>
+<p>will ignore any conflict between classes and resources in the current
+project and the boot classpath.</p>
+<h4>
+<a aria-hidden="true" class="anchor" href="#managing-class-exceptions-with--classes-and-packages" id="user-content-managing-class-exceptions-with--classes-and-packages"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Managing class exceptions with  <code>classes</code> and <code>packages</code>
+</h4>
+<p>The <code>classes</code> and <code>packages</code> elements control which classes are
+ignored by the duplicate finder plugin when determining conflicts.</p>
+<p>Specific classes are listed as fully-qualified names in the <code>classes</code>
+element and full packages are listed in the <code>packages</code> element. Any
+package listed will match any class in that package <em>and any
+sub-package</em>. This is a very powerful mechanism and it should be used
+with care.</p>
+<h5>
+<a aria-hidden="true" class="anchor" href="#examples-1" id="user-content-examples-1"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Examples</h5>
+<p>Exclude a set of classes that are copied around into different jars:</p>
+<div class="highlight highlight-text-xml"><pre>&lt;<span class="pl-ent">exception</span>&gt;
+    &lt;<span class="pl-ent">conflictingDependencies</span>&gt;
+        &lt;<span class="pl-ent">dependency</span>&gt;
+            &lt;<span class="pl-ent">groupId</span>&gt;commons-beanutils&lt;/<span class="pl-ent">groupId</span>&gt;
+            &lt;<span class="pl-ent">artifactId</span>&gt;commons-beanutils&lt;/<span class="pl-ent">artifactId</span>&gt;
+        &lt;/<span class="pl-ent">dependency</span>&gt;
+        &lt;<span class="pl-ent">dependency</span>&gt;
+            &lt;<span class="pl-ent">groupId</span>&gt;commons-beanutils&lt;/<span class="pl-ent">groupId</span>&gt;
+            &lt;<span class="pl-ent">artifactId</span>&gt;commons-beanutils-core&lt;/<span class="pl-ent">artifactId</span>&gt;
+        &lt;/<span class="pl-ent">dependency</span>&gt;
+        &lt;<span class="pl-ent">dependency</span>&gt;
+            &lt;<span class="pl-ent">groupId</span>&gt;commons-collections&lt;/<span class="pl-ent">groupId</span>&gt;
+            &lt;<span class="pl-ent">artifactId</span>&gt;commons-collections&lt;/<span class="pl-ent">artifactId</span>&gt;
+        &lt;/<span class="pl-ent">dependency</span>&gt;
+    &lt;/<span class="pl-ent">conflictingDependencies</span>&gt;
+    <span class="pl-c"><span class="pl-c">&lt;!--</span> Well done, Apache! <span class="pl-c">--&gt;</span></span>
+    &lt;<span class="pl-ent">classes</span>&gt;
+        &lt;<span class="pl-ent">class</span>&gt;org.apache.commons.collections.ArrayStack&lt;/<span class="pl-ent">class</span>&gt;
+        &lt;<span class="pl-ent">class</span>&gt;org.apache.commons.collections.Buffer&lt;/<span class="pl-ent">class</span>&gt;
+        &lt;<span class="pl-ent">class</span>&gt;org.apache.commons.collections.BufferUnderflowException&lt;/<span class="pl-ent">class</span>&gt;
+        &lt;<span class="pl-ent">class</span>&gt;org.apache.commons.collections.FastHashMap&lt;/<span class="pl-ent">class</span>&gt;
+    &lt;/<span class="pl-ent">classes</span>&gt;
+&lt;/<span class="pl-ent">exception</span>&gt;</pre></div>
+<p>Exclude a package that was copied into a jar:</p>
+<div class="highlight highlight-text-xml"><pre>&lt;<span class="pl-ent">exception</span>&gt;
+    &lt;<span class="pl-ent">conflictingDependencies</span>&gt;
+        &lt;<span class="pl-ent">dependency</span>&gt;
+            &lt;<span class="pl-ent">groupId</span>&gt;junit&lt;/<span class="pl-ent">groupId</span>&gt;
+            &lt;<span class="pl-ent">artifactId</span>&gt;junit&lt;/<span class="pl-ent">artifactId</span>&gt;
+            &lt;<span class="pl-ent">version</span>&gt;(,4.11)&lt;/<span class="pl-ent">version</span>&gt;
+        &lt;/<span class="pl-ent">dependency</span>&gt;
+        &lt;<span class="pl-ent">dependency</span>&gt;
+            &lt;<span class="pl-ent">groupId</span>&gt;org.hamcrest&lt;/<span class="pl-ent">groupId</span>&gt;
+            &lt;<span class="pl-ent">artifactId</span>&gt;hamcrest-core&lt;/<span class="pl-ent">artifactId</span>&gt;
+        &lt;/<span class="pl-ent">dependency</span>&gt;
+    &lt;/<span class="pl-ent">conflictingDependencies</span>&gt;
+    &lt;<span class="pl-ent">packages</span>&gt;
+        &lt;<span class="pl-ent">package</span>&gt;org.hamcrest&lt;/<span class="pl-ent">package</span>&gt;
+    &lt;/<span class="pl-ent">packages</span>&gt;
+&lt;/<span class="pl-ent">exception</span>&gt;</pre></div>
+<h4>
+<a aria-hidden="true" class="anchor" href="#manging-resource-exceptions-with-resources-and-resourcepatterns" id="user-content-manging-resource-exceptions-with-resources-and-resourcepatterns"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Manging resource exceptions with <code>resources</code> and <code>resourcePatterns</code>
+</h4>
+<p>The <code>resources</code> and <code>resourcePatterns</code> elements control which
+resources are ignored. Similar to the class elements <code>classes</code> and
+<code>packages</code>, <code>resource</code> lists single resource elements and
+<code>resourcePatterns</code> can match one or many resources.</p>
+<p>A specific resource is listed with its full path in the <code>resources</code>
+element. Any resource listed should be fully qualfied and start with a
+<code>/</code>. For backwards compatibility, relative resource names (without a
+leading <code>/</code>) are accepted but internally treated like absolute
+resource names.</p>
+<p>The <code>resourcePatterns</code> element accepts any standard Java regular
+expression. Resource names are matched against these expressions. If
+relative matching is not desired, a pattern must be anchored with
+either a a start anchor (<code>^</code>) or an end anchor (<code>$</code>).</p>
+<h5>
+<a aria-hidden="true" class="anchor" href="#examples-2" id="user-content-examples-2"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Examples</h5>
+<p>Exclude a specific resource that is duplicate in the Jersey jars:</p>
+<div class="highlight highlight-text-xml"><pre>&lt;<span class="pl-ent">exception</span>&gt;
+    &lt;<span class="pl-ent">conflictingDependencies</span>&gt;
+        &lt;<span class="pl-ent">dependency</span>&gt;
+            &lt;<span class="pl-ent">groupId</span>&gt;com.sun.jersey&lt;/<span class="pl-ent">groupId</span>&gt;
+            &lt;<span class="pl-ent">artifactId</span>&gt;jersey-core&lt;/<span class="pl-ent">artifactId</span>&gt;
+        &lt;/<span class="pl-ent">dependency</span>&gt;
+        &lt;<span class="pl-ent">dependency</span>&gt;
+            &lt;<span class="pl-ent">groupId</span>&gt;com.sun.jersey&lt;/<span class="pl-ent">groupId</span>&gt;
+            &lt;<span class="pl-ent">artifactId</span>&gt;jersey-client&lt;/<span class="pl-ent">artifactId</span>&gt;
+        &lt;/<span class="pl-ent">dependency</span>&gt;
+        &lt;<span class="pl-ent">dependency</span>&gt;
+            &lt;<span class="pl-ent">groupId</span>&gt;com.sun.jersey&lt;/<span class="pl-ent">groupId</span>&gt;
+            &lt;<span class="pl-ent">artifactId</span>&gt;jersey-server&lt;/<span class="pl-ent">artifactId</span>&gt;
+        &lt;/<span class="pl-ent">dependency</span>&gt;
+    &lt;/<span class="pl-ent">conflictingDependencies</span>&gt;
+    &lt;<span class="pl-ent">resources</span>&gt;
+        &lt;<span class="pl-ent">resource</span>&gt;/META-INF/jersey-module-version&lt;/<span class="pl-ent">resource</span>&gt;
+    &lt;/<span class="pl-ent">resources</span>&gt;
+&lt;/<span class="pl-ent">exception</span>&gt;</pre></div>
+
+        </div>
+
+    </div>]

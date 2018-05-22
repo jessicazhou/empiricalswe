@@ -1,0 +1,111 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>Mixins provide us with a great deal of power to manipulate existing classes, one of the most useful of which is to monkey-patch new interfaces onto existing classes as <a href="https://github.com/SpongePowered/Mixin/wiki/Introduction-to-Mixins---Understanding-Mixin-Architecture">described in the first part of this series</a>.</p>
+<p>However, a problem arises when the interfaces we wish to monkey-patch contain method declarations which conflict with existing methods in the target class or its superclasses. Let's take a look at a simple example to see where the problems occur:</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#1-the-problem" id="user-content-1-the-problem"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>1. The Problem</h3>
+<p>In our example application, we want to tag certain objects so we can keep track of their instances. We define a new interface called <code>Identifyable</code> with a <code>getID()</code> method which we will mixin to target classes that we want to identify.</p>
+<div class="highlight highlight-source-java"><pre><span class="pl-k">public</span> <span class="pl-k">interface</span> <span class="pl-en">Identifyable</span> {
+
+    <span class="pl-c"><span class="pl-c">/**</span></span>
+<span class="pl-c">     * Get the ID for this object</span>
+<span class="pl-c">     <span class="pl-c">*/</span></span>
+    <span class="pl-k">public</span> <span class="pl-k">abstract</span> <span class="pl-smi">UUID</span> <span class="pl-en">getID</span>();
+}</pre></div>
+<p>We choose to use Java's <code>UUID</code> class as our identifier type and intend to generate a unique <code>UUID</code> instance for every object we mix into.</p>
+<p>However there's a problem, if the superclass of one of our targets already defines a method with a signature which differs on return type then the Java compiler will not let us compile our mixin. To see why, let's take a look at the structure we're trying to create. I have decorated each accessor with its return type to illustrate the problem:</p>
+<p><img alt="" src="https://raw.githubusercontent.com/SpongePowered/Mixin/master/docs/images/mixin_conflict_0.png"/></p>
+<p>The method <code>getID()</code> in the parent class, and the <code>getID()</code> method we are trying to define differ only on return type. This type of overload is not supported by Java and the compiler will raise an error when we try to compile our mixin:</p>
+<p><img alt="" src="https://raw.githubusercontent.com/SpongePowered/Mixin/master/docs/images/mixin_conflict_1.png"/></p>
+<p>However, there is a silver lining hidden in the engine which powers Java, the Java Virtual Machine (JVM): the JVM itself <strong>does</strong> support this kind of overload, it is only the Java language which does not. This means that if we can somehow convince the compiler to compile our code, then the actual class will work just fine.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#2-bypassing-the-compiler-limitation---the-old-switcheroo" id="user-content-2-bypassing-the-compiler-limitation---the-old-switcheroo"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>2. Bypassing the Compiler Limitation - The Old Switcheroo</h3>
+<p>So how do we leverage this hidden functionality in the JVM if Java won't let us access it? Simple: we use a fake method to compile the mixin, and switch it out with the actual method we want when we come to apply the mixin. The first phase of our solution looks like this:</p>
+<p><img alt="" src="https://raw.githubusercontent.com/SpongePowered/Mixin/master/docs/images/mixin_conflict_2.png"/></p>
+<p>In this example, we prefix an underscore (<code>_</code>) to the method, and apply a rename operation to strip the underscore from the method name when we apply the mixin. We also remove the interface declaration from our mixin because the compiler is still smart enough to spot the conflict even when the method is defined on an interface.</p>
+<p>So now we know the solution to compiling our conflicting method, we have two new problems:</p>
+<ul>
+<li>
+<p>How does the mixin processor know what methods need to have a prefix stripped from them, and what the prefix is?</p>
+</li>
+<li>
+<p>How do we go about implementing the interface on the mixin if doing so will immediately cause a conflict with the target?</p>
+</li>
+</ul>
+<p>Fortunately both of these new problems can be quite easily solved!</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#3-gently-does-it---soft-implementing-an-interface" id="user-content-3-gently-does-it---soft-implementing-an-interface"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>3. Gently Does It - <em>Soft Implementing</em> an Interface</h3>
+<p>To resolve these problems, we will introduce a new concept, the idea of <strong>soft implementing</strong> an interface.</p>
+<p>With our soft implementation, we will define both a prefix to be used for methods in the interface, which solves the first problem, as well as a way of declaring an interface implementation without actually using the <code>implements</code> keyword, which solves the second.</p>
+<p><img alt="" src="https://raw.githubusercontent.com/SpongePowered/Mixin/master/docs/images/mixin_conflict_3.png"/></p>
+<p>In terms of the end result, soft implementation provides exactly the same capabilities as having a mixin directly implement an interface, in other words:</p>
+<ul>
+<li>Soft-implemented interfaces are still monkey-patched onto the target class in the same way that regular interfaces are</li>
+<li>Prefixed methods are still mixed in (including overwrite semantics - see the next section) to the target class and will simply have any prefix stripped by the mixin processor.</li>
+</ul>
+<blockquote>
+<p><strong>NOTE</strong> It is also possible to mix "hard" and "soft" implementation clauses on the same mixin.</p>
+</blockquote>
+<h4>
+<a aria-hidden="true" class="anchor" href="#31-declaring-soft-implementations" id="user-content-31-declaring-soft-implementations"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>3.1 Declaring Soft Implementations</h4>
+<p>As you might expect, soft implementations are declared using annotations. Let's take a look at how the example above would translate into Java code.</p>
+<div class="highlight highlight-source-java"><pre><span class="pl-k">@Mixin</span>(<span class="pl-smi">Bar</span><span class="pl-k">.</span>class)
+<span class="pl-k">@Implements</span>(<span class="pl-k">@Interface</span>(<span class="pl-c1">iface</span> <span class="pl-k">=</span> <span class="pl-smi">Indentifyable</span><span class="pl-k">.</span>class, <span class="pl-c1">prefix</span> <span class="pl-k">=</span> <span class="pl-s"><span class="pl-pds">"</span>ident$<span class="pl-pds">"</span></span>))
+<span class="pl-k">public</span> <span class="pl-k">abstract</span> <span class="pl-k">class</span> <span class="pl-en">MixinBar</span> <span class="pl-k">extends</span> <span class="pl-e">Foo</span> {
+
+    <span class="pl-k">private</span> <span class="pl-k">final</span> <span class="pl-smi">UUID</span> id <span class="pl-k">=</span> <span class="pl-c1">UUID</span><span class="pl-k">.</span>randomUUID();
+
+    <span class="pl-k">public</span> UUID ident$<span class="pl-en">getID</span>() {
+        <span class="pl-k">return</span> <span class="pl-c1">this</span><span class="pl-k">.</span>id;
+    }
+}</pre></div>
+<p>Notice that in the <code>@Implements</code> clause we can specify one or more <code>@Interface</code> annotations to describe the interfaces we want to implement. The prefix you choose is entirely up to you, however I recommend that the following guidelines be used when choosing prefixes:</p>
+<ul>
+<li>
+<p>End the prefix with a <code>$</code> sign. <code>$</code> is commonly used as a separator in synthetic and structural parts of java classes and helps visually separate the prefix from the method name being prefixed. For example <code>foo$getID()</code> is more easily parsable as two parts than <code>foogetID()</code>. If you choose not to use <code>$</code>, then I recommend using underscore (<code>_</code>) as a reasonable alternative.</p>
+</li>
+<li>
+<p>Use a short string which evokes understanding of the interface to which the prefix refers, this makes it easier to relate prefixed methods to their soft-implemented interface. For example, the choice of <code>ident$</code> tips a hat to the <code>Indentifyable</code> interface, <code>id$</code> or <code>ifbl$</code> might also work, however using longer names is allowed, for example it's perfectly legal to use <code>identifyable$</code>, but leads to code which is awkward to read. Likewise using overly short or unrelated names like <code>foo$</code> or <code>a$</code>, whilst legal, is discouraged.</p>
+</li>
+</ul>
+<p>Note that methods which soft-implement an interface do not <strong>have</strong> to use the prefix, in fact only methods which conflict as shown above actually need to use the prefix. However using the prefix is beneficial because it allows the mixin processor to do some additional verification at application time. Prefixed methods are checked for membership in the declared interface making it a detectable error if a method is later removed or changed in the interface.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#4-the-problem-part-deux" id="user-content-4-the-problem-part-deux"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>4. The Problem Part Deux</h3>
+<p>So signature conflicts can occur when implenting an interface where a conflicting method exists in a superclass, but signature conflicts can also occur with methods in target class. You might ask yourself, <em>"but how? surely a conflict can't occur with the target class because the compiler doesn't know about methods in the target class when compiling the mixin?"</em></p>
+<p>The answer, of course, is shadow methods.</p>
+<p>You may recall from the first part of this series that we can <em>tell the mixin processor about methods and fields in the target class by "shadowing" them</em>, this of course becomes a problem when a shadow method we want to add has a signature conflict with an interface method we are adding.</p>
+<p>Let's modify our example above and remove <code>Bar</code> and assume we're mixing directly into <code>Foo</code>:</p>
+<p><img alt="" src="https://raw.githubusercontent.com/SpongePowered/Mixin/master/docs/images/mixin_conflict_4.png"/></p>
+<p>We can see fairly quickly that we can't add the shadow for <code>getID()</code> in the target class because of a signature conflict.</p>
+<p>Fortunately, the mixin processor gives us two options for dealing with this scenario:</p>
+<ul>
+<li>Firstly, we could <strong>use a soft implementation</strong>, just like above we can change the interface implemenation to soft to work around the compiler limitation</li>
+</ul>
+<p>However, this can be inconvenient when implementing a large interface where only a single (or at least, a small number of) shadow method(s) are the source of the conflict.</p>
+<ul>
+<li>Alternatively, Mixin allows us to <strong>prefix the shadow method</strong>.</li>
+</ul>
+<p>This is extremely useful when a small number of shadows are causing the problem, we can simply rename the shadow itself in order to avoid the conflict.</p>
+<h4>
+<a aria-hidden="true" class="anchor" href="#41-prefixing-shadows" id="user-content-41-prefixing-shadows"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>4.1 Prefixing Shadows</h4>
+<p>Unlike soft-implements, there is no separate place to define a prefix for a shadow method. Instead, the prefix can be defined directly in the shadow annotation, like so:</p>
+<div class="highlight highlight-source-java"><pre><span class="pl-k">public</span> <span class="pl-k">abstract</span> <span class="pl-k">class</span> <span class="pl-en">MixinFoo</span> <span class="pl-k">implements</span> <span class="pl-e">Identifyable</span> {
+
+    <span class="pl-k">@Shadow</span>(<span class="pl-c1">prefix</span> <span class="pl-k">=</span> <span class="pl-s"><span class="pl-pds">"</span>conflict$<span class="pl-pds">"</span></span>)
+    <span class="pl-k">public</span> <span class="pl-k">abstract</span> int conflict$<span class="pl-en">getID</span>();
+
+    <span class="pl-k">public</span> <span class="pl-smi">UUID</span> <span class="pl-en">getID</span>() {
+        <span class="pl-c"><span class="pl-c">//</span> return the unique ID</span>
+    }
+}</pre></div>
+<p>We defined the prefix <code>conflict$</code> for the shadow, in order to avoid the signature conflict. Mixin also provides a default value for <code>prefix</code> which can be used without being explicitly specified:</p>
+<div class="highlight highlight-source-java"><pre><span class="pl-k">@Shadow</span>
+<span class="pl-k">public</span> <span class="pl-k">abstract</span> <span class="pl-k">int</span> shadow$getID();</pre></div>
+<p>Using the prefix <code>shadow$</code> allows the renamed shadow to be specified without needing to explicitly define the prefix. However, in order to aid readability it is recommended that <code>prefix</code> is always explicity defined in the annotation, even if the default is being used.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#5-beyond-the-basics" id="user-content-5-beyond-the-basics"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>5. Beyond the Basics</h3>
+<p>Prefixes and soft implementations also play an important part in <strong>Intrinsic Proxy Methods</strong>, which we will discuss in the next section.</p>
+
+        </div>
+
+    </div>]

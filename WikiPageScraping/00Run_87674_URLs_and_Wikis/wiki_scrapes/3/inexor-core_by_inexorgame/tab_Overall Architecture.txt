@@ -1,0 +1,487 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <h1>
+<a aria-hidden="true" class="anchor" href="#overall-architecture" id="user-content-overall-architecture"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Overall Architecture</h1>
+<p>We needed a way to make Inexor more dynamic and extendable.</p>
+<p>We chose to not only expose some functions and variables to the Users for changing stuff dynamically but going a way more profound way:<br/>
+We let our scripting engine <strong>Inexor Flex</strong> feed the Core game engine (<strong>Inexor Core</strong>)!</p>
+<p><strong>Inexor Core</strong> is hence regarded as being our high-performance component of an overall bundle of different processes: The Scripting process and the traditional C++ game process.</p>
+<p>To illustrate in how far that is different from the traditional game scripting, you can imagine our structure to be like a train on rails. The train just goes where the rails force it to. Traditional scripting is more similar to the steering wheel of a car: you give the driver access to control the position of the wheels.<br/>
+This example is probably not best as it omits the illustration <strong>why</strong> this approach is better for us (does anyone find a better one? replace it!)</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#why-this-approach-and-in-how-far-is-it-making-a-difference" id="user-content-why-this-approach-and-in-how-far-is-it-making-a-difference"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Why this approach and in how far is it making a difference?</h2>
+<p>We have to deal with a legacy codebase, which – like all legacy codebases – has become stuck in several places in dead ends.</p>
+<p>The traditional scripting is pretty great if you have a clean Core codebase, inventing stuff in that codebase is guaranteed to be doable fast and you want <strong>some</strong> places exposed for User control.<br/>
+Our approach really shines in its way of being totally decoupled from the Core!<br/>
+This allows us to rewrite some functionality from scratch in a really dynamic environment (node.js).</p>
+<p>However the idea behind that is simply: Not everything in Inexor is solvable in the same fashion. On the one hand you want performance, on the other hand you want usability, features and possibilities.</p>
+<p>While performance in Sauerbraten (the predecessor of Inexor) has always been the main optimization goal, we want an arsenal of weapons by hand to let people write awesome features in short time.<br/>
+As a consequence the high-performance part uses C++ as its language (which is one of the languages which allows a lot of optimizations for performance) and the feature-rich, slower but more dynamic part uses JavaScript (and more precisely node.js <a href="https://www.npmjs.com/" rel="nofollow">with npm</a>).</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#how-does-this-change-development" id="user-content-how-does-this-change-development"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>How does this change development?</h2>
+<p>In Sauerbraten if you wanted to develop a new masterserver (+ serverbrowser) you would:</p>
+<ol>
+<li>Write in C++ (≈ InexorCore) a masterserver having a REST-API to your game servers and clients.</li>
+<li>Write in C++ the code for the game servers and clients to connect to that.</li>
+<li>Write in C++ the code for saying what you want the masterserver to know about you/to send you.</li>
+<li>Expose in the client the list of servers to the scripting language.</li>
+<li>Write in CubeScript the server browsers based on that array of servers.</li>
+<li>Render in the C++ code that CubeScript UI.</li>
+</ol>
+<hr/>
+<p>In Inexor you would:</p>
+<ol>
+<li>Write all of that in InexorFlex (== node.js)
+<ul>
+<li>the masterserver</li>
+<li>the connection between game clients/game servers and the masterserver</li>
+<li>..</li>
+</ul>
+</li>
+<li>Using a rich package-set of already written node.js packages.</li>
+<li>Create a website with a serverbrowser (that's what node.js is originally build for)</li>
+<li>Render that website in <a class="internal absent" href="/inexorgame/inexor-core/wiki/Inexor-Core">Inexor Core</a>
+</li>
+</ol>
+<p>and that's only a very simplistic approach (e.g not using a distributed system)!</p>
+<hr/>
+<p>Other really useful wholes this fills:</p>
+<p>People are crying for a content deployment system.<br/>
+You can't (however) create it with CubeScript because of safety considerations.<br/>
+Hence one would have needed to invent a complete new way in <a class="internal absent" href="/inexorgame/inexor-core/wiki/Inexor-Core">Inexor Core</a> to load content (and we tried. But its not scaling).</p>
+<p>What we want to do is different:</p>
+<p>Everything not directly required for rendering gets handled prior to loading in <a class="internal present" href="/inexorgame/inexor-core/wiki/Inexor-Flex">Inexor Flex</a>.
+And its just feeding <a class="internal absent" href="/inexorgame/inexor-core/wiki/Inexor-Core">Inexor Core</a> with the stuff it really needs to load (like the absolute texture path and type).<br/>
+This way the C++ part shrinks, only <strong>removing</strong> functionality there and the from scratch written part is in node.js with all its benefits, see above.</p>
+<hr/>
+<p>The <strong>Inexor Tree</strong> is the glue between <a class="internal absent" href="/inexorgame/inexor-core/wiki/Inexor-Core">Inexor Core</a> and <a class="internal present" href="/inexorgame/inexor-core/wiki/Inexor-Flex">Inexor Flex</a>. It gets updated by both sides (and is readable by both sides).
+Additionally we can store things like the Content handling in the Tree comfortably, allowing us e.g. to link various stuff together in <a class="internal present" href="/inexorgame/inexor-core/wiki/Inexor-Flex">Inexor Flex</a>.</p>
+<h1>
+<a aria-hidden="true" class="anchor" href="#technical-overview" id="user-content-technical-overview"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Technical Overview</h1>
+<h2>
+<a aria-hidden="true" class="anchor" href="#component--system-overview" id="user-content-component--system-overview"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Component / System Overview</h2>
+<table>
+<thead>
+<tr>
+<th>Component / System</th>
+<th>Repository</th>
+<th>Language</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a class="internal absent" href="/inexorgame/inexor-core/wiki/Inexor-Core">Inexor Core</a></td>
+<td><a href="/inexorgame/flex/">code</a></td>
+<td>C/C++</td>
+<td>Game-State, Rendering and calculate anything performance sensitive</td>
+</tr>
+<tr>
+<td><a class="internal absent" href="/inexorgame/inexor-core/wiki/Inexor-GlueGen">Inexor GlueGen</a></td>
+<td><a href="/inexorgame/code/">code</a></td>
+<td>C/C++</td>
+<td>External application used in the build-process to generate our networking code (and potentially other glue code)</td>
+</tr>
+<tr>
+<td><a class="internal present" href="/inexorgame/inexor-core/wiki/Inexor-Flex">Inexor Flex</a></td>
+<td><a href="/inexorgame/flex/">flex</a></td>
+<td>JS (NodeJS)</td>
+<td>Provides a scripting environment for the server and client, provides the Inexor User Interfaces</td>
+</tr>
+<tr>
+<td>Inexor UI HUD</td>
+<td><a href="/inexorgame/ui-client-hud/">ui-client-hud</a></td>
+<td>HTML5+JS+CSS</td>
+<td>The Inexor UI HUD is basically a website, which is rendered by the Inexor Core</td>
+</tr>
+<tr>
+<td>Inexor UI APP</td>
+<td><a href="/inexorgame/ui-client-interface/">ui-client-interface</a></td>
+<td>HTML5+JS+CSS</td>
+<td>The Inexor UI APP is basically a website, which is rendered by the Inexor Core</td>
+</tr>
+<tr>
+<td>Console</td>
+<td><a href="/inexorgame/ui-console/">ui-console</a></td>
+<td>HTML5+JS+CSS</td>
+<td>Console web application</td>
+</tr>
+</tbody>
+</table>
+<h3>
+<a aria-hidden="true" class="anchor" href="#component--system-interoperability" id="user-content-component--system-interoperability"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Component / System Interoperability</h3>
+<table>
+<thead>
+<tr>
+<th>Component / System</th>
+<th>Connection</th>
+<th>Component / System</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a class="internal absent" href="/inexorgame/inexor-core/wiki/Inexor-Core">Inexor Core</a></td>
+<td>Inexor Tree <a href="/inexorgame/code/wiki/RPC-Node.js">using gRPC</a>
+</td>
+<td>Inexor-Flex</td>
+</tr>
+<tr>
+<td><a class="internal present" href="/inexorgame/inexor-core/wiki/Inexor-Flex">Inexor Flex</a></td>
+<td>
+<a class="internal present" href="/inexorgame/inexor-core/wiki/Inexor-Tree">Inexor Tree</a> using REST</td>
+<td>Inexor-UI-HUD</td>
+</tr>
+<tr>
+<td><a class="internal present" href="/inexorgame/inexor-core/wiki/Inexor-Flex">Inexor Flex</a></td>
+<td>
+<a class="internal present" href="/inexorgame/inexor-core/wiki/Inexor-Tree">Inexor Tree</a> using REST</td>
+<td>Inexor-UI-APP</td>
+</tr>
+<tr>
+<td><a class="internal present" href="/inexorgame/inexor-core/wiki/Inexor-Flex">Inexor Flex</a></td>
+<td>
+<a class="internal present" href="/inexorgame/inexor-core/wiki/Inexor-Tree">Inexor Tree</a> using REST</td>
+<td>
+<a class="internal present" href="/inexorgame/inexor-core/wiki/Inexor-Flex">Inexor Flex</a> (remote)</td>
+</tr>
+<tr>
+<td><a class="internal absent" href="/inexorgame/inexor-core/wiki/Inexor-Core">Inexor Core</a></td>
+<td>Key Events using CEF-RPC</td>
+<td>Inexor-UI-APP (only APP, not HUD!)</td>
+</tr>
+</tbody>
+</table>
+<h3>
+<a aria-hidden="true" class="anchor" href="#components--systems" id="user-content-components--systems"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Components / Systems</h3>
+<h4>
+<a aria-hidden="true" class="anchor" href="#inexor-core" id="user-content-inexor-core"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Inexor Core</h4>
+<table>
+<thead>
+<tr>
+<th>Component / System</th>
+<th>Topic</th>
+<th>Sub Topic</th>
+<th>Sub Sub Topic</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a class="internal absent" href="/inexorgame/inexor-core/wiki/Inexor-Core">Inexor Core</a></td>
+<td>Game State</td>
+<td>Physics</td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td></td>
+<td>World</td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td></td>
+<td>Player</td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>Graphics</td>
+<td>Rendering Game-Graphics</td>
+<td>Octree</td>
+</tr>
+<tr>
+<td></td>
+<td></td>
+<td></td>
+<td>Textures</td>
+</tr>
+<tr>
+<td></td>
+<td></td>
+<td></td>
+<td>Models</td>
+</tr>
+<tr>
+<td></td>
+<td></td>
+<td></td>
+<td>Entities</td>
+</tr>
+<tr>
+<td></td>
+<td></td>
+<td></td>
+<td>Particles</td>
+</tr>
+<tr>
+<td></td>
+<td></td>
+<td>Rendering HTML5 Applications</td>
+<td>HUD</td>
+</tr>
+<tr>
+<td></td>
+<td></td>
+<td></td>
+<td>User Interface</td>
+</tr>
+<tr>
+<td></td>
+<td></td>
+<td></td>
+<td>Console</td>
+</tr>
+<tr>
+<td></td>
+<td>Input</td>
+<td>Game Movement</td>
+<td>Mouse</td>
+</tr>
+<tr>
+<td></td>
+<td></td>
+<td></td>
+<td>Keyboard</td>
+</tr>
+<tr>
+<td></td>
+<td></td>
+<td></td>
+<td>Key Bindings</td>
+</tr>
+<tr>
+<td></td>
+<td></td>
+<td>UI Input Handling</td>
+<td>Mouse Events</td>
+</tr>
+<tr>
+<td></td>
+<td></td>
+<td></td>
+<td>Key Events</td>
+</tr>
+</tbody>
+</table>
+<h4>
+<a aria-hidden="true" class="anchor" href="#inexor-flex" id="user-content-inexor-flex"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Inexor Flex</h4>
+<table>
+<thead>
+<tr>
+<th>Component / System</th>
+<th>Topic</th>
+<th>Sub Topic</th>
+<th>Sub Sub Topic</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a class="internal present" href="/inexorgame/inexor-core/wiki/Inexor-Flex">Inexor Flex</a></td>
+<td>Webserver</td>
+<td>REST API</td>
+<td><a class="internal present" href="/inexorgame/inexor-core/wiki/Inexor-Tree">Inexor Tree</a></td>
+</tr>
+<tr>
+<td></td>
+<td></td>
+<td><a class="internal present" href="/inexorgame/inexor-core/wiki/User-Interfaces">User interfaces</a></td>
+<td><a href="/inexorgame/ui-flex">Inexor Flex User Interface</a></td>
+</tr>
+<tr>
+<td></td>
+<td></td>
+<td></td>
+<td><a href="/inexorgame/ui-client-interface">Inexor Core (Client) Menu &amp; Application</a></td>
+</tr>
+<tr>
+<td></td>
+<td></td>
+<td></td>
+<td><a href="/inexorgame/ui-client-hud">Inexor Core (Client) HUD</a></td>
+</tr>
+<tr>
+<td></td>
+<td></td>
+<td></td>
+<td><a href="/inexorgame/ui-console">Inexor Core (Client+Server) Console</a></td>
+</tr>
+<tr>
+<td></td>
+<td><a class="internal present" href="/inexorgame/inexor-core/wiki/Inexor-Tree">Inexor Tree</a></td>
+<td>Management</td>
+<td>CRUD</td>
+</tr>
+<tr>
+<td></td>
+<td></td>
+<td>Eventing</td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>Profiles</td>
+<td>Management</td>
+<td>CRUD</td>
+</tr>
+<tr>
+<td></td>
+<td></td>
+<td></td>
+<td>Switch / restart</td>
+</tr>
+<tr>
+<td></td>
+<td>Instances</td>
+<td>Management</td>
+<td>CRUD</td>
+</tr>
+<tr>
+<td></td>
+<td></td>
+<td></td>
+<td>Load configuration</td>
+</tr>
+<tr>
+<td></td>
+<td></td>
+<td>Connector</td>
+<td>RPC Synchronization</td>
+</tr>
+<tr>
+<td></td>
+<td></td>
+<td></td>
+<td>Instance Tree</td>
+</tr>
+<tr>
+<td></td>
+<td></td>
+<td></td>
+<td>Console + Logging</td>
+</tr>
+<tr>
+<td></td>
+<td>Media</td>
+<td>Repositories</td>
+<td>CRUD</td>
+</tr>
+<tr>
+<td></td>
+<td></td>
+<td></td>
+<td>Index to tree</td>
+</tr>
+<tr>
+<td></td>
+<td></td>
+<td></td>
+<td>Download / update</td>
+</tr>
+<tr>
+<td></td>
+<td></td>
+<td></td>
+<td>Switch branch</td>
+</tr>
+<tr>
+<td></td>
+<td></td>
+<td>Textures</td>
+<td>CRUD</td>
+</tr>
+<tr>
+<td></td>
+<td></td>
+<td></td>
+<td>Index to tree</td>
+</tr>
+<tr>
+<td></td>
+<td></td>
+<td>Maps</td>
+<td>CRUD</td>
+</tr>
+<tr>
+<td></td>
+<td></td>
+<td></td>
+<td>Index to tree</td>
+</tr>
+<tr>
+<td></td>
+<td></td>
+<td>Music</td>
+<td>CRUD</td>
+</tr>
+<tr>
+<td></td>
+<td></td>
+<td></td>
+<td>Index to tree</td>
+</tr>
+<tr>
+<td></td>
+<td></td>
+<td>Sound</td>
+<td>CRUD</td>
+</tr>
+<tr>
+<td></td>
+<td></td>
+<td></td>
+<td>Index to tree</td>
+</tr>
+<tr>
+<td></td>
+<td></td>
+<td>Videos</td>
+<td>CRUD</td>
+</tr>
+<tr>
+<td></td>
+<td></td>
+<td></td>
+<td>Index to tree</td>
+</tr>
+<tr>
+<td></td>
+<td>User Interfaces</td>
+<td>Management</td>
+<td>CRUD</td>
+</tr>
+<tr>
+<td></td>
+<td></td>
+<td>Updates</td>
+<td>Detect, Download, Install</td>
+</tr>
+<tr>
+<td></td>
+<td>Releases</td>
+<td>Updates</td>
+<td>Detect, Download, Install</td>
+</tr>
+<tr>
+<td></td>
+<td>Server List</td>
+<td>Management</td>
+<td>CRUD</td>
+</tr>
+<tr>
+<td></td>
+<td></td>
+<td>Updates</td>
+<td>Synchronization with other Flexes</td>
+</tr>
+</tbody>
+</table>
+
+        </div>
+
+        <div class="wiki-footer gollum-markdown-content boxed-group" id="wiki-footer">
+          <div class="boxed-group-inner wiki-auxiliary-content markdown-body">
+            <p>Need help? <a class="internal present" href="/inexorgame/inexor-core/wiki/Contact">Contact</a> us.</p>
+
+          </div>
+        </div>
+    </div>]

@@ -1,0 +1,317 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <ul>
+<li><a href="https://github.com/name5566/leaf">leaf git地址</a></li>
+</ul>
+<hr/>
+<h4>
+<a aria-hidden="true" class="anchor" href="#%E6%80%BB%E7%BB%93" id="user-content-总结"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>总结</h4>
+<ul>
+<li>网络分 2 层，第一层把消息解析出一个一个的消息包，就是 msg 这一层，更高层就是把每个消息解析成具体的逻辑上使用的对象，就是 protobuf 或者 json 了</li>
+</ul>
+<h4>
+<a aria-hidden="true" class="anchor" href="#go" id="user-content-go"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>go</h4>
+<ul>
+<li>注意这个包为了避免与golang中的关键字<code>go</code>冲突，包名叫<code>g</code>。
+这个包解决go func() { ... } 函数被执行完，我们是不知道的，但是有 Go 就可以知道。实际上，具体的用途是，我们在一个模块中，存在某一些非常耗时间的工作，比如说用户上线，需要先读取数据库，然后通知模块，等等，这一些，我们就可以通过 Go 来异步完成，然后最后得到完成的通知。
+例如：
+<code>text</code>
+Go(func() {
+// 读取数据库
+// 通知模块 A,并且等待 A 回复
+// 通知 B 并等待
+}, func() {
+// 这里，Go 异步调用执行完成了
+// 用户登录成功了
+})</li>
+</ul>
+<pre><code>使用：
+```go```
+	d.Go(func() {
+		fmt.Println("1 + 1 = ?")
+		res = 1 + 1
+	}, func() {
+		fmt.Println(res)
+	})		//第一个函数在新的goroutine中运行
+
+	d.Cb(&lt;-d.ChanCb)	//当第一个函数运行完成后d.ChanCb得到相应，处理第二个函数
+    
+    d.Close()	//运行chanCb（channel）中所有函数
+</code></pre>
+<hr/>
+<h4>
+<a aria-hidden="true" class="anchor" href="#timer" id="user-content-timer"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>timer</h4>
+<ul>
+<li>
+<p>一个定时包，到达定时时间后，在主goroutine中调用(&lt;-d.ChanTimer).Cb()来处理定时函数。
+使用：
+<code>go</code>
+d := timer.NewDispatcher(10)  //设置多个定时器</p>
+<p>// timer 1
+d.AfterFunc(1, func() {
+fmt.Println("My name is Leaf")
+})</p>
+<p>// timer 2
+t := d.AfterFunc(1, func() {
+fmt.Println("will not print")
+})
+t.Stop()	//停止一个定时器</p>
+<p>// dispatch
+(&lt;-d.ChanTimer).Cb()</p>
+</li>
+</ul>
+<pre><code>******************************************
+#### recordfile
+- 读配置文件
+tag为“index”为索引，可以设置多个索引（每个索引之间相互独立），然后按顺序给结构体赋值。支持数字、字符串、数组、嵌套数组、变长数组、结构体类型。
+例如
+```go```
+	type Record struct {
+		// index 0
+		IndexInt int "index"
+		// index 1
+		IndexStr string "index"
+		_Number  int32
+		Str      string
+		Arr1     [2]int
+		Arr2     [3][2]int
+		Arr3     []int
+		St       struct {
+			Name string "name"
+			Num  int    "num"
+		}
+	}
+</code></pre>
+<p>配置文件如下:
+<code>text</code>
+数字索引	字符串索引	数字类型	字符串类型	数组类型	嵌套数组	变长数组	结构体类型
+1	one	0	knife	[1, 2]	<a class="internal absent" href="/NicholeGit/nicholegit.github.io/wiki/0%2C1%5D%2C-%5B1%2C2%5D%2C-%5B2%2C3">0,1], [1,2], [2,3</a>	[1, 2, 3]	{"name": "name5566", "num": 1}
+2	two	0	cat	[3, 4]	<a class="internal absent" href="/NicholeGit/nicholegit.github.io/wiki/1%2C2%5D%2C-%5B2%2C3%5D%2C-%5B3%2C4">1,2], [2,3], [3,4</a>	[4, 5]	{"name": "name5566", "num": 2}
+3	three	0	book	[5, 6]	<a class="internal absent" href="/NicholeGit/nicholegit.github.io/wiki/2%2C3%5D%2C-%5B3%2C4%5D%2C-%5B4%2C5">2,3], [3,4], [4,5</a>	[6]	{"name": "name5566", "num": 3}</p>
+<pre><code>******************************************
+#### TCP
+- server
+	1. TCPServer创建
+```go```
+    m.server = &amp;network.TCPServer{
+                Addr:            ":8000",
+                MaxConnNum:      10000,
+                PendingWriteNum: 100,
+                NewAgent:        newAgent,
+	}
+</code></pre>
+<pre><code>2. newAgent创建每个链接的实例,必须实现以下接口
+</code></pre>
+<p><code>go</code>
+type Agent interface {
+Run()
+OnClose()
+}</p>
+<pre><code>	3. 需要调用m.server.Start()来运行，会调用agent.Run() 
+	4. Run必须是一个for在里面做消息循环
+```go```
+    func (a *Agent) Run() {
+    		for {
+                // read
+                data, err := a.ReadMsg()
+                if err != nil {
+                    break
+                }
+
+                // echo
+                err = a.WriteMsg(data)
+                if err != nil {
+                    break
+                }
+       	 }
+    }
+</code></pre>
+<ul>
+<li>client
+<ol>
+<li>与server使用差不多，但是内部实现的时候多了一个dial（主动链接服务器）。</li>
+</ol>
+</li>
+</ul>
+<hr/>
+<h4>
+<a aria-hidden="true" class="anchor" href="#protobuf" id="user-content-protobuf"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>protobuf</h4>
+<p>协议解析和路由
+<code>go</code>
+func (p *Processor) Register(msg proto.Message) // 注册消息
+func (p *Processor) SetRouter(msg proto.Message, msgRouter *chanrpc.Server) // 设置路由  msgRouter用于rpc调用，与模块绑定
+func (p *Processor) SetHandler(msg proto.Message, msgHandler MsgHandler) // 设置处理者
+func (p *Processor) Route(msg proto.Message, userData interface{}) error // 消息路由
+func (p *Processor) Unmarshal(data []byte) (proto.Message, error)
+func (p *Processor) Marshal(msg proto.Message) (id []byte, data []byte, err error)</p>
+<pre><code>******************************************
+#### Module
+作为一个Module必须实现这个接口，然后每个module都会作为一个goroutine运行
+```go```
+    type Module interface {
+            OnInit()
+            OnDestroy()
+            Run(closeSig chan bool)
+        }
+</code></pre>
+<ul>
+<li>Skeleton
+管理了 leaf 的各个组建，一般每个module都需要一个<code>Skeleton</code>。但是实际上，某个模块可能值需要其中一个组建。这时候就可以设置 GoLen = 0 表示不用 Go，设置 TimerDispatcherLen = 0 表示不用 timer 设置 ChanRPCServer = nil 表示不用chanrpcserver
+<code>go</code>
+type Skeleton struct {
+GoLen              int   //GoLen = 0 表示不用 Go
+TimerDispatcherLen int   //TimerDispatcherLen = 0 表示不用 timer
+ChanRPCServer      *chanrpc.Server //ChanRPCServer 和 server 是同一个东西。
+g                  *g.Go
+dispatcher         *timer.Dispatcher
+server             *chanrpc.Server //内部使用
+}</li>
+</ul>
+<pre><code> module调用如下
+
+```go```
+    var skeleton *module.Skeleton
+
+    type Module struct {
+    }
+
+    func (m *Module) OnInit() {
+        skeleton = &amp;module.Skeleton{
+            GoLen: config.GoLen,
+            TimerDispatcherLen:config.TimerDispatcherLen,
+            ChanRPCServer:user.ChanRPCServer
+        }
+        skeleton.Init()
+    }
+
+    func (m *Module)Run(closeSig chan bool) {
+        skeleton.Run(closeSig)
+    }
+</code></pre>
+<hr/>
+<h4>
+<a aria-hidden="true" class="anchor" href="#chanrpc" id="user-content-chanrpc"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>chanrpc</h4>
+<p>用于 goroutine 之间通讯。channel的rpc操作</p>
+<ul>
+<li>
+<p>使用方式
+<code>go</code>
+func Example() {
+s := chanrpc.NewServer(10)</p>
+<p>var wg sync.WaitGroup
+wg.Add(1)</p>
+<p>// goroutine 1
+go func() {
+//注册
+s.Register("f0", func(args []interface{}) {
+})
+s.Register("f1", func(args []interface{}) interface{} {
+return 1
+})
+s.Register("fn", func(args []interface{}) []interface{} {
+return []interface{}{1, 2, 3}
+})
+s.Register("add", func(args []interface{}) interface{} {
+n1 := args[0].(int)
+n2 := args[1].(int)
+return n1 + n2
+})
+wg.Done()
+for {
+//一般是在主goroutine中处理rpc请求
+err := s.Exec(&lt;-s.ChanCall)
+if err != nil {
+fmt.Println(err)
+}
+}
+}()</p>
+<p>wg.Wait()
+wg.Add(1)</p>
+<p>// goroutine 2
+go func() {
+// 申请客户端
+c := s.Open(10)
+// sync 同步调用
+err := c.Call0("f0")
+if err != nil {
+fmt.Println(err)
+}
+r1, err := c.Call1("f1")
+if err != nil {
+fmt.Println(err)
+} else {
+fmt.Println(r1)
+}
+rn, err := c.CallN("fn")
+if err != nil {
+fmt.Println(err)
+} else {
+fmt.Println(rn[0], rn[1], rn[2])
+}
+ra, err := c.Call1("add", 1, 2)
+if err != nil {
+fmt.Println(err)
+} else {
+fmt.Println(ra)
+}</p>
+<pre><code>  // asyn 异步调用
+  c.AsynCall("f0", func(err error) {
+  	if err != nil {
+  		fmt.Println(err)
+  	}
+  })
+  c.AsynCall("f1", func(ret interface{}, err error) {
+  	if err != nil {
+  		fmt.Println(err)
+  	} else {
+  		fmt.Println(ret)
+  	}
+  })
+  c.AsynCall("fn", func(ret []interface{}, err error) {
+  	if err != nil {
+  		fmt.Println(err)
+  	} else {
+  		fmt.Println(ret[0], ret[1], ret[2])
+  	}
+  })
+  c.AsynCall("add", 1, 2, func(ret interface{}, err error) {
+  	if err != nil {
+  		fmt.Println(err)
+  	} else {
+  		fmt.Println(ret)
+  	}
+  })
+  // 异步调用完成后处理回调函数，一般在clinet的goroutine中运行
+  c.Cb(&lt;-c.ChanAsynRet)
+  c.Cb(&lt;-c.ChanAsynRet)
+  c.Cb(&lt;-c.ChanAsynRet)
+  c.Cb(&lt;-c.ChanAsynRet)
+
+  // go
+  c.Go("f0")
+
+  wg.Done()
+</code></pre>
+<p>}()</p>
+<p>wg.Wait()</p>
+<p>// Output:
+// 1
+// 1 2 3
+// 3
+// 1
+// 1 2 3
+// 3
+}</p>
+</li>
+</ul>
+<pre><code>
+
+
+
+
+***
+</code></pre>
+
+        </div>
+
+    </div>]

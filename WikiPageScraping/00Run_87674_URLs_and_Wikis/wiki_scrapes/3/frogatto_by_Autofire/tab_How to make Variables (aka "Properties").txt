@@ -1,0 +1,143 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>One of the first things any seasoned programmer coming to this engine likely wonders is "How do I store stuff in memory?"  In anura, you do this one way:  using <em>mutable properties</em>.  Properties are a cornerstone feature of anura which handle almost everything related to custom logic; not just variables, but almost all functions, expressions, and control flow in a custom game you'd write using the engine.  In this document, we're going to gloss over almost all the uses of properties, and focus chiefly on how to create mutable ones you can store data in.</p>
+<p><strong>Anura is built around an idea called <em>functional programming</em>, so you're strongly encouraged whenever possible to leave things immutable.</strong>  In many languages, complex values like "character damage after reductions from armor and damage" are built up from multiple steps. In these languages, for example javascript or lua, this would be done by storing the results of each step in a variable and passing this variable into the next phase of calculation. However, because we make it really easy to write anonymous (aka 'lambda') functions and because we've made them very fast, it's generally a better idea in anura to make these "partial calculations" be functions rather than storing each and every one in a variable.  This tends to eliminate whole categories of bugs that can happen from state; be they off-by-one errors or control-flow problems. (eg, where state that's supposed to get updated step-by-step ends up with bad data if control flow is entered at a new point when someone hacks in a new feature.)  Our functions don't have side effects, so once you get their calculations correct, they'll always give you the correct answer; you won't get screwed over by a global variable secretly being updated by some other code you either forgot about, or didn't write, yourself, etc.</p>
+<p>That said, anura's a very pragmatic design, and sometimes just storing a variable is the easiest, and least error-prone solution to a problem.  We make it very easy to do.</p>
+<p>I recommend trying most of these commands out in the debug console; you can access this by pressing "control+d" as the game is running.  Any of these have to run "in the context of an object", which means that if you run a command to 'set a variable', it's going to set one in a <em>particular</em> object - it can't set one in a non-existent 'hypothetical/virtual' object; it has to have a real one on-hand to work on.  When you open up the debug console, it starts out with the player selected as the current context - you can change contexts by clicking on an object visible on-screen.  If you want to move to the next conceptual step, and write these directly inside an object's code, as it would be used in the game, they'd need to be inside the code that gets triggered when an object receives an event; there are events that happen when an object is first loaded, and there are events that get fired periodically - but these are all beyond the scope of this tutorial; you can read more about them in our events tutorial, but for now, just try running these in the debug console.</p>
+<h1>
+<a aria-hidden="true" class="anchor" href="#reading-properties" id="user-content-reading-properties"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Reading Properties</h1>
+<p>To read a property, whether it's a builtin like <code>hitpoints</code>, or a user-defined variable like, say <code>attack_countdown</code> (something I just made up), to read the value, all you do is just type it directly.  For example, if I were to use hitpoints in a <code>process</code> event, which is the event that runs every "frame" of the game (and in this case, I am just printing the value of hitpoints out as text), I'd do something like:</p>
+<pre><code>debug(hitpoints)
+</code></pre>
+<p>To do that with a user-created one like <code>attack_countdown</code>, I can do the exact same thing:</p>
+<pre><code>debug(attack_countdown)
+</code></pre>
+<p>If a value happens to be an object (which has sub-values of its own), these can be accessed through dot-syntax:</p>
+<pre><code>debug(level.player.hitpoints)
+</code></pre>
+<p>The same applies to "dictionary/map" objects like <code>stored_position: {x: 200, y: 300}</code>, which could be looked into via:</p>
+<pre><code>debug(stored_position.x)
+</code></pre>
+<h1>
+<a aria-hidden="true" class="anchor" href="#writing-properties" id="user-content-writing-properties"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Writing Properties</h1>
+<p>Unlike many languages that use <code>=</code> as an assignment operator, often causing minor gaffes when <code>==</code> (the equivalence operator) is intended, we've cut the gordian knot by having a set(var, value) function instead.  It's 4 extra characters, but the deliberation means that particular headache won't ever bite you.  There's no <code>==</code> operator in Anura; <code>=</code> tests equivalence instead.</p>
+<p>To set a variable you do something like:</p>
+<pre><code>set(hitpoints, 2)
+</code></pre>
+<p>The same applies for more complex values:</p>
+<pre><code>set(target_position, {x: 20, y: -30})
+set(monster_name, 'Evil McBad')
+</code></pre>
+<h1>
+<a aria-hidden="true" class="anchor" href="#defining-properties" id="user-content-defining-properties"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Defining Properties</h1>
+<p>In anura, you can't make up variables on the fly; anything read or written to must be given a name ahead of time. This helps prevent typo bugs where you'd end up reading/writing to the wrong variable.  While reading and writing properties is pretty simple, defining them has a lot more to it. We've worked hard to "make the simple things easy, and the complex things possible", but the subject has a good deal of depth to it and the rest of this document covers that.</p>
+<p>Properties in anura are stored at the level/scope of individual objects.  An object can (and almost always does) have an FSON object at top level hierarchy called <code>properties: {}</code>.  Within this are all the user-defined properties.  (There are also builtin properties, like position <code>x</code> and <code>y</code>, or <code>hitpoints</code>; these don't get specified in the properties block, but reading and writing them works exactly the same way.)  To make user-defined properties, you need to actually be cooking up your own custom object type rather than using the debug console.  You can edit the definitions for these inside data/objects, and you can duplicate an existing object to get a good sandbox to work in. (Remember to change the filename and matching id of the new object to something different from the previous one.)  There are many, very simple examples to choose from which are less than 20 lines long; there are other multi-thousand-line files like the code for frogatto_playable.  At the time of this reading, I suggest looking at something like: <code>anura/modules/frogatto/data/objects/props/decor/painting_leaf.cfg</code>.</p>
+<p>The most common thing you will do is declaring immutable properties; to do these, surround the property with double-quotes, and it will be treated as an expression.  To use this to create, respectively, an integer, a decimal, a string, an array, a map/dict, and a function, you can do as follows:</p>
+<pre><code>properties: {
+	my_value: "2",
+	my_decimal: "2.1"
+	my_string: "'foo bar baz'",
+	my_array: "['welcome','to','anura']",
+	my_map: "{ thing_one: 23, thing_two: 52 }",
+	my_func: "def(val) -&gt; int val*2",
+},
+</code></pre>
+<p>To make it mutable, there's a built-in shorthand where you just leave off the double-quotes; the engine will infer the type of the provided value, and all of the other more interesting tools available to properties (like constructors, getters/setters, etc) will be left as their defaults or be left unused.  However, I recommend avoiding this, because it's syntactically too easy to make things mutable, and it also locks you out of using the aforementioned property features.</p>
+<pre><code>properties: {
+	my_value: 2,
+},
+</code></pre>
+<p>The recommended way to make it mutable is to do the following; the property is declared as a map, where you can drop in which settings you need, with whatever ones you leave off acting as defaults.  There aren't any mandatory settings, though there are mandatory 'facts' that have to be provided to the engine one way or another - for example a property must have some value when the object is loaded (the engine will check for all of these requirements at load-time, rather than runtime, to catch these errors early).</p>
+<pre><code>properties: {
+	my_value: { type: "int", default: 2 },
+},
+</code></pre>
+<h3>
+<a aria-hidden="true" class="anchor" href="#property-data-types" id="user-content-property-data-types"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Property Data Types:</h3>
+<p>All properties in Anura resolve to a "type"; even functions that merely 'do something' resolve to a <code>commands</code> type.  Which types are available have <a href="Data-Types">their own article dedicated to the subject</a>, but in this article I'll cover how to use them inside properties.  For starters, you can declare that a variable is of a certain type.  It's done differently for mutable types versus static expressions:</p>
+<pre><code>properties: {
+	value_one: { type: "int", default: 0 },
+	value_two: "int :: 2",
+}
+</code></pre>
+<p>Why bother?  The advantage is that later on in writing your code, the engine will automatically catch cases where you're not actually doing what you had intended.  Most importantly, it catches cases where the code would otherwise just fail silently and do nothing - often well after the initial code was written.  For example, let's presume we're making some attack object that targets an enemy (perhaps a homing attack missile coming from the player):</p>
+<pre><code>properties: {
+	target: { type: "string", default: "hypothetical_monster_name" },
+	target_loc: { type: "[int]", default: [0,0] },
+},
+</code></pre>
+<p>It's quite easy to accidentally mis-recall that "target" is the name of the object.  There's a function in anura to look up an object by name, and if it fails to find one, it returns nothing.  If we made a mistake like:  <code>set(target, [1,2])</code>, it slips past the usual 'smell test' of natural-language code reading; it seems like a very reasonable thing to set a point target to a set of integers.  The problem is that ... <em>this is a string</em>.  The hypothetical type-unsafe engine would auto-cast this to something like <code>'[1,2]'</code>.  When our target-seeking code attempted to do its thing, it'd run something like <code>set(target_lock, [get_object(target).x, get_object(target).y])</code>.  The result would be something like <code>[null,null]</code> - get_object would look for something named <code>'[1,2]'</code>, and finding no such object, would just return <code>null</code>.  The code would do nothing.  If this was all this object ever did, that would be easy to immediately find and test.  But if this had other behavior, and only activated this homing behavior part of the time, this mistake could easily go unnoticed long after this code was touched.  You'd launch the game a few weeks later, try out the homing-attack that you'd had working earlier (before, say, you changed the target-acquisition logic - perhaps to make it home in on the original target it locked to rather than always homing in on the nearest enemy), and all of a sudden it doesn't work now.  And you don't know when or where it broke.</p>
+<p>Instead, anura will immediately notice you're trying to assign something to a container that can't hold it, and will point out exactly where the problem is the moment you try to run the code.  This is called <strong>static type checking</strong>, and it will save you enormous headaches in hunting down bizarre, subtle bugs.</p>
+<p>So you can declare that a property is "of a certain type", and the engine will automatically watch every time you use it, and make sure you're not trying to use it somewhere where it won't fit.</p>
+<p>"That sounds fine, and all, but what if I have legitimate reasons for wanting it to possibly be different types?"  For example, what if you wanted the damage of an attack to either be a number - in which case it directly deals damage, or a string, in which case it applies a status effect?  I.e. <code>2</code> or <code>'poison'</code>?  Well, in that case, anura offers two options:  You can use the <code>any</code> type, or you can use a type union like <code>int|string</code>.  The beautiful thing about anura is that <strong>this doesn't defeat type-checking</strong>.  Instead, anura will specifically keep the ambiguity in mind as you drill into the code that uses it, and anytime the ambiguity could mean that it might be something inappropriate, it will complain (i.e. you're assigning that 'damage' variable we just mentioned to an integer slot, but it could just as well be a string).</p>
+<p>What happens when it complains?  Well, this is when the magic of <strong>type inference</strong> kicks in:  if you do an if() statement check to determine what type it is, the engine is smart enough to realize you're eliminating one of the possibilities!  If you do a block like:</p>
+<pre><code>if(damage is string, add_status_effect(damage), subtract_hitpoints(damage)
+</code></pre>
+<p>The engine knows that if that <code>if</code> clause resolves to true, then in the <code>true</code> block, it's now guaranteed that even though that property could originally have been a <code>string or an int</code>, now we know for sure it's a <code>string</code>.  The engine knows it too; it sees that you checked it, and it knows you're passing in a piece of data that will fit.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#initial-values" id="user-content-initial-values"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Initial Values</h3>
+<p>Immutable properties aren't concerned with this; they always resolve to a value.  Mutable properties, however, have to have a value "put in them" by something, and Anura always insists they start out with one.  It's not legal in Anura to do something like:</p>
+<pre><code>properties: {
+	my_value: { type: "int" },
+},
+</code></pre>
+<p>Because that has no value, the engine will complain.  An easy way to supply one is with:</p>
+<pre><code>properties: {
+	my_value: { type: "int", default: 2 },
+},
+</code></pre>
+<p>Default, there, allows you to provide a literal value.  If you'd like to provide an actual <em>expression</em> - something using code that actually gets evaluated, you could do something like:</p>
+<pre><code>properties: {
+	time_I_was_created: { type: "int", init: "level.cycle" },
+},
+</code></pre>
+<p>The one gotcha with <code>init</code> is that you cannot rely on other non-built-in properties from within the same object, since these would be trying to look at them whilst you're halfways into creating them.  A frequent desire is also to pipe in initial values from a parent object; this can often fulfill the needs which one would have relied on such an init expression for.</p>
+<pre><code>properties: {
+	my_value: { type: "int", dynamic_initialization: true },
+},
+</code></pre>
+<p>If you have <code>dynamic_initialization</code> declared, then the engine will look in two places; either the parent object that spawns your object has to set these values <code>spawn('my_shot, x, y, {my_value: foo})</code>, or the child object has to set them in <code>on_create</code>, <code>on_spawned</code>, <code>on_start_level</code> or any other event that fires during the first frame of processing.  If the object starts up, and these properties aren't declared, it will complain.</p>
+<p>This would be true even if you want an object to equal null; there are valid uses for this, for example if you had a target for a homing missile, you very well might want <code>null</code> to be the value if there were no enemies on-screen to target.  For example:</p>
+<pre><code>properties: {
+	target: { type: "custom_obj|null", default: null },
+},
+</code></pre>
+<p>But if you don't explicitly set it to null, the engine will complain.  It's a rare exception to the rule that you would want something like this, so the engine ensures that you don't do it by accident.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#access-and-persistence-declarations" id="user-content-access-and-persistence-declarations"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Access and Persistence Declarations</h3>
+<p>The way that saving the game works in Anura is that it takes all the objects on the level, and writes them (and the whole level) to disk.  Any properties with mutable data in them, if the data is different from the default value, will get recorded in a <code>property_data: {}</code> block.  Quite often you don't want to do this.  If you don't, the following will prevent something from getting written:</p>
+<pre><code>properties: {
+	target: { type: "int", default: 2, persistent: false },
+},
+</code></pre>
+<p>This value would return to being <code>2</code> when that save file was loaded, regardless of what it had been set to during the previous run of the game.</p>
+<p>There are a few object-oriented-programming-style encapsulation features in Anura; for one thing, you can make values <code>private</code>, which means they can be read, but they cannot be written to, by other objects.  There's a shorthand for this wherein you prefix the name of an object with an underscore; both of the following would be private:</p>
+<pre><code>properties: {
+	energy: { default: 100, type: "int", access: "private" },
+	_power: { default: 100, type: "int" } 
+},
+</code></pre>
+<p>Anura also allows <code>getter</code> and <code>setter</code> methods, for when you don't just want to store a value, but for when you want to demand that it get 'cleaned up' according to certain criterion.  In both <code>set</code> and <code>get</code>, there is a virtual variable called <code>_data</code> that represents either the value being passed in, or the stored value.  For example, the following would ensure that any time we stored a creature's mana value, that it would be a percentage from <code>0</code> to <code>100</code>, and couldn't spill over or under.  Even if a user called <code>set(mana,124)</code>, the resulting value would be <code>100</code>.  One deep benefit of a setter is that it works not only with the built-in <code>set(value, newvalue)</code> function, but <strong>it also works using <code>add(value, addend)</code></strong>.  If you're applying some constraint, then this applies to adding as well.  This matters because multiple calls of <code>set()</code> won't take effect until the end of an event, essentially overwriting each other's work (since 'set' just alters a value with no regard for its previous value).  However, calls to <code>add()</code> will be cumulative, since even though they too (like all other commands in Anura) take effect at the end of an event, they factor in the prior value of the number before altering it.</p>
+<pre><code>properties: {
+	mana: { default: 100, type: "int", set: "set(_data, max(0, min(100,value)))" },
+},
+</code></pre>
+<p>If we wanted to alter it anytime you read it (for example, let's say the player has an energy attack that depletes a constantly charging-up energy bank), then we could do something as follows to determine how many shots the player had left.  (I would actually recommend doing this sort of thing as a second, separate property, so this example is a tad contrived, but bear with me.)</p>
+<pre><code>properties: {
+	mana_for_shots: { default: 100, type: "int", get: "_data/4" },
+},
+</code></pre>
+<h1>
+<a aria-hidden="true" class="anchor" href="#further-reading" id="user-content-further-reading"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Further Reading:</h1>
+<p><a class="internal present" href="/Autofire/frogatto/wiki/Strict-Mode">Strict-Mode</a> - A long writeup from Sirp about rationale behind Anura's Strict-typing system
+<a class="internal present" href="/Autofire/frogatto/wiki/Data-Types">Data-Types</a> - A list of the various data types available in Anura</p>
+
+        </div>
+
+        <div class="wiki-footer gollum-markdown-content boxed-group" id="wiki-footer">
+          <div class="boxed-group-inner wiki-auxiliary-content markdown-body">
+            <p>More help can be found via IRC, <a href="irc://irc.freenode.net/#frogatto" rel="nofollow">#Frogatto</a> on freenode.net. This wiki is not a complete reference.</p>
+
+          </div>
+        </div>
+    </div>]

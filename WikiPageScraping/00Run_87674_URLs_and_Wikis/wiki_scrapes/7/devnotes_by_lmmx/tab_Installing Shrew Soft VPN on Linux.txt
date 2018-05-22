@@ -1,0 +1,137 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>University of Manchester provides a Cisco VPN client that pretty much installs on Windows, but Linux requires a bit more work to get up and running.</p>
+<p>Main ServiceDesk page: <a href="http://servicedesk.manchester.ac.uk/portal/app/portlets/results/viewsolution.jsp?solutionid=041025610164777" rel="nofollow">How To:Install the Shrew Soft client on 64-bit linux</a></p>
+<blockquote>
+<p>NB: (I advise) do not use the page "<a href="http://servicedesk.manchester.ac.uk/portal/app/portlets/results/viewsolution.jsp?solutionid=040924411541990" rel="nofollow">How To: Install and use the VPN (Virtual Private Network) software on Linux</a>" - it suggests using the Cisco client and pretty sure this didn't work for me... but can't really remember.</p>
+</blockquote>
+<p>As the ServiceDesk page suggests, install Shrew Soft by first downloading <code>ike</code> from <a href="http://www.shrew.net/download/ike" rel="nofollow">the shrew.net page</a> (most recent <strong>stable release</strong>).</p>
+<ul>
+<li>Extract it -- simply right click and 'extract here' in the file viewer, or <code>tar xvzf ike*</code> on the command line (see README)</li>
+<li>enter the directory in a terminal (<code>cd ike</code>), and (as explained in the README) run a command to build the program: first though, this command has some important system requirements to sort out.</li>
+</ul>
+<p>...these requirements can be installed through the <code>apt-get</code> package manager on Linux Mint/Ubuntu as follows:</p>
+<ul>
+<li>c++ compiler: <code>g++ --version</code> (version doesn't matter as long as it's installed, else <code>sudo apt-get install g++</code>)
+<ul>
+<li>it's also advisable to <code>sudo apt-get install build-essential</code> (generally important libraries)</li>
+</ul>
+</li>
+<li>lex or flex (<code>lex --version</code> or <code>flex --version</code> - these should both be installed on Linux Mint, else <code>sudo apt-get install flex</code>)</li>
+<li>libedit (may very likely not be installed, so <code>sudo apt-get install libedit2 libedit-dev</code> - will not do anything if they are already installed)</li>
+<li>bison &gt;= 2.3 (<code>bison --version</code> - should already be installed else <code>sudo apt-get install bison</code>)</li>
+<li>cmake &gt;= 2.4 (<code>cmake --version</code> - may very likely not be installed, so <code>sudo apt-get install cmake</code>)</li>
+<li>openssl  &gt;= 0.9.x (<code>openssl version</code> - should already be installed, else <code>sudo apt-get install openssl</code>)</li>
+</ul>
+<p>Not listed in the README but also potential source of build problems:</p>
+<ul>
+<li>QT 4: one possible error message is "<em>Found unsuitable Qt version "" from NOTFOUND, this code requires Qt 4.x</em>". To avoid it: <code>sudo apt-get install libqt4-dev</code>
+</li>
+</ul>
+<p>(This list is current as of October 2015, feel free to type <code>sudo apt-get install</code> and then the first few letters of a package name, then hit tab, to quickly list the available packages)</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#building" id="user-content-building"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Building</h2>
+<p>Again as specified in the README, for Linux:</p>
+<pre><code>cmake -DCMAKE_INSTALL_PREFIX=/usr -DQTGUI=YES -DETCDIR=/etc -DNATT=YES
+</code></pre>
+<p>If no errors appear (not including warnings, which should not prevent cmake successfully running), and you receive a message something like <code>Built target qikec</code>, run:</p>
+<pre><code>make
+</code></pre>
+<p>Which should not give a problem, and then:</p>
+<pre><code>make install
+</code></pre>
+<p>...<code>make install</code> may error out something like:</p>
+<blockquote>
+<p>file INSTALL cannot copy file "/home/{USERNAME}/{DIRECTORY-PATH}/ike/source/iked/iked"
+to "/usr/sbin/iked"</p>
+</blockquote>
+<p>This may well just require <code>sudo make install</code> instead. As the above error message states, the built <code>iked</code> program will be installed to the <code>/usr/sbin/iked</code> directory (unless a different parameter was passed to <code>cmake</code> earlier than <code>-DCMAKE_INSTALL_PREFIX=/usr</code>).</p>
+<p>To check <code>ike</code> is now installed, run <code>iked</code>. If it is, you should receive a snarky error, "<em>you must be root to run this program !!!</em>" <img align="absmiddle" alt=":smile:" class="emoji" data-canonical-src="https://assets-cdn.github.com/images/icons/emoji/unicode/1f604.png" height="20" src="https://camo.githubusercontent.com/9d8dc7a0d4c53e76fb8f56cbb1785d887c8bdf24/68747470733a2f2f6173736574732d63646e2e6769746875622e636f6d2f696d616765732f69636f6e732f656d6f6a692f756e69636f64652f31663630342e706e67" title=":smile:" width="20"/> <img align="absmiddle" alt=":+1:" class="emoji" data-canonical-src="https://assets-cdn.github.com/images/icons/emoji/unicode/1f44d.png" height="20" src="https://camo.githubusercontent.com/a2840914d539225aaf8d395397d8dbc488a0740d/68747470733a2f2f6173736574732d63646e2e6769746875622e636f6d2f696d616765732f69636f6e732f656d6f6a692f756e69636f64652f31663434642e706e67" title=":+1:" width="20"/></p>
+<p><code>iked</code> is the "daemon" that runs in the background, allowing a second program <code>qikea</code> to start, request credentials, and pass these to the university server using a VPN profile (see below).</p>
+<ul>
+<li>check for a configuration file at <code>/etc/iked.conf</code> (<code>ls /etc/iked.conf</code>). It's probably not there, so paste in this sample one (<a href="https://www.centos.org/forums/viewtopic.php?f=48&amp;t=49096" rel="nofollow">via</a>), for example by opening the graphical text editor Gedit (<code>sudo gedit /etc/iked.conf</code>, paste, hit save, close Gedit):</li>
+</ul>
+<pre><code>#
+# sample client iked.conf file
+#
+
+daemon
+{
+	# bind to ports
+	socket ike 500;
+	socket natt 4500;
+
+	# log output
+	log_level error;
+	log_file "/var/log/iked.log";
+#	pcap_decrypt "/var/log/ike-decrypt.pcap";
+#	pcap_encrypt "/var/log/ike-encrypt.pcap";
+
+	# retry settings
+	retry_delay 10;
+	retry_count 2;
+}
+</code></pre>
+<ul>
+<li>run <code>sudo iked</code> - the terminal will request your password</li>
+<li>run <code>ps cax | grep 'iked</code> - there should now be a process running called "iked" <img align="absmiddle" alt=":tada:" class="emoji" data-canonical-src="https://assets-cdn.github.com/images/icons/emoji/unicode/1f389.png" height="20" src="https://camo.githubusercontent.com/ce30a052daa7777afd0c1cd589dfbbde03862d56/68747470733a2f2f6173736574732d63646e2e6769746875622e636f6d2f696d616765732f69636f6e732f656d6f6a692f756e69636f64652f31663338392e706e67" title=":tada:" width="20"/>
+</li>
+</ul>
+<h2>
+<a aria-hidden="true" class="anchor" href="#optional---keyboard-bindings-to-start-the-vpn" id="user-content-optional---keyboard-bindings-to-start-the-vpn"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Optional - keyboard bindings to start the VPN</h2>
+<p>With this setup, each time you want to use VPN you have to open a terminal, type <code>sudo iked</code>, enter your password, run <code>qikea &amp;</code> to make the VPN program run in the background (else closing the terminal window would end your session...) and it'd all be a bit awkward.</p>
+<p>The easier way is to map keyboard bindings on Linux Mint to these 2 steps of VPN initiation. From the main menu (via the 'Windows button'), navigate to <code>Keyboard</code> &gt; <code>Keyboard shortcuts</code> &gt; <code>Custom shortcuts</code> &gt; <code>Add new shortcut</code>, and add:</p>
+<ul>
+<li>"VPN step 1", command: <code>gnome-terminal -e "bash -c \"sudo iked;\"" --geometry 30x3 -t VPN</code> - this will open a small, 30-characters-wide-by-3-lines-tall, terminal window with a window title "VPN" and ask for your password then close itself (nice and 'user friendly' <img align="absmiddle" alt=":relieved:" class="emoji" data-canonical-src="https://assets-cdn.github.com/images/icons/emoji/unicode/1f60c.png" height="20" src="https://camo.githubusercontent.com/6755afc29aef1aa70effa5620d71c96fc7161834/68747470733a2f2f6173736574732d63646e2e6769746875622e636f6d2f696d616765732f69636f6e732f656d6f6a692f756e69636f64652f31663630632e706e67" title=":relieved:" width="20"/>)</li>
+<li>"VPN step 2", command: <code>qikea</code>
+</li>
+<li>after you add these shortcuts you'll see "<em>Keyboard bindings: unassigned</em>" when one is selected in the shortcut list - double click <em>unassigned</em> and the text will change to say "<em>Pick an accelerator</em>".  I use <code>Ctrl</code> + <code>Alt</code> + <code>V</code> for step 1, then <code>Windows key</code> + <code>Alt</code> + <code>V</code> for step 2, for pretty quick access to VPN.</li>
+</ul>
+<h2>
+<a aria-hidden="true" class="anchor" href="#using-the-vpn" id="user-content-using-the-vpn"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Using the VPN</h2>
+<p>Either by the keyboard shortcuts (<code>Ctrl</code> + <code>Alt</code> + <code>V</code> followed by <code>Windows key</code> + <code>Alt</code> + <code>V</code> after the popup terminal requests your password), or by terminal commands (<code>sudo iked</code> followed by <code>qikea &amp;</code> and closing the terminal) you can now open the graphical program <code>qikea</code>.</p>
+<p><code>qikea</code> needs a 'profile', the University of Manchester's is available (as of October 2015) at <a href="http://woodstock.its.manchester.ac.uk/downloads/vpn/shrewsoft/Shrewsoft.vpn" rel="nofollow">woodstock.its.manchester.ac.uk/downloads/vpn/shrewsoft/Shrewsoft.vpn</a> (<code>File</code> &gt; <code>Import</code> &gt; select this downloaded file). It will then remember the configuration specified in this text file, and double clicking the profile's icon will give a popup requesting your username and password credentials (as used to login to my.manchester.ac.uk etc -- i.e. your short 'central username', not your email address.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#a-few-tips" id="user-content-a-few-tips"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>A few tips</h2>
+<ul>
+<li>The successful login banner displays</li>
+</ul>
+<blockquote>
+<p>"You have successfully connected to the University of Manchester VPN Service. If you are not an authorised member of the University, please disconnect immediately. All transactions via this system are monitored and logged."</p>
+</blockquote>
+<p>When you see this, you're in!</p>
+<ul>
+<li>Incorrect username/password will give an error (bold = in red):</li>
+</ul>
+<blockquote>
+<p>config loaded for site 'Shrewsoft'<br/>
+attached to key daemon ...<br/>
+peer configured<br/>
+iskamp proposal configured<br/>
+esp proposal configured<br/>
+client configured<br/>
+local id configured<br/>
+remote id configured<br/>
+pre-shared key configured<br/>
+bringing up tunnel ...<br/>
+<strong>user authentication error</strong><br/>
+tunnel disabled<br/>
+detached from key daemon</p>
+</blockquote>
+<ul>
+<li>If you get a "user authentication error" but also "<strong>failed to attach to key daemon</strong>", check <code>iked</code> is running (check <code>ps cax | grep 'iked'</code> lists an <code>iked</code> process), and if not then remember to run it first!</li>
+<li>Intermittent internet connections, maintenance on the university servers and other general technical difficulties can result in your connection being lost, and as a security measure you'll be booted off VPN. The VPN shows a log, which will explain what happened.</li>
+<li>If putting your computer to "sleep" / "hibernate", disconnect the VPN first - one thing this VPN client  does is edit <a href="https://en.wikipedia.org/wiki/Resolv.conf" rel="nofollow"><code>/etc/resolv.conf</code></a> (comment out the existing settings in favour of the university server 'IP addresses' / undo its changes when disconnecting). Putting it to sleep/hibernate or hard-restarting (<em>i.e.</em> holding the power button down) can sometimes catch the <code>resolv.conf</code> file 'stuck in VPN mode' while the VPN is actually not edited</li>
+<li>If you're on a site or service that requires constant access the VPN switchover may break this (very very momentarily) - I think Freenode webchat (in-browser IRC chatroom) may be one such sensitive thing - you'll be kicked off the Freenode server.</li>
+<li>You can have multiple workspaces on Linux Mint - switchable with <code>Ctrl</code> + <code>Alt</code> + <code>←</code> / <code>→</code> arrow keys. I usually switch one or two workspaces 'to the left', kick off the VPN over there then switch back over to the windows I'm working in. This makes it easily accessible when you need to disconnect, or if you need to check it's still working.</li>
+</ul>
+
+        </div>
+
+        <div class="wiki-footer gollum-markdown-content boxed-group" id="wiki-footer">
+          <div class="boxed-group-inner wiki-auxiliary-content markdown-body">
+            <p><a href="https://github.com/lmmx/devnotes/wiki">Main page</a></p>
+
+          </div>
+        </div>
+    </div>]

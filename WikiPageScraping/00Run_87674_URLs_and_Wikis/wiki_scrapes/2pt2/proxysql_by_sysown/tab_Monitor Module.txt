@@ -1,0 +1,160 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <h1>
+<a aria-hidden="true" class="anchor" href="#monitor-module" id="user-content-monitor-module"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Monitor Module</h1>
+<p>This section focus on Monitor v1.2.1, as it introduces multiple improvements compared to v1.2.0</p>
+<p>Variables removed as unused or deprecated:</p>
+<ul>
+<li>mysql-monitor_query_variables</li>
+<li>mysql-monitor_query_status</li>
+<li>mysql-monitor_timer_cached</li>
+</ul>
+<p>Variables currently not in use:</p>
+<ul>
+<li>mysql-monitor_query_interval</li>
+<li>mysql-monitor_query_timeout</li>
+</ul>
+<h2>
+<a aria-hidden="true" class="anchor" href="#overview" id="user-content-overview"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Overview</h2>
+<p>The Monitor Module is responsible for a series of check against the backends.
+It currently supports 4 types of checks:</p>
+<ul>
+<li>
+<strong>connect</strong> : it connects to all the backends, and success/failure is logged in table <code>mysql_server_connect_log</code>;</li>
+<li>
+<strong>ping</strong> : it pings to all the backends, and success/failure is logged in table <code>mysql_server_ping_log</code> . In case of <code>mysql-monitor_ping_max_failures</code> missed heartbeat, sends a signal to MySQL_Hostgroups_Manager to kill all connections;</li>
+<li>
+<strong>replication lag</strong> : it checks <code>Seconds_Behind_Master</code> to all backends configured with <code>max_replication_lag</code> greater than 0, and check is logged in table <code>mysql_server_replication_lag_log</code>. If <code>Seconds_Behind_Master</code> &gt; <code>max_replication_lag</code> the server is shunned until <code>Seconds_Behind_Master</code> &lt; <code>max_replication_lag</code> ;</li>
+<li>
+<strong>read only</strong> : it checks <code>read_only</code> for all hosts in the hostgroups in table <code>mysql_replication_hostgroups</code>, and check is logged in table <code>mysql_server_read_only_log</code> . If <code>read_only=1</code> the host is copied/moved to the <code>reader_hostgroup</code>, while if <code>read_only=0</code> the host is copied/moved to the <code>writer_hostgroup</code> .</li>
+</ul>
+<h1>
+<a aria-hidden="true" class="anchor" href="#variables" id="user-content-variables"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Variables</h1>
+<p>General variables:</p>
+<ul>
+<li>
+<p><em>mysql-monitor_username</em></p>
+<p>Specifies the username that the Monitor module will use to connect to the backend. The user needs only <code>USAGE</code> privileges to connect, ping and check <code>read_only</code>. The user needs also <code>REPLICATION CLIENT</code> if it needs to monitor replication lag.</p>
+</li>
+<li>
+<p><em>mysql-monitor_password</em></p>
+<p>Password for user <em>mysql-monitor_username</em></p>
+</li>
+<li>
+<p><em>mysql-monitor_enabled</em></p>
+<p>It enables or disables MySQL Monitor. Since MySQL Monitor can interfere with changed applied directly on the Admin interface, this variable allows to temporary disable it.</p>
+</li>
+</ul>
+<p>Connect variables:</p>
+<ul>
+<li>
+<p><em>mysql-monitor_connect_interval</em></p>
+<p>How frequently a connect check is performed, in milliseconds.</p>
+</li>
+<li>
+<p><em>mysql-monitor_connect_timeout</em></p>
+<p>Connection timeout in milliseconds. The current implementation rounds this value to an integer number of seconds less or equal to the original interval, with 1 second as minimum. This lazy rouding is done because SSL connections are blocking calls.</p>
+</li>
+</ul>
+<p>Ping variables:</p>
+<ul>
+<li>
+<p><em>mysql-monitor_ping_interval</em></p>
+<p>How frequently a ping check is performed, in milliseconds.</p>
+</li>
+<li>
+<p><em>mysql-monitor_ping_timeout</em></p>
+<p>Ping timeout in milliseconds.</p>
+</li>
+<li>
+<p><em>mysql-monitor_ping_max_failures</em></p>
+<p>If a host misses <em>mysql-monitor_ping_max_failures</em> pings in a row, MySQL_Monitor informs MySQL_Hostgroup_Manager that the node is unreacheable and that should immediately kill all connections.
+It is important to note that in case a connection to the backend is not available, MySQL_Monitor will first try to connect in order to ping, therefore the time to detect a node down could be one of the two:</p>
+<ul>
+<li>
+<em>mysql-monitor_ping_max_failures</em> * <em>mysql-monitor_connect_timeout</em>
+</li>
+<li>
+<em>mysql-monitor_ping_max_failures</em> * <em>mysql-monitor_ping_timeout</em>
+</li>
+</ul>
+</li>
+</ul>
+<p>Read only variables:</p>
+<ul>
+<li>
+<p><em>mysql-monitor_read_only_interval</em></p>
+<p>How frequently a read only check is performed, in milliseconds.</p>
+</li>
+<li>
+<p><em>mysql-monitor_read_only_timeout</em></p>
+<p>Read only check timeout in milliseconds.</p>
+</li>
+<li>
+<p><em>mysql-monitor_writer_is_also_reader</em></p>
+<p>When a node change its <code>read_only</code> value from 1 to 0, this variable determines if the node should be present in both hostgroups or not:</p>
+<ul>
+<li>
+<em>false</em> : node will be moved in <code>writer_hostgroup</code> and removed from <code>reader_hostgroup</code>
+</li>
+<li>
+<em>true</em> : node will be copied in <code>writer_hostgroup</code> and stay also in <code>reader_hostgroup</code>
+</li>
+</ul>
+</li>
+</ul>
+<p>Replication lag variables:</p>
+<ul>
+<li>
+<p><em>mysql-monitor_replication_lag_interval</em></p>
+<p>How frequently a replication lag check is performed, in milliseconds.</p>
+</li>
+<li>
+<p><em>mysql-monitor_replication_lag_timeout</em></p>
+<p>Replication lag check timeout in milliseconds.</p>
+</li>
+</ul>
+<p>Other variables:</p>
+<ul>
+<li>
+<p><em>mysql-monitor_history</em></p>
+<p>To prevent that log tables grow without limit, Monitor Module will automatically purge records older than <em>mysql-monitor_history</em> milliseconds. Since ping checks relies on history table to determine if a node is missing heartbeats, the value of <em>mysql-monitor_history</em> is automatically adjusted to the follows if less than it:</p>
+<ul>
+<li>(<em>mysql-monitor_ping_max_failures</em> + 1 ) * <em>mysql-monitor_ping_timeout</em>
+</li>
+</ul>
+</li>
+</ul>
+<h1>
+<a aria-hidden="true" class="anchor" href="#main-threads" id="user-content-main-threads"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Main Threads</h1>
+<p>The Monitor Module has several internal threads. There are currently 5 main threads:</p>
+<ul>
+<li>Monitor: master thread, responsible to start and coordinate all the others</li>
+<li>monitor_connect_thread: main thread and scheduler for the connect checks</li>
+<li>monitor_ping_thread: main thread and scheduler for the ping checks</li>
+<li>monitor_read_only_thread: main thread and scheduler for the read only checks</li>
+<li>monitor_replication_lag_thread: main thread and scheduler for the replication lag checks
+Up to version v1.2.0 the above threads but <em>Monitor</em> were also responsible to perform the checks</li>
+</ul>
+<h1>
+<a aria-hidden="true" class="anchor" href="#thread-pool" id="user-content-thread-pool"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Thread Pool</h1>
+<p>The implementation in v1.2.0 has a limitation with SSL implementation: with SSL, <code>connect()</code> is a blocking call, causing the threads to stall while performing the connect phase.
+Version v1.2.1 tries to overcome this limitation with a new implementation. Now:</p>
+<ul>
+<li>
+<em>Monitor</em> initializes a Thread Pool of workers and creates a queue;</li>
+<li>
+<em>monitor_connect_thread</em>, <em>monitor_ping_thread</em>, <em>monitor_read_only_thread</em> and <em>monitor_replication_lag_thread</em> are producers that generate tasks and sent them to the workers using the queue;</li>
+<li>the workers process the tasks and perform the requires actions;</li>
+<li>if <em>Monitor</em> detects that the queue is growing too fast, it creates new temporary worker threads</li>
+</ul>
+<h1>
+<a aria-hidden="true" class="anchor" href="#connection-purging" id="user-content-connection-purging"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Connection purging</h1>
+<p>Monitor implements its own connection pool. Connections that are alive for more than 3 * <code>mysql_thread___monitor_ping_interval</code> milliseconds are automatically purged</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#wait_timeout" id="user-content-wait_timeout"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>wait_timeout</h2>
+<p>To prevent that backends terminated connections, Monitor module automatically configures <code>wait_timeout</code> = <code>mysql_thread___monitor_ping_interval</code> * 10</p>
+
+        </div>
+
+    </div>]

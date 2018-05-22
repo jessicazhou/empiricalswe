@@ -1,0 +1,155 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <h2>
+<a aria-hidden="true" class="anchor" href="#vector-use-cases" id="user-content-vector-use-cases"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Vector Use Cases</h2>
+<p>These use cases describe common scenarios for loading, rendering, and editing vector data.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#load-data-once-from-static-file" id="user-content-load-data-once-from-static-file"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Load data once from static file</h3>
+<p>User has a static file (e.g. GeoJSON) hosted on the same origin as their application.  User expects data to be loaded and rendered in the map projection.</p>
+<p><strong>Alternative 1</strong></p>
+<div class="highlight highlight-source-js"><pre><span class="pl-c"><span class="pl-c">//</span> assume features.json is a FeatureCollection in EPSG:4326</span>
+<span class="pl-k">var</span> vector <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-en">ol.layer.Vector</span>({
+  source<span class="pl-k">:</span> <span class="pl-k">new</span> <span class="pl-en">ol.source.Vector</span>({
+    protocol<span class="pl-k">:</span> <span class="pl-k">new</span> <span class="pl-en">ol.protocol.HTTP</span>({
+      url<span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">'</span>./data/features.json<span class="pl-pds">'</span></span>
+    }),
+    parser<span class="pl-k">:</span> <span class="pl-k">new</span> <span class="pl-en">ol.parser.GeoJSON</span>()
+  })
+});
+
+<span class="pl-k">var</span> map <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-en">ol.Map</span>({
+  target<span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">'</span>map<span class="pl-pds">'</span></span>,
+  layers<span class="pl-k">:</span> [vector],
+  view<span class="pl-k">:</span> <span class="pl-k">new</span> <span class="pl-en">ol.View2D</span>({
+    projection<span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">'</span>EPSG:1234<span class="pl-pds">'</span></span>,
+    center<span class="pl-k">:</span> <span class="pl-smi">ol</span>.<span class="pl-smi">projection</span>.<span class="pl-en">transform</span>(
+        <span class="pl-k">new</span> <span class="pl-en">ol.Coordinate</span>(<span class="pl-c1">139.7</span>, <span class="pl-c1">35.7</span>), <span class="pl-s"><span class="pl-pds">'</span>EPSG:4326<span class="pl-pds">'</span></span>, <span class="pl-s"><span class="pl-pds">'</span>EPSG:1234<span class="pl-pds">'</span></span>),
+    zoom<span class="pl-k">:</span> <span class="pl-c1">9</span>
+  })
+});</pre></div>
+<p>This alternative can be implemented if the layer knows the map projection.  The vector layer is responsible for calling <code>source.protocol.read({success: callback})</code> where the callback calls <code>source.parser.parseFeatures(data, {projection: projection})</code> (<code>data</code> is supplied to the callback and <code>projection</code> comes from the map's view).  The layer maintains a cache of features in the map view's projection, and these are supplied on demand to layer's the renderer.</p>
+<p><em>Questions/comments from Eric:</em></p>
+<p>How do we know that the transform's source projection is EPSG:4326? It's not specified anywhere in the application code. Maybe you assume that the user/external projection is EPSG:4326 by default?</p>
+<p><strong>Answer from Tim</strong>: GeoJSON describes the CRS.  For formats that don't describe their CRS, the user would provide a projection property on the source.</p>
+<p>You say that "This alternative can be implemented if the layer knows the map projection". Why? The layer renderer knows about the map/view projection, so I think it could be the one providing the projection (the transform's target projection). As I see it the transform operation would occur during the first <code>render</code> pass, the one occurring when the layer is added to the map.</p>
+<p>I've also been thinking about where to store the transformed data. But before that: in most cases, do we really want/need to store both the original data and the transformed data? I'd say no.</p>
+<p>In ol2 if the layer projection isn't the same as the map projection the layer's strategy does an <strong>in-place</strong> transformation of the data - no copy of the original data is kept. Do we really want to do differently in ol3? I know that stores can be shared between maps, etc. We could think about a <code>copyOnTransform</code> option on stores, which would be <code>false</code> by default, as we don't need the original data in the common cases.</p>
+<p>Really the store could (a) transform in place, (b) copy on transform, or (c) refuse to transform and return <code>null</code> to the renderer. The store would decide based on user options/hints (e.g. <code>copyOnTransform</code>). I think the default behavior should (a), i.e. transform in place if the view projection is not the same as the data projection.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#generate-features-in-app-and-add-to-a-layer" id="user-content-generate-features-in-app-and-add-to-a-layer"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Generate features in app and add to a layer</h3>
+<p>User writes an application that generates features at run time.  These features are added to the layer for display and interaction (e.g. popup on selection).</p>
+<p><strong>Alternative 1</strong></p>
+<div class="highlight highlight-source-js"><pre><span class="pl-c"><span class="pl-c">//</span> a vector layer with no source means user will be manually adding features</span>
+<span class="pl-k">var</span> vector <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-en">ol.layer.Vector</span>();
+
+<span class="pl-k">var</span> map <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-en">ol.Map</span>({
+  target<span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">'</span>map<span class="pl-pds">'</span></span>,
+  layers<span class="pl-k">:</span> [vector]
+  view<span class="pl-k">:</span> <span class="pl-k">new</span> <span class="pl-en">ol.View2D</span>({
+    projection<span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">'</span>EPSG:1234<span class="pl-pds">'</span></span>,
+    center<span class="pl-k">:</span> <span class="pl-smi">ol</span>.<span class="pl-smi">projection</span>.<span class="pl-en">transform</span>(
+        <span class="pl-k">new</span> <span class="pl-en">ol.Coordinate</span>(<span class="pl-k">-</span><span class="pl-c1">111</span>, <span class="pl-c1">45</span>), <span class="pl-s"><span class="pl-pds">'</span>EPSG:4326<span class="pl-pds">'</span></span>, <span class="pl-s"><span class="pl-pds">'</span>EPSG:1234<span class="pl-pds">'</span></span>),
+    zoom<span class="pl-k">:</span> <span class="pl-c1">3</span>
+  })
+});
+
+<span class="pl-k">var</span> parser <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-en">ol.parser.GeoJSON</span>();
+
+<span class="pl-smi">vector</span>.<span class="pl-en">addFeatures</span>(parser, {
+  type<span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">'</span>FeatureCollection<span class="pl-pds">'</span></span>,
+  features<span class="pl-k">:</span> [{
+    type<span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">'</span>Feature<span class="pl-pds">'</span></span>,
+    geometry<span class="pl-k">:</span> {
+      type<span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">'</span>Point<span class="pl-pds">'</span></span>,
+      coordinates<span class="pl-k">:</span> [<span class="pl-k">-</span><span class="pl-c1">111</span>, <span class="pl-c1">45</span>]
+    },
+    properties<span class="pl-k">:</span> {
+      foo<span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">'</span>bar<span class="pl-pds">'</span></span>
+    }
+  }]
+});</pre></div>
+<p>In this alternative, the vector layer has no source set - meaning the user will be manually generating features.  This alternative can be implemented if the layer knows about the map projection.  In the <code>addFeatures</code> method, the layer calls <code>parser.readFeatures(data, {projection: projection})</code> where <code>data</code> is the first argument to <code>addFeatures</code> and <code>projection</code> is the map view's projection.</p>
+<p><em>Questions/comments from Eric:</em></p>
+<p>In my alternative, and based on my comments for the previous use-case, the app would add features to the source.</p>
+<p><strong>Alternative 2</strong></p>
+<div class="highlight highlight-source-js"><pre><span class="pl-k">var</span> vector <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-en">ol.layer.Vector</span>({
+  source<span class="pl-k">:</span> <span class="pl-k">new</span> <span class="pl-en">ol.source.Vector</span>({
+    projection<span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">'</span>EPSG:4326<span class="pl-pds">'</span></span>
+  })
+});
+
+<span class="pl-k">var</span> map <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-en">ol.Map</span>({
+  target<span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">'</span>map<span class="pl-pds">'</span></span>,
+  layers<span class="pl-k">:</span> [vector]
+  view<span class="pl-k">:</span> <span class="pl-k">new</span> <span class="pl-en">ol.View2D</span>({
+    projection<span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">'</span>EPSG:1234<span class="pl-pds">'</span></span>,
+    center<span class="pl-k">:</span> <span class="pl-smi">ol</span>.<span class="pl-smi">projection</span>.<span class="pl-en">transform</span>(
+        <span class="pl-k">new</span> <span class="pl-en">ol.Coordinate</span>(<span class="pl-k">-</span><span class="pl-c1">111</span>, <span class="pl-c1">45</span>), <span class="pl-s"><span class="pl-pds">'</span>EPSG:4326<span class="pl-pds">'</span></span>, <span class="pl-s"><span class="pl-pds">'</span>EPSG:1234<span class="pl-pds">'</span></span>),
+    zoom<span class="pl-k">:</span> <span class="pl-c1">3</span>
+  })
+});
+
+<span class="pl-k">var</span> parser <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-en">ol.parser.GeoJSON</span>();
+
+<span class="pl-smi">vector</span>.<span class="pl-en">getSource</span>().<span class="pl-en">addFeatures</span>(parser, {
+  type<span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">'</span>FeatureCollection<span class="pl-pds">'</span></span>,
+  features<span class="pl-k">:</span> [{
+    type<span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">'</span>Feature<span class="pl-pds">'</span></span>,
+    geometry<span class="pl-k">:</span> {
+      type<span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">'</span>Point<span class="pl-pds">'</span></span>,
+      coordinates<span class="pl-k">:</span> [<span class="pl-k">-</span><span class="pl-c1">111</span>, <span class="pl-c1">45</span>]
+    },
+    properties<span class="pl-k">:</span> {
+      foo<span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">'</span>bar<span class="pl-pds">'</span></span>
+    }
+  }]
+});</pre></div>
+<p><code>addFeatures</code> would add the data to the source, but wouldn't transform the data (the source doesn't know about the view projection). Again, the data would be transformed on the next <code>render</code> pass.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#load-data-based-on-map-extent" id="user-content-load-data-based-on-map-extent"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Load data based on map extent</h3>
+<p>User has a service that provides vector features for requests with an arbitrary BBOX (e.g. a WFS).  Data source contains hundreds of millions of features with worldwide coverage (e.g. OSM) and the user only wants to display a small subset, updating rendered features as the user navigates around the map.</p>
+<p><strong>Alternative 1</strong></p>
+<div class="highlight highlight-source-js"><pre><span class="pl-k">var</span> vector <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-en">ol.layer.WFS</span>({
+  namespace<span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">'</span>http://example.org/#osm<span class="pl-pds">'</span></span>
+  type<span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">'</span>roads<span class="pl-pds">'</span></span>
+});
+
+<span class="pl-k">var</span> map <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-en">ol.Map</span>({
+  target<span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">'</span>map<span class="pl-pds">'</span></span>,
+  layers<span class="pl-k">:</span> [vector]
+  view<span class="pl-k">:</span> <span class="pl-k">new</span> <span class="pl-en">ol.View2D</span>({
+    projection<span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">'</span>EPSG:1234<span class="pl-pds">'</span></span>,
+    center<span class="pl-k">:</span> <span class="pl-smi">ol</span>.<span class="pl-smi">projection</span>.<span class="pl-en">transform</span>(
+        <span class="pl-k">new</span> <span class="pl-en">ol.Coordinate</span>(<span class="pl-k">-</span><span class="pl-c1">111</span>, <span class="pl-c1">45</span>), <span class="pl-s"><span class="pl-pds">'</span>EPSG:4326<span class="pl-pds">'</span></span>, <span class="pl-s"><span class="pl-pds">'</span>EPSG:1234<span class="pl-pds">'</span></span>),
+    zoom<span class="pl-k">:</span> <span class="pl-c1">3</span>
+  })
+});</pre></div>
+<p>This alternative can be implemented if the layer knows about the map.  The WFS layer creates a WFS protocol, a GML parser, a BBOX strategy by default.  The layer creates a vector source with the protocol and the parser (these are the two things associated with the data source).  The bbox strategy listens for changes in map extent.  When the previous data bounds become invalid, the bbox strategy notifies the layer that new data is needed, and the layer calls <code>source.protocol.read({success: callback})</code>.  The provided callback would call <code>source.parser.readFeatures(data, {projection: projection})</code> with the provided data and the map view's projection.  The resulting features would replace the existing features (or new ones would be added and features outside the data bounds would be removed).</p>
+<p><em>Questions/comments from Eric:</em></p>
+<p>The API looks good to me, although, again, I think a projection should be specified in the source options if the projection of the data received from the server isn't the same as the view projection.</p>
+<p>Why does the strategy need to listen for view changes? As the map moves, the layer renderer requests more data from the source. The source can then request data from the server, using a strategy that depends on the strategy configured in the source. For example, if the strategy is a bbox strategy the first tile request from the Canvas renderer will trigger a server request for the entire view extent (a sort of meta-tile). Bottom line is I think it would be good not to have multiple paths of communication between map/renderer and layer/source, <code>renderFrame</code> is the communication path.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#edit-existing-features-and-synchronize-them-with-a-server" id="user-content-edit-existing-features-and-synchronize-them-with-a-server"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Edit existing features and synchronize them with a server</h3>
+<p>The user loads a vector layer with a very large number of features.  He then modifies a few of them, and saves the modified features back to the server.  The feature currently being edited should be on top, and the system should maintain good performance even if the underlying layer contains a very large number of features.  Only the modified features should be sent back to the server.  Example case: editing OSM building outlines.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#pure-vector-layers" id="user-content-pure-vector-layers"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Pure vector layers</h3>
+<p>Some data are represented most compactly as vector features.  It should be possible to include them as first-class layers.  Example: overlaying roads on satellite imagery.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#markers-and-labels-maintain-orientation-even-when-the-map-is-rotated" id="user-content-markers-and-labels-maintain-orientation-even-when-the-map-is-rotated"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Markers and labels maintain orientation even when the map is rotated</h3>
+<p>Map rotation is useful, for example so that "up" corresponds to the direction in which the user is moving.  However, labels and markers should not rotate with the map, and should instead always be aligned horizontally.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#sub-feature-styling" id="user-content-sub-feature-styling"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Sub-feature styling</h3>
+<p>The user wishes to style a feature, e.g. a line string, according to some value that varies across the feature.  It should be possible to "sub-style" a feature, e.g. to vary the color of a GPS tracklog by the speed of movement at that point.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#vector-simplification" id="user-content-vector-simplification"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Vector simplification</h3>
+<p>The user has vector features with a high number of points. To render the feature efficiently it should be possible to (automatically) simplify features based on the current zoom level. Only the visible part should be rendered if the user has zoomed into the feature.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#3d-buildings-terrain-tiles" id="user-content-3d-buildings-terrain-tiles"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>3D buildings, terrain tiles</h3>
+<p>3D buildings and TIN terrain tiles are fundamentally vector data.  The vector data representation must support these data.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#dense-vector-data" id="user-content-dense-vector-data"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Dense vector data</h3>
+<p>The user has <a href="https://groups.google.com/forum/?fromgroups=#!searchin/leaflet-js/1500/leaflet-js/0SloJWSNbrg/XCtut0jhWqUJ" rel="nofollow">thousands</a> or <a href="https://groups.google.com/forum/?fromgroups=#!topic/leaflet-js/ytp2n-QLIH8" rel="nofollow">hundreds of thousands</a> of vector features.</p>
+
+        </div>
+
+    </div>]

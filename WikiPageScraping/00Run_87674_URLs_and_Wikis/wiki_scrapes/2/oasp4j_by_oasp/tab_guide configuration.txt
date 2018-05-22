@@ -1,0 +1,307 @@
+[<div class="wiki-body gollum-asciidoc-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <div>
+<div>Table of Contents</div>
+<ul>
+<li>
+<a href="#configuration">Configuration</a>
+<ul>
+<li>
+<a href="#internal-application-configuration">Internal Application Configuration</a>
+<ul>
+<li><a href="#spring-boot-application">Spring Boot Application</a></li>
+<li><a href="#standard-beans-configuration">Standard beans configuration</a></li>
+<li><a href="#xml-based-beans-configuration">XML-based beans configuration</a></li>
+<li><a href="#batch-configuration">Batch configuration</a></li>
+<li><a href="#security-configuration">Security configuration</a></li>
+<li><a href="#websocket-configuration">WebSocket configuration</a></li>
+<li><a href="#database-configuration">Database Configuration</a></li>
+</ul>
+</li>
+<li>
+<a href="#externalized-configuration">Externalized Configuration</a>
+<ul>
+<li><a href="#environment-configuration">Environment Configuration</a></li>
+<li><a href="#business-configuration">Business Configuration</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</div>
+<h1 id="user-content-configuration">
+<a aria-hidden="true" class="anchor" href="#configuration" id="user-content-configuration"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Configuration</h1>
+<div>
+<p>An application needs to be configurable in order to allow internal setup (like CDI) but also to allow externalized configuration of a deployed package (e.g. integration into runtime environment). Using <a href="http://projects.spring.io/spring-boot/" rel="nofollow">Spring Boot</a> (must read: <a href="http://docs.spring.io/spring-boot/docs/current-SNAPSHOT/reference/htmlsingle/#using-boot" rel="nofollow">Spring Boot reference</a>) we rely on a comprehensive configuration approach following a "convention over configuration" pattern. This guide adds on to this by detailed instructions and best-practices how to deal with configurations.</p>
+</div>
+<div>
+<p>In general we distinguish the following kinds of configuration that are explained in the following sections:</p>
+</div>
+<div>
+<ul>
+<li>
+<p><a href="#internal-application-configuration">Internal Application configuration</a> maintained by developers</p>
+</li>
+<li>
+<p><a href="#externalized-environment-configuration">Externalized Environment configuration</a> maintained by operators</p>
+</li>
+<li>
+<p><a href="#business-configuration">Externalized Business configuration</a> maintained by business administrators</p>
+</li>
+</ul>
+</div>
+<div>
+<h2 id="user-content-internal-application-configuration">
+<a aria-hidden="true" class="anchor" href="#internal-application-configuration" id="user-content-internal-application-configuration"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Internal Application Configuration</h2>
+<div>
+<div>
+<p>The application configuration contains all internal settings and wirings of the application (bean wiring, database mappings, etc.) and is maintained by the application developers at development time. There usually is a main configuration registered with main Spring Boot App, but differing configurations to support automated test of the application can be defined using profiles (not detailed in this guide).</p>
+</div>
+<div>
+<h3 id="user-content-spring-boot-application">
+<a aria-hidden="true" class="anchor" href="#spring-boot-application" id="user-content-spring-boot-application"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Spring Boot Application</h3>
+<div>
+<p>The OASP recommends using <a href="http://projects.spring.io/spring-boot/" rel="nofollow">spring-boot</a> to build web applications.
+For a complete documentation see the <a href="http://docs.spring.io/spring-boot/docs/current-SNAPSHOT/reference/htmlsingle/" rel="nofollow">Spring Boot Reference Guide</a>.</p>
+</div>
+<div>
+<p>With spring-boot you provide a simple <em>main class</em> (also called starter class) like this:</p>
+</div>
+<div>
+<div>
+<div class="highlight highlight-source-java"><pre><span class="pl-k">@SpringBootApplication</span>(<span class="pl-c1">exclude</span> <span class="pl-k">=</span> { <span class="pl-smi">EndpointAutoConfiguration</span><span class="pl-k">.</span>class })
+<span class="pl-k">@EntityScan</span>(<span class="pl-c1">basePackages</span> <span class="pl-k">=</span> { <span class="pl-s"><span class="pl-pds">"</span>io.oasp.gastronomy.restaurant<span class="pl-pds">"</span></span> }, <span class="pl-c1">basePackageClasses</span> <span class="pl-k">=</span> { <span class="pl-smi">AdvancedRevisionEntity</span><span class="pl-k">.</span>class })
+<span class="pl-k">@EnableGlobalMethodSecurity</span>(<span class="pl-c1">jsr250Enabled</span> <span class="pl-k">=</span> <span class="pl-c1">true</span>)
+<span class="pl-k">public</span> <span class="pl-k">class</span> <span class="pl-en">SpringBootApp</span> {
+
+  <span class="pl-k">public</span> <span class="pl-k">static</span> <span class="pl-k">void</span> <span class="pl-en">main</span>(<span class="pl-k">String</span>[] <span class="pl-v">args</span>) {
+    <span class="pl-smi">SpringApplication</span><span class="pl-k">.</span>run(<span class="pl-smi">SpringBootApp</span><span class="pl-k">.</span>class, args);
+  }
+}</pre></div>
+</div>
+</div>
+<div>
+<p>In an OASP application this main class is always located in the <code>&lt;basepackage&gt;</code> of the application package namespace (see <a href="coding-conventions#packages">package-conventions</a>). This is because a spring boot application will automatically do a classpath scan for components (spring-beans) and entities in the package where the application main class is located including all sub-packages. You can use the <code>@ComponentScan</code> and <code>@EntityScan</code> annotations to customize this behaviour.</p>
+</div>
+</div>
+<div>
+<h3 id="user-content-standard-beans-configuration">
+<a aria-hidden="true" class="anchor" href="#standard-beans-configuration" id="user-content-standard-beans-configuration"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Standard beans configuration</h3>
+<div>
+<p>For basic bean configuration we rely on spring boot using mainly configuration classes and only occasionally XML configuration files. Some key principle to understand Spring Boot auto-configuration features:</p>
+</div>
+<div>
+<ul>
+<li>
+<p>Spring Boot auto-configuration attempts to automatically configure your Spring application based on the jar dependencies and annotated components found in your source code.</p>
+</li>
+<li>
+<p>Auto-configuration is non-invasive, at any point you can start to define your own configuration to replace specific parts of the auto-configuration by redefining your identically named bean (see also <code>exclude</code> attribute of <code>@SpringBootApplication</code> in example code above).</p>
+</li>
+</ul>
+</div>
+<div>
+<p>Beans are configured via annotations in your java code (see <a href="guide-dependency-injection">dependency-injection</a>).</p>
+</div>
+<div>
+<p>For technical configuration you will typically write additional spring config classes annotated with <code>@Component</code> that provide bean implementations via methods annotated with <code>@Bean</code>. See <a href="http://docs.spring.io/spring-javaconfig/docs/1.0.0.M4/reference/html/ch02s02.html" rel="nofollow">spring @Bean documentation</a> for further details. Like in XML you can also use <code>@Import</code> to make a @Configuration class include other configurations.</p>
+</div>
+</div>
+<div>
+<h3 id="user-content-xml-based-beans-configuration">
+<a aria-hidden="true" class="anchor" href="#xml-based-beans-configuration" id="user-content-xml-based-beans-configuration"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>XML-based beans configuration</h3>
+<div>
+<p>It is still possible and allowed to provide (bean-) configurations using XML, though not recommended. These configuration files are no more bundled via a main xml config file but loaded individually from their respective owners, e.g. for unit-tests:</p>
+</div>
+<div>
+<div>
+<div class="highlight highlight-source-java"><pre><span class="pl-k">@SpringApplicationConfiguration</span>(<span class="pl-c1">classes</span> <span class="pl-k">=</span> { <span class="pl-smi">SpringBootApp</span><span class="pl-k">.</span>class }, <span class="pl-c1">locations</span> <span class="pl-k">=</span> { <span class="pl-s"><span class="pl-pds">"</span>classpath:/config/app/batch/beans-productimport.xml<span class="pl-pds">"</span></span> })
+<span class="pl-k">public</span> <span class="pl-k">class</span> <span class="pl-en">ProductImportJobTest</span> <span class="pl-k">extends</span> <span class="pl-e">AbstractSpringBatchIntegrationTest</span> {
+<span class="pl-c1">...</span></pre></div>
+</div>
+</div>
+<div>
+<p>Configuration XML-files reside in an adequately named subfolder of:</p>
+</div>
+<div>
+<p><code>src/main/resources/app</code></p>
+</div>
+</div>
+<div>
+<h3 id="user-content-batch-configuration">
+<a aria-hidden="true" class="anchor" href="#batch-configuration" id="user-content-batch-configuration"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Batch configuration</h3>
+<div>
+<p>In the directory <code>src/main/resources/config/app/batch</code> we place the configuration for the batch jobs. Each file within this directory represents one batch job. See <a href="guide-batch-layer">batch-layer</a> for further details.</p>
+</div>
+</div>
+<div>
+<h3 id="user-content-security-configuration">
+<a aria-hidden="true" class="anchor" href="#security-configuration" id="user-content-security-configuration"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Security configuration</h3>
+<div>
+<p>The abstract base class <code>BaseWebSecurityConfig</code> should be extended to configure web application security thoroughly.
+A basic and secure configuration is provided which can be overridden or extended by subclasses.
+Subclasses must use the <code>@Profile</code> annotation to further discriminate between beans used in production and testing scenarios. See the following example:</p>
+</div>
+<div>
+<div>How to extend <code>BaseWebSecurityConfig</code> for Production and Test</div>
+<div>
+<div class="highlight highlight-source-java"><pre><span class="pl-k">@Configuration</span>
+<span class="pl-k">@EnableWebSecurity</span>
+<span class="pl-k">@Profile</span>(<span class="pl-smi">OaspProfile</span><span class="pl-c1"><span class="pl-k">.</span>JUNIT_TEST</span>)
+<span class="pl-k">public</span> <span class="pl-k">class</span> <span class="pl-en">TestWebSecurityConfig</span> <span class="pl-k">extends</span> <span class="pl-e">BaseWebSecurityConfig</span> {<span class="pl-c1">...</span>}
+
+<span class="pl-k">@Configuration</span>
+<span class="pl-k">@EnableWebSecurity</span>
+<span class="pl-k">@Profile</span>(<span class="pl-smi">OaspProfile</span><span class="pl-c1"><span class="pl-k">.</span>NO_TEST</span>)
+<span class="pl-k">public</span> <span class="pl-k">class</span> <span class="pl-en">WebSecurityConfig</span> <span class="pl-k">extends</span> <span class="pl-e">BaseWebSecurityConfig</span> {<span class="pl-c1">...</span>}</pre></div>
+</div>
+</div>
+<div>
+<p>See <a href="https://github.com/oasp/oasp4j/blob/develop/samples/core/src/main/java/io/oasp/gastronomy/restaurant/general/service/impl/config/WebSecurityConfig.java">WebSecurityConfig</a>.</p>
+</div>
+</div>
+<div>
+<h3 id="user-content-websocket-configuration">
+<a aria-hidden="true" class="anchor" href="#websocket-configuration" id="user-content-websocket-configuration"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>WebSocket configuration</h3>
+<div>
+<p>A websocket endpoint is configured within the business package as a Spring configuration class. The annotation <code>@EnableWebSocketMessageBroker</code> makes Spring Boot registering this endpoint.</p>
+</div>
+<div>
+<div>
+<div class="highlight highlight-source-java"><pre><span class="pl-k">package</span> <span class="pl-smi">io.oasp.gastronomy.restaurant.salesmanagement.websocket.config</span>;
+<span class="pl-c1">...</span>
+<span class="pl-k">@Configuration</span>
+<span class="pl-k">@EnableWebSocketMessageBroker</span>
+<span class="pl-k">public</span> <span class="pl-k">class</span> <span class="pl-en">WebSocketConfig</span> <span class="pl-k">extends</span> <span class="pl-e">AbstractWebSocketMessageBrokerConfigurer</span> {
+<span class="pl-c1">...</span></pre></div>
+</div>
+</div>
+</div>
+<div>
+<h3 id="user-content-database-configuration">
+<a aria-hidden="true" class="anchor" href="#database-configuration" id="user-content-database-configuration"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Database Configuration</h3>
+<div>
+<p>To choose database of your choice , set spring.profiles.active=XXX in <code>src/main/resources/config/application.properties</code>. Also, one has to set all the active spring profiles in this application.properties and not in any of the other application.properies.</p>
+</div>
+</div>
+</div>
+</div>
+<div>
+<h2 id="user-content-externalized-configuration">
+<a aria-hidden="true" class="anchor" href="#externalized-configuration" id="user-content-externalized-configuration"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Externalized Configuration</h2>
+<div>
+<div>
+<p>Externalized configuration is a configuration that is provided separately to a deployment package and can be maintained undisturbed by redeployments.</p>
+</div>
+<div>
+<h3 id="user-content-environment-configuration">
+<a aria-hidden="true" class="anchor" href="#environment-configuration" id="user-content-environment-configuration"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Environment Configuration</h3>
+<div>
+<p>The environment configuration contains configuration parameters (typically port numbers, host names, passwords, logins, timeouts, certificates, etc.) specific for the different environments. These are under the control of the operators responsible for the application.</p>
+</div>
+<div>
+<p>The environment configuration is maintained in <code>application.properties</code> files, defining various properties (see <a href="https://docs.spring.io/spring-boot/docs/current/reference/html/common-application-properties.html" rel="nofollow">common application properties</a> for a list of properties defined by the spring framework).
+These properties are explained in the corresponding configuration sections of the guides for each topic:</p>
+</div>
+<div>
+<ul>
+<li>
+<p><a href="guide-dataaccess-layer#database-system-and-access">persistence configuration</a></p>
+</li>
+<li>
+<p><a href="guide-service-layer#jax-rs-configuration">service configuration</a></p>
+</li>
+<li>
+<p><a href="guide-logging#configuration">logging guide</a></p>
+</li>
+</ul>
+</div>
+<div>
+<p>For a general understanding how spring-boot is loading and boostrapping your <code>application.properties</code> see <a href="https://docs.spring.io/spring-boot/docs/current/reference/html/boot-features-external-config.html" rel="nofollow">spring-boot external configuration</a>.
+The following properties files are used in every OASP application:</p>
+</div>
+<div>
+<ul>
+<li>
+<p><code>src/main/resources/application.properties</code> providing a default configuration - bundled and deployed with the application package. It further acts as a template to derive a tailored minimal environment-specific configuration.</p>
+</li>
+<li>
+<p><code>src/main/resources/config/application.properties</code> providing additional properties only used at development time (for all local deployment scenarios). This property file is excluded from all packaging.</p>
+</li>
+<li>
+<p><code>src/test/resources/config/application.properties</code> providing additional properties only used for testing (JUnits based on <a href="guide-testing">spring test</a>).</p>
+</li>
+</ul>
+</div>
+<div>
+<p>For other environments where the software gets deployed such as <code>test</code>, <code>acceptance</code> and <code>production</code> you need to provide a tailored copy of <code>application.properties</code>. The location depends on the deployment strategy:</p>
+</div>
+<div>
+<ul>
+<li>
+<p>standalone runnable Spring Boot App using embedded tomcat: <code>config/application.properties</code> under the installation directory of the spring boot application.</p>
+</li>
+<li>
+<p>dedicated tomcat (one tomcat per app): <code>$CATALINA_BASE/lib/config/application.properties</code></p>
+</li>
+<li>
+<p>tomcat serving a number of apps (requires expanding the wars): <code>$CATALINA_BASE/webapps/&lt;app&gt;/WEB-INF/classes/config</code></p>
+</li>
+</ul>
+</div>
+<div>
+<p>In this <code>application.properties</code> you only define the minimum properties that are environment specific and inherit everything else from the bundled <code>src/main/resources/application.properties</code>. In any case, make very sure that the classloader will find the file.</p>
+</div>
+<div>
+<p>Make sure your properties are thoroughly documented by providing a comment to each property. This inline documentation is most valuable for your operating department.</p>
+</div>
+</div>
+<div>
+<h3 id="user-content-business-configuration">
+<a aria-hidden="true" class="anchor" href="#business-configuration" id="user-content-business-configuration"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Business Configuration</h3>
+<div>
+<p>The business configuration contains all business configuration values of the application, which can be edited by administrators through the GUI. The business configuration values are stored in the database in key/value pairs.</p>
+</div>
+<div>
+<p>The database table <code>business_configuration</code> has the following columns:</p>
+</div>
+<div>
+<ul>
+<li>
+<p>ID</p>
+</li>
+<li>
+<p>Property name</p>
+</li>
+<li>
+<p>Property type (Boolean, Integer, String)</p>
+</li>
+<li>
+<p>Property value</p>
+</li>
+<li>
+<p>Description</p>
+</li>
+</ul>
+</div>
+<div>
+<p>According to the entries in this table, the administrative GUI shows a generic form to change business configuration. The hierachy of the properties determines the place in the GUI, so the GUI bundles properties from the same hierarchy level and name. Boolean values are shown as checkboxes, integer and string values as text fields. The properties are read and saved in a typed form, an error is raised if you try to save a string in an integer property for example.</p>
+</div>
+<div>
+<p>We recommend the following base layout for the hierarchical business configuration:</p>
+</div>
+<div>
+<p><code>component.[subcomponent].[subcomponent].propertyname</code></p>
+</div>
+</div>
+</div>
+</div>
+        </div>
+
+        <div class="wiki-footer gollum-markdown-content boxed-group" id="wiki-footer">
+          <div class="boxed-group-inner wiki-auxiliary-content markdown-body">
+            <p><a href="http://creativecommons.org/licenses/by-nd/4.0/" rel="nofollow"><img alt="Creative Commons License Agreement" data-canonical-src="http://i.creativecommons.org/l/by-nd/4.0/88x31.png" src="https://camo.githubusercontent.com/171d004f9ccb9199e35ac8ec3d99ede916037a9f/687474703a2f2f692e6372656174697665636f6d6d6f6e732e6f72672f6c2f62792d6e642f342e302f38387833312e706e67"/></a><br/><span>This documentation</span> is licensed under the <a href="http://creativecommons.org/licenses/by-nd/4.0/" rel="nofollow">Creative Commons License (Attribution-NoDerivatives 4.0 International)</a>.</p>
+
+          </div>
+        </div>
+    </div>]

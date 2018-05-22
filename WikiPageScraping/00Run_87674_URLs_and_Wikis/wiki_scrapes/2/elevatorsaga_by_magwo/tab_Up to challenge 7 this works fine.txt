@@ -1,0 +1,212 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <pre><code>{   
+    init: function(elevators, floors)  // hook up events
+    {
+        // these are the global wish lists that idle elevators choose from (key are floor numbers, values are number of people): 
+        var wishListUp = {}, wishListDown = {}; 
+
+        for (var i = 0, l = elevators.length; i &lt; l; i++)
+        {
+            var elevator = elevators[i];
+            // API: goToFloor(n) [enqueues], stop() [clears queue], currentFloor(), 
+            //      goingUpIndicator([set]), goingDownIndicator([set]), loadFactor() [0..1], 
+            //      destinationQueue[], checkDestinationQueue() [after manual update]
+
+            elevator.on("idle", function()  // elevator destination queue finished
+            {
+                processWishList();
+            }); 
+
+            elevator.on("floor_button_pressed", function(floorNum)  // passenger indicates where to go
+            {
+                if (this.destinationQueue.filter(function (d) { return d == floorNum; }).length == 0)  // if not already enqueued
+                    this.goToFloor(floorNum);  // enqueue
+                // note: passengers coming first need to be delivered first (or at least at all)
+                //       however, the elevator will check by passing, whether one destination
+                //       can be approached before the others since it comes on the way. 
+            }); 
+
+            elevator.on("passing_floor", function(floorNum, direction/*"up"/"down"*/)  // if not in destination queue
+            {
+                updateIndicators(this);  // indicate next destination from here
+                // we stop here if the queue contains this destination, 
+                // or if a passenger on the global wish list want to go in our direction. 
+                // we can only hope that people check where the elevator is going. 
+                if (this.destinationQueue.filter(function(d) { return d == floorNum; }).length &gt; 0)
+                {
+                    this.destinationQueue = this.destinationQueue.filter(function(d) { return d != floorNum; });  // remove from later
+                    this.destinationQueue.unshift(floorNum);  // add as immediate next destination
+                    this.checkDestinationQueue();  // announce modification
+                }
+                else if (this.loadFactor() &lt; 1.0)  // if there is some space left
+                {
+                    switch (getDirection(this))
+                    {
+                        case 1:  // going up
+                            if (wishListUp[floorNum])  // are people waiting to go up from here?
+                            {
+                                //if ((1.0 - this.loadFactor()) * 10.0 - wishListUp[floorNum] &gt; 0)  // assume capacity for 10 people with regular weight
+                                //    delete wishListUp[floorNum];  // mark as visited
+                                this.destinationQueue.unshift(floorNum);  // add as immediate next destination
+                                this.checkDestinationQueue();  // announce modification
+                            }
+                            break;
+                        case -1: // going down
+                            if (wishListDown[floorNum])  // are people waiting to go down from here?
+                            {
+                                //if ((1.0 - this.loadFactor()) * 10.0 - wishListDown[floorNum] &gt; 0)  // assume capacity for 10 people with regular weight
+                                //    delete wishListDown[floorNum];  // mark as visited
+                                this.destinationQueue.unshift(floorNum);  // add as immediate next destination
+                                this.checkDestinationQueue();  // announce modification
+                            }
+                            break;
+                        case 0:  // final destination
+                        default: 
+                            break; 
+                    }
+                }
+            }); 
+
+            elevator.on("stopped_at_floor", function(floorNum)  // one destination reached
+            {
+                processWishList(); 
+                updateIndicators(this);  // next direction
+            });
+        }
+
+        for (var i = 0, l = floors.length; i &lt; l; i++)
+        {
+            var floor = floors[i];
+            // API: floorNum()
+
+            floor.on("up_button_pressed", function()  // somebody wants to go up from a certain floor
+            {
+                // elevators are choosing their next best destination, 
+                // we just enqueue this into the global wish list queue: 
+                var f = this.floorNum(); 
+                if (wishListUp[f])
+                    wishListUp[f]++; 
+                else
+                    wishListUp[f] = 1;
+                processWishList(); 
+            }); 
+
+            floor.on("down_button_pressed", function()  // somebody wants to go down from a certain floor
+            {
+                // elevators are choosing their next best destination, 
+                // we just enqueue this into the global wish list queue: 
+                var f = this.floorNum();
+                if (wishListDown[f])
+                    wishListDown[f]++;
+                else
+                    wishListDown[f] = 1;
+                processWishList();
+            });
+        }
+
+
+        function processWishList()  // give idle elevators a new destination
+        {
+            for (var i = 0, l = elevators.length; i &lt; l; i++)  // idle
+            {
+                var elevator = elevators[i]; 
+                if (elevator.destinationQueue.length == 0)
+                {
+                    var next = chooseFloor(elevator.currentFloor(), true);  // find closest wish
+                    if (elevator.currentFloor() != next)
+                        elevator.goToFloor(next); 
+                }
+            }
+        }
+
+        function getDirection(elevator)
+        {
+            if (elevator.destinationQueue.length == 0)
+                return 0;  // nowhere
+            else if (elevator.currentFloor() &lt; elevator.destinationQueue[0])
+                return 1;  // up
+            else
+                return -1;  // down
+        }
+
+        function chooseFloor(currentFloor, dequeue)
+        {
+            // choose next destination from the global wish lists for up and down, 
+            // depending on a) closest distance and b) number of waiting passengers: 
+            var wishList = {};  // joined up and down lists with passenger counts
+            var floors = [];  // array of distinct floor numbers
+            for (var i in wishListUp)
+            {
+                wishList[i] = wishListUp[i]; 
+                floors.push(i); 
+            }
+            for (var i in wishListDown)
+                if (wishList[i])
+                    wishList[i] += wishListDown[i];
+                else
+                {
+                    wishList[i] = wishListDown[i];
+                    floors.push(i); 
+                }
+            floors.sort(function(a, b)
+                { 
+                    var res = Math.abs(currentFloor - a) - Math.abs(currentFloor - b);  // by closeness asc
+                    if (res == 0)
+                        res = wishList[b] - wishList[a];  // by passengers waiting desc
+                    return res; 
+                }); 
+            if (floors.length == 0)
+                return 0;  // nothing to do, go back to base
+            var next = floors[0];
+            if (dequeue)
+            {
+                if (wishListUp[next])
+                    delete wishListUp[next]; 
+                if (wishListDown[next])
+                    delete wishListDown[next];
+            }
+            return next; 
+        }
+
+        function updateIndicators(elevator)
+        {
+return;  // there seems to be a bug if announcing, people do not react ..
+            switch (getDirection(elevator))
+            {
+                case 1:  // up
+                    if (!elevator.goingUpIndicator())
+                        elevator.goingUpIndicator(true);
+                    if (elevator.goingDownIndicator())
+                        elevator.goingDownIndicator(false);
+                    break; 
+
+                case -1:  // down
+                    if (elevator.goingUpIndicator())
+                        elevator.goingUpIndicator(false);
+                    if (!elevator.goingDownIndicator())
+                        elevator.goingDownIndicator(true);
+                    break; 
+
+                case 0:  // nowhere
+                default: 
+                    if (elevator.goingUpIndicator())
+                        elevator.goingUpIndicator(false);
+                    if (elevator.goingDownIndicator())
+                        elevator.goingDownIndicator(false);
+                    break; 
+            }
+        }
+    },
+
+    update: function(time, elevators, floors)  // loop during operation, called each frame
+    {
+    }, 
+
+    vendor: 'frevd'
+}
+</code></pre>
+
+        </div>
+
+    </div>]

@@ -1,0 +1,96 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <h1>
+<a aria-hidden="true" class="anchor" href="#how-to-cross-compile-nodejs-for-openwrt" id="user-content-how-to-cross-compile-nodejs-for-openwrt"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>How to cross compile Nodejs for OpenWRT</h1>
+<p>In this guide, we will explain how to compile Nodejs for any cpu-architecture supported.</p>
+<p>We will use the <strong>OpenWRT Toolchain</strong>/<strong>RPI Toolchain</strong>. Before continuing, I recommend reading this useful <a href="https://github.com/netbeast-co/router/wiki/Cross-compile-test-application">guide</a> where that tool is introduced.</p>
+<ul>
+<li><a href="#pre">Prerequisites</a></li>
+<li><a href="#cc">Cross-compiling</a></li>
+<li><a href="#conf">Configuration file</a></li>
+<li><a href="#testing">Testing</a></li>
+</ul>
+<hr/>
+<a name="user-content-pre">
+## Prerequisites
+</a>
+<p><strong>Option 1</strong>: You should have downloaded and compiled the <strong>OpenWRT Toolchain</strong> according to your cpu-architecture.</p>
+<p><strong>Option 2</strong>: You should have downloaded the <strong>RPI Toolchain</strong> (only raspberry pi architectures)</p>
+<hr/>
+<a name="user-content-cc">
+## Cross-compiling
+</a>
+<p>Firstly, We need to download node source files.</p>
+<p><code>git clone https://github.com/nodejs/node</code></p>
+<p>A folder named "node" will be created.</p>
+<p><code>cd node</code></p>
+<p>Now, we need to define some global variables. This is the most important step.</p>
+<p><strong>Option 1: OpenWRT Toolchain:</strong></p>
+<pre><code>HOMEPATH="/home/username/openwrt/trunk"
+#These depend on your arch. Look it up on your build folder.
+ARCH="mips-openwrt-linux-uclibc"
+TARCH="mips_34kc_gcc-4.8-linaro_uClibc-0.9.33.2"
+
+export AR=${HOMEPATH}/staging_dir/toolchain-${TARCH}/bin/${ARCH}-ar
+export CC=${HOMEPATH}/staging_dir/toolchain-${TARCH}/bin/${ARCH}-gcc
+export CXX=${HOMEPATH}/staging_dir/toolchain-${TARCH}/bin/${ARCH}-g++
+export LINK=${HOMEPATH}/staging_dir/toolchain-${TARCH}/bin/${ARCH}-g++
+export RANLIB=${HOMEPATH}/staging_dir/toolchain-${TARCH}/bin/${ARCH}-ranlib
+export STAGING_DIR=${HOMEPATH}/staging_dir
+export LIBPATH=${HOMEPATH}/staging_dir/toolchain-${TARCH}/lib
+export LDFLAGS='-Wl,-rpath-link '${LIBPATH}
+</code></pre>
+<p><strong>Option 2: RPI Toolchain</strong></p>
+<pre><code>export AR=tools/arm-bcm2708/gcc-linaro-arm-linux-gnuebihf-raspbian/bin/arm-linux-gnueabihf-ar
+export CC =tools/arm-bcm2708/gcc-linaro-arm-linux-gnuebihf-raspbian/bin/arm-linux-gnueabihf-gcc
+export CXX =tools/arm-bcm2708/gcc-linaro-arm-linux-gnuebihf-raspbian/bin/arm-linux-gnueabihf-g++
+export LINK =tools/arm-bcm2708/gcc-linaro-arm-linux-gnuebihf-raspbian/bin/arm-linux-gnueabihf-g++
+</code></pre>
+<a name="user-content-conf">
+### Configuration file
+</a>
+<p><strong>Option 1: OpenWRT Toolchain:</strong></p>
+<pre><code>./configure --without-snapshot --without-npm 
+</code></pre>
+<p><strong>Option 2: RPI Toolchain</strong></p>
+<pre><code>./configure --without-snapshot --without-npm --dest-cpu=YOUR_ARCHITECTURE --dest-os=YOUR_OPERATIVE_SYSTEM --fully-static
+</code></pre>
+<ul>
+<li>Compile</li>
+</ul>
+<pre><code>make
+</code></pre>
+<ul>
+<li>If all went fine, you will get your compiled version of nodejs in node/out/Release/node</li>
+</ul>
+<a name="user-content-testing">
+## Testing
+</a>
+<p>Copy node file to your OpenWRT device and execute</p>
+<pre><code>./node
+console.log("Hello Netbeast Wolrd")
+</code></pre>
+<p>You will see "Hello Netbeast World" on the terminal.</p>
+<p>You have cross compiled NodeJS successfully.</p>
+
+        </div>
+
+        <div class="wiki-footer gollum-markdown-content boxed-group" id="wiki-footer">
+          <div class="boxed-group-inner wiki-auxiliary-content markdown-body">
+            <p># <code>warning</code>: now our docs are being published in our gitbook and available on our website. Visit <a href="http://docs.netbeast.co/" rel="nofollow">http://docs.netbeast.co/</a></p>
+<h1>
+<a aria-hidden="true" class="anchor" href="#contact" id="user-content-contact"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Contact</h1>
+<ul>
+<li>Visit our site <a href="https://netbeast.co" rel="nofollow">https://netbeast.co</a>
+</li>
+<li>Mail us: staff [at] netbeast.co</li>
+<li>Report a bug or enter discussion at <a href="https://github.com/netbeast-co/docs/issues">issues</a>
+</li>
+<li>Other resources: <a href="https://github.com/netbeast-co/dashboard">Dashboard</a>, Netbeast <a href="https://github.com/netbeast-co/API">API</a>
+</li>
+</ul>
+<p><a href="https://gitter.im/netbeast-co/xway?utm_source=badge&amp;utm_medium=badge&amp;utm_campaign=pr-badge" rel="nofollow"><img alt="Gitter" data-canonical-src="https://badges.gitter.im/Join%20Chat.svg" src="https://camo.githubusercontent.com/da2edb525cde1455a622c58c0effc3a90b9a181c/68747470733a2f2f6261646765732e6769747465722e696d2f4a6f696e253230436861742e737667"/></a></p>
+
+          </div>
+        </div>
+    </div>]

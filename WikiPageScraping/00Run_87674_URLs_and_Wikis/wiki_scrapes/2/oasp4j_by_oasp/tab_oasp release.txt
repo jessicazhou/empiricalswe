@@ -1,0 +1,424 @@
+[<div class="wiki-body gollum-asciidoc-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <div>
+<div>Table of Contents</div>
+<ul>
+<li>
+<a href="#creating-a-release">Creating a Release</a>
+<ul>
+<li>
+<a href="#releasing-the-code">Releasing the code</a>
+<ul>
+<li><a href="#configure-ossrh">Configure OSSRH</a></li>
+<li><a href="#configure-pgp">Configure PGP</a></li>
+<li><a href="#deploy-to-ossrh">Deploy to OSSRH</a></li>
+</ul>
+</li>
+<li><a href="#releasing-the-documentation">Releasing the documentation</a></li>
+<li><a href="#finalize-the-release">Finalize the Release</a></li>
+</ul>
+</li>
+</ul>
+</div>
+<h1 id="user-content-creating-a-release">
+<a aria-hidden="true" class="anchor" href="#creating-a-release" id="user-content-creating-a-release"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Creating a Release</h1>
+<div>
+<p>This page documents how to create and publish a release of OASP4J.</p>
+</div>
+<div>
+<p>For each release there is a <a href="https://github.com/oasp/oasp4j/milestones">milestone</a> that contains an issue for creating the release itself (what is referred to as &lt;issue&gt;).</p>
+</div>
+<div>
+<h2 id="user-content-releasing-the-code">
+<a aria-hidden="true" class="anchor" href="#releasing-the-code" id="user-content-releasing-the-code"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Releasing the code</h2>
+<div>
+<div>
+<p>To release the code follow these steps.</p>
+</div>
+<div>
+<ul>
+<li>
+<p>Create a clean clone of the repository:</p>
+<div>
+<div>
+<div class="highlight highlight-source-shell"><pre>git clone https://github.com/oasp/oasp4j.git</pre></div>
+</div>
+</div>
+</li>
+<li>
+<p>Ensure your repository is up-to-date:</p>
+<div>
+<div>
+<div class="highlight highlight-source-shell"><pre>git pull</pre></div>
+</div>
+</div>
+</li>
+<li>
+<p>Switch (from develop) to the master branch:</p>
+<div>
+<div>
+<div class="highlight highlight-source-shell"><pre>git checkout master</pre></div>
+</div>
+</div>
+</li>
+<li>
+<p>Merge the develop branch into master:</p>
+<div>
+<div>
+<div class="highlight highlight-source-shell"><pre>git merge develop</pre></div>
+</div>
+</div>
+</li>
+<li>
+<p>Ensure that the result is what you want to release (mvn clean install).</p>
+</li>
+<li>
+<p>Bump the release version by removing the -SNAPSHOT from oasp4j.version property in top-level pom.xml.</p>
+</li>
+<li>
+<p>Create an annotated tag for your release:</p>
+<div>
+<div>
+<div class="highlight highlight-source-shell"><pre>git tag -a release/x.y.z -m <span class="pl-s"><span class="pl-pds">"</span>#&lt;issue&gt;: tagged x.y.z<span class="pl-pds">"</span></span></pre></div>
+</div>
+</div>
+<div>
+<p>e.g For release 2.5.0 the command would look like</p>
+</div>
+<div>
+<div>
+<div class="highlight highlight-source-shell"><pre>git tag -a release/2.5.0 -m <span class="pl-s"><span class="pl-pds">"</span>#618: tagged 2.5.0<span class="pl-pds">"</span></span></pre></div>
+</div>
+</div>
+<div>
+<p>where #618 is the issue number created for release itself under release milestone.
+You can confirm if the tag is created by listing out the tags with the following command
+
+</p>
+<pre lang=""><code>git tag</code></pre>
+
+</div>
+</li>
+</ul>
+</div>
+<div>
+<h3 id="user-content-configure-ossrh">
+<a aria-hidden="true" class="anchor" href="#configure-ossrh" id="user-content-configure-ossrh"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Configure OSSRH</h3>
+<div>
+<p>For publishing artifacts to OSSRH, we need an OSSRH account with necessary rights for publishing and managing staging repositories. And configure this account in Devon distribution to create connection and deploy to OSSRH.</p>
+</div>
+<div>
+<ul>
+<li>
+<p>If you do not already have an account on OSSRH, create an account on the link below
+<a href="https://issues.sonatype.org/secure/Signup!default.jspa" rel="nofollow">https://issues.sonatype.org/secure/Signup!default.jspa</a></p>
+</li>
+<li>
+<p>You need manager access to deploy artifacts to OSSRH. For same contact OASP administrators for OSSRH.</p>
+</li>
+<li>
+<p>Create a new batch file at the root of devonfw distribution with name "variables-customized.bat". Add content below to the file and save. This will override default credentials for OSSRH.
+
+</p>
+<pre lang=""><code>[source,bash]
+@echo off
+rem *******************************************************************************
+rem Customized OSSRH User credentials.
+rem *******************************************************************************
+set OSSRH_USER=&lt;ossrh_username&gt;
+set OSSRH_PASSWD=&lt;ossrh_password&gt;</code></pre>
+
+Here ossrh_username &amp; ossrh_password are the credentials used to login into OSSRH and should have rights to publish artifacts to OSSRH OASP repository.
+</li>
+<li>
+<p>Open file &lt;devon_distribution_root&gt; &gt; conf &gt; .m2 &gt; setting.xml and add a new server with following details
+
+</p>
+<div class="highlight highlight-text-xml"><pre>&lt;<span class="pl-ent">server</span>&gt;
+   &lt;<span class="pl-ent">id</span>&gt;ossrh&lt;/<span class="pl-ent">id</span>&gt;
+   &lt;<span class="pl-ent">username</span>&gt;${OSSRH_USER}&lt;/<span class="pl-ent">username</span>&gt;
+   &lt;<span class="pl-ent">password</span>&gt;${OSSRH_PASSWD}&lt;/<span class="pl-ent">password</span>&gt;
+&lt;/<span class="pl-ent">server</span>&gt;</pre></div>
+
+Here OSSRH_USER &amp; OSSRH_PASSWD are OSSRH credentials configured above in file "variables-customized.bat". Id "ossrh" here points to the OSSRH repository for snaphost and release declared in OASP4J/pom.xml under "&lt;distributionManagement&gt;" section as shown below. "ossrh" is the default Id but please check and ascertain the Ids match.
+</li>
+</ul>
+</div>
+<div>
+<div>
+<a href="images/release/oasp4j_dist_mgmt.png"><img alt="oasp4j dist mgmt" src="images/release/oasp4j_dist_mgmt.png" width="650"/></a>
+</div>
+</div>
+</div>
+<div>
+<h3 id="user-content-configure-pgp">
+<a aria-hidden="true" class="anchor" href="#configure-pgp" id="user-content-configure-pgp"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Configure PGP</h3>
+<div>
+<p>Artifacts should be PGP signed before they can be deployed to OSSRH. Artifacts can be signed either by using command line tool GnuPG or GUI based tool Gpg4win Kleopetra(preferred). Follow the steps below to sign artifacts using either of the two tools.</p>
+</div>
+<div>
+<ul>
+<li>
+<p>Download tools
+GnuPg - <a href="https://www.gnupg.org/download/" rel="nofollow">https://www.gnupg.org/download/</a>
+gpg4win - <a href="https://www.gpg4win.org/download.html" rel="nofollow">https://www.gpg4win.org/download.html</a></p>
+</li>
+<li>
+<p>Installation
+Installation is self explanatory for GnuPG and gpg4win. To verify installation of GnuPg, open windows command line and run "gpg --version or gpg2 --version"</p>
+</li>
+<li>
+<p>Generate PGP key pair for signing artifacts.</p>
+</li>
+</ul>
+</div>
+<div>
+<table>
+<tbody><tr>
+<td>
+<div>Note</div>
+</td>
+<td>
+<div>
+<p>Remember the passphrase set for PGP keys as it will be used later for authentication during signing of artifacts by maven.</p>
+</div>
+</td>
+</tr>
+</tbody></table>
+</div>
+<div>
+<p>Using GnuPg follow either of the link below</p>
+</div>
+<div>
+<p><a href="http://central.sonatype.org/pages/working-with-pgp-signatures.html#generating-a-key-pair" rel="nofollow">http://central.sonatype.org/pages/working-with-pgp-signatures.html#generating-a-key-pair</a></p>
+</div>
+<div>
+<p><a href="https://www.youtube.com/watch?v=DE3FVty3NgE&amp;feature=youtu.be" rel="nofollow">https://www.youtube.com/watch?v=DE3FVty3NgE&amp;feature=youtu.be</a></p>
+</div>
+<div>
+<p>Using Kleopetra follow link below</p>
+</div>
+<div>
+<p><a href="https://www.deepdotweb.com/2015/02/21/pgp-tutorial-for-windows-kleopatra-gpg4win/" rel="nofollow">https://www.deepdotweb.com/2015/02/21/pgp-tutorial-for-windows-kleopatra-gpg4win/</a></p>
+</div>
+<div>
+<p>Exporting PGP key to public key-server</p>
+</div>
+<div>
+<p>Using GnuPg - <a href="http://central.sonatype.org/pages/working-with-pgp-signatures.html#distributing-your-public-key" rel="nofollow">http://central.sonatype.org/pages/working-with-pgp-signatures.html#distributing-your-public-key</a></p>
+</div>
+<div>
+<p>Using Kleopetra, click on the certificate entry you want to publish to OpenPGP certificate servers and select File &gt; Publish on Server as shown below. These instructions are as per Kleopatra 3.0.1-gpg4win-3.0.2, for latest versions there might be some variation.</p>
+</div>
+<div>
+<div>
+<a href="images/release/pgp_key_publish.png"><img alt="pgp key publish" src="images/release/pgp_key_publish.png" width="450"/></a>
+</div>
+</div>
+</div>
+<div>
+<h3 id="user-content-deploy-to-ossrh">
+<a aria-hidden="true" class="anchor" href="#deploy-to-ossrh" id="user-content-deploy-to-ossrh"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Deploy to OSSRH</h3>
+<div>
+<ul>
+<li>
+<p>Go to the root of OASP4J project and run following command. Make sure there are no spaces between comma separated profiles.</p>
+<div>
+<div>
+<div class="highlight highlight-source-shell"><pre>mvn clean deploy -P deploy,<span class="pl-k">!</span>all</pre></div>
+</div>
+</div>
+</li>
+<li>
+<p>A pop will appear asking for passphrase for PGP key. Enter the passphrase and press "OK".</p>
+</li>
+</ul>
+</div>
+<div>
+<div>
+<a href="images/release/pgpkey_passphrase.png"><img alt="pgpkey passphrase" src="images/release/pgpkey_passphrase.png" width="950"/></a>
+</div>
+</div>
+<div>
+<table>
+<tbody><tr>
+<td>
+<div>Note</div>
+</td>
+<td>
+<div>
+<p>If you face the error below, contact one of the people who have access to the repository for access rights.</p>
+</div>
+</td>
+</tr>
+</tbody></table>
+</div>
+<div>
+<div>
+<a href="images/release/ossrh_publish_error_forbidden.png"><img alt="ossrh publish error forbidden" src="images/release/ossrh_publish_error_forbidden.png" width="950"/></a>
+</div>
+</div>
+<div>
+<ul>
+<li>
+<p>Open <a href="https://oss.sonatype.org/" rel="nofollow">OSSRH</a>, login and open staging repositories.</p>
+</li>
+<li>
+<p>Find your deployment repository as iooasp-NNNN and check its Content.</p>
+</li>
+<li>
+<p>Then click on Close to close the repository and wait a minute.</p>
+</li>
+<li>
+<p>Refresh the repository and copy the URL.</p>
+</li>
+<li>
+<p>Create a vote for the release and paste the URL of the staging repository.</p>
+</li>
+<li>
+<p>After the vote has passed with success go back to OSSRH and and click on Release to publish the release and stage to maven central.</p>
+</li>
+<li>
+<p>Switch back to the develop branch and merge from master:</p>
+<div>
+<div>
+<div class="highlight highlight-source-shell"><pre>git checkout develop
+git merge master</pre></div>
+</div>
+</div>
+</li>
+<li>
+<p>Edit the top-level pom.xml and change oasp4j.version property to the next planned release version including the -SNAPSHOT suffix.</p>
+</li>
+<li>
+<p>Commit and push the changes:</p>
+<div>
+<div>
+<div class="highlight highlight-source-shell"><pre>git commit -m <span class="pl-s"><span class="pl-pds">"</span>#&lt;issue&gt;: open next snapshot version<span class="pl-pds">"</span></span>
+git push</pre></div>
+</div>
+</div>
+</li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+<div>
+<h2 id="user-content-releasing-the-documentation">
+<a aria-hidden="true" class="anchor" href="#releasing-the-documentation" id="user-content-releasing-the-documentation"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Releasing the documentation</h2>
+<div>
+<div>
+<ul>
+<li>
+<p>Initially and only once you have to create a local checkout of the github pages and of the wiki repository connected to the oasp-forge wiki:</p>
+<div>
+<div>
+<div class="highlight highlight-source-shell"><pre>git clone https://github.com/oasp/oasp.github.io.git
+git clone https://github.com/oasp/oasp4j.wiki.git
+<span class="pl-c1">cd</span> oasp4j.wiki
+git remote add forge https://github.com/oasp-forge/oasp4j-wiki.wiki.git</pre></div>
+</div>
+</div>
+</li>
+<li>
+<p>Ensure that in the forge wiki the version is correct on the <a href="OASP4J">OASP4J</a> page.</p>
+</li>
+<li>
+<p>Pull from origin as well as from forge:</p>
+<div>
+<div>
+<div class="highlight highlight-source-shell"><pre>git pull origin
+git pull forge</pre></div>
+</div>
+</div>
+</li>
+<li>
+<p>Carefully review all changes that have been done on the forge wiki. Potentially reject changes if necessary.</p>
+</li>
+<li>
+<p>When you are complete push your changes:</p>
+<div>
+<div>
+<div class="highlight highlight-source-shell"><pre>git push origin</pre></div>
+</div>
+</div>
+</li>
+<li>
+<p>In case you have rejected changes or merged content, you also need to integrate these changes back into the forge wiki.</p>
+</li>
+<li>
+<p>Build the documentation PDF as described by <a href="https://github.com/oasp/oasp-docgen/wiki#usage">docgen</a> or fetch it from the automtic jenkins build job (report and pdf located at <a href="http://oasp-ci.cloudapp.net/jenkins/job/oasp4j-wiki/" rel="nofollow">http://oasp-ci.cloudapp.net/jenkins/job/oasp4j-wiki/</a> ) which runs after every change of wiki.</p>
+</li>
+<li>
+<p>Create a new folder for your version in your checkout of <a href="https://github.com/oasp/oasp.github.io/tree/master/oasp4j">oasp.github.io/oasp4j</a> (as x.y.z).</p>
+</li>
+<li>
+<p>Copy the just generated OASP4J.pdf into the new release version folder.</p>
+</li>
+<li>
+<p>Copy the index.html from the previous release to the new release version folder.</p>
+</li>
+<li>
+<p>Edit the new copy of index.html and replace all occurrences of the version to the new release as well as the release date.</p>
+</li>
+<li>
+<p>Generate the maven site from the oasp4j release checkout (see <a href="#releasing-the-core">code release</a>):</p>
+<div>
+<div>
+<div class="highlight highlight-source-shell"><pre>mvn site
+mvn site:deploy</pre></div>
+</div>
+</div>
+</li>
+<li>
+<p>Review that the maven site is intact and copy it to the new release version folder (from oasp4j/target/oasp4j/maven to oasp.github.io/oasp4j/x.y.z/maven).</p>
+</li>
+<li>
+<p>Update the link in the oasp4j/index.html to the latest stable documentation.</p>
+</li>
+<li>
+<p>Add, commit and push the new release version folder.</p>
+<div>
+<div>
+<div class="highlight highlight-source-shell"><pre>git add x.y.z
+git commit -m <span class="pl-s"><span class="pl-pds">"</span>oasp/oasp4j#&lt;issue&gt;: released documentation<span class="pl-pds">"</span></span>
+git push</pre></div>
+</div>
+</div>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div>
+<h2 id="user-content-finalize-the-release">
+<a aria-hidden="true" class="anchor" href="#finalize-the-release" id="user-content-finalize-the-release"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Finalize the Release</h2>
+<div>
+<div>
+<ul>
+<li>
+<p>Close the issue of the release.</p>
+</li>
+<li>
+<p>Close the milestone of the release (if necessary correct the release date).</p>
+</li>
+<li>
+<p>Ensure that the new release is available in maven central.</p>
+</li>
+<li>
+<p>Write an announcement for the new release.</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+        </div>
+
+        <div class="wiki-footer gollum-markdown-content boxed-group" id="wiki-footer">
+          <div class="boxed-group-inner wiki-auxiliary-content markdown-body">
+            <p><a href="http://creativecommons.org/licenses/by-nd/4.0/" rel="nofollow"><img alt="Creative Commons License Agreement" data-canonical-src="http://i.creativecommons.org/l/by-nd/4.0/88x31.png" src="https://camo.githubusercontent.com/171d004f9ccb9199e35ac8ec3d99ede916037a9f/687474703a2f2f692e6372656174697665636f6d6d6f6e732e6f72672f6c2f62792d6e642f342e302f38387833312e706e67"/></a><br/><span>This documentation</span> is licensed under the <a href="http://creativecommons.org/licenses/by-nd/4.0/" rel="nofollow">Creative Commons License (Attribution-NoDerivatives 4.0 International)</a>.</p>
+
+          </div>
+        </div>
+    </div>]

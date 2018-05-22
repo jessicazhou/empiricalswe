@@ -1,0 +1,284 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <h2>
+<a aria-hidden="true" class="anchor" href="#%E7%9B%AE%E5%BD%95" id="user-content-目录"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>目录</h2>
+<ul>
+<li>背景</li>
+<li>名词解释</li>
+<li>设计目标
+<ul>
+<li>实现的功能</li>
+<li>设计的性能指标</li>
+</ul>
+</li>
+<li>系统环境
+<ul>
+<li>假设及与其它系统联系</li>
+<li>相关软件及硬件</li>
+<li>系统限制</li>
+<li>数据规模估计</li>
+</ul>
+</li>
+<li>设计思路&amp;折衷</li>
+<li>系统设计
+<ul>
+<li>基本介绍</li>
+<li>系统架构图及说明</li>
+<li>系统流程图及说明</li>
+<li>与外部系统的接口</li>
+<li>全局性数据结构说明</li>
+<li>bootstrap 简要说明
+<ul>
+<li>bootstrap的功能</li>
+<li>bootstrap与其它模块的接口</li>
+</ul>
+</li>
+<li>enrouter 简要说明
+<ul>
+<li>enrouter 的功能</li>
+<li>enrouter 与其它模块的接口</li>
+</ul>
+</li>
+<li>mvc 简要说明
+<ul>
+<li>mvc 的功能</li>
+<li>mvc 与其它模块的接口</li>
+</ul>
+</li>
+<li>基础模块/库简要说明
+<ul>
+<li>基础模块/库的功能</li>
+<li>基础模块/库与其它模块的接口</li>
+</ul>
+</li>
+<li>基础环境简要说明
+<ul>
+<li>基础环境的功能</li>
+<li>基础环境与其它模块的接口</li>
+</ul>
+</li>
+<li>Lark.js 接入 运维系统平台</li>
+</ul>
+</li>
+<li>风险评估&amp;对其他系统的影响
+<ul>
+<li>已知&amp;可预估的风险</li>
+<li>与其他系统可能的影响</li>
+</ul>
+</li>
+<li>参考资料</li>
+</ul>
+<h2>
+<a aria-hidden="true" class="anchor" href="#%E8%83%8C%E6%99%AF" id="user-content-背景"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>背景</h2>
+<p>Lark 是一个面向大并发大流量互联网服务的工业级Node.js 开发平台，总结了Web, Realtime, Web Push 等业务模式，提供了webserver, MVC分层框架、业务框架、基础库、资源访问层、通用服务等组件，统一业务的逻辑和部署结构，为测试、运维等提供一致的视图。</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#%E5%90%8D%E8%AF%8D%E8%A7%A3%E9%87%8A" id="user-content-名词解释"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>名词解释</h2>
+<p>Lark: 封装了Lark.js框架各模块的包装层模块，目标是使Lark.js框架具有即开即用的功能，用户使用Lark时无需额外编写代码。实现了 ror 的主要功能。
+lark-bootstrap: Lark 初始化框架，包含进程管理，载入配置和环境变量等功能
+lark-enrouten: Lark router + controller 模块
+Lark-MVC: Lark MVC 分层框架
+koa: es6 标准的 node.js webserver, 集成在 Lark 里面
+yeoman: 生成脚手架的工具
+<a href="https://github.com/caolan/async">async</a>: 简化异步请求的库</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#%E8%AE%BE%E8%AE%A1%E7%9B%AE%E6%A0%87" id="user-content-设计目标"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>设计目标</h2>
+<ul>
+<li>高性能。利用node.js的异步非阻塞特性，在大流量高并发时仍然具有低cpu消耗和低内存消耗，设计高并发高流量的服务</li>
+<li>好架构。参考成熟的架构模式，完成一个完整成熟的node.js架构。同时要保持node.js的细节可控性,对开发者不存在黑盒子</li>
+<li>最佳实践。集成线上产品的Node.js开发实践，提高Node.js代码的规范性、易读性和执行效率。</li>
+<li>通用模块。丰富的插件和模块，能满足公司/业界与常用服务交互的需求</li>
+<li>无依赖。不依赖任何系统环境和库，以方便集成进docker类型的虚拟容器。</li>
+</ul>
+<h3>
+<a aria-hidden="true" class="anchor" href="#%E5%AE%9E%E7%8E%B0%E7%9A%84%E5%8A%9F%E8%83%BD" id="user-content-实现的功能"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>实现的功能</h3>
+<ul>
+<li>工业级Node.js架构</li>
+<li>基础模块/库</li>
+<li>基础环境</li>
+<li>与ROR类似的 helper 功能,线上监控，服务部署和实践规范</li>
+</ul>
+<h3>
+<a aria-hidden="true" class="anchor" href="#%E8%AE%BE%E8%AE%A1%E7%9A%84%E6%80%A7%E8%83%BD%E6%8C%87%E6%A0%87" id="user-content-设计的性能指标"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>设计的性能指标</h3>
+<p>假设服务类型为webserver, 64G内存12核机器下一个请求需要获取3个后端server的数据，则QPS需要达到 1000+</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#%E7%B3%BB%E7%BB%9F%E7%8E%AF%E5%A2%83" id="user-content-系统环境"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>系统环境</h2>
+<ul>
+<li>Node.js v0.11.14 +</li>
+<li>NPM v2.1.11 +</li>
+<li>yeoman</li>
+</ul>
+<h3>
+<a aria-hidden="true" class="anchor" href="#%E5%81%87%E8%AE%BE%E5%8F%8A%E4%B8%8E%E5%85%B6%E5%AE%83%E7%B3%BB%E7%BB%9F%E8%81%94%E7%B3%BB" id="user-content-假设及与其它系统联系"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>假设及与其它系统联系</h3>
+<h4>
+<a aria-hidden="true" class="anchor" href="#%E7%9B%B8%E5%85%B3%E8%BD%AF%E4%BB%B6%E5%8F%8A%E7%A1%AC%E4%BB%B6" id="user-content-相关软件及硬件"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>相关软件及硬件</h4>
+<p>默认为12核,64G的线上机器</p>
+<h4>
+<a aria-hidden="true" class="anchor" href="#%E7%B3%BB%E7%BB%9F%E9%99%90%E5%88%B6" id="user-content-系统限制"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>系统限制</h4>
+<p>默认不能获得root权限账户，只能获得受限的work账户</p>
+<h4>
+<a aria-hidden="true" class="anchor" href="#%E6%95%B0%E6%8D%AE%E8%A7%84%E6%A8%A1%E4%BC%B0%E8%AE%A1" id="user-content-数据规模估计"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>数据规模估计</h4>
+<p>10亿级PV</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#%E8%AE%BE%E8%AE%A1%E6%80%9D%E8%B7%AF%E6%8A%98%E8%A1%B7" id="user-content-设计思路折衷"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>设计思路&amp;折衷</h2>
+<p>以 webserver 为例, 采用传统的MVC的设计模式：</p>
+<ul>
+<li>程序启动，进程管理: 读取配置，启动进程，并支持无损重启，debug watch 自动重启等方式。 在 lark-bootstrap 中实现</li>
+<li>Web Server: Web Server 主要处理http请求。本框架采用 koa 库而不是express。采用node.js最新的 es6和generator开发，简化node.js开发难度。</li>
+<li>路由，Controller 管理: 将路由管理和 controller 合在一处, 简化代码编写复杂度。路由负责把url映射到对应的handler。Controller层负责根据请求的参数执行不同的操作，实现MVC 中的C。</li>
+<li>View层：负责页面展现的工作，在此的任务主要是解析模板。</li>
+<li>Model层：负责对数据的操作，例如读取小说数据、写入阅读记录等。</li>
+<li>dao层: 对数据库读写的封装</li>
+<li>其它中间件功能模块：采用中间件的流程控制方式，强制将响应请求的动作分割成若干相互独立的部分。在这种模式下，服务器整个响应流程就如同工厂的流水线，而每一个中间件就如同流水线上的一个加工环节。在顶层只需要从宏观控制工作的流程，而在微观则只需要关心当前工作的上下文和自己的职责即可。
+对于分层的方式。此系统一共分为5层：router + action层、pageServer层、dataServer层和dao层。每一层的一个类目只会与上下层进行交互，避免各模块间关系的复杂化。</li>
+<li>每一层都要有自己明确的职责。</li>
+<li>原则上每一层都只能和自己上一层或者下一层的模块进行交互，这样每层内部各个模块才能保证低耦合度， 避免代码逻辑混乱。
+为了尽可能的提高响应速度，应最大化的使用并行处理。</li>
+</ul>
+<h2>
+<a aria-hidden="true" class="anchor" href="#%E7%B3%BB%E7%BB%9F%E8%AE%BE%E8%AE%A1" id="user-content-系统设计"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>系统设计</h2>
+<h3>
+<a aria-hidden="true" class="anchor" href="#%E5%9F%BA%E6%9C%AC%E4%BB%8B%E7%BB%8D" id="user-content-基本介绍"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>基本介绍</h3>
+<p>Lark 针对不同的业务类型设计了不同的架构。这里以 webserver 为例:</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#%E7%B3%BB%E7%BB%9F%E6%9E%B6%E6%9E%84%E5%9B%BE%E5%8F%8A%E8%AF%B4%E6%98%8E" id="user-content-系统架构图及说明"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>系统架构图及说明</h3>
+<p>以线上服务为例，整体的架构图如下:</p>
+<p>(待补充图片)</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#%E7%B3%BB%E7%BB%9F%E6%B5%81%E7%A8%8B%E5%9B%BE%E5%8F%8A%E8%AF%B4%E6%98%8E" id="user-content-系统流程图及说明"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>系统流程图及说明</h3>
+<p>其中 lark.js 框架的流程图如下:</p>
+<p>(待补充图片)</p>
+<ul>
+<li>Web Server: Web Server 主要处理http请求。本框架采用 koa 库而不是express。采用node.js最新的 es6和generator开发，简化node.js开发难度。</li>
+<li>业务层主要分为5层：
+<ul>
+<li>router层 + action：对url进行解析，参数处理，并分发到对应的controller层模块进行处理。支持根据文件路径解析url, 每一个文件对应一个url的path</li>
+<li>pageServer层：根据调用方的请求，向不同的data层模块请求需要的数据，或者执行相应的动作。一般来说，每一个pageServer层对应一个页面的数据。因此一般来说，一个action层模块对应一个page层模块。</li>
+<li>dataServer层：数据层，负责提供一个数据实体模型对应的数据，例如小说的基本信息（包括书名、作者等）、目录、离线小说数据等。</li>
+<li>dao层：负责与后端交互。一般来说一个dao层模型对应一种类型的后端，或者一张数据库的表。</li>
+</ul>
+</li>
+<li>其它功能通过中间件的形式插入服务中</li>
+</ul>
+<p>在router层和pageServer层，主要执行业务相关的逻辑，无须关心数据方面的具体操作。
+而在dataServer层和dao层，则主要执行数据相关的逻辑，无需关心业务方面的逻辑。</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#lark-%E5%92%8C-%E5%85%B6%E5%AE%83%E6%A1%86%E6%9E%B6%E7%9A%84%E6%AF%94%E8%BE%83" id="user-content-lark-和-其它框架的比较"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Lark 和 其它框架的比较</h3>
+<p>(待补充图片)</p>
+<p>lark.js的其它优点：</p>
+<ul>
+<li>无依赖，更适合 docker 等容器扩容</li>
+<li>异步非阻塞模型，适合高并发大流量的服务</li>
+<li>类似于 ROR 的 helper</li>
+</ul>
+<h3>
+<a aria-hidden="true" class="anchor" href="#%E4%B8%8E%E5%A4%96%E9%83%A8%E7%B3%BB%E7%BB%9F%E7%9A%84%E6%8E%A5%E5%8F%A3" id="user-content-与外部系统的接口"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>与外部系统的接口</h3>
+<p>系统前端可以为Nginx/Lighttp等反向代理服务器，方向代理服务器直接给系统倒流。
+后端可以为服务化的数据，检索等模块，通过restful 或 protobuf rpc等方式交互
+管理进程等可以通过pm2暴露的接口进行管理
+MVC, router 等可以通过配置自定义</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#bootstrap-%E6%A8%A1%E5%9D%97%E7%AE%80%E8%A6%81%E8%AF%B4%E6%98%8E" id="user-content-bootstrap-模块简要说明"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Bootstrap 模块简要说明</h3>
+<p>该模块负责程序启动，进程管理</p>
+<h4>
+<a aria-hidden="true" class="anchor" href="#bootstrap-%E6%A8%A1%E5%9D%97%E7%9A%84%E5%8A%9F%E8%83%BD" id="user-content-bootstrap-模块的功能"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Bootstrap 模块的功能</h4>
+<ol>
+<li>程序启动，并且supervise 进程，挂了自动重启</li>
+<li>进程管理，通过pm2 查看进程状态</li>
+<li>配置读取</li>
+</ol>
+<h4>
+<a aria-hidden="true" class="anchor" href="#bootstrap%E4%B8%8E%E5%85%B6%E5%AE%83%E6%A8%A1%E5%9D%97%E7%9A%84%E6%8E%A5%E5%8F%A3" id="user-content-bootstrap与其它模块的接口"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Bootstrap与其它模块的接口</h4>
+<p>通过传递配置进行通信</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#enrouter-%E6%A8%A1%E5%9D%97%E7%AE%80%E8%A6%81%E8%AF%B4%E6%98%8E" id="user-content-enrouter-模块简要说明"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>enrouter 模块简要说明</h3>
+<p>该模块负责路由以及 部分 controller 功能</p>
+<h4>
+<a aria-hidden="true" class="anchor" href="#enrouter-%E6%A8%A1%E5%9D%97%E7%9A%84%E5%8A%9F%E8%83%BD" id="user-content-enrouter-模块的功能"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>enrouter 模块的功能</h4>
+<ol>
+<li>路由，将请求映射到相应的handler</li>
+<li>controller，根据用户不同的请求参数调用不同的后端模块，返回结果</li>
+</ol>
+<h4>
+<a aria-hidden="true" class="anchor" href="#enrouter%E4%B8%8E%E5%85%B6%E5%AE%83%E6%A8%A1%E5%9D%97%E7%9A%84%E6%8E%A5%E5%8F%A3" id="user-content-enrouter与其它模块的接口"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>enrouter与其它模块的接口</h4>
+<p>通过传递配置进行通信</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#mvc%E6%A8%A1%E5%9D%97%E7%AE%80%E8%A6%81%E8%AF%B4%E6%98%8E" id="user-content-mvc模块简要说明"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>MVC模块简要说明</h3>
+<p>实现 web server 的 mvc 功能</p>
+<h4>
+<a aria-hidden="true" class="anchor" href="#mvc%E6%A8%A1%E5%9D%97%E7%9A%84%E5%8A%9F%E8%83%BD" id="user-content-mvc模块的功能"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>MVC模块的功能</h4>
+<ol>
+<li>
+<p>模块加载：
+该功能主要用于模块的加载，默认会按照 Lark 制定的 MVC 规范去相应的目录加载模块。
+eg:
+var mvc = require('lark-mvc'); //会去指定的 model 目录中require。</p>
+</li>
+<li>
+<p>MVC 封装：
+主要用于 MVC 设计模式的通用逻辑封装。提供通用的 MVC 方法。
+eg:
+this.dataServices.demo.getData();</p>
+</li>
+</ol>
+<h4>
+<a aria-hidden="true" class="anchor" href="#mvc%E4%B8%8E%E5%85%B6%E5%AE%83%E6%A8%A1%E5%9D%97%E7%9A%84%E6%8E%A5%E5%8F%A3" id="user-content-mvc与其它模块的接口"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>MVC与其它模块的接口</h4>
+<p>通过传递配置进行交互
+目前支持 path 参数，能修改 mvc 业务代码存放的位置</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#%E5%85%B6%E5%AE%83%E5%9F%BA%E7%A1%80%E6%A8%A1%E5%9D%97%E5%BA%93%E7%AE%80%E8%A6%81%E8%AF%B4%E6%98%8E" id="user-content-其它基础模块库简要说明"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>其它基础模块/库简要说明</h3>
+<p>基础模块主要用于提供通用的业务逻辑，他们应该独立于 Lark ，可以单独运行。</p>
+<h4>
+<a aria-hidden="true" class="anchor" href="#%E5%9F%BA%E7%A1%80%E6%A8%A1%E5%9D%97%E5%BA%93%E7%9A%84%E5%8A%9F%E8%83%BD" id="user-content-基础模块库的功能"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>基础模块/库的功能</h4>
+<p>目前的基础模块
+conf：用于配置文件的加载、解析、获取、修改等
+log：用于日志的生成
+pm：用于进程监控
+库：  redis mongodb</p>
+<h4>
+<a aria-hidden="true" class="anchor" href="#%E5%9F%BA%E7%A1%80%E6%A8%A1%E5%9D%97%E5%BA%93%E4%B8%8E%E5%85%B6%E5%AE%83%E6%A8%A1%E5%9D%97%E7%9A%84%E6%8E%A5%E5%8F%A3" id="user-content-基础模块库与其它模块的接口"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>基础模块/库与其它模块的接口</h4>
+<p>调用后端数据库或者已有的服务API接口</p>
+<h4>
+<a aria-hidden="true" class="anchor" href="#%E5%9F%BA%E7%A1%80%E7%8E%AF%E5%A2%83%E4%B8%8E%E5%85%B6%E5%AE%83%E6%A8%A1%E5%9D%97%E7%9A%84%E6%8E%A5%E5%8F%A3" id="user-content-基础环境与其它模块的接口"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>基础环境与其它模块的接口</h4>
+<p>通过参数交互</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#lark-%E4%B8%8E-%E8%BF%90%E7%BB%B4%E7%B3%BB%E7%BB%9F%E7%9A%84%E9%9B%86%E6%88%90" id="user-content-lark-与-运维系统的集成"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Lark 与 运维系统的集成</h3>
+<h4>
+<a aria-hidden="true" class="anchor" href="#%E4%B8%8A%E7%BA%BF" id="user-content-上线"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>上线</h4>
+<p>可以用pm2 deploy 上线</p>
+<h4>
+<a aria-hidden="true" class="anchor" href="#%E5%90%AF%E5%81%9C%E9%83%A8%E7%BD%B2" id="user-content-启停部署"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>启停部署</h4>
+<p>支持启停方式 lark start|stop|restart</p>
+<h4>
+<a aria-hidden="true" class="anchor" href="#idc-%E9%85%8D%E7%BD%AE" id="user-content-idc-配置"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>idc 配置</h4>
+<p>按系统指定的方式进行idc配置</p>
+<h4>
+<a aria-hidden="true" class="anchor" href="#%E6%97%A5%E5%BF%97%E4%B8%8B%E8%BD%BD" id="user-content-日志下载"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>日志下载</h4>
+<p>日志默认放/app-path/log 下</p>
+<h4>
+<a aria-hidden="true" class="anchor" href="#%E7%BA%BF%E4%B8%8A%E7%9B%91%E6%8E%A7" id="user-content-线上监控"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>线上监控</h4>
+<p>pm2 提供监控功能</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#%E9%A3%8E%E9%99%A9%E8%AF%84%E4%BC%B0%E5%AF%B9%E5%85%B6%E4%BB%96%E7%B3%BB%E7%BB%9F%E7%9A%84%E5%BD%B1%E5%93%8D" id="user-content-风险评估对其他系统的影响"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>风险评估&amp;对其他系统的影响</h2>
+<ul>
+<li>
+<p>已知&amp;可预估的风险</p>
+<ul>
+<li>日均流量比较高，因此有因数据端不可用而出现雪崩的风险。</li>
+<li>服务端连接的前端和数据端数量均比较多，容易出现沟通不畅的情况，进而引起一系列问题。</li>
+</ul>
+</li>
+<li>
+<p>与其他系统可能的影响</p>
+<ul>
+<li>可能引起下游服务的异常。</li>
+<li>如果是Restful API接口，当服务出现异常时，会引起调用这些服务的其它服务也出现异常。</li>
+</ul>
+</li>
+</ul>
+<h2>
+<a aria-hidden="true" class="anchor" href="#%E5%8F%82%E8%80%83%E8%B5%84%E6%96%99" id="user-content-参考资料"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>参考资料</h2>
+<p><a href="http://php.net/manual/en/book.yaf.php" rel="nofollow">yaf手册</a></p>
+
+        </div>
+
+    </div>]

@@ -1,0 +1,113 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>The LibSQUID Python respoitory provides tools that use the
+SWIG and Distutils utilities to convert the C source code in the
+base [LibSQUID Library](LibSQUID Library) to a Python module.</p>
+<p>You can download a Linux rpm from the <a href="http://libsquid.github.io/downloads/pysquid/" rel="nofollow">download</a>
+section and install it.  Or you can download the tar.gz file from the same location, unpack it,
+and follow steps 5 and 6 below.</p>
+<p>The basic process to build the Python module from scratch is as follows:</p>
+<ol>
+<li>Clone the base LibSQUID library.<br/>
+<strong>&gt; git clone <a href="https://github.com/libsquid/libsquid.git">https://github.com/libsquid/libsquid.git</a></strong>
+</li>
+<li>Clone the LibSQUID Python library.<br/>
+<strong>&gt; git clone <a href="https://github.com/libsquid/libsquid_python.git">https://github.com/libsquid/libsquid_python.git</a></strong>
+</li>
+<li>CD into the Python directory and copy over source files<br/>
+<strong>&gt; cd libsquid_python</strong><br/>
+<strong>&gt; cp ../libsquid/*.c ../libsquid/*.h .</strong>
+</li>
+<li>Edit setup.py to reflect version number in libsquid.h</li>
+<li>Run setup.py to build python module<br/>
+<strong>&gt; python setup.py build_ext</strong><br/>
+Note: Add --inplace arg after build_ext to do local build</li>
+<li>If desired on Linux, build and install an rpm<br/>
+<strong>&gt; python setup.py bdist_rpm</strong><br/>
+<strong>&gt; rpm -Uvh build/pysquid-?.?.?-1.myarch.rpm</strong>
+</li>
+</ol>
+<p>The Python module provides the following variable definitions:<br/>
+<strong>DD2R 0.01745329252</strong> // decimal deg to radians<br/>
+<strong>THETAX 0.7297276562269663</strong> // HSC proj polar dividing line (rad)<br/>
+<strong>THETAXD 41.810314895778596</strong> // HSC proj polar dividing line (deg)<br/>
+<strong>KMAX 26</strong> // maximum quad cube resolution</p>
+<p>The following projections are supported:<br/>
+<strong>0=TSC (tangental), 1=CSC (COBE), 2=QSC (Quadrilateralized), 3=HSC (HEALPix)</strong></p>
+<p>The following functions are provided:</p>
+<p><strong>sdist=sphdist(lon1, lat1, lon2, lat2)</strong><br/>
+Calculate the angular distance between two points on a sphere.  Angles in radians.</p>
+<p><strong>isvalid=squid_validate(squid)</strong><br/>
+Check if a given squid id value is valid (possible).</p>
+<p><strong>k=squid_getres(squid)</strong><br/>
+Get the resolution level, k, for a given squid id.
+See [Resolution Level](Resolution Level).</p>
+<p><strong>face=squid_getface(squid)</strong><br/>
+Get the face number for a given squid id.
+See <a href="Face">Face</a>.</p>
+<p><strong>(success,lon,lat)=squid2sph(projection,squid)</strong><br/>
+For a given projection and squid id, return the longitude and
+latitude of the squid tile center in radians.</p>
+<p><strong>(success,squid)=sph2squid(projection,lon,lat,k)</strong><br/>
+For a given projection, longitude, latitude (in radians) and resolution
+level, return the squid id.</p>
+<p><strong>(success,lon[4],lat[4])=squid_corners(projection,squid)</strong><br/>
+For a given projection and squid id, return the longitude and latitude of
+the four corners of the squid tile.</p>
+<p><strong>face=quadcube_getface(lon,lat)</strong><br/>
+For a given longitude and latitude (in radians) return the face number
+for the TSC, CSC, and QSC projections.
+See <a href="Face">Face</a>.</p>
+<p><strong>face=hsc_getface(lon,lat)</strong><br/>
+For a given longitude and latitude (in radians) return the face number
+for the HSC projection.
+See <a href="Face">Face</a>.</p>
+<p><strong>(success,lon,lat)=xyf2sph(projection,x,y,face)</strong><br/>
+For a given projection, face, and x,y "face" coordinates return the
+longitude and latitude in radians.
+See [XY Coordinates](XY Coordinates).</p>
+<p><strong>(success,x,y,face)=sph2xyf(projection,lon,lat)</strong><br/>
+For a given projection, longitude and latitude in radians, return the
+face and x,y "face" coordinates.
+See [XY Coordinates](XY Coordinates).</p>
+<p><strong>(success,newface,newx,newy)=face_range(face, x, y)</strong><br/>
+For x,y coordinates on a given face, computer a new face,x,y if the original
+x,y coordinates are outside the range of the original face.
+See [XY Coordinates](XY Coordinates).</p>
+<p><strong>(success,x,y,face,k)=squid2xyfk(squid)</strong><br/>
+For a given squid id, return the "face" x,y coordinates, the face number,
+and the resolution level.
+See [XY Coordinates](XY Coordinates).</p>
+<p><strong>(success,squid)=xyfk2squid(x,y,face,k)</strong><br/>
+For a given "face" x,y, face value, and resolution, return the squid id.
+See [XY Coordinates](XY Coordinates).</p>
+<p><strong>(success, tside)=squid_tside(projection,k,cdelt)</strong><br/>
+For a given projection, resolution (k), and cdelt (deg/pix) return the number of
+pixels on the side of a squid tile of resolution k.  Note that the return value
+is of type double.  The projection value is ignored, it is only there for backward
+compatibility for earlier versions.</p>
+<p><strong>(success,lon,lat)=tile_xy2sph(projection,squid,x,y,nside)</strong><br/>
+For "tile" coordinates x,y on a squid tile (i.e. image) with nside pixels
+on a side and given id and projection, return the longitude and latitude in
+radians.
+See [XY Coordinates](XY Coordinates).</p>
+<p><strong>(success,x,y)=tile_sph2xy(projection,squid,lon,lat,nside)</strong><br/>
+For a given longitude and latitude (in radians) on a squid tile (i.e. image)
+with nside pixels on a side and given id and projection return the "tile"
+(image) x,y coordinates.
+See [XY Coordinates](XY Coordinates).</p>
+<p><strong>(success,lon,lat)=tile_nearest(projection,squid,lons,lats)</strong><br/>
+For any given point on the sphere, lons and lats (in radians), and squid tile
+with a given projection and id, return the point on the tile edge closest to
+the search point in radians.</p>
+<p><strong>(squidfull[],squidpart[])=cone_search(projection,lon,lat,rad,kmin,kmax)</strong><br/>
+For a given projection, spherical coordianates lon and lat (in radians) and
+search radius (in radians) and minimum and maximum resolution levels, return
+arrays of the fully contained squid ids and partially contained squid ids.
+The fully contained squid ids will be returned at the smallest resolution level
+possible whereas all of the partially contained squid ids will be at kmax.
+See [Cone Search](Cone Search).</p>
+
+        </div>
+
+    </div>]

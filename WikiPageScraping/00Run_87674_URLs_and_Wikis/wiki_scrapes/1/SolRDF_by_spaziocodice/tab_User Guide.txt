@@ -1,0 +1,285 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <h1>
+<a aria-hidden="true" class="anchor" href="#get-me-up-and-running" id="user-content-get-me-up-and-running"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Get me up and running</h1>
+<p>This section provides instructions for running SolRDF. We divided the section in two different parts because the different architecture introduced with Solr 5. Prior to that (i.e. Solr 4.x) Solr was distributed as a JEE web application and therefore, being SolRDF a Maven project, you could use Maven for starting up a live instance without downloading Solr (Maven would do that for you, behind the scenes).</p>
+<p>Solr 5 is now delivered as a standalone jar and therefore the SolRDF installation is different; it requires some manual steps in order to deploy configuration files and libraries within an external Solr (which needs to be downloaded separately).</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#solrdf-11-solr-5x" id="user-content-solrdf-11-solr-5x"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>SolRDF 1.1 (Solr 5.x)</h3>
+<p>First, you need Java 8, Apache Maven and Apache Solr installed on your machine.
+Open a new shell and type the following:</p>
+<pre><code># cd /tmp
+# git clone https://github.com/agazzarini/SolRDF.git solrdf-download
+</code></pre>
+<h4>
+<a aria-hidden="true" class="anchor" href="#build-and-run-solrrdf" id="user-content-build-and-run-solrrdf"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Build and run SolrRDF</h4>
+<pre><code># cd solrdf-download/solrdf
+# mvn clean install
+
+</code></pre>
+<p>At the end of the build, after seeing</p>
+<pre><code>[INFO] --------------------------------------------------------
+[INFO] Reactor Summary:
+[INFO] 
+[INFO] Solr RDF plugin .................... SUCCESS [  3.151 s]
+[INFO] solrdf-core ........................ SUCCESS [ 10.191 s]
+[INFO] solrdf-client ...................... SUCCESS [  3.554 s]
+[INFO] solrdf-integration-tests ........... SUCCESS [ 14.910 s]
+[INFO] --------------------------------------------------------
+[INFO] BUILD SUCCESS
+[INFO] --------------------------------------------------------  
+[INFO] Total time: 32.065 s
+[INFO] Finished at: 2015-10-20T14:42:09+01:00
+[INFO] Final Memory: 43M/360M
+</code></pre>
+<p>you can find the solr-home directory, with everything required for running SolRDF, under the</p>
+<pre><code>/tmp/solr/solrdf-download/solrdf/solrdf-integration-tests/target/solrdf-integration-tests-1.1-dev/solrdf
+</code></pre>
+<p>We refer to this directory as $SOLR_HOME.
+At this point, open a shell under the <em>bin</em> folder of your Solr and type:</p>
+<pre><code>&gt; ./solr -p 8080 -s $SOLR_HOME -a "-Dsolr.data.dir=/work/data/solrdf"
+
+Waiting to see Solr listening on port 8080 [/]  
+Started Solr server on port 8080 (pid=10934). Happy searching!
+
+</code></pre>
+<h3>
+<a aria-hidden="true" class="anchor" href="#solrdf-10-solr-4x" id="user-content-solrdf-10-solr-4x"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>SolRDF 1.0 (Solr 4.x)</h3>
+<p>If you're using Solr 4.x, you can point to the solrdf-1.0 branch and use the automatic procedure described below for downloading, installing and run it. There's no need to download Solr, as Maven will do that for you.</p>
+<h4>
+<a aria-hidden="true" class="anchor" href="#checkout-the-project" id="user-content-checkout-the-project"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Checkout the project</h4>
+<p>Open a new shell and type the following:</p>
+<pre><code># cd /tmp
+# git clone https://github.com/agazzarini/SolRDF.git solrdf-download
+</code></pre>
+<h4>
+<a aria-hidden="true" class="anchor" href="#build-and-run-solrrdf-1" id="user-content-build-and-run-solrrdf-1"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Build and run SolrRDF</h4>
+<pre><code># cd solrdf-download/solrdf
+# mvn clean install
+# cd solrdf-integration-tests
+# mvn clean package cargo:run
+</code></pre>
+<p>The very first time you run this command a lot of things will be downloaded, Solr included.
+At the end you should see something like this:</p>
+<pre><code>[INFO] Jetty 7.6.15.v20140411 Embedded started on port [8080]
+[INFO] Press Ctrl-C to stop the container...
+</code></pre>
+<p><a href="http://127.0.0.1:8080/solr/#/store" rel="nofollow">SolRDF</a> is up and running!</p>
+<h1>
+<a aria-hidden="true" class="anchor" href="#add-data" id="user-content-add-data"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Add data</h1>
+<p>Now let's add some data. You can do that in one of the following ways:</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#browser" id="user-content-browser"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Browser</h2>
+<p>Open your favourite browser and type the follwing URL (line has been split for readability):</p>
+<pre><code>http://localhost:8080/solr/store/update/bulk?commit=true
+&amp;update.contentType=application/n-triples
+&amp;stream.file=/tmp/solrdf-download/solrdf/solrdf-integration-tests/src/test/resources/sample-data/bsbm-generated-dataset.nt
+</code></pre>
+<p>This is an example with the bundled sample data. If you have a file somehere (i.e. remotely) you can use the <em>stream.url</em> parameter to indicate the file URL. For example:</p>
+<pre><code>http://localhost:8080/solr/store/update/bulk?commit=true
+&amp;update.contentType=application/rdf%2Bxml
+&amp;stream.url=http://ec.europa.eu/eurostat/ramon/rdfdata/countries.rdf
+</code></pre>
+<h2>
+<a aria-hidden="true" class="anchor" href="#command-line" id="user-content-command-line"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Command line</h2>
+<p>Open a shell and type the following</p>
+<pre><code># curl -v http://localhost:8080/solr/store/update/bulk?commit=true \ 
+  -H "Content-Type: application/n-triples" \
+  --data-binary @/tmp/solrdf-download/solrdf/src/test/resources/sample_data/bsbm-generated-dataset.nt
+</code></pre>
+<p>Ok, you just added (about) <a href="http://127.0.0.1:8080/solr/#/store" rel="nofollow">5000 triples</a>.</p>
+<h1>
+<a aria-hidden="true" class="anchor" href="#sparql-11-endpoint" id="user-content-sparql-11-endpoint"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>SPARQL 1.1. endpoint</h1>
+<p>SolRDF is a fully compliant SPARQL 1.1. endpoint. In order to issue a query just run a query like this:</p>
+<pre><code># curl "http://127.0.0.1:8080/solr/store/sparql" \
+  --data-urlencode "q=SELECT * WHERE { ?s ?p ?o } LIMIT 10" \
+  -H "Accept: application/sparql-results+json"
+  
+Or  
+  
+# curl "http://127.0.0.1:8080/solr/store/sparql" \
+  --data-urlencode "**q=SELECT * WHERE { ?s ?p ?o } LIMIT 10**" \
+  -H "Accept: application/sparql-results+xml"
+
+</code></pre>
+<h1>
+<a aria-hidden="true" class="anchor" href="#hybrid-mode" id="user-content-hybrid-mode"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Hybrid mode</h1>
+<blockquote>
+<p>The Hybrid mode has been temporarily disabled as there are some issues that need to be fixed</p>
+</blockquote>
+<p>If the request contains a valid SPARQL query and at least one of the parameters listed below, SolRDF switches in a so-called "Hybrid" mode. That enables a set of interesting features like results pagination (without using the LIMIT keyword) and faceting (on the overall results of the SPARQL query).</p>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Description</th>
+<th>Reference</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>rows</td>
+<td>The maximum number of results that will be returned in response. In case of negative or invalid value it defaults to 10.</td>
+<td><a href="http://wiki.apache.org/solr/CommonQueryParameters#rows" rel="nofollow">Solr Wiki (rows)</a></td>
+</tr>
+<tr>
+<td>start</td>
+<td>The start offset in the complete result set. In case of negative or invalid value it defaults to 0.</td>
+<td><a href="http://wiki.apache.org/solr/CommonQueryParameters#start" rel="nofollow">Solr Wiki (start)</a></td>
+</tr>
+<tr>
+<td>facet</td>
+<td>A boolean value that enables or disables (default) faceting</td>
+<td><a href="https://wiki.apache.org/solr/SimpleFacetParameters#facet" rel="nofollow">Solr Wiki (facet)</a></td>
+</tr>
+<tr>
+<td>facet.field</td>
+<td>The name of the field which should be treated as a facet. In case of multiple fields, the parameter can be repeated in the request</td>
+<td><a href="https://wiki.apache.org/solr/SimpleFacetParameters#facet.field" rel="nofollow">Solr Wiki (facet.field)</a></td>
+</tr>
+</tbody>
+</table>
+<p>For more information about Solr query and facet parameters see here [1] and here [2]. Remember that only parameters listed in the table above are "supported". Hopefully I will gradually all the other parameters.</p>
+<p>When SolRDF runs in Hybrid mode, it will produce a response like this:</p>
+<div class="highlight highlight-text-xml"><pre>&lt;?<span class="pl-ent">xml</span><span class="pl-e"> version</span>=<span class="pl-s"><span class="pl-pds">"</span>1.0<span class="pl-pds">"</span></span><span class="pl-e"> encoding</span>=<span class="pl-s"><span class="pl-pds">"</span>UTF-8<span class="pl-pds">"</span></span>?&gt;
+&lt;<span class="pl-ent">response</span>&gt;
+	&lt;<span class="pl-ent">lst</span> <span class="pl-e">name</span>=<span class="pl-s"><span class="pl-pds">"</span>responseHeader<span class="pl-pds">"</span></span>&gt;
+		&lt;<span class="pl-ent">int</span> <span class="pl-e">name</span>=<span class="pl-s"><span class="pl-pds">"</span>status<span class="pl-pds">"</span></span>&gt;0&lt;/<span class="pl-ent">int</span>&gt;
+		&lt;<span class="pl-ent">int</span> <span class="pl-e">name</span>=<span class="pl-s"><span class="pl-pds">"</span>QTime<span class="pl-pds">"</span></span>&gt;25&lt;/<span class="pl-ent">int</span>&gt;
+		&lt;<span class="pl-ent">int</span> <span class="pl-e">name</span>=<span class="pl-s"><span class="pl-pds">"</span>rows<span class="pl-pds">"</span></span>&gt;2&lt;/<span class="pl-ent">int</span>&gt;
+		&lt;<span class="pl-ent">int</span> <span class="pl-e">name</span>=<span class="pl-s"><span class="pl-pds">"</span>start<span class="pl-pds">"</span></span>&gt;100&lt;/<span class="pl-ent">int</span>&gt;
+		&lt;<span class="pl-ent">str</span> <span class="pl-e">name</span>=<span class="pl-s"><span class="pl-pds">"</span>query<span class="pl-pds">"</span></span>&gt;SELECT *
+		   WHERE
+		   { ?s &lt;<span class="pl-ent">http:</span>//www.w3.org/1999/02/22-rdf-syntax-ns#type&gt; ?o}
+		&lt;/<span class="pl-ent">str</span>&gt;
+	&lt;/<span class="pl-ent">lst</span>&gt;
+	&lt;<span class="pl-ent">result</span> <span class="pl-e">name</span>=<span class="pl-s"><span class="pl-pds">"</span>response<span class="pl-pds">"</span></span> <span class="pl-e">numFound</span>=<span class="pl-s"><span class="pl-pds">"</span>18176<span class="pl-pds">"</span></span> <span class="pl-e">start</span>=<span class="pl-s"><span class="pl-pds">"</span>100<span class="pl-pds">"</span></span> <span class="pl-e">maxScore</span>=<span class="pl-s"><span class="pl-pds">"</span>1.0<span class="pl-pds">"</span></span>&gt;
+		&lt;<span class="pl-ent">sparql</span> <span class="pl-e">xmlns</span>=<span class="pl-s"><span class="pl-pds">"</span>http://www.w3.org/2005/sparql-results#<span class="pl-pds">"</span></span>&gt;
+			&lt;<span class="pl-ent">head</span>&gt;
+				&lt;<span class="pl-ent">variable</span> <span class="pl-e">name</span>=<span class="pl-s"><span class="pl-pds">"</span>s<span class="pl-pds">"</span></span> /&gt;
+				&lt;<span class="pl-ent">variable</span> <span class="pl-e">name</span>=<span class="pl-s"><span class="pl-pds">"</span>o<span class="pl-pds">"</span></span> /&gt;
+			&lt;/<span class="pl-ent">head</span>&gt;
+			&lt;<span class="pl-ent">results</span>&gt;
+				&lt;<span class="pl-ent">result</span>&gt;
+					&lt;<span class="pl-ent">binding</span> <span class="pl-e">name</span>=<span class="pl-s"><span class="pl-pds">"</span>s<span class="pl-pds">"</span></span>&gt;
+						&lt;<span class="pl-ent">bnode</span>&gt;b0&lt;/<span class="pl-ent">bnode</span>&gt;
+					&lt;/<span class="pl-ent">binding</span>&gt;
+					&lt;<span class="pl-ent">binding</span> <span class="pl-e">name</span>=<span class="pl-s"><span class="pl-pds">"</span>o<span class="pl-pds">"</span></span>&gt;
+						&lt;<span class="pl-ent">uri</span>&gt;http://purl.org/dc/terms/W3CDTF&lt;/<span class="pl-ent">uri</span>&gt;
+					&lt;/<span class="pl-ent">binding</span>&gt;
+				&lt;/<span class="pl-ent">result</span>&gt;
+				&lt;<span class="pl-ent">result</span>&gt;
+					&lt;<span class="pl-ent">binding</span> <span class="pl-e">name</span>=<span class="pl-s"><span class="pl-pds">"</span>s<span class="pl-pds">"</span></span>&gt;
+						&lt;<span class="pl-ent">uri</span>&gt;http://www.gutenberg.org/feeds/catalog.rdf#etext20867&lt;/<span class="pl-ent">uri</span>&gt;
+					&lt;/<span class="pl-ent">binding</span>&gt;
+					&lt;<span class="pl-ent">binding</span> <span class="pl-e">name</span>=<span class="pl-s"><span class="pl-pds">"</span>o<span class="pl-pds">"</span></span>&gt;
+						&lt;<span class="pl-ent">uri</span>&gt;http://www.gutenberg.org/rdfterms/etext&lt;/<span class="pl-ent">uri</span>&gt;
+					&lt;/<span class="pl-ent">binding</span>&gt;
+				&lt;/<span class="pl-ent">result</span>&gt;
+			&lt;/<span class="pl-ent">results</span>&gt;
+		&lt;/<span class="pl-ent">sparql</span>&gt;
+	&lt;/<span class="pl-ent">result</span>&gt;
+	&lt;<span class="pl-ent">lst</span> <span class="pl-e">name</span>=<span class="pl-s"><span class="pl-pds">"</span>facet_counts<span class="pl-pds">"</span></span>&gt;
+		&lt;<span class="pl-ent">lst</span> <span class="pl-e">name</span>=<span class="pl-s"><span class="pl-pds">"</span>facet_queries<span class="pl-pds">"</span></span> /&gt;
+		&lt;<span class="pl-ent">lst</span> <span class="pl-e">name</span>=<span class="pl-s"><span class="pl-pds">"</span>facet_fields<span class="pl-pds">"</span></span>&gt;
+		    &lt;<span class="pl-ent">lst</span> <span class="pl-e">name</span>=<span class="pl-s"><span class="pl-pds">"</span>p<span class="pl-pds">"</span></span>&gt;
+			&lt;<span class="pl-ent">int</span> <span class="pl-e">name</span>=<span class="pl-s"><span class="pl-pds">"</span>&lt;http://www.w3.org/1999/02/22-rdf-syntax-ns#type&gt;<span class="pl-pds">"</span></span>&gt;18176&lt;/<span class="pl-ent">int</span>&gt;
+		    &lt;/<span class="pl-ent">lst</span>&gt;
+		&lt;/<span class="pl-ent">lst</span>&gt;
+		&lt;<span class="pl-ent">lst</span> <span class="pl-e">name</span>=<span class="pl-s"><span class="pl-pds">"</span>facet_dates<span class="pl-pds">"</span></span> /&gt;
+		&lt;<span class="pl-ent">lst</span> <span class="pl-e">name</span>=<span class="pl-s"><span class="pl-pds">"</span>facet_ranges<span class="pl-pds">"</span></span> /&gt;
+	&lt;/<span class="pl-ent">lst</span>&gt;
+&lt;/<span class="pl-ent">response</span>&gt;</pre></div>
+<h1>
+<a aria-hidden="true" class="anchor" href="#pseudo-graph-store-http-protocol-support" id="user-content-pseudo-graph-store-http-protocol-support"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Pseudo-Graph Store HTTP Protocol support</h1>
+<p>SolRDF supports a subset of the SPARQL 1.1 Graph Store HTTP Protocol specs [3].  The protocol describes a set of HTTP operations for managing a collection of RDF graphs:</p>
+<table>
+<thead>
+<tr>
+<th>HTTP METHOD</th>
+<th>Description</th>
+<th>Supported by SolRDF</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>GET</td>
+<td>Retrieves the content of a graph (named or default)</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td>POST</td>
+<td>Adds data to a given graph (named or default)</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td>PUT</td>
+<td>Replaces data of a given graph (named or default)</td>
+<td>No</td>
+</tr>
+<tr>
+<td>DELETE</td>
+<td>Deletes a given graph (named or default)</td>
+<td>No</td>
+</tr>
+</tbody>
+</table>
+<p>PUT and DELETE requests are not supported because in Solr those HTTP methods are reserved for REST operations related with schema and configuration. As consequence of that a custom handler (in this case Sparql11GraphStoreProtocolHandler) won't never get a chance to be notified in case of PUT or DELETE requests.</p>
+<p>The target graph in HTTP requests is indicated by means of "graph" or "default" parameters. Some examples:</p>
+<table>
+<thead>
+<tr>
+<th>Request</th>
+<th>Named Graph</th>
+<th>Default Graph</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>/rdf-graph-store?default</code></td>
+<td>No</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td><code>/rdf-graph-store</code></td>
+<td>No</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td><code>/rdf-graph-store?graph=http://a.b.c</code></td>
+<td>Yes</td>
+<td>No</td>
+</tr>
+</tbody>
+</table>
+<p>As you can see, in case of absence, the request is supposed to refer to the default graph.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#get" id="user-content-get"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>GET</h2>
+<p>A request that uses the HTTP GET method will retrieve an RDF payload that is a serialization of a given graph. Some example:</p>
+<pre><code>&gt; curl "http://localhost:8080/solr/store/rdf-graph-store   
+&gt; curl "http://localhost:8080/solr/store/rdf-graph-store?default
+&gt; curl "http://localhost:8080/solr/store/rdf-graph-store?graph=http://a.b.c
+</code></pre>
+<h2>
+<a aria-hidden="true" class="anchor" href="#post" id="user-content-post"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>POST</h2>
+<p>A request that uses the HTTP POST method will add an RDF payload to a given graph. Some example:</p>
+<pre><code>&gt; curl -X POST "http://localhost:8080/solr/store/rdf-graph-store \
+       -H "Content-Type: application/n-triples" \
+       --data-binary @/path/to/your/datafile.nt
+
+&gt; curl -X POST "http://localhost:8080/solr/store/rdf-graph-store?default
+       -H "Content-Type: application/n-triples" \
+       --data-binary @/path/to/your/datafile.nt
+
+&gt; curl -X POST "http://localhost:8080/solr/store/rdf-graph-store?graph=http://a.b.c
+       -H "Content-Type: application/n-triples" \
+       --data-binary @/path/to/your/datafile.nt
+</code></pre>
+<hr/>
+<p>[1] <a href="http://wiki.apache.org/solr/CommonQueryParameters" rel="nofollow">http://wiki.apache.org/solr/CommonQueryParameters</a><br/>
+[2] <a href="https://wiki.apache.org/solr/SimpleFacetParameters" rel="nofollow">https://wiki.apache.org/solr/SimpleFacetParameters</a><br/>
+[3] <a href="http://www.w3.org/TR/sparql11-http-rdf-update" rel="nofollow">http://www.w3.org/TR/sparql11-http-rdf-update</a></p>
+
+        </div>
+
+    </div>]

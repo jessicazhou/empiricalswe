@@ -1,0 +1,241 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>#In a nutshell</p>
+<p><strong>A designator encapsulates the process of finding some value that is needed at runtime</strong>. This process is called resolving.
+For example, there can be a designator that resolves to some entity.
+''How'' this is resolved is encapsulated in the .resolve-method of a designator and is thus hidden as an implementation detail.</p>
+<p>A designator may encapsulate a query to the reasoner, a query to Ed or a custom process or function etc.</p>
+<h1>
+<a aria-hidden="true" class="anchor" href="#using-designators" id="user-content-using-designators"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><a class="internal present" href="/tue-robotics/tue_robocup/wiki/Using-designators">Using designators</a>
+</h1>
+<h1>
+<a aria-hidden="true" class="anchor" href="#motivation" id="user-content-motivation"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Motivation</h1>
+<p>Amigo executes RoboCup challenges using a script, usually in the form of a Smach state machine.
+Smach is used to structure the steps to achieve some goal. We want to be able to parametrize with what these steps are performed, e.g. ''what'' to pick up and ''where'' to transport it to.
+Also, if Amigo needs to remember something, e.g. "I tried going to some item but it was unreachable", then that fact needs to be remembered.
+Before the use of designators, such facts were asserted and later queried to the reasoner. This eventually became an enormous mess which was incomprehensible.</p>
+<p>So, another way to let Amigo remember stuff and to parametrize behavior was conceived: Designators.</p>
+<p>One (type of) designator can use ED, another the reasoner/WIRE, yet another can be hardcoded and yet another can just be set like a variable by another state.
+This allows to also encapsulate filtering, sorting, applying some function, getting some attribute etc.
+Basically, any value that is not known at write-time of an executive and needs to be known at runtime (and can be determined from the environment or some runtime process).
+A designator can be seen as  being somewhat like a lazy variable, that is only calculated when needed.</p>
+<p>A RoboCup challenge or any other application is a task description or recipe. Like a recipe, it tells the robot what to do with what .e.g. grab a pill bottle using one of your arms.
+Robot_smach_states provide a library of reusable actions (e.g. Grab) and describe ''how'' to do something. Designators provide the other half of the recipe: ''with what'' to do something.
+Designators thus allow to separate the how of a task from the 'with what' of a task. The how is reusable through robot_smach_states between RoboCup challenges/applications, while the application-specific parts are captured in designators.</p>
+<p>#Introduction
+A designator can resolve to any python object, depending on how its .resolve()-method is implemented.
+Thus, it can resolve to an Ed Entity, a PointStamped, a string, an Arm of the robot etc. and a Python list just as well.</p>
+<p>For example:</p>
+<ul>
+<li>An object with Entity ID "AC23DE74BF75"</li>
+<li>"An entity with type ... within some range of point ...",</li>
+<li>"The arm holding some entity",</li>
+<li>"Grandmothers glasses" (if you write a proper ED query),</li>
+<li>"An arm available for grasping" or</li>
+<li>a string indicating the class of some desired object, like "Coke"</li>
+</ul>
+<p>Some properties of designator can be <strong>tricky</strong>:</p>
+<ul>
+<li>For for some designators, this will always resolve to the same Python-object, e.g. a string like "AC23DE74BF75"</li>
+<li>For other types of designator, it <strong>may resolve to a different value everytime</strong>, e.g. when the designator designates the location of some moving object. A LockingDesignator can be used to lock a designator to a constant value.</li>
+</ul>
+<h1>
+<a aria-hidden="true" class="anchor" href="#when-not-to-use-designators" id="user-content-when-not-to-use-designators"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>When <strong>not</strong> to use designators?</h1>
+<ul>
+<li>When you can create a designator and resolve it a few lines down in the same function. In that case, there really is no point in using designators. They encapsulate a process, just like a normal function.</li>
+</ul>
+<h1>
+<a aria-hidden="true" class="anchor" href="#usability" id="user-content-usability"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Usability</h1>
+<p>Designators are important to get right and it must this be easy to get them right. Some help is available in this regard:</p>
+<ul>
+<li>There are type checks</li>
+<li>You can visualize the dataflow through your designators and see where information is coming from and who is using it.</li>
+<li>Writing can be made explictly, so that a VariableDesignator cannot just be written to. You need to specify who can write what designator, so its easier to see what state manipulates data and which only reads/resolves it.</li>
+</ul>
+<h2>
+<a aria-hidden="true" class="anchor" href="#type-checking" id="user-content-type-checking"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Type checking</h2>
+<p>All designators have a resolve_type that specifies what type the thing is that they resolve to. E.g. a EdEntityDesignator's resolve_type is an Ed Entity (ed.msg.EntityInfo). The robot_smach_states check that the designators they are constructed with are the correct types by using check_resolve_type(designator, expected_type)</p>
+<p>All standard designators specify their resolve_types where possible. In others, or custom ones, you need to specify the resolve_type in the constructor.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#visualizing-designatorstate-structure" id="user-content-visualizing-designatorstate-structure"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Visualizing designator/state structure</h2>
+<p>By calling</p>
+<div class="highlight highlight-source-python"><pre>analyse_designators(statemachine, <span class="pl-s"><span class="pl-pds">"</span>challenge_name<span class="pl-pds">"</span></span>)</pre></div>
+<p>you can generate an image showing the data flow graph of your application/RoboCup challenge.
+To make this easier to read, you can give every designator a name via its constructor.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#explicit-writing" id="user-content-explicit-writing"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Explicit writing</h2>
+<p>In order to give you a better insight in the data flow in your application and to make debugging easier, it's now mandatory to declare which smach states are allowed to write and change a VariableDesignator.
+To write a designator:</p>
+<ul>
+<li>Pass the designator to the smach state postfixed with .writeable: variable_designator.writeable</li>
+<li>In the smach state's .execute-method, use variable_designator.write(value)</li>
+<li>In the smach state's <strong>init</strong>-method, you can use is_writeable(var_designator) to check whether its writeable.</li>
+</ul>
+<h2>
+<a aria-hidden="true" class="anchor" href="#usability-improvements" id="user-content-usability-improvements"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Usability improvements</h2>
+<ul>
+<li>
+<strike>Make EntityByIdDesignator(id=...).</strike> DONE</li>
+<li>
+<strike>Make standard ReasonedEntityDesignator for queries that result in an ID</strike> DONE</li>
+<li>
+<strike>Give all designators locking-capabilities so you don't need to compose it into a LockingDesignator.</strike> DONE</li>
+<li>
+<strike>.lock() can mean different things for different designator types: if you know the ID of an entity, resolving it should update it 3D position etc.</strike> DONE</li>
+<li>Maybe there are too many standard designators that try to be too generic. Settle to a few often used cases and make custom designators for the rest.</li>
+<li>Split up the functionality of the EdEntityDesignator. <strike>That means a EntityByIdDesignator that only takes robot and id as parameter.</strike> Another version takes a type. For other cases, create a custom designator.</li>
+<li>
+<strike>If we promote custom designators, make the typecheck on the resolve-method as well.</strike> DONE</li>
+<li>Specifying resolve_type by inheritance, eg class SomeDesignator(EntityDesignator). Then you only have to implement the resolve-call.</li>
+</ul>
+<p>#Class hierarch
+The library defines a couple of standard designators:</p>
+<ul>
+<li>Designator: simply returns a predefined value that defaults to None
+<ul>
+<li>Requires setting resolve_type when constructing</li>
+</ul>
+</li>
+<li>VariableDesignator: any user of this designator can set the designators value and can be used to pass around data.
+<ul>
+<li>Requires setting resolve_type when constructing</li>
+</ul>
+</li>
+<li>LockingDesignator: after calling .lock(), locks a designator to the same value until it is .unlock()-ed again. This should alleviate the problem of a designator resolving to different objects when you don't expect it.
+<ul>
+<li>Automatically finds the resolve_type of the designator it wraps</li>
+</ul>
+</li>
+<li>AttrDesignator: Some designator types wrap other designators, like AttrDesignator. It returns some attribute of of whatever the wrapped designator resolved to
+<ul>
+<li>Requires setting resolve_type when constructing</li>
+</ul>
+</li>
+<li>FuncDesignator: Apply a function to the resolution of another, wrapped, designator
+<ul>
+<li>Requires setting resolve_type when constructing</li>
+</ul>
+</li>
+<li>DeferToRuntime: Execute a function at runtime. You can use all variables etc in the current scope.
+<ul>
+<li>Requires setting resolve_type when constructing</li>
+</ul>
+</li>
+</ul>
+<p>With these, some possibilities are present:</p>
+<h1>
+<a aria-hidden="true" class="anchor" href="#pass-information-between-states" id="user-content-pass-information-between-states"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Pass information between states</h1>
+<p>With a VariableDesignator, you can call</p>
+<div class="highlight highlight-source-python"><pre>variablewriter_of_vardesignator.write(<span class="pl-c1">...</span>)</pre></div>
+<p>and later</p>
+<div class="highlight highlight-source-python"><pre>result <span class="pl-k">=</span> vardesignator.resolve()</pre></div>
+<p>It basically provides a pipe between Smach states at runtime, just like a normal variable would for normal code.</p>
+<p>There are also some designators to work with Ed, Arms and other robot-specific things:</p>
+<ul>
+<li>EdEntityDesignator: Get an entity from Ed by a query. The arguments of this query (id, type, center_point) can be designators themselves for flexibility. An EdEntityDesignator can also take a list of criteria functions. Each criteria function is given each candidate entity and must return if the entity matches some criterium. A single entity matching all criteria is returned, if any.</li>
+<li>ArmDesignator: resolves to an arm of the robot
+<ul>
+<li>UnoccupiedArmDesignator: Resolves to an arm that is not holding anything. Useful when passed to Grab as the arm-argument</li>
+<li>ArmHoldingEntityDesignator: Resolves to an arm that ''is'' holding some entity, as indicated by a EdEntityDesignator. Useful in combination with Place if you want to place that Entity somewhere.</li>
+</ul>
+</li>
+</ul>
+<h1>
+<a aria-hidden="true" class="anchor" href="#wrapping" id="user-content-wrapping"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Wrapping</h1>
+<p>Some designator types, like AttrDesignator and FuncDesignator wrap another designator and call a function on the result of a designator or get an attribute of a designator's result.
+This can be used for casting values from one type to another, as this also simply executing a function.
+It is also used to get the ID of an ED entity: by default, an EdEntityByQueryDesignator resolves to an actual entity, but some states only take an Entity's ID. So you wrap the first designator in an AttrDesignator that gets the entity's ID-attribute.</p>
+<h1>
+<a aria-hidden="true" class="anchor" href="#nesting" id="user-content-nesting"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Nesting</h1>
+<p>You can see designators as functions whose execution is deferred to later (and are executed whenever needed). Function calls can be nested, e.g.</p>
+<div class="highlight highlight-source-python"><pre><span class="pl-c1">max</span>(<span class="pl-c1">int</span>(<span class="pl-v">raw_input</span>(<span class="pl-s"><span class="pl-pds">"</span>enter an integer: <span class="pl-pds">"</span></span>)), <span class="pl-c1">float</span>(<span class="pl-v">raw_input</span>(<span class="pl-s"><span class="pl-pds">"</span>Enter a float: <span class="pl-pds">"</span></span>)))</pre></div>
+<p>Some designators can also be nested, such as LockingDesignator, EdEntityDesignator, UnoccupiedArmDesignator and ArmHoldingEntityDesignator. They take other designators as arguments (similar to the wrapping ones above) but use the outcome of the referenced designators to find another value related to the outcome of the referenced one. Just as you would with nested function calls.</p>
+<p>For example, the ArmHoldingEntityDesignator takes a designator that resolves to some entity. Then, the arms of the robot are searched to find an arm that is occupied by that entity. That arm is then the outcome of the ArmHoldingEntityDesignator.</p>
+<div class="highlight highlight-source-python"><pre>item <span class="pl-k">=</span> EdEntityDesignator(robot, <span class="pl-v">id</span><span class="pl-k">=</span><span class="pl-s"><span class="pl-pds">"</span>1234567abcd<span class="pl-pds">"</span></span>)
+arm_to_place_item_with <span class="pl-k">=</span> ArmHoldingEntityDesignator(robot.arms, item)</pre></div>
+<h1>
+<a aria-hidden="true" class="anchor" href="#collections" id="user-content-collections"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Collections</h1>
+<p>Collection, such as lists and sets, are also just values.
+A VariableDesignator has a .current-attribute that can be used:</p>
+<div class="highlight highlight-source-python"><pre>designator.current.append(<span class="pl-c1">...</span>)
+designator.current.next()</pre></div>
+<p>=Combinations (TODO, but please see [Designators can be combined:</p>
+<ul>
+<li>If we first make a designator A for some object to grab, we can then define a designator B that designates the arm that grabbed the object.</li>
+<li>Define a designator that is close to/on top of/inside an entity from some other designator.</li>
+</ul>
+
+<h1>
+<a aria-hidden="true" class="anchor" href="#use-cases-and-example" id="user-content-use-cases-and-example"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Use cases and example</h1>
+<h1>
+<a aria-hidden="true" class="anchor" href="#iterating-entities" id="user-content-iterating-entities"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Iterating entities</h1>
+<p>In a RoboCup challenge, you sometimes want to iterate over a bunch of entities, e.g. pick and place all items on top of some table or take a look at all persons in a room.
+You can use and EdEntityDesignator to express that you only want persons:</p>
+<div class="highlight highlight-source-python"><pre>current_human <span class="pl-k">=</span> EdEntityDesignator(<span class="pl-v">type</span><span class="pl-k">=</span><span class="pl-s"><span class="pl-pds">"</span>human<span class="pl-pds">"</span></span>)</pre></div>
+<p>But, you only want to look at each person only once. The current best solution for this is to add each entity to a list of processed entities.
+The designator for current_human then must check whether the entity is finds is not in that list, which is an extra criterium to the entity: it must be a human AND is must not be already processed.
+So, we extend the designator with a criterium:</p>
+<div class="highlight highlight-source-python"><pre>processed_entities <span class="pl-k">=</span> []([<span class="pl-c"><span class="pl-c">#</span>Including]])=)</span>
+current_human = EdEntityDesignator(<span class="pl-v">type</span><span class="pl-k">=</span><span class="pl-s"><span class="pl-pds">"</span>human<span class="pl-pds">"</span></span>, <span class="pl-v">criteria_funcs</span><span class="pl-k">=</span>[entity: <span class="pl-k">not</span> entity <span class="pl-k">in</span> processed_entities](<span class="pl-k">lambda</span>))</pre></div>
+<p>Of course, the human-entity must be put on that list after taking a look at it:</p>
+<div class="highlight highlight-source-python"><pre><span class="pl-c"><span class="pl-c">#</span>start statemachine, work with the entity.</span>
+<span class="pl-c"><span class="pl-c">#</span>After placing or whatever with the entity: add it to some list to ignore it later on</span>
+<span class="pl-c1">...</span>
+    processed_entities <span class="pl-k">+=</span> [<span class="pl-c"><span class="pl-c">#</span>Wrapped in a smach.CBState that follows a state that uses the current_human designator</span>
+<span class="pl-c1">...</span></pre></div>
+<p>Previously, we used the reasoner to assert which items were unreachable, visited etc. You can keep this all in Python code now and keep track of the logic a bit better I hope.</p>
+<h1>
+<a aria-hidden="true" class="anchor" href="#common-use-cases" id="user-content-common-use-cases"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Common use cases</h1>
+<p>These use-cases of designators are relatively common and something must be done to make it easier to do that use-case.</p>
+<ul>
+<li>Select some EdEntity in a some smach state and use that EdEntity later on (Some sort of locking to an ID but keep updating other info)</li>
+<li>Define or ask for an object type in some state and later use that type to select an EdEntity.</li>
+<li>Iterate over a collection of items, exclude the already processed items from that list (Done, can be done with the EdEntityCollectionDesignator and a filter function)</li>
+<li>Lock to some entity, but keep updating the entity's other data when you resolve it again. (i.e. a smarter LockingDesignator specifically for EdEntities, basically the same as the first use-case)</li>
+<li>Lock and unlock a designator (Maybe make a with-context that inserts the lock/unlock-states)</li>
+<li>Add the resolution of a designator to a list</li>
+<li>Go to an EdEntity with some predefined ID (this already pretty simple and well understood, using EdEntityDesignator(robot, id=...))</li>
+<li>Pass a variable from one state to another (This is already simple enough with a VariableDesignator(resolve_type=))</li>
+</ul>
+<h1>
+<a aria-hidden="true" class="anchor" href="#uncommon-use-cases" id="user-content-uncommon-use-cases"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Uncommon use-cases</h1>
+<ul>
+<li>Resolve to an unexplored entity, that is not on some list of unexplored things and sort by closest one.</li>
+<li>Make a fake Entity to go to some PoseStamped</li>
+<li>
+</li>
+</ul>
+<h1>
+<a aria-hidden="true" class="anchor" href="#custom-designators" id="user-content-custom-designators"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Custom designators</h1>
+<p>Any object in Python can be a designator, as long as it has a .resolve()-method that returns something.
+In a challenge, you can create a designator specifically for that challenge and even use variables from its <a href="current_human.resolve()%5D">http://stackoverflow.com/questions/291978/short-description-of-python-scoping-rules lexical scope</a>.</p>
+<p>#Syntactic sugar (TODO
+Designators could be context managers:</p>
+<div class="highlight highlight-source-python"><pre><span class="pl-k">with</span> specific_object <span class="pl-k">=</span> collection_designator.refine({<span class="pl-s"><span class="pl-pds">"</span>Class<span class="pl-pds">"</span></span>:<span class="pl-s"><span class="pl-pds">"</span>coke<span class="pl-pds">"</span></span>}): 
+    GrabMachine(specific_object)</pre></div>
+<div class="highlight highlight-source-python"><pre><span class="pl-k">with</span> next_object <span class="pl-k">=</span> collection_designator.next(): 
+    GrabMachine(next_object)</pre></div>
+<p>Where ordered_drink is a designator containing some query.</p>
+<h1>
+<a aria-hidden="true" class="anchor" href="#other-idea" id="user-content-other-idea"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Other idea</h1>
+<p>DONE, see subclasses of ArmDesignator: When we want to determine which arm to use at execution time, AMIGO needs to know the state of each arm. This is a start for a more semantic self-image of the robot. When the state of an arm changes, Amigo can say ouch!</p>
+<h1>
+<a aria-hidden="true" class="anchor" href="#refactoring" id="user-content-refactoring"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Refactoring</h1>
+<ul>
+<li><strike>Split up te designators module into core, util, ed, arm etc.</strike></li>
+<li>
+<strike>Make clear when writing a state macine which write to a designator and which states read from it.</strike> Currently a GitHub pull request.</li>
+</ul>
+<h1>
+<a aria-hidden="true" class="anchor" href="#explanations" id="user-content-explanations"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Explanations</h1>
+<p>Designators allow to separate the how and what of executives. 'How' are the actual smach states, while designators take care of the 'what' part. Smach states can be drawn as a graph of execution, while designators frm some sort of dataflow-graph.</p>
+
+        </div>
+
+        <div class="wiki-footer gollum-markdown-content boxed-group" id="wiki-footer">
+          <div class="boxed-group-inner wiki-auxiliary-content markdown-body">
+            <p>:)</p>
+
+          </div>
+        </div>
+    </div>]

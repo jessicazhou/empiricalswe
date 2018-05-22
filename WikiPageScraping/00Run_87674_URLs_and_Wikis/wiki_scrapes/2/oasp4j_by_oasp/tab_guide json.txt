@@ -1,0 +1,183 @@
+[<div class="wiki-body gollum-asciidoc-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <div>
+<div>Table of Contents</div>
+<ul>
+<li>
+<a href="#json">JSON</a>
+<ul>
+<li><a href="#configure-json-mapping">Configure JSON Mapping</a></li>
+<li><a href="#json-and-inheritance">JSON and Inheritance</a></li>
+<li><a href="#json-custom-mapping">JSON Custom Mapping</a></li>
+</ul>
+</li>
+</ul>
+</div>
+<h1 id="user-content-json">
+<a aria-hidden="true" class="anchor" href="#json" id="user-content-json"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>JSON</h1>
+<div>
+<p><a href="http://en.wikipedia.org/wiki/JSON" rel="nofollow">JSON</a> (JavaScript Object Notation) is a popular format to represent and exchange data especially for modern web-clients. For mapping Java objects to JSON and vice-versa there is no official standard API. We use the established and powerful open-source solution <a href="http://wiki.fasterxml.com/JacksonHome" rel="nofollow">Jackson</a>.
+Due to problems with the wiki of fasterxml you should try this alternative link: <a href="https://github.com/FasterXML/jackson#jackson-project-home-github">Jackson/AltLink</a>.</p>
+</div>
+<div>
+<h2 id="user-content-configure-json-mapping">
+<a aria-hidden="true" class="anchor" href="#configure-json-mapping" id="user-content-configure-json-mapping"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Configure JSON Mapping</h2>
+<div>
+<div>
+<p>In order to avoid polluting business objects with proprietary Jackson annotations (e.g. <code>@JsonTypeInfo</code>, <code>@JsonSubTypes</code>, <code>@JsonProperty</code>) we propose to create a separate configuration class. Every OASP application (sample or any app created from our <a href="tutorial-newapp">app-template</a>) therefore has a class called <code>ApplicationObjectMapperFactory</code> that extends ObjectMapperFactory from the oasp4j-rest module. It looks like this:</p>
+</div>
+<div>
+<div>
+<div class="highlight highlight-source-java"><pre><span class="pl-k">@Named</span>(<span class="pl-s"><span class="pl-pds">"</span>ApplicationObjectMapperFactory<span class="pl-pds">"</span></span>)
+<span class="pl-k">public</span> <span class="pl-k">class</span> <span class="pl-en">ApplicationObjectMapperFactory</span> <span class="pl-k">extends</span> <span class="pl-e">ObjectMapperFactory</span> {
+
+  <span class="pl-k">public</span> <span class="pl-en">RestaurantObjectMapperFactory</span>() {
+    <span class="pl-c1">super</span>();
+    <span class="pl-c"><span class="pl-c">//</span> JSON configuration code goes here</span>
+  }
+}</pre></div>
+</div>
+</div>
+</div>
+</div>
+<div>
+<h2 id="user-content-json-and-inheritance">
+<a aria-hidden="true" class="anchor" href="#json-and-inheritance" id="user-content-json-and-inheritance"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>JSON and Inheritance</h2>
+<div>
+<div>
+<p>If you are using inheritance for your objects mapped to JSON then polymorphism can not be supported out-of-the box. So in general avoid polymorphic objects in JSON mapping. However, this is not always possible.
+Have a look at the following example from our sample application:</p>
+</div>
+<div>
+<div>
+<img alt="inheritance class diagram" src="images/REST-Inheritance.png" width="450"/>
+</div>
+<div>Figure 1. Transfer-Objects using Inheritance</div>
+</div>
+<div>
+<p>Now assume you have a <a href="guide-service-layer#rest">REST service operation</a> as Java method that takes a ProductEto as argument. As this is an abstract class the server needs to know the actual sub-class to instantiate.
+We typically do not want to specify the classname in the JSON as this should be an implementation detail and not part of the public JSON format (e.g. in case of a service interface). Therefore we use a symbolic name for each polymorphic subtype that is provided as virtual attribute @type within the JSON data of the object:</p>
+</div>
+<div>
+<div>
+<div class="highlight highlight-source-json"><pre>{ <span class="pl-s"><span class="pl-pds">"</span>@type<span class="pl-pds">"</span></span>: <span class="pl-s"><span class="pl-pds">"</span>Drink<span class="pl-pds">"</span></span>, <span class="pl-ii">...</span> }</pre></div>
+</div>
+</div>
+<div>
+<p>Therefore you add configuration code to the constructor of <a href="#configure-json-mapping">ApplicationObjectMapperFactory</a>. Here you can see an example from the sample application:</p>
+</div>
+<div>
+<div>
+<div class="highlight highlight-source-java"><pre>setBaseClasses(<span class="pl-smi">ProductEto</span><span class="pl-k">.</span>class);
+addSubtypes(<span class="pl-k">new</span> <span class="pl-smi">NamedType</span>(<span class="pl-smi">MealEto</span><span class="pl-k">.</span>class, <span class="pl-s"><span class="pl-pds">"</span>Meal<span class="pl-pds">"</span></span>), <span class="pl-k">new</span> <span class="pl-smi">NamedType</span>(<span class="pl-smi">DrinkEto</span><span class="pl-k">.</span>class, <span class="pl-s"><span class="pl-pds">"</span>Drink<span class="pl-pds">"</span></span>),
+  <span class="pl-k">new</span> <span class="pl-smi">NamedType</span>(<span class="pl-smi">SideDishEto</span><span class="pl-k">.</span>class, <span class="pl-s"><span class="pl-pds">"</span>SideDish<span class="pl-pds">"</span></span>));</pre></div>
+</div>
+</div>
+<div>
+<p>We use <code>setBaseClasses</code> to register all top-level classes of polymorphic objects. Further we declare all concrete polymorphic sub-classes together with their symbolic name for the JSON format via <code>addSubtypes</code>.</p>
+</div>
+</div>
+</div>
+<div>
+<h2 id="user-content-json-custom-mapping">
+<a aria-hidden="true" class="anchor" href="#json-custom-mapping" id="user-content-json-custom-mapping"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>JSON Custom Mapping</h2>
+<div>
+<div>
+<p>In order to map custom <a href="guide-datatype">datatypes</a> or other types that do not follow the Java bean conventions, you need to define a custom mapping. If you create objects dedicated for the JSON mapping you can easily avoid such situations. When this is not suitable follow these instructions to define the mapping:</p>
+</div>
+<div>
+<ol>
+<li>
+<p>As an example, the use of JSR354 (<code>javax.money</code>) is appreciated in order to process monetary amounts properly. However, without custom mapping, the default mapping of Jackson will produce the following JSON for a <code>MonetaryAmount</code>:</p>
+<div>
+<div>
+<div class="highlight highlight-source-json"><pre><span class="pl-s"><span class="pl-pds">"</span>currency<span class="pl-pds">"</span></span>: {<span class="pl-s"><span class="pl-pds">"</span>defaultFractionDigits<span class="pl-pds">"</span></span>:<span class="pl-c1">2</span>, <span class="pl-s"><span class="pl-pds">"</span>numericCode<span class="pl-pds">"</span></span>:<span class="pl-c1">978</span>, <span class="pl-s"><span class="pl-pds">"</span>currencyCode<span class="pl-pds">"</span></span>:<span class="pl-s"><span class="pl-pds">"</span>EUR<span class="pl-pds">"</span></span>},
+<span class="pl-s"><span class="pl-pds">"</span>monetaryContext<span class="pl-pds">"</span></span>: {<span class="pl-ii">...</span>},
+<span class="pl-s"><span class="pl-pds">"</span>number<span class="pl-pds">"</span></span>:<span class="pl-c1">6.99</span>,
+<span class="pl-s"><span class="pl-pds">"</span>factory<span class="pl-pds">"</span></span>: {<span class="pl-ii">...</span>}</pre></div>
+</div>
+</div>
+<div>
+<p>As clearly can be seen, the JSON contains too much information and reveals implementation secrets that do not belong here. Instead the JSON output expected and desired would be:</p>
+</div>
+<div>
+<div>
+<div class="highlight highlight-source-json"><pre><span class="pl-s"><span class="pl-pds">"</span>currency<span class="pl-pds">"</span></span>:<span class="pl-s"><span class="pl-pds">"</span>EUR<span class="pl-pds">"</span></span>,<span class="pl-s"><span class="pl-pds">"</span>amount<span class="pl-pds">"</span></span>:<span class="pl-s"><span class="pl-pds">"</span>6.99<span class="pl-pds">"</span></span></pre></div>
+</div>
+</div>
+<div>
+<p>Even worse, when we send the JSON data to the server, Jackson will see that <code>MonetaryAmount</code> is an interface and does not know how to instantiate it so the request will fail.
+Therefore we need a customized <a href="https://github.com/FasterXML/jackson-docs/wiki/JacksonHowToCustomSerializers">Serializer</a>.</p>
+</div>
+</li>
+<li>
+<p>We implement <code>MonetaryAmountJsonSerializer</code> to define how a <code>MonetaryAmount</code> is serialized to JSON:</p>
+<div>
+<div>
+<div class="highlight highlight-source-java"><pre><span class="pl-k">public</span> <span class="pl-k">final</span> <span class="pl-k">class</span> <span class="pl-en">MonetaryAmountJsonSerializer</span> <span class="pl-k">extends</span> <span class="pl-e">JsonSerializer&lt;<span class="pl-smi">MonetaryAmount</span>&gt;</span> {
+
+  <span class="pl-k">public</span> <span class="pl-k">static</span> <span class="pl-k">final</span> <span class="pl-smi">String</span> <span class="pl-c1">NUMBER</span> <span class="pl-k">=</span> <span class="pl-s"><span class="pl-pds">"</span>amount<span class="pl-pds">"</span></span>;
+  <span class="pl-k">public</span> <span class="pl-k">static</span> <span class="pl-k">final</span> <span class="pl-smi">String</span> <span class="pl-c1">CURRENCY</span> <span class="pl-k">=</span> <span class="pl-s"><span class="pl-pds">"</span>currency<span class="pl-pds">"</span></span>;
+
+  <span class="pl-k">public</span> <span class="pl-k">void</span> <span class="pl-en">serialize</span>(<span class="pl-smi">MonetaryAmount</span> <span class="pl-v">value</span>, <span class="pl-smi">JsonGenerator</span> <span class="pl-v">jgen</span>, <span class="pl-smi">SerializerProvider</span> <span class="pl-v">provider</span>) <span class="pl-k">throws</span> ... {
+    <span class="pl-k">if</span> (value <span class="pl-k">!=</span> <span class="pl-c1">null</span>) {
+      jgen<span class="pl-k">.</span>writeStartObject();
+      jgen<span class="pl-k">.</span>writeFieldName(<span class="pl-smi">MonetaryAmountJsonSerializer</span><span class="pl-c1"><span class="pl-k">.</span>CURRENCY</span>);
+      jgen<span class="pl-k">.</span>writeString(value<span class="pl-k">.</span>getCurrency()<span class="pl-k">.</span>getCurrencyCode());
+      jgen<span class="pl-k">.</span>writeFieldName(<span class="pl-smi">MonetaryAmountJsonSerializer</span><span class="pl-c1"><span class="pl-k">.</span>NUMBER</span>);
+      jgen<span class="pl-k">.</span>writeString(value<span class="pl-k">.</span>getNumber()<span class="pl-k">.</span>toString());
+      jgen<span class="pl-k">.</span>writeEndObject();
+    }
+  }</pre></div>
+</div>
+</div>
+<div>
+<p>For composite datatypes it is important to wrap the info as an object (<code>writeStartObject()</code> and <code>writeEndObject()</code>). <code>MonetaryAmount</code> provides the information we need by the <code>getCurrency()</code> and <code>getNumber()</code>. So that we can easily write them into the JSON data.</p>
+</div>
+</li>
+<li>
+<p>Next, we implement <code>MonetaryAmountJsonDeserializer</code> to define how a <code>MonetaryAmount</code> is deserialized back as Java object from JSON:</p>
+<div>
+<div>
+<div class="highlight highlight-source-java"><pre><span class="pl-k">public</span> <span class="pl-k">final</span> <span class="pl-k">class</span> <span class="pl-en">MonetaryAmountJsonDeserializer</span> <span class="pl-k">extends</span> <span class="pl-e">AbstractJsonDeserializer&lt;<span class="pl-smi">MonetaryAmount</span>&gt;</span> {
+  <span class="pl-k">protected</span> <span class="pl-smi">MonetaryAmount</span> <span class="pl-en">deserializeNode</span>(<span class="pl-smi">JsonNode</span> <span class="pl-v">node</span>) {
+    <span class="pl-smi">BigDecimal</span> number <span class="pl-k">=</span> getRequiredValue(node, <span class="pl-smi">MonetaryAmountJsonSerializer</span><span class="pl-c1"><span class="pl-k">.</span>NUMBER</span>, <span class="pl-smi">BigDecimal</span><span class="pl-k">.</span>class);
+    <span class="pl-smi">String</span> currencyCode <span class="pl-k">=</span> getRequiredValue(node, <span class="pl-smi">MonetaryAmountJsonSerializer</span><span class="pl-c1"><span class="pl-k">.</span>CURRENCY</span>, <span class="pl-smi">String</span><span class="pl-k">.</span>class);
+    <span class="pl-smi">MonetaryAmount</span> monetaryAmount <span class="pl-k">=</span>
+        <span class="pl-smi">MonetaryAmounts</span><span class="pl-k">.</span>getAmountFactory()<span class="pl-k">.</span>setNumber(number)<span class="pl-k">.</span>setCurrency(currencyCode)<span class="pl-k">.</span>create();
+    <span class="pl-k">return</span> monetaryAmount;
+  }
+}</pre></div>
+</div>
+</div>
+<div>
+<p>For composite datatypes we extend from <a href="https://github.com/oasp/oasp4j/blob/develop/modules/rest/src/main/java/io/oasp/module/rest/service/impl/json/AbstractJsonDeserializer.java"><code>AbstractJsonDeserializer</code></a> as this makes our task easier. So we already get a <code>JsonNode</code> with the parsed payload of our datatype. Based on this API it is easy to retrieve individual fields from the payload without taking care of their order, etc.
+<code>AbstractJsonDeserializer</code> also provides methods such as <code>getRequiredValue</code> to read required fields and get them converted to the desired basis datatype. So we can easily read the amount and currency and construct an instance of <code>MonetaryAmount</code> via the official factory API.</p>
+</div>
+</li>
+<li>
+<p>Finally we need to register our custom (de)serializers with the following configuration code in the constructor of <a href="#configure-json-mapping">ApplicationObjectMapperFactory</a>:+</p>
+</li>
+</ol>
+</div>
+<div>
+<div>
+<pre>  SimpleModule module = getExtensionModule();
+  module.addDeserializer(MonetaryAmount.class, new MonetaryAmountJsonDeserializer());
+  module.addSerializer(MonetaryAmount.class, new MonetaryAmountJsonSerializer());</pre>
+</div>
+</div>
+<div>
+<p>Now we can read and write <code>MonetaryAmount</code> from and to JSON as expected.</p>
+</div>
+</div>
+</div>
+        </div>
+
+        <div class="wiki-footer gollum-markdown-content boxed-group" id="wiki-footer">
+          <div class="boxed-group-inner wiki-auxiliary-content markdown-body">
+            <p><a href="http://creativecommons.org/licenses/by-nd/4.0/" rel="nofollow"><img alt="Creative Commons License Agreement" data-canonical-src="http://i.creativecommons.org/l/by-nd/4.0/88x31.png" src="https://camo.githubusercontent.com/171d004f9ccb9199e35ac8ec3d99ede916037a9f/687474703a2f2f692e6372656174697665636f6d6d6f6e732e6f72672f6c2f62792d6e642f342e302f38387833312e706e67"/></a><br/><span>This documentation</span> is licensed under the <a href="http://creativecommons.org/licenses/by-nd/4.0/" rel="nofollow">Creative Commons License (Attribution-NoDerivatives 4.0 International)</a>.</p>
+
+          </div>
+        </div>
+    </div>]

@@ -1,0 +1,37 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>For complete system backups, the backup user has to be root. Otherwise a bunch of files and directories will not be accessible</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#rsyncd" id="user-content-rsyncd"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>rsyncd</h2>
+<p>This is the account (and also module in my solution) to use in the rsync daemon. It is password protected to avoid a user deleting another user's backups</p>
+<p>For this, a file readable only to the backup user should contain the password by itself. The client should invoke rsync with the –password-file flag</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#ssh" id="user-content-ssh"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>SSH</h2>
+<p>To make the solution useful as an hourly backup, the connection has to be passwordless, but also if backing up over the internet or any unreliable network (i.e. any) ssh is recommended.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#setting-passwordless-login" id="user-content-setting-passwordless-login"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Setting passwordless login</h3>
+<p>First we need to create the key used to log in.
+Replace CLIENT by a string that will let you recognize this key as coming from this computer and run it in the client computer. This is just a comment in the key but will allow you to remove a compromised key easily from the server. Make sure there's a .ssh directory in the backup client's home dir and run the commands as the backup client; otherwise the key will not work</p>
+<pre><code>ssh-keygen -f ~/.ssh/backupKey -C 'Backup key from &lt;CLIENT&gt;' -N '' -t rsa
+</code></pre>
+<p>-N '' will make the passphrase empty, if the passphrase is empty, we will be prompted every time we use the key, thus making it not passwordless</p>
+<p>Then copy the public key to the backup server by replacing remotebox with the host or ip of the backup server. Make sure .ssh is created and writable in the backup user's folder in server. If you have password access to the backup account (not recommended after setup is complete) run</p>
+<pre><code>ssh-copy-id -i ~/.ssh/backupKey.pub backup@remotebox
+</code></pre>
+<p>Otherwise copy the text from the <strong>public</strong> key to the backup user's ~/.ssh/authorized_keys file in a new line</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#restricting-authorized-ssh-key" id="user-content-restricting-authorized-ssh-key"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Restricting authorized ssh key</h3>
+<p>To limit what the passwordless key can do, in the server go to the backup user home directory and edit the authorized key under ~/.ssh/authorized_keys and add this to the beginning of the key you want to limit</p>
+<pre><code>command="/usr/local/bin/rrsync DIR" (rest of key after a space) ssh-rsa AAAB3Z.....
+</code></pre>
+<p>where DIR is the root of your snapshots hierarchy. i.e. 1 level above the clients' folders rrsync will limit the operations allowed. In my case that is /mnt/Backup/Snapshots
+rrsync is shipped with rsync, it is usually compressed in a .gz file. After decompressing it, put it in /usr/local/bin and make sure the backup user has execute permission</p>
+<p>Two things to notice:</p>
+<ul>
+<li>daemon is disabled by default (it has a mapping of -1, change it to 0)</li>
+<li>delete should be disabled since we are always sync'ing to an empty directory and this switch could potentially be used to delete someone's backup</li>
+</ul>
+
+        </div>
+
+    </div>]

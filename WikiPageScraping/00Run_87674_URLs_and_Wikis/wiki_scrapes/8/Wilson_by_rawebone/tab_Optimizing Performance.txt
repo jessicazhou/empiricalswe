@@ -1,0 +1,90 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>As noted in the first part of the documentation, Wilson is designed to be
+as efficient as possible out of the box to create a very small footprint.
+However to get the best performance possible, there are a couple of steps
+that additionally need to be taken.</p>
+<p>This document outlines the methodologies that can be applied to improve
+the performance of the framework and bring it's overhead as low possible.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#caching" id="user-content-caching"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Caching</h2>
+<p>For every request the framework processes it creates a Routing Table from
+the resources that are passed through to it. This requires reflection and
+parsing of the doc comments and so, while the cost is almost negligible
+for small applications, the larger the application gets the slower
+performance becomes. As such the framework provides a mechanism for
+creating the Routing Table ahead of time to reduce this cost.</p>
+<blockquote>
+<p>Caching can be applied regardless of the size of the application, but the
+performance gained from this will depend upon the size of the Routing table
+versus the amount of instructions required to load the routing graph. As such
+mileage may vary.</p>
+</blockquote>
+<p>The suggested implementation is:</p>
+<div class="highlight highlight-text-html-php"><pre><span class="pl-pse">&lt;?php</span><span class="pl-s1"></span>
+<span class="pl-s1"></span>
+<span class="pl-s1"><span class="pl-k">require_once</span> <span class="pl-s"><span class="pl-pds">"</span>vendor/autoload.php<span class="pl-pds">"</span></span>;</span>
+<span class="pl-s1"></span>
+<span class="pl-s1"><span class="pl-smi">$api</span> <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-c1">Wilson\</span><span class="pl-c1">Api</span>();</span>
+<span class="pl-s1"><span class="pl-smi">$api</span><span class="pl-k">-&gt;</span><span class="pl-smi">resources</span> <span class="pl-k">=</span> <span class="pl-c1">array</span>(<span class="pl-s"><span class="pl-pds">"</span>Users<span class="pl-pds">"</span></span>);</span>
+<span class="pl-s1"><span class="pl-smi">$api</span><span class="pl-k">-&gt;</span><span class="pl-smi">services</span>  <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-c1">Services</span>();</span>
+<span class="pl-s1"></span>
+<span class="pl-s1"><span class="pl-k">if</span> (<span class="pl-smi">$production</span>) { <span class="pl-c"><span class="pl-c">//</span> @todo define the flag somewhere</span></span>
+<span class="pl-s1">    <span class="pl-smi">$api</span><span class="pl-k">-&gt;</span><span class="pl-smi">cacheFile</span> <span class="pl-k">=</span> <span class="pl-s"><span class="pl-pds">"</span>/path/to/cache/framework.php<span class="pl-pds">"</span></span>;</span>
+<span class="pl-s1">    </span>
+<span class="pl-s1">    <span class="pl-k">if</span> (<span class="pl-k">!</span><span class="pl-c1">is_file</span>(<span class="pl-smi">$api</span><span class="pl-k">-&gt;</span><span class="pl-smi">cacheFile</span>)) {</span>
+<span class="pl-s1">        <span class="pl-smi">$api</span><span class="pl-k">-&gt;</span>createCache();</span>
+<span class="pl-s1">    }</span>
+<span class="pl-s1">}</span>
+<span class="pl-s1"></span>
+<span class="pl-s1"><span class="pl-k">if</span> (<span class="pl-c1">isset</span>(<span class="pl-smi">$testing</span>)) {</span>
+<span class="pl-s1">    <span class="pl-k">return</span> <span class="pl-smi">$api</span>;</span>
+<span class="pl-s1">}</span>
+<span class="pl-s1"></span>
+<span class="pl-s1"><span class="pl-smi">$api</span><span class="pl-k">-&gt;</span>dispatch();</span>
+<span class="pl-s1"></span></pre></div>
+<h2>
+<a aria-hidden="true" class="anchor" href="#include-optimisation" id="user-content-include-optimisation"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Include Optimisation</h2>
+<p>Autoloading can add in a significant amount of time to a request, even when
+optimised. This is because PHP firstly has to make a call about whether the
+class/interface/trait exists, then has to pass a request through a stack of
+autoload handlers and those handlers need to check whether files exist and
+then call include.</p>
+<p>Overall I found in one application that 12% of the total request time was
+taken by Composer. Now, I am not a naysayer to autoloading- it is a
+brilliant thing for the best part - and this has been recognised by a
+number of other projects who start to use a "preloader": a compiled form
+of the application objects that are needed on every request. Wilson provides
+the same basic thing, but without needing to load lots of dependencies.</p>
+<div class="highlight highlight-source-shell"><pre>$ php vendor/rawebone/wilson/bin/compile.php
+</pre></div>
+<div class="highlight highlight-text-html-php"><pre><span class="pl-pse">&lt;?php</span><span class="pl-s1"></span>
+<span class="pl-s1"></span>
+<span class="pl-s1"><span class="pl-k">@</span><span class="pl-k">include</span> <span class="pl-s"><span class="pl-pds">"</span>/path/to/wilson_compiled.php<span class="pl-pds">"</span></span>;</span>
+<span class="pl-s1"><span class="pl-k">require_once</span> <span class="pl-s"><span class="pl-pds">"</span>vendor/autoload.php<span class="pl-pds">"</span></span>;</span>
+<span class="pl-s1"></span>
+<span class="pl-s1"><span class="pl-smi">$api</span> <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-c1">Wilson\</span><span class="pl-c1">Api</span>();</span>
+<span class="pl-s1"><span class="pl-smi">$api</span><span class="pl-k">-&gt;</span><span class="pl-smi">resources</span> <span class="pl-k">=</span> <span class="pl-c1">array</span>(<span class="pl-s"><span class="pl-pds">"</span>Users<span class="pl-pds">"</span></span>);</span>
+<span class="pl-s1"><span class="pl-smi">$api</span><span class="pl-k">-&gt;</span><span class="pl-smi">services</span>  <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-c1">Services</span>();</span>
+<span class="pl-s1"></span>
+<span class="pl-s1"><span class="pl-k">if</span> (<span class="pl-smi">$production</span>) { <span class="pl-c"><span class="pl-c">//</span> @todo define the flag somewhere</span></span>
+<span class="pl-s1">    <span class="pl-smi">$api</span><span class="pl-k">-&gt;</span><span class="pl-smi">cacheFile</span> <span class="pl-k">=</span> <span class="pl-s"><span class="pl-pds">"</span>/path/to/cache/framework.php<span class="pl-pds">"</span></span>;</span>
+<span class="pl-s1">    </span>
+<span class="pl-s1">    <span class="pl-k">if</span> (<span class="pl-k">!</span><span class="pl-c1">is_file</span>(<span class="pl-smi">$api</span><span class="pl-k">-&gt;</span><span class="pl-smi">cacheFile</span>)) {</span>
+<span class="pl-s1">        <span class="pl-smi">$api</span><span class="pl-k">-&gt;</span>createCache();</span>
+<span class="pl-s1">    }</span>
+<span class="pl-s1">}</span>
+<span class="pl-s1"></span>
+<span class="pl-s1"><span class="pl-k">if</span> (<span class="pl-c1">isset</span>(<span class="pl-smi">$testing</span>)) {</span>
+<span class="pl-s1">    <span class="pl-k">return</span> <span class="pl-smi">$api</span>;</span>
+<span class="pl-s1">}</span>
+<span class="pl-s1"></span>
+<span class="pl-s1"><span class="pl-smi">$api</span><span class="pl-k">-&gt;</span>dispatch();</span>
+<span class="pl-s1"></span></pre></div>
+<h2>
+<a aria-hidden="true" class="anchor" href="#next-internals" id="user-content-next-internals"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Next: <a href="Framework-Internals">Internals</a>
+</h2>
+
+        </div>
+
+    </div>]

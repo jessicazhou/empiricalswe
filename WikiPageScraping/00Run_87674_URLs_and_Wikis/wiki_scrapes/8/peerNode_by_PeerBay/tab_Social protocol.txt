@@ -1,0 +1,103 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p><em>P2P Domain Registration - First Run</em></p>
+<p>On every boot the system checks if the system has a public ip address addressable from the web so it can start a supernode instance.If yes everything is ok.If not then the system checks if UPNP is enabled on the modem.If yes then it makes a request to the modem to redirect port 50000 to the local ip(if it's already used it increments 50000 by 10 until it finds an unused port).If upnp is disabled then it'll ask the user to either enable it or use a public supernode instance. Whatever happens it stores the supernode instance ip:port for later use on the domain registration or update with tvcouch.</p>
+<p>On a new peernode a user enters peer.local for the first time on his browser and he/she is asked to get a p2p domain for his server. For example the user wants to register the domain "myhome.p2p".
+<img alt="" data-canonical-src="http://i.imgur.com/Kpob1VG.jpg?1" src="https://camo.githubusercontent.com/249abd14efb029c42bf7ff56f3801a3fc20d0777/687474703a2f2f692e696d6775722e636f6d2f4b706f623156472e6a70673f31"/></p>
+<ol>
+<li>"myhome.p2p" is searched on a peerhub server if it is already registered.
+1.1) If it isn't then "myhome.p2p" is registered on the peerhub server (and replicated to other peerhubs) with a public key that is created with</li>
+</ol>
+<pre><code>kadnode-ctl --auth-gen-keys</code></pre> that produces <pre><code>public:aaf55e367307a92a6
+<p>secret:b9d0fae5e67b11k</p></code></pre>
+and store a json file with a PUT request in the form of <pre><code>{
+domain:"myhome.p2p",
+public:"aaf55e367307a92a6",
+ip:"xxx.xxx.xxx.xxx",
+supernode:"xxx.xxx.xxx.xxx:50000",
+signature:""
+}</code></pre>
+a signature is also given with challenge made from tvcouch server that proves the knowledge of the secret key.
+<img alt="" data-canonical-src="http://i.imgur.com/eKaawRf.jpg?1" src="https://camo.githubusercontent.com/850a2bfdb1bb91c7f9214366ac63901a6bd95329/687474703a2f2f692e696d6775722e636f6d2f654b61617752662e6a70673f31"/>
+<p>1.2) If it is already registered inform the user to choose another domain and go to step 1.
+2) Start kadnode and announce the main domain "myhome.p2p" with the secret key "using the command":<a href="https://github.com/mwarning/KadNode/issues/23">https://github.com/mwarning/KadNode/issues/23</a></p>
+<pre><code>kadnode --auth-add-skey "myhome.p2p:b9d0fae5e67b11k"</code></pre>
+<p><img alt="" data-canonical-src="http://i.imgur.com/7Xajdpl.jpg?1" src="https://camo.githubusercontent.com/a2c7759ad167122383a29938419e028e17319ae7/687474703a2f2f692e696d6775722e636f6d2f3758616a64706c2e6a70673f31"/>
+3) Every time the system's public ip is changed we update the ip field on the tvcouch server and the supernode field if supernode runs locally(dyndns).
+Now if another tvcouch node searches on DHT for "myhome.p2p:aaf55e367307a92a6" then a custom dns entry on the raspberry dns server will be recorded. So if the "myhome.p2p" will redirect to the to the ip of the previous node.
+For a domain lookup there are two ways for the system to find the authorized domain(the domain with the correct public key).
+The user exchanges the public key through a trusted communication method and then  runs the command</p><pre><code>kadnode-ctl lookup myhome.p2p:&lt;public_key&gt;</code></pre>
+The system does a GET request to the tvcouch server for "myhome" and is returned with the json file mentioned above.
+<hr/>
+<p><em>User Registration</em><br/>
+When a new user wants to register his name on the configured node he is asked to input a username and a password.If the username already exists on the domain(checks if db named  exists) then it rejects the username and informs the user, else with the credentials used:
+a private and public key is created using the cryptico javascript library.
+a new couchdb user and two couchdb databases are created using the username as the database name.The databases are called "" and "public-".The "public-" is a write only database by the user's friends ,that is made possible with "dropbox databases in rcouch":<a href="https://github.com/rcouch/rcouch/wiki/Write-only-databases">https://github.com/rcouch/rcouch/wiki/Write-only-databases</a> . The first is the users private database that can be read only by him/her and the second is the database that is used for exchanging encrypted messages with other authorized users(friends).
+the user is asked if he wants to make his/her profile public on tvcouch server so it can be easier and faster to be searched for on the tvcouch server. If yes then a PUT request is made to the users database of the tvcouch server with a json file in the form of</p>
+<pre><code>{
+  username:"bill",
+  user_public_key:"",
+  domain:"myhome.p2p",
+  avatar:"http://url/to/picture",
+  public_data:{any data the user wants to be public such as age,gender etc},
+  signature:
+}</code></pre> 
+<p>the user is announced as a subdomain on the DHT network with the command</p>
+<pre><code>kadnode-ctl announce bill.myhome.p2p</code></pre>
+<p>an edge subprocess to the supernode is started to create a secure encrypted communication tunnel for friend requests that uses the user's public key as the encryption key.This is done by running</p>
+<pre><code> edge -d n2n-bill -c bill -k  -a y.y.y.y -l xxx.xxx.xxx.xxx:50000</code></pre>
+<p>y.y.y.y is generated by calculations made with the username and is the local vpn address.</p>
+<hr/>
+<p><em>Search for a user and friend request</em></p>
+<p>A user can be searched either in a fully decentralized way, or semicentralized , or centralized.</p>
+<ul>
+<li>In the fully decentralized way the searcher has to know through a safe communication method the following:</li>
+</ul>
+<ol>
+<li>the domain</li>
+<li>the domain's public key</li>
+<li>the user's name</li>
+<li>the user's public key</li>
+<li>the domain's supernode if UPNP on the user is not enabled
+So the commands needed with the above knowledge are</li>
+</ol>
+<pre><code>
+kadnode-ctl lookup ..p2p:
+edge -d n2n--  -c  -k  -a y.y.y.y -l ..p2p:50000
+</code></pre>
+<p>When this happens the searcher can do a put request with his/her info (the same as the above) to the software running that will inform the user of the friend request by adding a friend request json document in the user's db.The info given from the searcher is(encrypted with user's public key ):</p>
+<pre><code>
+{
+  username:,
+  domain:,
+  domain_public_key:
+  user_public_key:,
+  supernode:,
+  #friendly_account:
+}
+</code></pre>
+<p>The friendly_account has write only permissions to "public-" db and the password is also used for the edge encryption password.</p>
+<ul>
+<li>The semicentralized way needs only the knowledge of the full address (..p2p) of the user and his/her public key.
+The info below are asked from the tvcouch server</li>
+</ul>
+<ol>
+<li>the domain's public key</li>
+<li>the domain's supernode if UPNP on the user is not enabled
+The same commands as above are made.</li>
+</ol>
+<ul>
+<li>The centralized way needs the user searched to have a public profile on tvcouch server. The searcher either knows the full address of the user or just the username will be returned with results matching the requested query.<br/>
+The same commands as above are made.</li>
+</ul>
+<hr/>
+<p><em>Friend acceptance</em></p>
+<p>When the friend request is accepted by the user , it uses the info given by the friend to connect to the friend's node and put an accepted message to friend's public db.
+A filtered replication document is created for the new friendship.</p>
+<hr/>
+<p><em>Share posts with specific users</em></p>
+<p>Every post has an array of users that are allowed to see the post and based on this the filtered replication happens.</p>
+
+        </div>
+
+    </div>]

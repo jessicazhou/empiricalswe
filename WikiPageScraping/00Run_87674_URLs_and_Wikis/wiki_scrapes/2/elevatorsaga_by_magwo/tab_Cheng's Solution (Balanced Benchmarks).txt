@@ -1,0 +1,141 @@
+[<div class="wiki-body gollum-creole-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p><strong>[outdated since 1/28/2015 due to game challenges changes]</strong></p><p>Pass all levels but 14. Level 13, 15 may require multiple tries to pass.</p><p>Benchmarks for Level 17 (@21x):</p><p>(all benchmarks of the best/average runs happened during 1 run, not the best/average benchmarks from different runs)</p><ul>
+<li>Transported: best 1995, average ~1993, range 1990 - 1995</li>
+<li>Elapsed time: 1000s</li>
+<li>Transported/s: best 1.99, average ~1.99, range 1.98 - 1.99</li>
+<li>Avg waiting time: best 6.7s, average ~6.7, range 6.7 - 6.9</li>
+<li>Max waiting time: best 20.1s, average ~21.9, range 20.1 - 25.7</li>
+<li>Moves: best 9236, average ~9326, range 9236 - 9521</li>
+</ul><p>Saves on <strong>moves</strong> and has decent <strong>throughput</strong>, at the expense of occasional spikes of max waiting time. </p><p>Solution is based on simple heuristics:</p><ol>
+<li>First, find the best candidate for a <tt>floor_button_pressed</tt> event (<tt>scheduleElevatorForFloorButtonEvent(floor, isGoingUp)</tt>).</li>
+<li>Then, put the <tt>floorNum()</tt> of the floor emitting the event to the found candidate's <tt>destinationQueue</tt> in an appropriate place (<tt>queueDestinationForElevator(elevator, floorNum)</tt>).</li>
+</ol><p>The solution doesn't hard-code specific treatment or tweaks based on challenge number, instead it's generically designed and can respond to new challenges or modifications of existing challenges without modifying the code. </p><p>Potential improvements using more advanced mature algorithms:</p><ul>
+<li>Patten Recognition: if ground floor or any other certain floor is detected to have much larger delta of number of floor request using <a href="http://en.wikipedia.org/wiki/Moving_average" rel="nofollow">Moving Average Filter</a>, then switch to a pre-defined and optimized elevator scheduling pattern for that traffic pattern. It can be done by pre-define a series of weights and a factor-weight-adjustable algorithm.</li>
+<li>Dynamic Programming: set the goal of each elevator is to clean out its passengers as soon as possible measured by number of elevator moves remaining, then calculate the new remaining moves after the elevator has either: going up 1 floor, going down 1 floor, remain on the current floor but open elevator door.</li>
+</ul><p>Gist page: <a href="https://gist.github.com/onlyurei/caf98978cd7bf8e64198">https://gist.github.com/onlyurei/caf98978cd7bf8e64198</a></p><pre>{
+    init: function (elevators, floors) {
+
+        function queueDestinationForElevator(elevator, floorNum) {
+            if (elevator.destinationQueue.length) {
+                if (isElevatorGoingUp(elevator)) {
+                    if (floorNum &lt; elevator.destinationQueue[0]) {
+                        if (elevator.currentFloor() &lt; floorNum) {
+                            elevator.destinationQueue.splice(0, 0, floorNum);
+                        } else {
+                            elevator.destinationQueue.push(floorNum);
+                        }
+                    } else if (floorNum &gt; elevator.destinationQueue[elevator.destinationQueue.length - 1]) {
+                        elevator.destinationQueue.push(floorNum);
+                    } else {
+                        for (var i = 0; i &lt; (elevator.destinationQueue.length - 1); i++) {
+                            if ((floorNum &gt;= elevator.destinationQueue[i]) &amp;&amp; (floorNum &lt;= elevator.destinationQueue[i + 1])) {
+                                elevator.destinationQueue.splice(i + 1, 0, floorNum);
+                                break;
+                            }
+                        }
+                    }
+                } else {
+                    if (floorNum &gt; elevator.destinationQueue[0]) {
+                        if (elevator.currentFloor() &gt; floorNum) {
+                            elevator.destinationQueue.splice(0, 0, floorNum);
+                        } else {
+                            elevator.destinationQueue.push(floorNum);
+                        }
+                    } else if (floorNum &lt; elevator.destinationQueue[elevator.destinationQueue.length - 1]) {
+                        elevator.destinationQueue.push(floorNum);
+                    } else {
+                        for (var i = 0; i &lt; (elevator.destinationQueue.length - 1); i++) {
+                            if ((floorNum &lt;= elevator.destinationQueue[i]) &amp;&amp; (floorNum &gt;= elevator.destinationQueue[i + 1])) {
+                                elevator.destinationQueue.splice(i + 1, 0, floorNum);
+                                break;
+                            }
+                        }
+                    }
+                }
+                elevator.checkDestinationQueue();
+            } else {
+                elevator.goToFloor(floorNum);
+            }
+        }
+
+        function isElevatorGoingUp(elevator) {
+            return !elevator.destinationQueue.length || (elevator.currentFloor() &lt; elevator.destinationQueue[0]);
+        }
+
+        function isElevatorGoingDown(elevator) {
+            return !elevator.destinationQueue.length || (elevator.currentFloor() &gt; elevator.destinationQueue[0]);
+        }
+
+        function isFloorPickupableForElevator(elevator, floorNum) {
+            return !elevator.destinationQueue.length
+                || (isElevatorGoingUp(elevator) &amp;&amp; (elevator.currentFloor() &lt; floorNum))
+                || (isElevatorGoingDown(elevator) &amp;&amp; (elevator.currentFloor() &gt; floorNum));
+        }
+
+        function scheduleElevatorForFloorButtonEvent(floor, isGoingUp) {
+            var candidate = null;
+            elevators.forEach(function (elevator) {
+                if ((elevator.loadFactor() &lt; 1) || (elevator.destinationQueue[0] == floor.floorNum())) {
+                    if (candidate) {
+                        candidate.floorDiff = Math.abs(candidate.currentFloor() - floor.floorNum());
+                        elevator.floorDiff = Math.abs(elevator.currentFloor() - floor.floorNum());
+                        if (!elevator.destinationQueue.length) {
+                            if (!candidate.destinationQueue.length) {
+                                if ((elevator.floorDiff &lt; candidate.floorDiff) || ((elevator.floorDiff == candidate.floorDiff) &amp;&amp; (elevator.loadFactor() &lt; candidate.loadFactor()))) {
+                                    candidate = elevator;
+                                }
+                            } else {
+                                candidate = elevator;
+                            }
+                        } else {
+                            if ((elevator.floorDiff &lt; candidate.floorDiff) &amp;&amp; (elevator.loadFactor() &lt; candidate.loadFactor()) &amp;&amp; ((isElevatorGoingUp(elevator) == isGoingUp) || (isElevatorGoingDown(elevator) != isGoingUp)) &amp;&amp; isFloorPickupableForElevator(elevator, floor.floorNum())) {
+                                candidate = elevator;
+                            }
+                        }
+                    } else {
+                        candidate = elevator;
+                    }
+                }
+            });
+            if (candidate) {
+                queueDestinationForElevator(candidate, floor.floorNum());
+            } else {
+                elevators.sort(function (a, b) {
+                    return (a.floorDiff &lt; b.floorDiff) &amp;&amp; (a.loadFactor() &lt; b.loadFactor());
+                });
+                queueDestinationForElevator(elevators[0], floor.floorNum());
+            }
+        }
+
+        elevators.forEach(function (elevator) {
+            elevator.on('floor_button_pressed', function (floorNum) {
+                queueDestinationForElevator(elevator, floorNum);
+            });
+
+            elevator.on('stopped_at_floor', function (floorNum) {
+                elevator.destinationQueue.forEach(function (destination, index) {
+                    if (destination == floorNum) {
+                        elevator.destinationQueue.splice(index, 1);
+                    }
+                });
+
+            });
+        });
+
+        floors.forEach(function (floor) {
+            floor.on('up_button_pressed', function () {
+                scheduleElevatorForFloorButtonEvent(floor, true);
+            });
+            floor.on('down_button_pressed', function () {
+                scheduleElevatorForFloorButtonEvent(floor, false);
+            });
+        });
+    },
+    update: function(dt, elevators, floors) {
+        // We normally don't need to do anything here
+    }
+}</pre>
+        </div>
+
+    </div>]

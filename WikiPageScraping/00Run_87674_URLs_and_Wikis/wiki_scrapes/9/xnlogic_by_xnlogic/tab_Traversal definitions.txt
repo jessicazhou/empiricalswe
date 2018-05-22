@@ -1,0 +1,87 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>As mentioned in other sections, XN follows a consistent design philosophy.</p>
+<ul>
+<li>Pacer (the underlying library) allows you to extend the functionality of elements, by defining methods in the <code>Vertex</code>, <code>Edge</code> or <code>Route</code> module.</li>
+<li>XN allows us to expose the added functionality to the API.</li>
+</ul>
+<h2>
+<a aria-hidden="true" class="anchor" href="#extending-verticesroutes-with-traversal-pacer" id="user-content-extending-verticesroutes-with-traversal-pacer"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Extending Vertices/Routes With Traversal (Pacer)</h2>
+<p>The following part extends vertices and routes with the friends of_friends query.</p>
+<pre><code>module User
+    # ...
+
+    to_many :User, to: :friends
+    from_many :User, to: :friends
+
+    module Vertex
+        def single_fof()
+            self.friends.friends
+        end
+    end
+
+    module Route
+        def fof()
+            self.friends.friends.uniq
+        end
+    end
+end
+</code></pre>
+<p>With the extension/part, defined above, we can do the following:</p>
+<pre><code># Get the friends of friends of a single user
+g.v(User).first.fof
+# Get the friends of friends of a collection of users
+g.v(User).fof
+</code></pre>
+<h2>
+<a aria-hidden="true" class="anchor" href="#exposing-the-traversal-to-the-api" id="user-content-exposing-the-traversal-to-the-api"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Exposing the traversal to the API</h2>
+<p>In order to be able to use the <code>fof</code> query from the API, we must explicitly expose it to the API.</p>
+<pre><code>module User
+    # ...
+
+    to_many :User, to: :friends
+    from_many :User, to: :friends
+
+    # Expose single_fof to the API (for a route)
+    route_traversal :fof, return_parts: :User do
+        single_fof
+    end
+
+    # Expose fof to the API (for a single vertex)
+    traversal :single_fof, return_parts: :User do
+        fof
+    end
+
+    module Vertex
+        def single_fof()
+            self.friends.friends
+        end
+    end
+
+    module Route
+        def fof()
+            self.friends.friends.uniq
+        end
+    end
+end
+</code></pre>
+<p>The example above shows us how to expose vertex/route extension methods to the API.
+The syntax (for vertices) is:</p>
+<pre><code>traversal :name_of_api_method, return_parts: :NameOfPart do
+    # Block of code (usually, just calling the appropriate Vertex method)
+end
+</code></pre>
+<p>When extending the functionality of a Route, we declare a <code>route_traversal</code>, instead of <code>traversal</code>.</p>
+<p>With the code above, we can now perform the <code>single_fof</code> or <code>fof</code> queries using the REST API:</p>
+<pre><code># Get the friends of friends of a single user
+GET is/user/first/traversal/single_fof
+# Get the friends of friends of a collection of users
+GET is/user/to/fof
+# Route traversals also work for single elements
+GET is/user/first/to/fof
+
+</code></pre>
+
+        </div>
+
+    </div>]

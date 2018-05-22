@@ -1,0 +1,322 @@
+[<div class="wiki-body gollum-asciidoc-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <div>
+<div>Table of Contents</div>
+<ul>
+<li><a href="#crud-tutorial">CRUD Tutorial</a></li>
+<li><a href="#using-rest-services">Using REST services</a></li>
+<li><a href="#displaying-data-and-using-pagination">Displaying data and using pagination</a></li>
+<li><a href="#creating-reading-and-updating-data">Creating, reading and updating data</a></li>
+</ul>
+</div>
+
+<div>
+<h2 id="user-content-crud-tutorial">
+<a aria-hidden="true" class="anchor" href="#crud-tutorial" id="user-content-crud-tutorial"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>CRUD Tutorial</h2>
+<div>
+<div>
+<p>In this tutorial we are going to learn the basic steps to create a simple CRUD using OASP4js.</p>
+</div>
+</div>
+</div>
+<div>
+<h2 id="user-content-using-rest-services">
+<a aria-hidden="true" class="anchor" href="#using-rest-services" id="user-content-using-rest-services"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Using REST services</h2>
+<div>
+<div>
+<p>While it is possible to fit all the code for fetching, displaying and updating data stored at the server into a single .js file, the code is very difficult to maintain. In the sample application, the functionality is split in different files, e.g. for displaying the tables, we use the following files:</p>
+</div>
+<table>
+<colgroup>
+<col/>
+<col/>
+</colgroup>
+<thead>
+<tr>
+<th><strong>file</strong></th>
+<th><strong>functionality</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><p>table-mgmt.rest-service.js</p></td>
+<td><p>performs the calls of REST services</p></td>
+</tr>
+<tr>
+<td><p>tables.service.js</p></td>
+<td><p>prepares parameters for REST calls, provides the responses for the rest of the application</p></td>
+</tr>
+<tr>
+<td><p>table-search.controller.js</p></td>
+<td><p>controller of the page, uses the tables.service for CRUD operations on the table entities</p></td>
+</tr>
+</tbody>
+</table>
+<div>
+<p>A sample REST call for getting a table entity from the server uses the following code.</p>
+</div>
+<div>
+<p>In the table-mgmt.rest.service.js, a 'tableManagementRestService' is created with a factory. Besides other services, it provides a function 'getTable' for retrieving a table by ID with GET.</p>
+</div>
+<div>
+<div>
+<pre>angular.module('app.table-mgmt').factory('tableManagementRestService', function ($http, currentContextPath) {
+    'use strict';</pre>
+</div>
+</div>
+<div>
+<div>
+<pre>var servicePath = currentContextPath.get() + 'services/rest/tablemanagement/v1';</pre>
+</div>
+</div>
+<div>
+<div>
+<pre>    return {
+        getTable: function (id) {
+            return $http.get(servicePath + '/table/' + id);
+        },
+...</pre>
+</div>
+</div>
+<div>
+<p>In tables.service.js, another function called 'loadTable' is provided by a factory. There, the function of the REST service script is called and the data is returned.</p>
+</div>
+<div>
+<div>
+<pre>angular.module('app.table-mgmt').factory('tables', function (tableManagementRestService) {
+    'use strict';
+    var tables = [];
+    return {
+        ...
+        loadTable: function (tableId) {
+            return tableManagementRestService.getTable(tableId).then(function (response) {
+                return response.data;
+            });
+        },
+...</pre>
+</div>
+</div>
+<div>
+<p>In table-search.controller.js, the service 'tables' is included as an argument. Later, it can be used for getting a single table entity by using the 'loadTable' function provided by 'tables'.</p>
+</div>
+<div>
+<div>
+<pre>angular.module('app.table-mgmt')
+    .controller('TableSearchCntl', function ($scope, tables, initialTableList, $modal, globalSpinner, offers, sales) {
+...
+return tables.loadTable(tableRow.id);
+...</pre>
+</div>
+</div>
+</div>
+</div>
+<div>
+<h2 id="user-content-displaying-data-and-using-pagination">
+<a aria-hidden="true" class="anchor" href="#displaying-data-and-using-pagination" id="user-content-displaying-data-and-using-pagination"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Displaying data and using pagination</h2>
+<div>
+<div>
+<p>At this point we have a services that give us the data that we are going to show to the user and process them. So in this part of the tutorial we are going to see how to show the data on the view.</p>
+</div>
+<div>
+<p>Let’s go to create a table grid with the data, for example a simple search view. For this, we need to create a table-search.controller.js file for the controller and a table-search.tpl.html file for the template.</p>
+</div>
+<div>
+<p>Controller: table-search.controller.js</p>
+</div>
+<div>
+<p>First of all we are going to prepare the data we are going to show in the view.</p>
+</div>
+<div>
+<div>
+<div class="highlight highlight-source-java"><pre>angular<span class="pl-k">.</span>module(<span class="pl-s"><span class="pl-pds">'</span>app.table-mgmt<span class="pl-pds">'</span></span>)
+   .controller(<span class="pl-s"><span class="pl-pds">'</span>TableSearchCntl<span class="pl-pds">'</span></span>, function ($scope, tables, paginatedTableList, $state, globalSpinner) {
+   <span class="pl-s"><span class="pl-pds">'</span>use strict<span class="pl-pds">'</span></span>;
+   (<span class="pl-c1">...</span>)
+
+   $scope<span class="pl-k">.</span>maxSize <span class="pl-k">=</span> <span class="pl-c1">5</span>;
+   $scope<span class="pl-k">.</span>totalItems <span class="pl-k">=</span> paginatedTableList<span class="pl-k">.</span>pagination<span class="pl-k">.</span>total;
+   $scope<span class="pl-k">.</span>numPerPage <span class="pl-k">=</span> paginatedTableList<span class="pl-k">.</span>pagination<span class="pl-k">.</span>size;
+   $scope<span class="pl-k">.</span>currentPage <span class="pl-k">=</span> paginatedTableList<span class="pl-k">.</span>pagination<span class="pl-k">.</span>page;
+
+   $scope<span class="pl-k">.</span>gridOptions <span class="pl-k">=</span> {
+      data<span class="pl-k">:</span> paginatedTableList<span class="pl-k">.</span>result
+   };
+
+   $scope<span class="pl-k">.</span>reloadTables <span class="pl-k">=</span> function () {
+        tables<span class="pl-k">.</span>getPaginatedTables($scope<span class="pl-k">.</span>currentPage, $scope<span class="pl-k">.</span>numPerPage)<span class="pl-k">.</span>then(function (paginatedTables) {
+            <span class="pl-k">return</span> paginatedTables;
+        })<span class="pl-k">.</span>then(function (res) {
+            paginatedTableList <span class="pl-k">=</span> res;
+            $scope<span class="pl-k">.</span>gridOptions<span class="pl-k">.</span>data <span class="pl-k">=</span> paginatedTableList<span class="pl-k">.</span>result;
+        });
+    };
+
+    $scope<span class="pl-k">.</span>$watch(<span class="pl-s"><span class="pl-pds">'</span>currentPage<span class="pl-pds">'</span></span>, function () {
+            $scope<span class="pl-k">.</span>reloadTables();
+        });
+
+   (<span class="pl-c1">...</span>)
+}</pre></div>
+</div>
+</div>
+<div>
+<p>As you can see, we have a lot of arguments in the controller: tables that have the services, paginatedTableList that help us with the pagination of the data and globalSpinner to show the spinner while the view is waiting for the service result.</p>
+</div>
+<div>
+<p>With all this variables and methods, we can create a view to show the result of our REST service and update the data.</p>
+</div>
+<div>
+<p>Template: table-search.tpl.html</p>
+</div>
+<div>
+<div>
+<div class="highlight highlight-text-xml"><pre>&lt;<span class="pl-ent">table</span> <span class="pl-e">class</span>=<span class="pl-s"><span class="pl-pds">"</span>raw-table<span class="pl-pds">"</span></span> <span class="pl-e">tr-ng-grid</span>=<span class="pl-s"><span class="pl-pds">"</span><span class="pl-pds">"</span></span>
+       <span class="pl-e">selection-mode</span>=<span class="pl-s"><span class="pl-pds">"</span>SingleRow<span class="pl-pds">"</span></span>
+       <span class="pl-e">enable-filtering</span>=<span class="pl-s"><span class="pl-pds">"</span>false<span class="pl-pds">"</span></span>
+       <span class="pl-e">selected-items</span>=<span class="pl-s"><span class="pl-pds">"</span>selectedItems<span class="pl-pds">"</span></span>
+       <span class="pl-e">items</span>=<span class="pl-s"><span class="pl-pds">"</span>gridOptions.data<span class="pl-pds">"</span></span>&gt;
+    &lt;<span class="pl-ent">thead</span>&gt;
+    &lt;<span class="pl-ent">tr</span>&gt;
+        &lt;<span class="pl-ent">th</span> <span class="pl-e">field-name</span>=<span class="pl-s"><span class="pl-pds">"</span>number<span class="pl-pds">"</span></span> <span class="pl-e">display-name</span>=<span class="pl-s"><span class="pl-pds">"</span>Number<span class="pl-pds">"</span></span> <span class="pl-e">cell-width</span>=<span class="pl-s"><span class="pl-pds">"</span>7em<span class="pl-pds">"</span></span>&gt;&lt;/<span class="pl-ent">th</span>&gt;
+        &lt;<span class="pl-ent">th</span> <span class="pl-e">field-name</span>=<span class="pl-s"><span class="pl-pds">"</span>state<span class="pl-pds">"</span></span> <span class="pl-e">display-name</span>=<span class="pl-s"><span class="pl-pds">"</span>State<span class="pl-pds">"</span></span>&gt;&lt;/<span class="pl-ent">th</span>&gt;
+        &lt;<span class="pl-ent">th</span> <span class="pl-e">field-name</span>=<span class="pl-s"><span class="pl-pds">"</span>waiter<span class="pl-pds">"</span></span> <span class="pl-e">display-name</span>=<span class="pl-s"><span class="pl-pds">"</span>Waiter<span class="pl-pds">"</span></span>&gt;&lt;/<span class="pl-ent">th</span>&gt;
+    &lt;/<span class="pl-ent">tr</span>&gt;
+    &lt;/<span class="pl-ent">thead</span>&gt;
+&lt;/<span class="pl-ent">table</span>&gt;
+
+&lt;<span class="pl-ent">pagination</span> <span class="pl-e">total-items</span>=<span class="pl-s"><span class="pl-pds">"</span>totalItems<span class="pl-pds">"</span></span> <span class="pl-e">items-per-page</span>=<span class="pl-s"><span class="pl-pds">"</span>numPerPage<span class="pl-pds">"</span></span> <span class="pl-e">ng-model</span>=<span class="pl-s"><span class="pl-pds">"</span>currentPage<span class="pl-pds">"</span></span> <span class="pl-e">num-pages</span>=<span class="pl-s"><span class="pl-pds">"</span>numPages<span class="pl-pds">"</span></span>
+                    <span class="pl-e">class</span>=<span class="pl-s"><span class="pl-pds">"</span>pagination-sm<span class="pl-pds">"</span></span> <span class="pl-e">boundary-links</span>=<span class="pl-s"><span class="pl-pds">"</span>true<span class="pl-pds">"</span></span> <span class="pl-e">rotate</span>=<span class="pl-s"><span class="pl-pds">"</span>false<span class="pl-pds">"</span></span> <span class="pl-e">max-size</span>=<span class="pl-s"><span class="pl-pds">"</span>maxSize<span class="pl-pds">"</span></span>&gt;&lt;/<span class="pl-ent">pagination</span>&gt;</pre></div>
+</div>
+</div>
+<div>
+<p>We are going to analyze the code by steps.</p>
+</div>
+<div>
+<p>As you can see between the tag &lt;table&gt; we have the code to create a simple table Grid where we are going to display the data. The data displayed are in the variable gridOptions of the controller, this variable has the result of the service getPaginatedTables that we need to create in the table.services.js file as is mentioned in <a href="https://github.com/oasp/oasp4js/wiki/Tutorial-CRUD#using-rest-services">Using REST services</a>.</p>
+</div>
+<div>
+<div>
+<div class="highlight highlight-source-java"><pre>angular<span class="pl-k">.</span>module(<span class="pl-s"><span class="pl-pds">'</span>app.table-mgmt<span class="pl-pds">'</span></span>)<span class="pl-k">.</span>factory(<span class="pl-s"><span class="pl-pds">'</span>tables<span class="pl-pds">'</span></span>, function (tableManagementRestService) {
+<span class="pl-c1">...</span>
+getPaginatedTables<span class="pl-k">:</span> function (pagenumber, pagesize) {
+            <span class="pl-k">return</span> tableManagementRestService<span class="pl-k">.</span>getPaginatedTables(pagenumber, pagesize)<span class="pl-k">.</span>then(function (response) {
+                angular<span class="pl-k">.</span>copy(response<span class="pl-k">.</span>data, paginatedTables);
+                <span class="pl-k">return</span> paginatedTables;
+            });
+        }
+<span class="pl-c1">...</span>
+}</pre></div>
+</div>
+</div>
+<div>
+<p>As you can see, we use the variables maxSize, totalItems, numPerPage and currentPage to add the pagination functionality to our view.</p>
+</div>
+</div>
+</div>
+<div>
+<h2 id="user-content-creating-reading-and-updating-data">
+<a aria-hidden="true" class="anchor" href="#creating-reading-and-updating-data" id="user-content-creating-reading-and-updating-data"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Creating, reading and updating data</h2>
+<div>
+<div>
+<p>Let’s go to add some functionality to our application, for example we can add some buttons to edit the table, or change the state to reserve, occupy or free and cancel the reservation.</p>
+</div>
+<div>
+<p>To do this, we are going to help us with the component button-bar. So, we need to define a variable with the buttons in the controller.</p>
+</div>
+<div>
+<div>
+<div class="highlight highlight-source-java"><pre>(<span class="pl-c1">...</span>)
+$scope<span class="pl-k">.</span>buttonDefs <span class="pl-k">=</span> [
+{
+    label<span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">'</span>TABLE_MGMT.EDIT<span class="pl-pds">'</span></span>,
+    onClick<span class="pl-k">:</span> function () {
+        $scope<span class="pl-k">.</span>openEditDialog(selectedTable());
+    },
+    isActive<span class="pl-k">:</span> function () {
+        <span class="pl-k">return</span> selectedTable();
+    }
+},
+{
+    label<span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">'</span>TABLE_MGMT.RESERVE<span class="pl-pds">'</span></span>,
+    onClick<span class="pl-k">:</span> function () {
+        globalSpinner<span class="pl-k">.</span>decorateCallOfFunctionReturningPromise(function () {
+            var result <span class="pl-k">=</span> tables<span class="pl-k">.</span>reserve(selectedTable())<span class="pl-k">.</span>then($scope<span class="pl-k">.</span>reloadTables);
+            $scope<span class="pl-k">.</span>selectedItems<span class="pl-k">.</span>length <span class="pl-k">=</span> <span class="pl-c1">0</span>;
+            <span class="pl-k">return</span> result;
+        });
+    },
+    isActive<span class="pl-k">:</span> function () {
+        <span class="pl-k">return</span> selectedTable() <span class="pl-k">&amp;&amp;</span> selectedTable()<span class="pl-k">.</span>state <span class="pl-k">===</span> <span class="pl-s"><span class="pl-pds">'</span>FREE<span class="pl-pds">'</span></span>;
+    }
+},
+{
+    label<span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">'</span>TABLE_MGMT.CANCEL_RESERVATION<span class="pl-pds">'</span></span>,
+    onClick<span class="pl-k">:</span> function () {
+        globalSpinner<span class="pl-k">.</span>decorateCallOfFunctionReturningPromise(function () {
+            var result <span class="pl-k">=</span> tables<span class="pl-k">.</span>cancelReservation(selectedTable())<span class="pl-k">.</span>then($scope<span class="pl-k">.</span>reloadTables);
+            $scope<span class="pl-k">.</span>selectedItems<span class="pl-k">.</span>length <span class="pl-k">=</span> <span class="pl-c1">0</span>;
+            <span class="pl-k">return</span> result;
+        });
+    },
+    isActive<span class="pl-k">:</span> function () {
+        <span class="pl-k">return</span> selectedTable() <span class="pl-k">&amp;&amp;</span> selectedTable()<span class="pl-k">.</span>state <span class="pl-k">===</span> <span class="pl-s"><span class="pl-pds">'</span>RESERVED<span class="pl-pds">'</span></span>;
+    }
+},
+{
+    label<span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">'</span>TABLE_MGMT.OCCUPY<span class="pl-pds">'</span></span>,
+    onClick<span class="pl-k">:</span> function () {
+        globalSpinner<span class="pl-k">.</span>decorateCallOfFunctionReturningPromise(function () {
+            var result <span class="pl-k">=</span> tables<span class="pl-k">.</span>occupy(selectedTable())<span class="pl-k">.</span>then($scope<span class="pl-k">.</span>reloadTables);
+            $scope<span class="pl-k">.</span>selectedItems<span class="pl-k">.</span>length <span class="pl-k">=</span> <span class="pl-c1">0</span>;
+            <span class="pl-k">return</span> result;
+        });
+    },
+    isActive<span class="pl-k">:</span> function () {
+        <span class="pl-k">return</span> selectedTable() <span class="pl-k">&amp;&amp;</span> (selectedTable()<span class="pl-k">.</span>state <span class="pl-k">===</span> <span class="pl-s"><span class="pl-pds">'</span>RESERVED<span class="pl-pds">'</span></span> <span class="pl-k">||</span> selectedTable()<span class="pl-k">.</span>state <span class="pl-k">===</span> <span class="pl-s"><span class="pl-pds">'</span>FREE<span class="pl-pds">'</span></span>);
+    }
+},
+{
+    label<span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">'</span>TABLE_MGMT.FREE<span class="pl-pds">'</span></span>,
+    onClick<span class="pl-k">:</span> function () {
+        globalSpinner<span class="pl-k">.</span>decorateCallOfFunctionReturningPromise(function () {
+            var result <span class="pl-k">=</span> tables<span class="pl-k">.</span>free(selectedTable())<span class="pl-k">.</span>then($scope<span class="pl-k">.</span>reloadTables);
+            $scope<span class="pl-k">.</span>selectedItems<span class="pl-k">.</span>length <span class="pl-k">=</span> <span class="pl-c1">0</span>;
+            <span class="pl-k">return</span> result;
+        });
+    },
+    isActive<span class="pl-k">:</span> function () {
+        <span class="pl-k">return</span> selectedTable() <span class="pl-k">&amp;&amp;</span> selectedTable()<span class="pl-k">.</span>state <span class="pl-k">===</span> <span class="pl-s"><span class="pl-pds">'</span>OCCUPIED<span class="pl-pds">'</span></span>;
+    }
+}
+];
+(<span class="pl-c1">...</span>)</pre></div>
+</div>
+</div>
+<div>
+<p>As you can see, the button has three attributes, label that the button will display, onClick that is the method we call with the event onClick and isActive to determine when the button need to be active or disable.</p>
+</div>
+<div>
+<p>Now we need to add this buttons in the view, this is very simple</p>
+</div>
+<div>
+<div>
+<div class="highlight highlight-text-xml"><pre>&lt;<span class="pl-ent">button-bar</span> <span class="pl-e">is-label-translatable</span>=<span class="pl-s"><span class="pl-pds">"</span>true<span class="pl-pds">"</span></span> <span class="pl-e">button-defs</span>=<span class="pl-s"><span class="pl-pds">"</span>buttonDefs<span class="pl-pds">"</span></span>&gt;&lt;/<span class="pl-ent">button-bar</span>&gt;</pre></div>
+</div>
+</div>
+<div>
+<table>
+<tbody><tr>
+<td>
+<div>Note</div>
+</td>
+<td>
+We are using TABLE_MGMT in this tutorial as i18n file of the table-mgmt component.
+</td>
+</tr>
+</tbody></table>
+</div>
+</div>
+</div>
+        </div>
+
+    </div>]

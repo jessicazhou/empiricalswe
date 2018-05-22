@@ -1,0 +1,42 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <h1>
+<a aria-hidden="true" class="anchor" href="#introduction" id="user-content-introduction"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Introduction</h1>
+<p>This article will cover compiling the Windows Win32 and x64 versions of the exporter and then using the included configs to create a plugin kit for MODO.</p>
+<p>You will need to install the Nullsoft Scriptable Install System or <a href="http://nsis.sourceforge.net/Main_Page" rel="nofollow">NSIS</a>, the download is available <a href="http://nsis.sourceforge.net/Download" rel="nofollow">here</a>. Install 2.46.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#installation-files" id="user-content-installation-files"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Installation Files</h2>
+<p>The repository includes the scripts and .nsi file needed to create a Kit plugin for MODO, these are contained in the Kits folder</p>
+<p><img alt="Main folder" src="https://github.com/opengex-modo/opengex-modo/raw/master/wiki/images/OpenGex-Folder-Win-001.png"/></p>
+<p>Inside the Kits folder is the OpenGex.nsi, this will create the installer for the MODO Kit plugin, it will include the files in the sub folders.</p>
+<p><img alt="Kits folder" src="https://github.com/opengex-modo/opengex-modo/raw/master/wiki/images/OpenGex-Release-001.png"/></p>
+<p>The OpenGex folder contains the <code>index.cfg</code> file that MODO uses for the plugin that specifies where the .lx binaries are located and what platform they are.
+<img alt="OpenGex folder" src="https://github.com/opengex-modo/opengex-modo/raw/master/wiki/images/OpenGex-Release-002.png"/></p>
+<pre><code>&lt;import&gt;Configs&lt;/import&gt;
+    
+&lt;atom type="Extensions32"&gt;
+    &lt;list type="AutoScan"&gt;Extra/win32&lt;/list&gt;
+    &lt;list type="AutoScan"&gt;Extra/mac&lt;/list&gt;
+&lt;/atom&gt;
+&lt;atom type="Extensions64"&gt;
+    &lt;list type="AutoScan"&gt;Extra/win64&lt;/list&gt;
+    &lt;list type="AutoScan"&gt;Extra/mac&lt;/list&gt;
+&lt;/atom&gt;
+</code></pre>
+<p>The relative folder location refers to a location in Windows My Documents. IE the folder structure that is created reflects the folder structure that we have in source control, but copied to the location that MODO will pick up on startup.</p>
+<p>For example <code>C:\Users\&lt;username&gt;\Documents\Luxology\Content\Kits\OpenGex</code></p>
+<p>The configuration option has version numbers that MODO uses to load the .lx binaries. In the below case <code>1.0.73514</code> refers to MODO 801 SP2, and because we specify this version as '=' the plugin will not load for any other version - so will not crash MODO if a later service pack is installed that breaks the API.</p>
+<pre><code>&lt;configuration kit="OpenGex" version="1.0.73514" and="ver=73514"&gt;
+</code></pre>
+<p>The Configs folder contains the the IO preferences page for the OpenGex Exporter.
+<img alt="Configs folder" src="https://github.com/opengex-modo/opengex-modo/raw/master/wiki/images/OpenGex-Release-003.png"/></p>
+<p>The Extra folder contains the .lx binaries as specified in the <code>index.cfg</code> file, in the example below the folder <code>Extra/win64</code> contains the file <code>OpenGex-Modo64.lx</code> that is the 64 bit version of the plugin.
+<img alt="Extra folder" src="https://github.com/opengex-modo/opengex-modo/raw/master/wiki/images/OpenGex-Release-004.png"/></p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#compile-releases" id="user-content-compile-releases"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Compile Releases</h2>
+<h2>
+<a aria-hidden="true" class="anchor" href="#create-installer" id="user-content-create-installer"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Create Installer</h2>
+
+        </div>
+
+    </div>]

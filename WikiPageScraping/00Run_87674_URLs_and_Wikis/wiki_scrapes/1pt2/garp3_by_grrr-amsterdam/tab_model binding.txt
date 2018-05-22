@@ -1,0 +1,105 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <h1>
+<a aria-hidden="true" class="anchor" href="#binding-models" id="user-content-binding-models"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Binding models</h1>
+<p>You can bind two models together so that the results from a fetchAll() or fetchRow() call contain not only the subject model but also records related to the record(s).
+Whatever relationship you spawn, you can bind.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#binding-for-dummies" id="user-content-binding-for-dummies"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Binding for dummies</h2>
+<p>The simplest bindModel call looks like this:</p>
+<pre><code>&lt;?php
+$modelBlogPost-&gt;bindModel('Model_Tag');
+?&gt;
+</code></pre>
+<p>This simply says fetch related tags along with the next BlogPost fetch call.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#deep-binding" id="user-content-deep-binding"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Deep binding</h2>
+<p>Keep in mind that bindings are made at class level. This allows you to do recursive bindings:</p>
+<pre><code>&lt;?php
+$modelUser-&gt;bindModel('Model_Profile');
+$modelComment-&gt;bindModel('Model_User');
+$modelBlogPost-&gt;bindModel('Model_Comment');
+?&gt;
+</code></pre>
+<p>A $modelBlogPost-&gt;fetchAll() call will now fetch all posts, with all related comments, with all related users, with all related profiles. As long as there's a binding in place, a related recordset will be fetched.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#in-depth-examples" id="user-content-in-depth-examples"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>In-depth examples</h3>
+<pre><code>&lt;?php
+$modelUser-&gt;bindModel('Profile');
+?&gt;
+</code></pre>
+<p>This will look for the rule Profile in the referenceMap of Model_User, and use that information to setup the binding.</p>
+<pre><code>&lt;?php
+$modelUser-&gt;bindModel('Model_Comment');
+?&gt;
+</code></pre>
+<p>comment is probably not in the referenceMap of Model_User, since comment contains the foreign key (user_id). In that case you must use the full modelname, so that Garp knows what to look for.
+If you have multiple relationships between models you have to specify the rule. For instance every model in Garp has an Author and a Modifier, both of which are represented thru Model_User. So if you would just use</p>
+<pre><code>&lt;?php
+$modelBlogPost-&gt;bindModel('Model_User');
+?&gt;
+</code></pre>
+<p>you would get the first relationship to Model_User that is defined in the referenceMap (usually this is Author). In such cases you can provide a rule to clear up ambiguity:</p>
+<pre><code>&lt;?php
+$modelBlogPost-&gt;bindModel('Model_User', array('rule' =&gt; 'Modifier'));
+?&gt;
+</code></pre>
+<p>In the case of HABTM you can provide which bindingModel to use:</p>
+<pre><code>&lt;?php
+$modelBlogPost-&gt;bindModel('Model_Tag', array(
+'bindingModel' =&gt; 'Model_BlogPostTag'
+));
+?&gt;
+</code></pre>
+<p>Mind you, if no belongsTo or hasOne relationship has been found Garp will try to resolve the bindingModel itself as it assumes hasAndBelongsToMany in the absence of the other types.</p>
+<p>In fact, you can go so far as to provide both rules if you really have that much ambiguity to clear:</p>
+<pre><code>&lt;?php
+$modelBlogPost-&gt;bindModel('Model_Tag', array(
+	'bindingModel' =&gt; 'Model_BlogPostTag',
+	// Note: both these rules are in the referenceMap of
+// Model_BlogPostTag
+'rule' =&gt; 'BlogPost',
+	'rule2' =&gt; 'Tag'
+));
+?&gt;
+</code></pre>
+<p>Binding a model under a different name
+Another helpful option is modelClass. Use this if you wish to retrieve records under a different alias:</p>
+<pre><code>&lt;?php
+$modelBlogPost-&gt;bindModel('Human', array(
+'modelClass' =&gt; 'Model_User'
+));
+?&gt;
+</code></pre>
+<p>The related Model_User records will now be in $record-&gt;Human.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#advanced-binding-between-two-models-of-the-same-kind" id="user-content-advanced-binding-between-two-models-of-the-same-kind"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Advanced binding between two models of the same kind</h2>
+<p>Last but not least, to resolve an absolute edge-case, there's the mode parameter. It's used to clear ambiguity in the case of homophilic relationships. If you do not have multiple homophilic relationships to a single model, you do not need this.
+In a homophilic parent - child relationship, for instance, there are effectively two relationships to itself, a belongsTo and a hasMany. Take a hierarchical navigation for example, a MenuItem can have many MenuItems as children, and of course it can have a parent MenuItem itself. Since the way records oughtta be retrieved is mostly dictated by these semantics, and yet the code cannot determine for you which direction to go, you can use mode to specify this.
+Zend uses two methods for fetching related records: findParentRow() and findDependentRowset(). You can specify either one with the keywords parent and dependent, respectively.</p>
+<p>Passing conditions to bind queries
+If you wish to filter the related records further, pass your conditions along as a Select object:</p>
+<pre><code>&lt;?php
+$modelBlogPost-&gt;bindModel('Model_Tag', array(
+	'conditions' =&gt; $modelTag-&gt;select()-&gt;where('created &gt; 2010-0-0')
+));
+?&gt;
+</code></pre>
+<p>Note that the select object comes from the other model.</p>
+<p>In HABTM cases, internally an 'm' alias is used. Therefore, if you need the table name, you have to use 'm':</p>
+<pre><code>&lt;?php
+$modelBlogPost-&gt;bindModel('Model_Tag', array(
+	'conditions' =&gt; $modelTag-&gt;select()
+		-&gt;from(
+array('m' =&gt; $modelTag-&gt;getName()),
+array('id', 'name')
+)
+)
+);
+?&gt;
+</code></pre>
+<p>In above example, we're adding the conditions to specify which columns we want to retrieve; this is done with Zend's from().</p>
+
+        </div>
+
+    </div>]

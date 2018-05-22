@@ -1,0 +1,573 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <h1>
+<a aria-hidden="true" class="anchor" href="#flowrouter-%E4%B8%AD%E6%96%87%E6%96%87%E6%A1%A3" id="user-content-flowrouter-中文文档"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>FlowRouter 中文文档</h1>
+<p><a href="https://tkvern.com/" rel="nofollow">TKVERN</a> 翻译 | 源文档链接<a href="https://github.com/kadirahq/flow-router/">FlowRouter</a>
+(如果你发现翻译中存在谬误的地方, 请留言, 我会继续造福社会. 建议结合源文档查看翻译)</p>
+<p>为Meteor精心设计的客户端Router</p>
+<p>FlowRouter 是 Meteor 一个非常简单的路由器.它为客户端程序routing,不处理渲染本身.</p>
+<p>它为改变URL和获取数据获取提供了一个良好的API. 然而, 在router内部, 这不是reactive. 最重要的是, FlowRouter 的设计时考虑到性能和专注于自己最擅长的: <strong>routing</strong>.</p>
+<blockquote>
+<p>如果你已经在使用 FlowRouter,我们发布了2.0版本,同时遵循 <a href="#migrating-into-20">migration guide</a>.</p>
+</blockquote>
+<h2>
+<a aria-hidden="true" class="anchor" href="#toc" id="user-content-toc"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>TOC</h2>
+<ul>
+<li><a href="#meteor-routing-guide">Meteor Routing Guide</a></li>
+<li><a href="#getting-started">Getting Started</a></li>
+<li><a href="#routes-definition">Routes Definition</a></li>
+<li><a href="#group-routes">Group Routes</a></li>
+<li><a href="#rendering-and-layout-management">Rendering and Layout Management</a></li>
+<li><a href="#triggers">Triggers</a></li>
+<li><a href="#not-found-routes">Not Found Routes</a></li>
+<li><a href="#api">API</a></li>
+<li><a href="#subscription-management">Subscription Management</a></li>
+<li><a href="#ie9-support">IE9 Support</a></li>
+<li><a href="#hashbang-urls">Hashbang URLs</a></li>
+<li><a href="#prefixed-paths">Prefixed paths</a></li>
+<li><a href="#add-ons">Add-ons</a></li>
+<li><a href="#difference-with-iron-router">Difference with Iron Router</a></li>
+<li><a href="#migrating-into-20">Migrating into 2.0</a></li>
+</ul>
+<h2>
+<a aria-hidden="true" class="anchor" href="#meteor-routing-guide" id="user-content-meteor-routing-guide"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Meteor Routing Guide</h2>
+<p><a href="https://kadira.io/academy/meteor-routing-guide" rel="nofollow">Meteor Routing Guide</a> 是一个关于 Meteor <strong>routing</strong> 主题的完整指南 . 谈论了如何正确使用 FlowRouter 和 <strong>Blaze and React</strong>. 也显示了如何管理 <strong>subscriptions</strong> 和在视图实现 <strong>auth logic</strong>.</p>
+<p><a href="https://kadira.io/academy/meteor-routing-guide" rel="nofollow"><img alt="Meteor Routing Guide" data-canonical-src="https://cldup.com/AxlPfoxXmR.png" src="https://camo.githubusercontent.com/940ed9e072f65b5bb1ae1f906137f37b36ac60e0/68747470733a2f2f636c6475702e636f6d2f41786c50666f78586d522e706e67"/></a></p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#getting-started" id="user-content-getting-started"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Getting Started</h2>
+<p>添加 FlowRouter 到你的app:</p>
+<div class="highlight highlight-source-shell"><pre>meteor add kadira:flow-router</pre></div>
+<p>让我们写第一个 route (添加文件到 <code>lib/router.js</code>):</p>
+<div class="highlight highlight-source-js"><pre><span class="pl-smi">FlowRouter</span>.<span class="pl-en">route</span>(<span class="pl-s"><span class="pl-pds">'</span>/blog/:postId<span class="pl-pds">'</span></span>, {
+    <span class="pl-en">action</span><span class="pl-k">:</span> <span class="pl-k">function</span>(<span class="pl-smi">params</span>, <span class="pl-smi">queryParams</span>) {
+        <span class="pl-en">console</span>.<span class="pl-c1">log</span>(<span class="pl-s"><span class="pl-pds">"</span>Yeah! We are on the post:<span class="pl-pds">"</span></span>, <span class="pl-smi">params</span>.<span class="pl-smi">postId</span>);
+    }
+});</pre></div>
+<p>在浏览器访问 <code>/blog/my-post-id</code>,  或从console调用下面的命令:</p>
+<div class="highlight highlight-source-js"><pre><span class="pl-smi">FlowRouter</span>.<span class="pl-c1">go</span>(<span class="pl-s"><span class="pl-pds">'</span>/blog/my-post-id<span class="pl-pds">'</span></span>);</pre></div>
+<p>然后,你就可以在console看到打印的消息了.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#routes-definition" id="user-content-routes-definition"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Routes Definition</h2>
+<p>FlowRouter 的 routes 非常简单, <a href="http://expressjs.com/" rel="nofollow">Express</a> 和 <code>iron:router</code>都有使用基于<a href="https://github.com/pillarjs/path-to-regexp">path-to-regexp</a>的语法</p>
+<p>下面是一个简单的route语法:</p>
+<div class="highlight highlight-source-js"><pre><span class="pl-smi">FlowRouter</span>.<span class="pl-en">route</span>(<span class="pl-s"><span class="pl-pds">'</span>/blog/:postId<span class="pl-pds">'</span></span>, {
+    <span class="pl-c"><span class="pl-c">//</span> do some action for this route</span>
+    <span class="pl-en">action</span><span class="pl-k">:</span> <span class="pl-k">function</span>(<span class="pl-smi">params</span>, <span class="pl-smi">queryParams</span>) {
+        <span class="pl-en">console</span>.<span class="pl-c1">log</span>(<span class="pl-s"><span class="pl-pds">"</span>Params:<span class="pl-pds">"</span></span>, params);
+        <span class="pl-en">console</span>.<span class="pl-c1">log</span>(<span class="pl-s"><span class="pl-pds">"</span>Query Params:<span class="pl-pds">"</span></span>, queryParams);
+    },
+
+    name<span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">"</span>&lt;name for the route&gt;<span class="pl-pds">"</span></span> <span class="pl-c"><span class="pl-c">//</span> optional</span>
+});</pre></div>
+<p>那么,当你访问这个url的时候,这条route就会被激活:</p>
+<div class="highlight highlight-source-js"><pre><span class="pl-smi">FlowRouter</span>.<span class="pl-c1">go</span>(<span class="pl-s"><span class="pl-pds">'</span>/blog/my-post?comments=on&amp;color=dark<span class="pl-pds">'</span></span>);</pre></div>
+<p>在你访问这条route之后, console会打印下面内容:</p>
+<pre><code>Params: {postId: "my-post"}
+Query Params: {comments: "on", color: "dark"}
+</code></pre>
+<p>对于单个 interaction, router只会运行一次. 这意味着, 在你访问 route 后, 它会首先调用 <code>triggers</code>, 接着是 <code>subscriptions</code>, 最后调用 <code>action</code>. 出现没有这些方法这种情况后,route访问将会再次调用.</p>
+<p>你可以在 <code>client</code> 任何目录定义routes. 但是, 我们推荐你添加到 <code>lib</code> 目录. 那么 <code>fast-render</code> 能够检测 subscriptions 和 send 它们给你 (我们会在这里谈论).</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#group-routes" id="user-content-group-routes"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Group Routes</h3>
+<p>你可以对routes分组来更好的组织route. 这是一个例子:</p>
+<div class="highlight highlight-source-js"><pre><span class="pl-k">var</span> adminRoutes <span class="pl-k">=</span> <span class="pl-smi">FlowRouter</span>.<span class="pl-en">group</span>({
+  prefix<span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">'</span>/admin<span class="pl-pds">'</span></span>,
+  name<span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">'</span>admin<span class="pl-pds">'</span></span>,
+  triggersEnter<span class="pl-k">:</span> [<span class="pl-k">function</span>(<span class="pl-smi">context</span>, <span class="pl-smi">redirect</span>) {
+    <span class="pl-en">console</span>.<span class="pl-c1">log</span>(<span class="pl-s"><span class="pl-pds">'</span>running group triggers<span class="pl-pds">'</span></span>);
+  }]
+});
+
+<span class="pl-c"><span class="pl-c">//</span> handling /admin route</span>
+<span class="pl-smi">adminRoutes</span>.<span class="pl-en">route</span>(<span class="pl-s"><span class="pl-pds">'</span>/<span class="pl-pds">'</span></span>, {
+  <span class="pl-en">action</span><span class="pl-k">:</span> <span class="pl-k">function</span>() {
+    <span class="pl-smi">BlazeLayout</span>.<span class="pl-en">render</span>(<span class="pl-s"><span class="pl-pds">'</span>componentLayout<span class="pl-pds">'</span></span>, {content<span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">'</span>admin<span class="pl-pds">'</span></span>});
+  },
+  triggersEnter<span class="pl-k">:</span> [<span class="pl-k">function</span>(<span class="pl-smi">context</span>, <span class="pl-smi">redirect</span>) {
+    <span class="pl-en">console</span>.<span class="pl-c1">log</span>(<span class="pl-s"><span class="pl-pds">'</span>running /admin trigger<span class="pl-pds">'</span></span>);
+  }]
+});
+
+<span class="pl-c"><span class="pl-c">//</span> handling /admin/posts</span>
+<span class="pl-smi">adminRoutes</span>.<span class="pl-en">route</span>(<span class="pl-s"><span class="pl-pds">'</span>/posts<span class="pl-pds">'</span></span>, {
+  <span class="pl-en">action</span><span class="pl-k">:</span> <span class="pl-k">function</span>() {
+    <span class="pl-smi">BlazeLayout</span>.<span class="pl-en">render</span>(<span class="pl-s"><span class="pl-pds">'</span>componentLayout<span class="pl-pds">'</span></span>, {content<span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">'</span>posts<span class="pl-pds">'</span></span>});
+  }
+});</pre></div>
+<p><strong>所有对于 <code>FlowRouter.group()</code> 的options都是可选的.</strong></p>
+<p>你甚至可以像下面一样嵌套group routes:</p>
+<div class="highlight highlight-source-js"><pre><span class="pl-k">var</span> adminRoutes <span class="pl-k">=</span> <span class="pl-smi">FlowRouter</span>.<span class="pl-en">group</span>({
+    prefix<span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">"</span>/admin<span class="pl-pds">"</span></span>,
+    name<span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">"</span>admin<span class="pl-pds">"</span></span>
+});
+
+<span class="pl-k">var</span> superAdminRoutes <span class="pl-k">=</span> <span class="pl-smi">adminRoutes</span>.<span class="pl-en">group</span>({
+    prefix<span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">"</span>/super<span class="pl-pds">"</span></span>,
+    name<span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">"</span>superadmin<span class="pl-pds">"</span></span>
+});
+
+<span class="pl-c"><span class="pl-c">//</span> handling /admin/super/post</span>
+<span class="pl-smi">superAdminRoutes</span>.<span class="pl-en">route</span>(<span class="pl-s"><span class="pl-pds">'</span>/post<span class="pl-pds">'</span></span>, {
+    <span class="pl-en">action</span><span class="pl-k">:</span> <span class="pl-k">function</span>() {
+
+    }
+});</pre></div>
+<p>你可以判断当前的route是在使用哪个group:</p>
+<div class="highlight highlight-source-js"><pre><span class="pl-smi">FlowRouter</span>.<span class="pl-c1">current</span>().<span class="pl-smi">route</span>.<span class="pl-smi">group</span>.<span class="pl-c1">name</span></pre></div>
+<p>如果当前的route是具体的group (e.g. <em>admin</em>, <em>public</em>, <em>loggedIn</em>) 无需使用前缀,如果你不想.如果它是一个嵌套的group, 你可以像这样获取父级group的name:</p>
+<div class="highlight highlight-source-js"><pre><span class="pl-smi">FlowRouter</span>.<span class="pl-c1">current</span>().<span class="pl-smi">route</span>.<span class="pl-smi">group</span>.<span class="pl-c1">parent</span>.<span class="pl-c1">name</span></pre></div>
+<p>如同所有的当前 route 属性, 都不是 reactive, 但是可以结合<code>FlowRouter.watchPathChange()</code> 获取group名.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#rendering-and-layout-management" id="user-content-rendering-and-layout-management"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Rendering and Layout Management</h2>
+<p>FlowRouter 不处理渲染和布局管理. 为此, 你可以使用:</p>
+<ul>
+<li><a href="https://github.com/kadirahq/blaze-layout">Blaze Layout for Blaze</a></li>
+<li><a href="https://github.com/kadirahq/meteor-react-layout">React Layout for React</a></li>
+</ul>
+<p>这样在一个route你可以从 <code>action</code> 的内部 method调用布局管理.</p>
+<div class="highlight highlight-source-js"><pre><span class="pl-smi">FlowRouter</span>.<span class="pl-en">route</span>(<span class="pl-s"><span class="pl-pds">'</span>/blog/:postId<span class="pl-pds">'</span></span>, {
+    <span class="pl-en">action</span><span class="pl-k">:</span> <span class="pl-k">function</span>(<span class="pl-smi">params</span>) {
+        <span class="pl-smi">BlazeLayout</span>.<span class="pl-en">render</span>(<span class="pl-s"><span class="pl-pds">"</span>mainLayout<span class="pl-pds">"</span></span>, {area<span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">"</span>blog<span class="pl-pds">"</span></span>});
+    }
+});</pre></div>
+<h2>
+<a aria-hidden="true" class="anchor" href="#triggers" id="user-content-triggers"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Triggers</h2>
+<p>Triggers 是 FlowRouter 可以允许你在 <strong>enter</strong> 这个 route 之前和 <strong>exit</strong> 这个 route 之后执行相应的任务.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#defining-triggers-for-a-route" id="user-content-defining-triggers-for-a-route"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Defining triggers for a route</h3>
+<p>这里是如何为一个 route 定义 triggers :</p>
+<div class="highlight highlight-source-js"><pre><span class="pl-smi">FlowRouter</span>.<span class="pl-en">route</span>(<span class="pl-s"><span class="pl-pds">'</span>/home<span class="pl-pds">'</span></span>, {
+  <span class="pl-c"><span class="pl-c">//</span> calls just before the action</span>
+  triggersEnter<span class="pl-k">:</span> [trackRouteEntry],
+  <span class="pl-en">action</span><span class="pl-k">:</span> <span class="pl-k">function</span>() {
+    <span class="pl-c"><span class="pl-c">//</span> do something you like</span>
+  },
+  <span class="pl-c"><span class="pl-c">//</span> calls when when we decide to move to another route</span>
+  <span class="pl-c"><span class="pl-c">//</span> but calls before the next route started</span>
+  triggersExit<span class="pl-k">:</span> [trackRouteClose]
+});
+
+<span class="pl-k">function</span> <span class="pl-en">trackRouteEntry</span>(<span class="pl-smi">context</span>) {
+  <span class="pl-c"><span class="pl-c">//</span> context is the output of `FlowRouter.current()`</span>
+  <span class="pl-smi">Mixpanel</span>.<span class="pl-en">track</span>(<span class="pl-s"><span class="pl-pds">"</span>visit-to-home<span class="pl-pds">"</span></span>, <span class="pl-smi">context</span>.<span class="pl-smi">queryParams</span>);
+}
+
+<span class="pl-k">function</span> <span class="pl-en">trackRouteClose</span>(<span class="pl-smi">context</span>) {
+  <span class="pl-smi">Mixpanel</span>.<span class="pl-en">track</span>(<span class="pl-s"><span class="pl-pds">"</span>move-from-home<span class="pl-pds">"</span></span>, <span class="pl-smi">context</span>.<span class="pl-smi">queryParams</span>);
+}</pre></div>
+<h3>
+<a aria-hidden="true" class="anchor" href="#defining-triggers-for-a-group-route" id="user-content-defining-triggers-for-a-group-route"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Defining triggers for a group route</h3>
+<p>这里是如何在一个 group 定义里定义 triggers.</p>
+<div class="highlight highlight-source-js"><pre><span class="pl-k">var</span> adminRoutes <span class="pl-k">=</span> <span class="pl-smi">FlowRouter</span>.<span class="pl-en">group</span>({
+  prefix<span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">'</span>/admin<span class="pl-pds">'</span></span>,
+  triggersEnter<span class="pl-k">:</span> [trackRouteEntry],
+  triggersExit<span class="pl-k">:</span> [trackRouteEntry]
+});</pre></div>
+<blockquote>
+<p>你可以添加 triggers 到单个 routes 或是 group .</p>
+</blockquote>
+<h3>
+<a aria-hidden="true" class="anchor" href="#defining-triggers-globally" id="user-content-defining-triggers-globally"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Defining Triggers Globally</h3>
+<p>你同样可以定义全局 triggers. 这里是怎么做:</p>
+<div class="highlight highlight-source-js"><pre><span class="pl-smi">FlowRouter</span>.<span class="pl-smi">triggers</span>.<span class="pl-en">enter</span>([cb1, cb2]);
+<span class="pl-smi">FlowRouter</span>.<span class="pl-smi">triggers</span>.<span class="pl-en">exit</span>([cb1, cb2]);
+
+<span class="pl-c"><span class="pl-c">//</span> filtering</span>
+<span class="pl-smi">FlowRouter</span>.<span class="pl-smi">triggers</span>.<span class="pl-en">enter</span>([trackRouteEntry], {only<span class="pl-k">:</span> [<span class="pl-s"><span class="pl-pds">"</span>home<span class="pl-pds">"</span></span>]});
+<span class="pl-smi">FlowRouter</span>.<span class="pl-smi">triggers</span>.<span class="pl-en">exit</span>([trackRouteExit], {except<span class="pl-k">:</span> [<span class="pl-s"><span class="pl-pds">"</span>home<span class="pl-pds">"</span></span>]});</pre></div>
+<p>如你所看到的最后两个例子, 你可以筛选 routes 使用 <code>only</code> 或者 <code>except</code> 关键字. 但是, 你不能同时使用 <code>only</code> and <code>except</code>.</p>
+<blockquote>
+<p>如果你想了解更多关于 triggers 和 设计决策, 访问 <a href="https://github.com/meteorhacks/flow-router/pull/59">here</a>.</p>
+</blockquote>
+<h3>
+<a aria-hidden="true" class="anchor" href="#redirecting-with-triggers" id="user-content-redirecting-with-triggers"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Redirecting With Triggers</h3>
+<p>你可以使用 triggers 重定向到一个不同 route . 你可以在triggers enter 和 exit 做到这一点. 看看如何做的吧:</p>
+<div class="highlight highlight-source-js"><pre><span class="pl-smi">FlowRouter</span>.<span class="pl-en">route</span>(<span class="pl-s"><span class="pl-pds">'</span>/<span class="pl-pds">'</span></span>, {
+  triggersEnter<span class="pl-k">:</span> [<span class="pl-k">function</span>(<span class="pl-smi">context</span>, <span class="pl-smi">redirect</span>) {
+    <span class="pl-en">redirect</span>(<span class="pl-s"><span class="pl-pds">'</span>/some-other-path<span class="pl-pds">'</span></span>);
+  }],
+  <span class="pl-en">action</span><span class="pl-k">:</span> <span class="pl-k">function</span>(<span class="pl-smi">_params</span>) {
+    <span class="pl-k">throw</span> <span class="pl-k">new</span> <span class="pl-en">Error</span>(<span class="pl-s"><span class="pl-pds">"</span>this should not get called<span class="pl-pds">"</span></span>);
+  }
+});</pre></div>
+<p>每个 trigger callback 的第二个参数: 一个 function 你可以使用 redirect 到 一个不同的 route. Redirect 也有一些属性来确保不会阻止 router.</p>
+<ul>
+<li>redirect 必须是调用一个 URL</li>
+<li>redirect 必须在同一个event循环周期 (没有异步或调用内部 Tracker)</li>
+<li>redirect 不能多次调用</li>
+</ul>
+<p>检查这个 <a href="https://github.com/meteorhacks/flow-router/pull/172">PR</a> 以了解更多关于 redirect 的 API.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#stopping-the-callback-with-triggers" id="user-content-stopping-the-callback-with-triggers"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Stopping the Callback With Triggers</h3>
+<p>在有些情况, 你也许需要停止使用 triggers 的 route callback. 你可以在 <strong>before</strong> triggers, 使用第三个参数: <code>stop</code> function. 例如, 你可以检查前缀, 如果失败, 在before action停止和显示 notFound layout.</p>
+<div class="highlight highlight-source-js"><pre><span class="pl-k">var</span> localeGroup <span class="pl-k">=</span> <span class="pl-smi">FlowRouter</span>.<span class="pl-en">group</span>({
+  prefix<span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">'</span>/:locale?<span class="pl-pds">'</span></span>,
+  triggersEnter<span class="pl-k">:</span> [localeCheck]
+});
+
+<span class="pl-smi">localeGroup</span>.<span class="pl-en">route</span>(<span class="pl-s"><span class="pl-pds">'</span>/login<span class="pl-pds">'</span></span>, {
+  <span class="pl-en">action</span><span class="pl-k">:</span> <span class="pl-k">function</span> (<span class="pl-smi">params</span>, <span class="pl-smi">queryParams</span>) {
+    <span class="pl-smi">BlazeLayout</span>.<span class="pl-en">render</span>(<span class="pl-s"><span class="pl-pds">'</span>componentLayout<span class="pl-pds">'</span></span>, {content<span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">'</span>login<span class="pl-pds">'</span></span>});
+  }
+});
+
+<span class="pl-k">function</span> <span class="pl-en">localeCheck</span>(<span class="pl-smi">context</span>, <span class="pl-smi">redirect</span>, <span class="pl-smi">stop</span>) {
+  <span class="pl-k">var</span> locale <span class="pl-k">=</span> <span class="pl-smi">context</span>.<span class="pl-smi">params</span>.<span class="pl-smi">locale</span>;
+
+  <span class="pl-k">if</span> (locale <span class="pl-k">!==</span> <span class="pl-c1">undefined</span> <span class="pl-k">&amp;&amp;</span> locale <span class="pl-k">!==</span> <span class="pl-s"><span class="pl-pds">'</span>fr<span class="pl-pds">'</span></span>) {
+    <span class="pl-smi">BlazeLayout</span>.<span class="pl-en">render</span>(<span class="pl-s"><span class="pl-pds">'</span>notFound<span class="pl-pds">'</span></span>);
+    <span class="pl-en">stop</span>();
+  }
+}</pre></div>
+<blockquote>
+<p><strong>Note</strong>: 当你使用 stop function,即使你不使用它,你应该通过第二个 <strong>redirect</strong> 参数.</p>
+</blockquote>
+<h2>
+<a aria-hidden="true" class="anchor" href="#not-found-routes" id="user-content-not-found-routes"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Not Found Routes</h2>
+<p>你可以像这样配置 Not Found 的 routes:</p>
+<div class="highlight highlight-source-js"><pre><span class="pl-smi">FlowRouter</span>.<span class="pl-smi">notFound</span> <span class="pl-k">=</span> {
+    <span class="pl-c"><span class="pl-c">//</span> Subscriptions registered here don't have Fast Render support.</span>
+    <span class="pl-en">subscriptions</span><span class="pl-k">:</span> <span class="pl-k">function</span>() {
+
+    },
+    <span class="pl-en">action</span><span class="pl-k">:</span> <span class="pl-k">function</span>() {
+
+    }
+};</pre></div>
+<h2>
+<a aria-hidden="true" class="anchor" href="#api" id="user-content-api"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>API</h2>
+<p>FlowRouter 有丰富的 API 帮助你浏览这个 router 和获取这个 router 的信息.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#flowroutergetparamparamname" id="user-content-flowroutergetparamparamname"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>FlowRouter.getParam(paramName);</h3>
+<p>你可以使用 Reactive function 获取 URL 的一个参数.</p>
+<div class="highlight highlight-source-js"><pre><span class="pl-c"><span class="pl-c">//</span> route def: /apps/:appId</span>
+<span class="pl-c"><span class="pl-c">//</span> url: /apps/this-is-my-app</span>
+
+<span class="pl-k">var</span> appId <span class="pl-k">=</span> <span class="pl-smi">FlowRouter</span>.<span class="pl-en">getParam</span>(<span class="pl-s"><span class="pl-pds">"</span>appId<span class="pl-pds">"</span></span>);
+<span class="pl-en">console</span>.<span class="pl-c1">log</span>(appId); <span class="pl-c"><span class="pl-c">//</span> prints "this-is-my-app"</span></pre></div>
+<h3>
+<a aria-hidden="true" class="anchor" href="#flowroutergetqueryparamquerystringkey" id="user-content-flowroutergetqueryparamquerystringkey"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>FlowRouter.getQueryParam(queryStringKey);</h3>
+<p>你可以用Reactive function 的 queryString 查询你需要的value.</p>
+<div class="highlight highlight-source-js"><pre><span class="pl-c"><span class="pl-c">//</span> route def: /apps/:appId</span>
+<span class="pl-c"><span class="pl-c">//</span> url: /apps/this-is-my-app?show=yes&amp;color=red</span>
+
+<span class="pl-k">var</span> color <span class="pl-k">=</span> <span class="pl-smi">FlowRouter</span>.<span class="pl-en">getQueryParam</span>(<span class="pl-s"><span class="pl-pds">"</span>color<span class="pl-pds">"</span></span>);
+<span class="pl-en">console</span>.<span class="pl-c1">log</span>(color); <span class="pl-c"><span class="pl-c">//</span> prints "red"</span></pre></div>
+<h3>
+<a aria-hidden="true" class="anchor" href="#flowrouterpathpathdef-params-queryparams" id="user-content-flowrouterpathpathdef-params-queryparams"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>FlowRouter.path(pathDef, params, queryParams)</h3>
+<p>从定义的path中生成path. 都有 <code>params</code> 和 <code>queryParams</code> 两个选项.</p>
+<p>URL的特殊字符在 <code>params</code> 和 <code>queryParams</code> 中会被转码.</p>
+<div class="highlight highlight-source-js"><pre><span class="pl-k">var</span> pathDef <span class="pl-k">=</span> <span class="pl-s"><span class="pl-pds">"</span>/blog/:cat/:id<span class="pl-pds">"</span></span>;
+<span class="pl-k">var</span> params <span class="pl-k">=</span> {cat<span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">"</span>met eor<span class="pl-pds">"</span></span>, id<span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">"</span>abc<span class="pl-pds">"</span></span>};
+<span class="pl-k">var</span> queryParams <span class="pl-k">=</span> {show<span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">"</span>y+e=s<span class="pl-pds">"</span></span>, color<span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">"</span>black<span class="pl-pds">"</span></span>};
+
+<span class="pl-k">var</span> path <span class="pl-k">=</span> <span class="pl-smi">FlowRouter</span>.<span class="pl-en">path</span>(pathDef, params, queryParams);
+<span class="pl-en">console</span>.<span class="pl-c1">log</span>(path); <span class="pl-c"><span class="pl-c">//</span> prints "/blog/met%20eor/abc?show=y%2Be%3Ds&amp;color=black"</span></pre></div>
+<p>如果没有 params 或 queryParams, 这将只会返回 pathDef.</p>
+<h4>
+<a aria-hidden="true" class="anchor" href="#using-route-name-instead-of-the-pathdef" id="user-content-using-route-name-instead-of-the-pathdef"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Using Route name instead of the pathDef</h4>
+<p>你也可以使用 route's name 代替 pathDef. 那么, FlowRouter 会从给定的 route 选择 pathDef. 看下面的例子:</p>
+<div class="highlight highlight-source-js"><pre><span class="pl-smi">FlowRouter</span>.<span class="pl-en">route</span>(<span class="pl-s"><span class="pl-pds">"</span>/blog/:cat/:id<span class="pl-pds">"</span></span>, {
+    name<span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">"</span>blogPostRoute<span class="pl-pds">"</span></span>,
+    <span class="pl-en">action</span><span class="pl-k">:</span> <span class="pl-k">function</span>(<span class="pl-smi">params</span>) {
+        <span class="pl-c"><span class="pl-c">//</span>...</span>
+    }
+})
+
+<span class="pl-k">var</span> params <span class="pl-k">=</span> {cat<span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">"</span>meteor<span class="pl-pds">"</span></span>, id<span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">"</span>abc<span class="pl-pds">"</span></span>};
+<span class="pl-k">var</span> queryParams <span class="pl-k">=</span> {show<span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">"</span>yes<span class="pl-pds">"</span></span>, color<span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">"</span>black<span class="pl-pds">"</span></span>};
+
+<span class="pl-k">var</span> path <span class="pl-k">=</span> <span class="pl-smi">FlowRouter</span>.<span class="pl-en">path</span>(<span class="pl-s"><span class="pl-pds">"</span>blogPostRoute<span class="pl-pds">"</span></span>, params, queryParams);
+<span class="pl-en">console</span>.<span class="pl-c1">log</span>(path); <span class="pl-c"><span class="pl-c">//</span> prints "/blog/meteor/abc?show=yes&amp;color=black"</span></pre></div>
+<h3>
+<a aria-hidden="true" class="anchor" href="#flowroutergopathdef-params-queryparams" id="user-content-flowroutergopathdef-params-queryparams"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>FlowRouter.go(pathDef, params, queryParams);</h3>
+<p>这将通过 <code>FlowRouter.path</code> 基于 arguments 和 re-route 到达相应的 path ,  .</p>
+<p>你可以像这样调用 <code>FlowRouter.go</code> :</p>
+<div class="highlight highlight-source-js"><pre><span class="pl-smi">FlowRouter</span>.<span class="pl-c1">go</span>(<span class="pl-s"><span class="pl-pds">"</span>/blog<span class="pl-pds">"</span></span>);</pre></div>
+<h3>
+<a aria-hidden="true" class="anchor" href="#flowrouterurlpathdef-params-queryparams" id="user-content-flowrouterurlpathdef-params-queryparams"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>FlowRouter.url(pathDef, params, queryParams)</h3>
+<p>就像 <code>FlowRouter.path</code>, 但给出的是绝对路径. (在后端使用 <code>Meteor.absoluteUrl</code>.)</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#flowroutersetparamsnewparams" id="user-content-flowroutersetparamsnewparams"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>FlowRouter.setParams(newParams)</h3>
+<p>这会改变当前的 params, re-route 到新的 path.</p>
+<div class="highlight highlight-source-js"><pre><span class="pl-c"><span class="pl-c">//</span> route def: /apps/:appId</span>
+<span class="pl-c"><span class="pl-c">//</span> url: /apps/this-is-my-app?show=yes&amp;color=red</span>
+
+<span class="pl-smi">FlowRouter</span>.<span class="pl-en">setParams</span>({appId<span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">"</span>new-id<span class="pl-pds">"</span></span>});
+<span class="pl-c"><span class="pl-c">//</span> Then the user will be redirected to the following path</span>
+<span class="pl-c"><span class="pl-c">//</span>      /apps/new-id?show=yes&amp;color=red</span></pre></div>
+<h3>
+<a aria-hidden="true" class="anchor" href="#flowroutersetqueryparamsnewqueryparams" id="user-content-flowroutersetqueryparamsnewqueryparams"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>FlowRouter.setQueryParams(newQueryParams)</h3>
+<p>就像 <code>FlowRouter.setParams</code>, 但是是 queryString params.</p>
+<p>删除 query param 设置为 <code>null</code> 如下:</p>
+<div class="highlight highlight-source-js"><pre><span class="pl-smi">FlowRouter</span>.<span class="pl-en">setQueryParams</span>({paramToRemove<span class="pl-k">:</span> <span class="pl-c1">null</span>});</pre></div>
+<h3>
+<a aria-hidden="true" class="anchor" href="#flowroutergetroutename" id="user-content-flowroutergetroutename"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>FlowRouter.getRouteName()</h3>
+<p>获取route reactively 的 name.</p>
+<div class="highlight highlight-source-js"><pre><span class="pl-smi">Tracker</span>.<span class="pl-en">autorun</span>(<span class="pl-k">function</span>() {
+  <span class="pl-k">var</span> routeName <span class="pl-k">=</span> <span class="pl-smi">FlowRouter</span>.<span class="pl-en">getRouteName</span>();
+  <span class="pl-en">console</span>.<span class="pl-c1">log</span>(<span class="pl-s"><span class="pl-pds">"</span>Current route name is: <span class="pl-pds">"</span></span>, routeName);
+});</pre></div>
+<h3>
+<a aria-hidden="true" class="anchor" href="#flowroutercurrent" id="user-content-flowroutercurrent"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>FlowRouter.current()</h3>
+<p>获取 router 的当前状态. <strong>This API is not reactive</strong>.
+如果你需要观察 path 的变化,可以使用 <code>FlowRouter.watchPathChange()</code>.</p>
+<p>这给出来一个 object:</p>
+<div class="highlight highlight-source-js"><pre><span class="pl-c"><span class="pl-c">//</span> route def: /apps/:appId</span>
+<span class="pl-c"><span class="pl-c">//</span> url: /apps/this-is-my-app?show=yes&amp;color=red</span>
+
+<span class="pl-k">var</span> current <span class="pl-k">=</span> <span class="pl-smi">FlowRouter</span>.<span class="pl-c1">current</span>();
+<span class="pl-en">console</span>.<span class="pl-c1">log</span>(current);
+
+<span class="pl-c"><span class="pl-c">//</span> prints following object</span>
+<span class="pl-c"><span class="pl-c">//</span> {</span>
+<span class="pl-c"><span class="pl-c">//</span>     path: "/apps/this-is-my-app?show=yes&amp;color=red",</span>
+<span class="pl-c"><span class="pl-c">//</span>     params: {appId: "this-is-my-app"},</span>
+<span class="pl-c"><span class="pl-c">//</span>     queryParams: {show: "yes", color: "red"}</span>
+<span class="pl-c"><span class="pl-c">//</span>     route: {pathDef: "/apps/:appId", name: "name-of-the-route"}</span>
+<span class="pl-c"><span class="pl-c">//</span> }</span></pre></div>
+<h3>
+<a aria-hidden="true" class="anchor" href="#flowrouterwatchpathchange" id="user-content-flowrouterwatchpathchange"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>FlowRouter.watchPathChange()</h3>
+<p>监听 path 的变化.如果你需要像使用 API 一样获得 params 或queryParams 可以用 <code>FlowRouter.getQueryParam()</code>.</p>
+<div class="highlight highlight-source-js"><pre><span class="pl-smi">Tracker</span>.<span class="pl-en">autorun</span>(<span class="pl-k">function</span>() {
+  <span class="pl-smi">FlowRouter</span>.<span class="pl-en">watchPathChange</span>();
+  <span class="pl-k">var</span> currentContext <span class="pl-k">=</span> <span class="pl-smi">FlowRouter</span>.<span class="pl-c1">current</span>();
+  <span class="pl-c"><span class="pl-c">//</span> do anything with the current context</span>
+  <span class="pl-c"><span class="pl-c">//</span> or anything you wish</span>
+});</pre></div>
+<h3>
+<a aria-hidden="true" class="anchor" href="#flowrouterwithreplacestatefn" id="user-content-flowrouterwithreplacestatefn"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>FlowRouter.withReplaceState(fn)</h3>
+<p>通常, 所有的 route 改变通过像 <code>FlowRouter.go</code> 和 <code>FlowRouter.setParams()</code> 这样的 APIs 添加 URL item 到浏览器的 history. 例如, 运行下面的代码:</p>
+<div class="highlight highlight-source-js"><pre><span class="pl-smi">FlowRouter</span>.<span class="pl-en">setParams</span>({id<span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">"</span>the-id-1<span class="pl-pds">"</span></span>});
+<span class="pl-smi">FlowRouter</span>.<span class="pl-en">setParams</span>({id<span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">"</span>the-id-2<span class="pl-pds">"</span></span>});
+<span class="pl-smi">FlowRouter</span>.<span class="pl-en">setParams</span>({id<span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">"</span>the-id-3<span class="pl-pds">"</span></span>});</pre></div>
+<p>现在你可以点击浏览器的后退按钮2次. 这是常见的行为, 因为用户可以点击“后退”按钮, 并期待看到应用程序的前一个状态.</p>
+<p>但是有些时候, 这不是你想要的. 你不需要污染浏览器 history. 那么, 你可以使用下面的语法.</p>
+<div class="highlight highlight-source-js"><pre><span class="pl-smi">FlowRouter</span>.<span class="pl-en">withReplaceState</span>(<span class="pl-k">function</span>() {
+  <span class="pl-smi">FlowRouter</span>.<span class="pl-en">setParams</span>({id<span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">"</span>the-id-1<span class="pl-pds">"</span></span>});
+  <span class="pl-smi">FlowRouter</span>.<span class="pl-en">setParams</span>({id<span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">"</span>the-id-2<span class="pl-pds">"</span></span>});
+  <span class="pl-smi">FlowRouter</span>.<span class="pl-en">setParams</span>({id<span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">"</span>the-id-3<span class="pl-pds">"</span></span>});
+});</pre></div>
+<p>现在, 没有任何 item 在浏览器 history 中了. 就像 <code>FlowRouter.setParams</code>, 你可以使用任何 FlowRouter 的 API 在 <code>FlowRouter.withReplaceState</code> 里面.</p>
+<blockquote>
+<p>我们命名这个功能为 <code>withReplaceState</code> , 因为, replaceState 是 underline API 用于此功能. 阅读更多关于 <a href="https://developer.mozilla.org/en-US/docs/Web/Guide/API/DOM/Manipulating_the_browser_history" rel="nofollow">replace state &amp; the history API</a>.</p>
+</blockquote>
+<h3>
+<a aria-hidden="true" class="anchor" href="#flowrouterreload" id="user-content-flowrouterreload"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>FlowRouter.reload()</h3>
+<p>FlowRouter routes 是幂等的. 这意味着, 即使你多次调用 <code>FlowRouter.go()</code> 到相同的 URL , 但是它只在第一次运行时激活. 这也是真实的直接点击路径.</p>
+<p>因此, 如果你真的需要 reload 这个 route, 这个就是你想要的 API .</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#flowrouterwait-and-flowrouterinitialize" id="user-content-flowrouterwait-and-flowrouterinitialize"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>FlowRouter.wait() and FlowRouter.initialize()</h3>
+<p>在默认情况下, FlowRouter 初始化这个路由 process 在 <code>Meteor.startup()</code> 中回调. 对大多数app而言是这样工作. 但是, 一些 app 自定义初始化需要在 FlowRouter 初始化之后.</p>
+<p>因此, <code>FlowRouter.wait()</code> 可以帮助你.你需要直接在 JavaScript 文件里调用. 然后, 当时的 app 准备好后调用 <code>FlowRouter.initialize()</code>.</p>
+<p>eg:-</p>
+<div class="highlight highlight-source-js"><pre><span class="pl-c"><span class="pl-c">//</span> file: app.js</span>
+<span class="pl-smi">FlowRouter</span>.<span class="pl-en">wait</span>();
+<span class="pl-en">WhenEverYourAppIsReady</span>(<span class="pl-k">function</span>() {
+  <span class="pl-smi">FlowRouter</span>.<span class="pl-en">initialize</span>();
+});</pre></div>
+<p>查看更多信息访问 <a href="https://github.com/meteorhacks/flow-router/issues/180">issue #180</a>.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#flowrouteronrouteregistercb" id="user-content-flowrouteronrouteregistercb"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>FlowRouter.onRouteRegister(cb)</h3>
+<p>这个 API 是特地为开发人员开发插件设计的. 他们可以监听任何 registered route 和为 FlowRouter 添加自定义功能. 这都工作在服务器端和客户端.</p>
+<div class="highlight highlight-source-js"><pre><span class="pl-smi">FlowRouter</span>.<span class="pl-en">onRouteRegister</span>(<span class="pl-k">function</span>(<span class="pl-smi">route</span>) {
+  <span class="pl-c"><span class="pl-c">//</span> do anything with the route object</span>
+  <span class="pl-en">console</span>.<span class="pl-c1">log</span>(route);
+});</pre></div>
+<p>让我们看一个为用户定义的route:</p>
+<div class="highlight highlight-source-js"><pre><span class="pl-smi">FlowRouter</span>.<span class="pl-en">route</span>(<span class="pl-s"><span class="pl-pds">'</span>/blog/:post<span class="pl-pds">'</span></span>, {
+  name<span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">'</span>postList<span class="pl-pds">'</span></span>,
+  triggersEnter<span class="pl-k">:</span> [<span class="pl-k">function</span>() {}],
+  <span class="pl-en">subscriptions</span><span class="pl-k">:</span> <span class="pl-k">function</span>() {},
+  <span class="pl-en">action</span><span class="pl-k">:</span> <span class="pl-k">function</span>() {},
+  triggersExit<span class="pl-k">:</span> [<span class="pl-k">function</span>() {}],
+  customField<span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">'</span>customName<span class="pl-pds">'</span></span>
+});</pre></div>
+<p>这个 route 的 object 会这这样:</p>
+<div class="highlight highlight-source-js"><pre>{
+  pathDef<span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">'</span>/blog/:post<span class="pl-pds">'</span></span>,
+  name<span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">'</span>postList<span class="pl-pds">'</span></span>,
+  options<span class="pl-k">:</span> {customField<span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">'</span>customName<span class="pl-pds">'</span></span>}
+}</pre></div>
+<p>因此, 这不是我们正在使用的内部 route object.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#subscription-management" id="user-content-subscription-management"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Subscription Management</h2>
+<p>对于订阅管理,我们强烈建议你遵循 <a href="https://kadira.io/academy/meteor-routing-guide/content/subscriptions-and-data-management" rel="nofollow">Template/Component level subscriptions</a>. 在这里查看 <a href="https://kadira.io/academy/meteor-routing-guide/content/subscriptions-and-data-management" rel="nofollow">guide</a>.</p>
+<p>FlowRouter 也有它自己的订阅管理机制. 我们将在 3.0 版本移除. 我们不排除 2.x 版本 因为这是实现你 APP FastRender 支持最简单的方法.在 3.0 版本我们更好的支持 FastRender 在服务端渲染.</p>
+<p>FlowRouter 只涉及 registration 和 subscriptions. 它不用等待 subscription 完成. 这是如何注册一个 subscription.</p>
+<div class="highlight highlight-source-js"><pre><span class="pl-smi">FlowRouter</span>.<span class="pl-en">route</span>(<span class="pl-s"><span class="pl-pds">'</span>/blog/:postId<span class="pl-pds">'</span></span>, {
+    <span class="pl-en">subscriptions</span><span class="pl-k">:</span> <span class="pl-k">function</span>(<span class="pl-smi">params</span>, <span class="pl-smi">queryParams</span>) {
+        <span class="pl-c1">this</span>.<span class="pl-en">register</span>(<span class="pl-s"><span class="pl-pds">'</span>myPost<span class="pl-pds">'</span></span>, <span class="pl-smi">Meteor</span>.<span class="pl-en">subscribe</span>(<span class="pl-s"><span class="pl-pds">'</span>blogPost<span class="pl-pds">'</span></span>, <span class="pl-smi">params</span>.<span class="pl-smi">postId</span>));
+    }
+});</pre></div>
+<p>我们也可以像这样全局注册 subscriptions :</p>
+<div class="highlight highlight-source-js"><pre><span class="pl-smi">FlowRouter</span>.<span class="pl-en">subscriptions</span> <span class="pl-k">=</span> <span class="pl-k">function</span>() {
+  <span class="pl-c1">this</span>.<span class="pl-en">register</span>(<span class="pl-s"><span class="pl-pds">'</span>myCourses<span class="pl-pds">'</span></span>, <span class="pl-smi">Meteor</span>.<span class="pl-en">subscribe</span>(<span class="pl-s"><span class="pl-pds">'</span>courses<span class="pl-pds">'</span></span>));
+};</pre></div>
+<p>所有的全局 subscriptions 都运行在每一个 route 上. 因此, 在注册订阅是要特别注意命名.</p>
+<p>然后你可以注册你的 subscriptions, 完成之后你可以检查 subscriptions 的状态:</p>
+<div class="highlight highlight-source-js"><pre><span class="pl-smi">Tracker</span>.<span class="pl-en">autorun</span>(<span class="pl-k">function</span>() {
+    <span class="pl-en">console</span>.<span class="pl-c1">log</span>(<span class="pl-s"><span class="pl-pds">"</span>Is myPost ready?:<span class="pl-pds">"</span></span>, <span class="pl-smi">FlowRouter</span>.<span class="pl-en">subsReady</span>(<span class="pl-s"><span class="pl-pds">"</span>myPost<span class="pl-pds">"</span></span>));
+    <span class="pl-en">console</span>.<span class="pl-c1">log</span>(<span class="pl-s"><span class="pl-pds">"</span>Are all subscriptions ready?:<span class="pl-pds">"</span></span>, <span class="pl-smi">FlowRouter</span>.<span class="pl-en">subsReady</span>());
+});</pre></div>
+<p>因此, 你可以使用 <code>FlowRouter.subsReady</code> 在 template helpers 内部显示加载状态和相应的行为.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#flowroutersubsready-with-a-callback" id="user-content-flowroutersubsready-with-a-callback"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>FlowRouter.subsReady() with a callback</h3>
+<p>有些时候, 我们需要使用 <code>FlowRouter.subsReady()</code> 在 autorun 中是不可用的. 这有一个事件处理的例子. 在这样的地方, 我们可以使用回调 API  <code>FlowRouter.subsReady()</code>.</p>
+<div class="highlight highlight-source-js"><pre><span class="pl-smi">Template</span>.<span class="pl-smi">myTemplate</span>.<span class="pl-en">events</span>({
+   <span class="pl-s"><span class="pl-pds">"</span><span class="pl-en">click #id</span><span class="pl-pds">"</span></span><span class="pl-k">:</span> <span class="pl-k">function</span>(){
+      <span class="pl-smi">FlowRouter</span>.<span class="pl-en">subsReady</span>(<span class="pl-s"><span class="pl-pds">"</span>myPost<span class="pl-pds">"</span></span>, <span class="pl-k">function</span>() {
+         <span class="pl-c"><span class="pl-c">//</span> do something</span>
+      });
+  }
+});</pre></div>
+<blockquote>
+<p>Arunoda 有讨论更多关于订阅管理 FlowRouter, 在个博客里 <a href="https://meteorhacks.com/flow-router-and-subscription-management.html#subscription-management" rel="nofollow">this</a> 这篇文章 <a href="https://meteorhacks.com/flow-router-and-subscription-management.html" rel="nofollow">FlowRouter and Subscription Management</a>.</p>
+</blockquote>
+<blockquote>
+<p>他展示了如何构建一个app:</p>
+</blockquote>
+<blockquote>
+<p><img alt="FlowRouter's Subscription Management" data-canonical-src="https://cldup.com/esLzM8cjEL.gif" src="https://camo.githubusercontent.com/57a21b9dd0f171b6b63cbf86fbce7ea4aeb46404/68747470733a2f2f636c6475702e636f6d2f65734c7a4d38636a454c2e676966"/></p>
+</blockquote>
+<h4>
+<a aria-hidden="true" class="anchor" href="#fast-render" id="user-content-fast-render"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Fast Render</h4>
+<p>FlowRouter 支持 <a href="https://github.com/meteorhacks/fast-render">Fast Render</a>.</p>
+<ul>
+<li><code>meteor add meteorhacks:fast-render</code></li>
+<li>把 <code>router.js</code> 放在共享目录. 我们建议 <code>lib/router.js</code>.</li>
+</ul>
+<p>你可以排除 Fast Render 支持通过包装 subscription registration 在 <code>isClient</code> 块:</p>
+<div class="highlight highlight-source-js"><pre><span class="pl-smi">FlowRouter</span>.<span class="pl-en">route</span>(<span class="pl-s"><span class="pl-pds">'</span>/blog/:postId<span class="pl-pds">'</span></span>, {
+    <span class="pl-en">subscriptions</span><span class="pl-k">:</span> <span class="pl-k">function</span>(<span class="pl-smi">params</span>, <span class="pl-smi">queryParams</span>) {
+        <span class="pl-c"><span class="pl-c">//</span> using Fast Render</span>
+        <span class="pl-c1">this</span>.<span class="pl-en">register</span>(<span class="pl-s"><span class="pl-pds">'</span>myPost<span class="pl-pds">'</span></span>, <span class="pl-smi">Meteor</span>.<span class="pl-en">subscribe</span>(<span class="pl-s"><span class="pl-pds">'</span>blogPost<span class="pl-pds">'</span></span>, <span class="pl-smi">params</span>.<span class="pl-smi">postId</span>));
+
+        <span class="pl-c"><span class="pl-c">//</span> not using Fast Render</span>
+        <span class="pl-k">if</span>(<span class="pl-smi">Meteor</span>.<span class="pl-smi">isClient</span>) {
+            <span class="pl-c1">this</span>.<span class="pl-en">register</span>(<span class="pl-s"><span class="pl-pds">'</span>data<span class="pl-pds">'</span></span>, <span class="pl-smi">Meteor</span>.<span class="pl-en">subscribe</span>(<span class="pl-s"><span class="pl-pds">'</span>bootstrap-data<span class="pl-pds">'</span></span>);
+        }
+    }
+});</pre></div>
+<h4>
+<a aria-hidden="true" class="anchor" href="#subscription-caching" id="user-content-subscription-caching"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Subscription Caching</h4>
+<p>你也可以使用 <a href="https://github.com/meteorhacks/subs-manager">Subs Manager</a> 在客户端缓存 subscriptions . 我们没有有任何特别的事情来让它工作. 它应该像其他 routers 一样工作.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#ie9-support" id="user-content-ie9-support"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>IE9 Support</h2>
+<p>FlowRouter 支持 IE9. 但是它没有 <strong>HTML5 history polyfill</strong>. 因为大多数app不需要它.</p>
+<p>如果你需要支持 IE9, 添加 <strong>HTML5 history polyfill</strong> 到你的packege.</p>
+<div class="highlight highlight-source-shell"><pre>meteor add tomwasd:history-polyfill</pre></div>
+<h2>
+<a aria-hidden="true" class="anchor" href="#hashbang-urls" id="user-content-hashbang-urls"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Hashbang URLs</h2>
+<p>使用网址名 <code>mydomain.com/#!/mypath</code> 简单设置 <code>hashbang</code> 为 <code>true</code>在初始化的 function 中:</p>
+<div class="highlight highlight-source-js"><pre><span class="pl-c"><span class="pl-c">//</span> file: app.js</span>
+<span class="pl-smi">FlowRouter</span>.<span class="pl-en">wait</span>();
+<span class="pl-en">WhenEverYourAppIsReady</span>(<span class="pl-k">function</span>() {
+  <span class="pl-smi">FlowRouter</span>.<span class="pl-en">initialize</span>({hashbang<span class="pl-k">:</span> <span class="pl-c1">true</span>});
+});</pre></div>
+<h2>
+<a aria-hidden="true" class="anchor" href="#prefixed-paths" id="user-content-prefixed-paths"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Prefixed paths</h2>
+<p>例如,你希望在同一域名下运行多个web应用程序, 你可能会想在子路径在运行特定的 meteor application 服务 (eg <code>example.com/myapp</code>). 在这种情况下只包括路径前缀在 meteor <code>ROOT_URL</code> 的环境变量, FlowRouter 将会透明的处理没有任何额外参数的配置.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#add-ons" id="user-content-add-ons"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Add-ons</h2>
+<p>Router 是基于 package 的 app. 其他项目像 <a href="http://useraccounts.meteor.com/" rel="nofollow">useraccounts</a>  需要 FlowRouter 支持. 否则,  FlowRouter 很难用在真实项目中. 先在有很多 packages 都有 <a href="https://kadira.io/blog/meteor/addon-packages-for-flowrouter" rel="nofollow">started to support FlowRouter</a>.</p>
+<p>因此, 你可以使用你喜欢的 FlowRouter package. 如果不是, 有一个叫 <a href="https://kadira.io/blog/meteor/addon-packages-for-flowrouter#what-if-project-xxx-still-doesn-t-support-flowrouter-" rel="nofollow">easy process</a> 的包可以将它们转换为 FlowRouter.</p>
+<p><strong>Add-on API</strong></p>
+<p>我们还发布了一个 <a href="https://github.com/kadirahq/flow-router#flowrouteronrouteregistercb">new API</a> 去支持开发者开发插件. 当用户在应用程序中创建一个路由时, 可以得到一个通知.</p>
+<p>如果你有更多关于插件 API 的想法, 查看 <a href="https://github.com/kadirahq/flow-router/issues">let us know</a>.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#difference-with-iron-router" id="user-content-difference-with-iron-router"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Difference with Iron Router</h2>
+<p>FlowRouter 和 Iron Router 是两个不同的 routers. Iron Router 试图成为一个全功能的解决方案.它试图做每一件事包括 routing, subscriptions, rendering and layout management.</p>
+<p>FlowRouter 是一个简单的解决方案在 routing , UI performance 上. 它公开了有关功能的 APIs.</p>
+<p>让我们了解更多的差别:</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#rendering" id="user-content-rendering"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Rendering</h3>
+<p>FlowRouter 不处理渲染. 通过解耦渲染, 它可以使用任何渲染框架, 比如使用 <a href="https://github.com/kadirahq/blaze-layout">Blaze Layout</a> 进行动态模版渲染 .在路由动作中, 可以调用像 <a href="https://github.com/kadirahq/meteor-react-layout">React</a> 这样的布局框架.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#subscriptions" id="user-content-subscriptions"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Subscriptions</h3>
+<p>对于 FlowRouter, 我们强烈建议你使用 template/component layer subscriptions. 但是,如果你需要在路由器层做路由, FlowRouter 有 <a href="#subscription-management">subscription registration</a> 机制. 即使有, FlowRouter 永远不要等待 subscriptions 和 view layer 来做.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#reactive-content" id="user-content-reactive-content"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Reactive Content</h3>
+<p>在 Iron Router 你可以在 reactive content 里面使用 router, 但是任何一个 hook 或 method 可以以一个不可预测的方式重新运行. FlowRouter 限制；  reactive 的数据源单个的运行; 当首先调用的时候.</p>
+<p>我们认为这是可行当方法. Router 只是用户当 action. 我们可以在渲染层完成响应内容的工作.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#routercurrent-is-evil" id="user-content-routercurrent-is-evil"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>router.current() is evil</h3>
+<p><code>Router.current()</code> 是邪恶的. 为什么? 让我们看看下面的这个例子.想象一下我们的 app 有这样一个 route:</p>
+<pre><code>/apps/:appId/:section
+</code></pre>
+<p>现在让我们说,我们需要从 URL 获取 <code>appId</code>. 我们会这样做,  像在 Iron Router 一样.</p>
+<div class="highlight highlight-source-js"><pre>Templates[<span class="pl-s"><span class="pl-pds">'</span>foo<span class="pl-pds">'</span></span>].<span class="pl-en">helpers</span>({
+    <span class="pl-s"><span class="pl-pds">"</span><span class="pl-en">someData</span><span class="pl-pds">"</span></span><span class="pl-k">:</span> <span class="pl-k">function</span>() {
+        <span class="pl-k">var</span> appId <span class="pl-k">=</span> <span class="pl-smi">Router</span>.<span class="pl-c1">current</span>().<span class="pl-smi">params</span>.<span class="pl-smi">appId</span>;
+        <span class="pl-k">return</span> <span class="pl-en">doSomething</span>(appId);
+    }
+});</pre></div>
+<p>我们在 route 中改变 <code>:section</code> . 那么上面的方法也会重新运行. 如果我们增加一个 query param 到 URL, 它也会重新运行. 这是因为 <code>Router.current()</code> 会寻找改变 route(or URL). 但是在任何情况下, <code>appId</code> 不会改变.</p>
+<p>因为这个, 我们到应用程序很多部分会重新运行,重新渲染. 这将会出现不可预测到渲染行为.</p>
+<p>FlowRouter 为修复次问题提供里 <code>Router.getParam()</code> API. 看看如何使用:</p>
+<div class="highlight highlight-source-js"><pre>Templates[<span class="pl-s"><span class="pl-pds">'</span>foo<span class="pl-pds">'</span></span>].<span class="pl-en">helpers</span>({
+    <span class="pl-s"><span class="pl-pds">"</span><span class="pl-en">someData</span><span class="pl-pds">"</span></span><span class="pl-k">:</span> <span class="pl-k">function</span>() {
+        <span class="pl-k">var</span> appId <span class="pl-k">=</span> <span class="pl-smi">FlowRouter</span>.<span class="pl-en">getParam</span>(<span class="pl-s"><span class="pl-pds">'</span>appId<span class="pl-pds">'</span></span>);
+        <span class="pl-k">return</span> <span class="pl-en">doSomething</span>(appId);
+    }
+});</pre></div>
+<h3>
+<a aria-hidden="true" class="anchor" href="#no-data-context" id="user-content-no-data-context"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>No data context</h3>
+<p>FlowRouter 没有 data context. Data context 会有像 <code>.current()</code> 这样到问题. 我们相信, 它可以直接在 template (component) 层获取数据.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#built-in-fast-render-support" id="user-content-built-in-fast-render-support"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Built in Fast Render Support</h3>
+<p>FlowRouter 已构建 <a href="https://github.com/meteorhacks/fast-render">Fast Render</a> 支持. 只要天骄 Fast Render 到你到 app 它就会工作里. router 不需要做任何改变.</p>
+<p>更多关于 check 信息的文档, 查看 <a href="#fast-render">docs</a>.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#server-side-routing" id="user-content-server-side-routing"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Server Side Routing</h3>
+<p>FlowRouter 是客户端 router 它不支持服务的路由. 但是 <code>subscriptions</code> 运行在服务的支持 Fast Render.</p>
+<h4>
+<a aria-hidden="true" class="anchor" href="#reason-behind-that" id="user-content-reason-behind-that"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Reason behind that</h4>
+<p>Meteor 不是一个从服务器直接发送 HTML 到客户端的传统开发框架. Meteor 最初需要发送一个特殊的 HTML 到客户端. 因此, 你不能直接向客户端发送一些东西.</p>
+<p>此外, 相比于客户端, 在服务器端我们需要寻找一些不同的东西. 例如:</p>
+<ul>
+<li>在服务器端我们必须处理头文件.</li>
+<li>在服务器端我们必须处理像 <code>GET</code>, <code>POST</code> 这样类似的方法.</li>
+<li>还有 Cookies.</li>
+</ul>
+<p>因此, 最好使用服务器端专用的 router 像 <a href="https://github.com/meteorhacks/picker"><code>meteorhacks:picker</code></a>. 它支持连接和表达中间件, 并且它的 route 语法很简单.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#server-side-rendering" id="user-content-server-side-rendering"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Server Side Rendering</h3>
+<p>FlowRouter 3.0 将有服务器端渲染的支持. 我们已经开始了初步版本, 查看这个branch <a href="https://github.com/meteorhacks/flow-router/tree/ssr"><code>ssr</code></a>.</p>
+<p>这目前是非常有用的, Kadira 的 <a href="https://kadira.io" rel="nofollow">https://kadira.io</a> 已经有在使用.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#better-initial-loading-support" id="user-content-better-initial-loading-support"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Better Initial Loading Support</h3>
+<p>在 Meteor 中, 我们要等到渲染之前发送所有到JS和其他资源. 这是一个问题. 在 3.0 版本, 在服务器端的支持下我们修复了它.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#migrating-into-20" id="user-content-migrating-into-20"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Migrating into 2.0</h2>
+<p>迁移到 2.0 版本是很容易到, 你不需要改变应用到任何代码,因为你已经在使用 2.0 版本的 APIs 了. 在 2.0 版本, 我们改变了名字和删除了一些过时的 APIs.</p>
+<p>以下是将应用迁移到 2.0 版本的步骤.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#use-the-new-flowrouter-package" id="user-content-use-the-new-flowrouter-package"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Use the New FlowRouter Package</h3>
+<ul>
+<li>Now FlowRouter comes as <code>kadira:flow-router</code>
+</li>
+<li>So, remove <code>meteorhacks:flow-router</code> with : <code>meteor remove meteorhacks:flow-router</code>
+</li>
+<li>Then, add <code>kadira:flow-router</code> with <code>meteor add kadira:flow-router</code>
+</li>
+</ul>
+<h3>
+<a aria-hidden="true" class="anchor" href="#change-flowlayout-into-blazelayout" id="user-content-change-flowlayout-into-blazelayout"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Change FlowLayout into BlazeLayout</h3>
+<ul>
+<li>我们重新命名了 FlowLayout 为 <a href="https://github.com/kadirahq/blaze-layout">BlazeLayout</a>.</li>
+<li>因此, 移除 <code>meteorhacks:flow-layout</code> 和添加 <code>kadira:blaze-layout</code> 即可.</li>
+<li>你需要使用 <code>BlazeLayout.render()</code> 代替 <code>FlowLayout.render()</code>
+</li>
+</ul>
+<h3>
+<a aria-hidden="true" class="anchor" href="#stop-using-deprecated-apis" id="user-content-stop-using-deprecated-apis"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Stop using deprecated Apis</h3>
+<ul>
+<li>这没有中间件支持. 使用 triggers 代替.</li>
+<li>这没有 API 叫 <code>.reactiveCurrent()</code>, 使用 <code>.watchPathChange()</code> 代替.</li>
+<li>早些时候,你可以用 <code>FlowRouter.current().params.query</code> 访问和查询params. 但是, 现在你不能这样总了. 使用 <code>FlowRouter.current().queryParams</code> 代替.</li>
+</ul>
+
+        </div>
+
+    </div>]

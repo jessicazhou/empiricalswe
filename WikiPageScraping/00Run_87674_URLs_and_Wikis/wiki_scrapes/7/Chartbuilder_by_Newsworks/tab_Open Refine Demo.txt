@@ -1,0 +1,69 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <h3>
+<a aria-hidden="true" class="anchor" href="#notes-from-todds-demo-of-open-refine-formerly-google-refine" id="user-content-notes-from-todds-demo-of-open-refine-formerly-google-refine"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Notes from Todd's demo of Open Refine (formerly Google Refine)</h3>
+<p>[Open Refine] (<a href="http://openrefine.org/" rel="nofollow">http://openrefine.org/</a>) is an application that installs on your local computer and runs in a tab in Google's Chrome browser. All data stays locally on your computer.</p>
+<ul>
+<li>
+<p>Refine is a power tool for cleaning data, things it can do range from simple to complex.</p>
+</li>
+<li>
+<p>It can help you understand and analyze a large data set more quickly.</p>
+</li>
+<li>
+<p>Here's a short [introductory video] (<a href="https://www.youtube.com/watch?v=B70J_H_zAWM" rel="nofollow">https://www.youtube.com/watch?v=B70J_H_zAWM</a>)</p>
+</li>
+<li>
+<p>Refine can work with Excel files, .CSV files and .TSV files (among others). CSV and TSV files are universal file formats which all spreadsheet programs can recognize and import. They are great for moving data between programs.</p>
+</li>
+</ul>
+<p><strong>Example project:</strong><br/>
+[This map] (<a href="http://newsworks.cartodb.com/viz/85ed4cca-71be-11e4-aabd-0e9d821ea90d/embed_map" rel="nofollow">http://newsworks.cartodb.com/viz/85ed4cca-71be-11e4-aabd-0e9d821ea90d/embed_map</a>) was built for Marielle's story on structurally deficient bridges, it started as state bridge data  in several spreadsheets. I used refine to clean it, combine files and match structurally deficient bridge locations with Public Private Partnership targeted repair projects.<br/>
+<a href="http://newsworks.cartodb.com/viz/85ed4cca-71be-11e4-aabd-0e9d821ea90d/embed_map" rel="nofollow">http://newsworks.cartodb.com/viz/85ed4cca-71be-11e4-aabd-0e9d821ea90d/embed_map</a></p>
+<p><strong>Demo 1: Faceting</strong><br/>
+<code>Facet &gt; Text Facet</code><br/>
+Facets are stackable, so you can keep adding facets until you get the subset of data you want, then you can export that subset or modify it.</p>
+<p><strong>Demo 2: Splitting columns</strong><br/>
+<code>Edit Column &gt; Spilt into several columns</code><br/>
+This simple but useful function allows you to take data from one column and split it into multiple ones based on a separator (like a comma or another character) or a specified number of characters.</p>
+<p>You can also get more complex:</p>
+<p>E.g. To add a '.' after the 2nd non-blank character:<br/>
+Choose <code>Edit Cells &gt; Transform</code> and paste in the value statement below.</p>
+<p><code>value[0,2] + forNonBlank(value[2,10], v, "." + v, "")</code></p>
+<p>The nice thing is that Open Refine will preview the result for you, so you can tell what you're getting. It's also easy to undo any step. So don't be afraid to try stuff.</p>
+<p><strong>Demo 3: Pulling in data from other Open Refine data sets with common columns:</strong></p>
+<p><em>Warning: <a href="https://github.com/OpenRefine/OpenRefine/issues/432">There is a bug</a> in Refine 2.5 that can cause problems with this, which should be resolved in version 2.6 (not yet released). You should at least read the bug report before using this feature in v2.5.</em></p>
+<p>Find a column with a unique identifier
+From that column's dropdown, Choose Edit Cells &gt; Transform
+Paste in the following formula and modify as necessary:<br/>
+<code>cell.cross("Other Project Filename", "Column to match").cells["Column to add"].value[0]</code><br/>
+[More details about this technique] (<a href="http://blog.ouseful.info/2011/05/06/merging-datesets-with-common-columns-in-google-refine/" rel="nofollow">http://blog.ouseful.info/2011/05/06/merging-datesets-with-common-columns-in-google-refine/</a>)</p>
+<p><strong>Demo 4: Comparing columns</strong>
+Basic formula: <code>if(cells["A"].value == value, "similar", "different")</code><br/>
+(translation: if the value of cells in column "A" equal a certain value, set the value to <code>similar</code> if they are equal and <code>different</code> if they are different.)</p>
+<p><em>An important note about quotes in this context: quotes are used in programming to denote a string. A string is something you want printed exactly as-is. So for example if we request <code>'cells["A"].value'</code> (in quotes - double or single doesn't matter) the resulting output will be exactly <code>cells["A"].value</code>. If we request <code>cells["A"].value</code> (no quotes) we'll get the actual value contained in the corresponding cell from column A.</em></p>
+<p>We can use this to find which column has a higher value. In this case we'll compare the 'DECK' column to see if it's less than the corresponding cell in the "Superstructure" column. If it is, we'll assign a cell in a new column the "DECK" column value, if not, we'll assign the "Superstructure" column value. That way we end up with the lower of the two in one column. For multiple columns we can repeat the process with the resulting column against another column if we wish.<br/>
+e.g. <code>if(cells["DECK"].value &lt; cells["Superstructure"].value, cells["DECK"].value, cells["Superstructure"].value)</code></p>
+<p>[More details about this technique] (<a href="http://blog.ouseful.info/2011/08/06/comparing-columns-in-google-refine/" rel="nofollow">http://blog.ouseful.info/2011/08/06/comparing-columns-in-google-refine/</a>)</p>
+<p><strong>Other resources:</strong>
+`
+Googling around for OpenRefine or GoogleRefine will usually get you lots of tutorials.</p>
+<p>Here's some common Open Refine [recipes] (<a href="https://github.com/OpenRefine/OpenRefine/wiki/Recipes">https://github.com/OpenRefine/OpenRefine/wiki/Recipes</a>) to help with some of the tougher stuff.</p>
+<p>[<strong>NewsWorks Chartbuilder</strong>] (<a href="http://newsworks.github.io/Chartbuilder/" rel="nofollow">http://newsworks.github.io/Chartbuilder/</a>)</p>
+<p>[<strong>Charted</strong>] (<a href="http://www.charted.co/" rel="nofollow">http://www.charted.co/</a>) is a quick way to visualize data
+Here's a sample .csv file of the years State Bridges were built that you can paste directly in to charted to see how it works:
+<code>https://www.dropbox.com/s/rzicn7d8ptls1pm/bridge%20build%20data%20for%20Charted.csv?dl=0</code></p>
+<ul>
+<li>
+<p>To embed a chart like this on a newsworks page, upload a dataset to dropbox and copy the share link. Paste that link into Charted. Then add the following code in the code view of an article (changing the URL to the URL of your generated chart:</p>
+</li>
+<li>
+<p><code>&lt;style&gt;iframe, object, embed {max-width: 100%;} .page-settings {display: none;}&lt;/style&gt;</code><br/>
+<code>&lt;iframe src="http://thecharted.co_url_of_your_chart" style="width: 100%; height: 675px;"&gt;&lt;/iframe&gt;</code></p>
+</li>
+</ul>
+<p>Bonus tip: If/when Open Refine starts to get slow (especially on really big data sets). Here's how to <a href="https://github.com/OpenRefine/OpenRefine/wiki/FAQ%3A-Allocate-More-Memory">increase the memory allocated to Open Refine.</a></p>
+
+        </div>
+
+    </div>]

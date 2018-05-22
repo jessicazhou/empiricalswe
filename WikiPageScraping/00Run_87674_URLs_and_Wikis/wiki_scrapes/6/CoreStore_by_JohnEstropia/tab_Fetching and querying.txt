@@ -1,0 +1,245 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>Before we dive in, be aware that CoreStore distinguishes between <em>fetching</em> and <em>querying</em>:</p>
+<ul>
+<li>A <em>fetch</em> executes searches from a specific <em>transaction</em> or <em>data stack</em>. This means fetches can include pending objects (i.e. before a transaction calls on <code>commit()</code>.) Use fetches when:
+<ul>
+<li>results need to be <code>NSManagedObject</code> instances</li>
+<li>unsaved objects should be included in the search (though fetches can be configured to exclude unsaved ones)</li>
+</ul>
+</li>
+<li>A <em>query</em> pulls data straight from the persistent store. This means faster searches when computing aggregates such as <em>count</em>, <em>min</em>, <em>max</em>, etc. Use queries when:
+<ul>
+<li>you need to compute aggregate functions (see below for a list of supported functions)</li>
+<li>results can be raw values like <code>NSString</code>s, <code>NSNumber</code>s, <code>Int</code>s, <code>NSDate</code>s, an <code>NSDictionary</code> of key-values, etc.</li>
+<li>only values for specified attribute keys need to be included in the results</li>
+<li>unsaved objects should be ignored</li>
+</ul>
+</li>
+</ul>
+<h4>
+<a aria-hidden="true" class="anchor" href="#from-clause" id="user-content-from-clause"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><code>From</code> clause</h4>
+<p>The search conditions for fetches and queries are specified using <em>clauses</em>. All fetches and queries require a <code>From</code> clause that indicates the target entity type:</p>
+<div class="highlight highlight-source-swift"><pre><span class="pl-k">let</span> people <span class="pl-k">=</span> CoreStore.<span class="pl-c1">fetchAll</span>(<span class="pl-c1">From</span>(MyPersonEntity))
+<span class="pl-c"><span class="pl-c">//</span> CoreStore.fetchAll(From&lt;MyPersonEntity&gt;()) works as well</span></pre></div>
+<p><code>people</code> in the example above will be of type <code>[MyPersonEntity]</code>. The <code>From(MyPersonEntity)</code> clause indicates a fetch to all persistent stores that <code>MyPersonEntity</code> belong to.</p>
+<p>If the entity exists in multiple configurations and you need to only search from a particular configuration, indicate in the <code>From</code> clause the configuration name for the destination persistent store:</p>
+<div class="highlight highlight-source-swift"><pre><span class="pl-k">let</span> people <span class="pl-k">=</span> CoreStore.<span class="pl-c1">fetchAll</span>(From<span class="pl-k">&lt;</span>MyPersonEntity<span class="pl-k">&gt;</span>(<span class="pl-s"><span class="pl-pds">"</span>Config1<span class="pl-pds">"</span></span>)) <span class="pl-c"><span class="pl-c">//</span> ignore objects in persistent stores other than the "Config1" configuration</span></pre></div>
+<p>or if the persistent store is the auto-generated "Default" configuration, specify <code>nil</code>:</p>
+<div class="highlight highlight-source-swift"><pre><span class="pl-k">let</span> person <span class="pl-k">=</span> CoreStore.<span class="pl-c1">fetchAll</span>(From<span class="pl-k">&lt;</span>MyPersonEntity<span class="pl-k">&gt;</span>(<span class="pl-c1">nil</span>))</pre></div>
+<p>Now we know how to use a <code>From</code> clause, let's move on to fetching and querying.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#fetching" id="user-content-fetching"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Fetching</h3>
+<p>There are currently 5 fetch methods you can call from <code>CoreStore</code>, from a <code>DataStack</code> instance, or from a <code>BaseDataTransaction</code> instance. All of the methods below accept the same parameters: a required <code>From</code> clause, and an optional series of <code>Where</code>, <code>OrderBy</code>, and/or <code>Tweak</code> clauses.</p>
+<ul>
+<li>
+<code>fetchAll(...)</code> - returns an array of all objects that match the criteria.</li>
+<li>
+<code>fetchOne(...)</code> - returns the first object that match the criteria.</li>
+<li>
+<code>fetchCount(...)</code> - returns the number of objects that match the criteria.</li>
+<li>
+<code>fetchObjectIDs(...)</code> - returns an array of <code>NSManagedObjectID</code>s for all objects that match the criteria.</li>
+<li>
+<code>fetchObjectID(...)</code> - returns the <code>NSManagedObjectID</code>s for the first objects that match the criteria.</li>
+</ul>
+<p>Each method's purpose is straightforward, but we need to understand how to set the clauses for the fetch.</p>
+<h4>
+<a aria-hidden="true" class="anchor" href="#where-clause" id="user-content-where-clause"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><code>Where</code> clause</h4>
+<p>The <code>Where</code> clause is CoreStore's <code>NSPredicate</code> wrapper. It specifies the search filter to use when fetching (or querying). It implements all initializers that <code>NSPredicate</code> does (except for <code>-predicateWithBlock:</code>, which Core Data does not support):</p>
+<div class="highlight highlight-source-swift"><pre><span class="pl-k">var</span> people <span class="pl-k">=</span> CoreStore.<span class="pl-c1">fetchAll</span>(
+    <span class="pl-c1">From</span>(MyPersonEntity),
+    <span class="pl-c1">Where</span>(<span class="pl-s"><span class="pl-pds">"</span>%K &gt; %d<span class="pl-pds">"</span></span>, <span class="pl-s"><span class="pl-pds">"</span>age<span class="pl-pds">"</span></span>, <span class="pl-c1">30</span>) <span class="pl-c"><span class="pl-c">//</span> string format initializer</span>
+<span class="pl-c"></span>)
+people <span class="pl-k">=</span> CoreStore.<span class="pl-c1">fetchAll</span>(
+    <span class="pl-c1">From</span>(MyPersonEntity),
+    <span class="pl-c1">Where</span>(<span class="pl-c1">true</span>) <span class="pl-c"><span class="pl-c">//</span> boolean initializer</span>
+<span class="pl-c"></span>)</pre></div>
+<p>If you do have an existing <code>NSPredicate</code> instance already, you can pass that to <code>Where</code> as well:</p>
+<div class="highlight highlight-source-swift"><pre><span class="pl-k">let</span> predicate <span class="pl-k">=</span> <span class="pl-c1">NSPredicate</span>(<span class="pl-k">...</span>)
+<span class="pl-k">var</span> people <span class="pl-k">=</span> CoreStore.<span class="pl-c1">fetchAll</span>(
+    <span class="pl-c1">From</span>(MyPersonEntity),
+    <span class="pl-c1">Where</span>(predicate) <span class="pl-c"><span class="pl-c">//</span> predicate initializer</span>
+<span class="pl-c"></span>)</pre></div>
+<p><code>Where</code> clauses also implement the <code>&amp;&amp;</code>, <code>||</code>, and <code>!</code> logic operators, so you can provide logical conditions without writing too much <code>AND</code>, <code>OR</code>, and <code>NOT</code> strings:</p>
+<div class="highlight highlight-source-swift"><pre><span class="pl-k">var</span> people <span class="pl-k">=</span> CoreStore.<span class="pl-c1">fetchAll</span>(
+    <span class="pl-c1">From</span>(MyPersonEntity),
+    <span class="pl-c1">Where</span>(<span class="pl-s"><span class="pl-pds">"</span>age &gt; %d<span class="pl-pds">"</span></span>, <span class="pl-c1">30</span>) <span class="pl-k">&amp;&amp;</span> <span class="pl-c1">Where</span>(<span class="pl-s"><span class="pl-pds">"</span>gender == %@<span class="pl-pds">"</span></span>, <span class="pl-s"><span class="pl-pds">"</span>M<span class="pl-pds">"</span></span>)
+)</pre></div>
+<p>If you do not provide a <code>Where</code> clause, all objects that belong to the specified <code>From</code> will be returned.</p>
+<h4>
+<a aria-hidden="true" class="anchor" href="#orderby-clause" id="user-content-orderby-clause"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><code>OrderBy</code> clause</h4>
+<p>The <code>OrderBy</code> clause is CoreStore's <code>NSSortDescriptor</code> wrapper. Use it to specify attribute keys in which to sort the fetch (or query) results with.</p>
+<div class="highlight highlight-source-swift"><pre><span class="pl-k">var</span> mostValuablePeople <span class="pl-k">=</span> CoreStore.<span class="pl-c1">fetchAll</span>(
+    <span class="pl-c1">From</span>(MyPersonEntity),
+    <span class="pl-c1">OrderBy</span>(.<span class="pl-c1">Descending</span>(<span class="pl-s"><span class="pl-pds">"</span>rating<span class="pl-pds">"</span></span>), .<span class="pl-c1">Ascending</span>(<span class="pl-s"><span class="pl-pds">"</span>surname<span class="pl-pds">"</span></span>))
+)</pre></div>
+<p>As seen above, <code>OrderBy</code> accepts a list of <code>SortKey</code> enumeration values, which can be either <code>.Ascending</code> or <code>.Descending</code>.</p>
+<p>You can use the <code>+</code> and <code>+=</code> operator to append <code>OrderBy</code>s together. This is useful when sorting conditionally:</p>
+<div class="highlight highlight-source-swift"><pre><span class="pl-k">var</span> orderBy <span class="pl-k">=</span> <span class="pl-c1">OrderBy</span>(.<span class="pl-c1">Descending</span>(<span class="pl-s"><span class="pl-pds">"</span>rating<span class="pl-pds">"</span></span>))
+<span class="pl-k">if</span> sortFromYoungest {
+    orderBy <span class="pl-k">+=</span> <span class="pl-c1">OrderBy</span>(.<span class="pl-c1">Ascending</span>(<span class="pl-s"><span class="pl-pds">"</span>age<span class="pl-pds">"</span></span>))
+}
+<span class="pl-k">var</span> mostValuablePeople <span class="pl-k">=</span> CoreStore.<span class="pl-c1">fetchAll</span>(
+    <span class="pl-c1">From</span>(MyPersonEntity),
+    orderBy
+)</pre></div>
+<h4>
+<a aria-hidden="true" class="anchor" href="#tweak-clause" id="user-content-tweak-clause"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><code>Tweak</code> clause</h4>
+<p>The <code>Tweak</code> clause lets you, uh, <em>tweak</em> the fetch (or query). <code>Tweak</code> exposes the <code>NSFetchRequest</code> in a closure where you can make changes to its properties:</p>
+<div class="highlight highlight-source-swift"><pre><span class="pl-k">var</span> people <span class="pl-k">=</span> CoreStore.<span class="pl-c1">fetchAll</span>(
+    <span class="pl-c1">From</span>(MyPersonEntity),
+    <span class="pl-c1">Where</span>(<span class="pl-s"><span class="pl-pds">"</span>age &gt; %d<span class="pl-pds">"</span></span>, <span class="pl-c1">30</span>),
+    <span class="pl-c1">OrderBy</span>(.<span class="pl-c1">Ascending</span>(<span class="pl-s"><span class="pl-pds">"</span>surname<span class="pl-pds">"</span></span>)),
+    Tweak { (fetchRequest) <span class="pl-k">-&gt;</span> <span class="pl-c1">Void</span> <span class="pl-k">in</span>
+        fetchRequest.<span class="pl-smi">includesPendingChanges</span> <span class="pl-k">=</span> <span class="pl-c1">false</span>
+        fetchRequest.<span class="pl-smi">returnsObjectsAsFaults</span> <span class="pl-k">=</span> <span class="pl-c1">false</span>
+        fetchRequest.<span class="pl-smi">includesSubentities</span> <span class="pl-k">=</span> <span class="pl-c1">false</span>
+    }
+)</pre></div>
+<p>The clauses are evaluated the order they appear in the fetch/query, so you typically need to set <code>Tweak</code> as the last clause.
+<code>Tweak</code>'s closure is executed only just before the fetch occurs, so make sure that any values captured by the closure is not prone to race conditions.</p>
+<p>While <code>Tweak</code> lets you micro-configure the <code>NSFetchRequest</code>, note that CoreStore already preconfigured that <code>NSFetchRequest</code> to suitable defaults. Only use <code>Tweak</code> when you know what you are doing!</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#querying" id="user-content-querying"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Querying</h3>
+<p>One of the functionalities overlooked by other Core Data wrapper libraries is raw properties fetching. If you are familiar with <code>NSDictionaryResultType</code> and <code>-[NSFetchedRequest propertiesToFetch]</code>, you probably know how painful it is to setup a query for raw values and aggregate values. CoreStore makes this easy by exposing the 2 methods below:</p>
+<ul>
+<li>
+<code>queryValue(...)</code> - returns a single raw value for an attribute or for an aggregate value. If there are multiple results, <code>queryValue(...)</code> only returns the first item.</li>
+<li>
+<code>queryAttributes(...)</code> - returns an array of dictionaries containing attribute keys with their corresponding values.</li>
+</ul>
+<p>Both methods above accept the same parameters: a required <code>From</code> clause, a required <code>Select&lt;T&gt;</code> clause, and an optional series of <code>Where</code>, <code>OrderBy</code>, <code>GroupBy</code>, and/or <code>Tweak</code> clauses.</p>
+<p>Setting up the <code>From</code>, <code>Where</code>, <code>OrderBy</code>, and <code>Tweak</code> clauses is similar to how you would when fetching. For querying, you also need to know how to use the <code>Select&lt;T&gt;</code> and <code>GroupBy</code> clauses.</p>
+<h4>
+<a aria-hidden="true" class="anchor" href="#selectt-clause" id="user-content-selectt-clause"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><code>Select&lt;T&gt;</code> clause</h4>
+<p>The <code>Select&lt;T&gt;</code> clause specifies the target attribute/aggregate key, as well as the expected return type:</p>
+<div class="highlight highlight-source-swift"><pre><span class="pl-k">let</span> johnsAge <span class="pl-k">=</span> CoreStore.<span class="pl-c1">queryValue</span>(
+    <span class="pl-c1">From</span>(MyPersonEntity),
+    Select<span class="pl-k">&lt;</span><span class="pl-c1">Int</span><span class="pl-k">&gt;</span>(<span class="pl-s"><span class="pl-pds">"</span>age<span class="pl-pds">"</span></span>),
+    <span class="pl-c1">Where</span>(<span class="pl-s"><span class="pl-pds">"</span>name == %@<span class="pl-pds">"</span></span>, <span class="pl-s"><span class="pl-pds">"</span>John Smith<span class="pl-pds">"</span></span>)
+)</pre></div>
+<p>The example above queries the "age" property for the first object that matches the <code>Where</code> condition. <code>johnsAge</code> will be bound to type <code>Int?</code>, as indicated by the <code>Select&lt;Int&gt;</code> generic type. For <code>queryValue(...)</code>, the following are allowed as the return type (and therefore as the generic type for <code>Select&lt;T&gt;</code>):</p>
+<ul>
+<li><code>Bool</code></li>
+<li><code>Int8</code></li>
+<li><code>Int16</code></li>
+<li><code>Int32</code></li>
+<li><code>Int64</code></li>
+<li><code>Double</code></li>
+<li><code>Float</code></li>
+<li><code>String</code></li>
+<li><code>NSNumber</code></li>
+<li><code>NSString</code></li>
+<li><code>NSDecimalNumber</code></li>
+<li><code>NSDate</code></li>
+<li><code>NSData</code></li>
+<li><code>NSManagedObjectID</code></li>
+<li><code>NSString</code></li>
+</ul>
+<p>For <code>queryAttributes(...)</code>, only <code>NSDictionary</code> is valid for <code>Select</code>, thus you are allowed to omit the generic type:</p>
+<div class="highlight highlight-source-swift"><pre><span class="pl-k">let</span> allAges <span class="pl-k">=</span> CoreStore.<span class="pl-c1">queryAttributes</span>(
+    <span class="pl-c1">From</span>(MyPersonEntity),
+    <span class="pl-c1">Select</span>(<span class="pl-s"><span class="pl-pds">"</span>age<span class="pl-pds">"</span></span>)
+)</pre></div>
+<p>If you only need a value for a particular attribute, you can just specify the key name (like we did with <code>Select&lt;Int&gt;("age")</code>), but several aggregate functions can also be used as parameter to <code>Select</code>:</p>
+<ul>
+<li><code>.Average(...)</code></li>
+<li><code>.Count(...)</code></li>
+<li><code>.Maximum(...)</code></li>
+<li><code>.Minimum(...)</code></li>
+<li><code>.Sum(...)</code></li>
+</ul>
+<div class="highlight highlight-source-swift"><pre><span class="pl-k">let</span> oldestAge <span class="pl-k">=</span> CoreStore.<span class="pl-c1">queryValue</span>(
+    <span class="pl-c1">From</span>(MyPersonEntity),
+    Select<span class="pl-k">&lt;</span><span class="pl-c1">Int</span><span class="pl-k">&gt;</span>(.<span class="pl-c1">Maximum</span>(<span class="pl-s"><span class="pl-pds">"</span>age<span class="pl-pds">"</span></span>))
+)</pre></div>
+<p>For <code>queryAttributes(...)</code> which returns an array of dictionaries, you can specify multiple attributes/aggregates to <code>Select</code>:</p>
+<div class="highlight highlight-source-swift"><pre><span class="pl-k">let</span> personJSON <span class="pl-k">=</span> CoreStore.<span class="pl-c1">queryAttributes</span>(
+    <span class="pl-c1">From</span>(MyPersonEntity),
+    <span class="pl-c1">Select</span>(<span class="pl-s"><span class="pl-pds">"</span>name<span class="pl-pds">"</span></span>, <span class="pl-s"><span class="pl-pds">"</span>age<span class="pl-pds">"</span></span>)
+)</pre></div>
+<p><code>personJSON</code> will then have the value:</p>
+<div class="highlight highlight-source-swift"><pre>[
+    [
+        <span class="pl-s"><span class="pl-pds">"</span>name<span class="pl-pds">"</span></span><span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">"</span>John Smith<span class="pl-pds">"</span></span>,
+        <span class="pl-s"><span class="pl-pds">"</span>age<span class="pl-pds">"</span></span><span class="pl-k">:</span> <span class="pl-c1">30</span>
+    ],
+    [
+        <span class="pl-s"><span class="pl-pds">"</span>name<span class="pl-pds">"</span></span><span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">"</span>Jane Doe<span class="pl-pds">"</span></span>,
+        <span class="pl-s"><span class="pl-pds">"</span>age<span class="pl-pds">"</span></span><span class="pl-k">:</span> <span class="pl-c1">22</span>
+    ]
+]</pre></div>
+<p>You can also include an aggregate as well:</p>
+<div class="highlight highlight-source-swift"><pre><span class="pl-k">let</span> personJSON <span class="pl-k">=</span> CoreStore.<span class="pl-c1">queryAttributes</span>(
+    <span class="pl-c1">From</span>(MyPersonEntity),
+    <span class="pl-c1">Select</span>(<span class="pl-s"><span class="pl-pds">"</span>name<span class="pl-pds">"</span></span>, .<span class="pl-c1">Count</span>(<span class="pl-s"><span class="pl-pds">"</span>friends<span class="pl-pds">"</span></span>))
+)</pre></div>
+<p>which returns:</p>
+<div class="highlight highlight-source-swift"><pre>[
+    [
+        <span class="pl-s"><span class="pl-pds">"</span>name<span class="pl-pds">"</span></span><span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">"</span>John Smith<span class="pl-pds">"</span></span>,
+        <span class="pl-s"><span class="pl-pds">"</span>count(friends)<span class="pl-pds">"</span></span><span class="pl-k">:</span> <span class="pl-c1">42</span>
+    ],
+    [
+        <span class="pl-s"><span class="pl-pds">"</span>name<span class="pl-pds">"</span></span><span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">"</span>Jane Doe<span class="pl-pds">"</span></span>,
+        <span class="pl-s"><span class="pl-pds">"</span>count(friends)<span class="pl-pds">"</span></span><span class="pl-k">:</span> <span class="pl-c1">231</span>
+    ]
+]</pre></div>
+<p>The <code>"count(friends)"</code> key name was automatically used by CoreStore, but you can specify your own key alias if you need:</p>
+<div class="highlight highlight-source-swift"><pre><span class="pl-k">let</span> personJSON <span class="pl-k">=</span> CoreStore.<span class="pl-c1">queryAttributes</span>(
+    <span class="pl-c1">From</span>(MyPersonEntity),
+    <span class="pl-c1">Select</span>(<span class="pl-s"><span class="pl-pds">"</span>name<span class="pl-pds">"</span></span>, .<span class="pl-c1">Count</span>(<span class="pl-s"><span class="pl-pds">"</span>friends<span class="pl-pds">"</span></span>, <span class="pl-c1">As</span>: <span class="pl-s"><span class="pl-pds">"</span>friendsCount<span class="pl-pds">"</span></span>))
+)</pre></div>
+<p>which now returns:</p>
+<div class="highlight highlight-source-swift"><pre>[
+    [
+        <span class="pl-s"><span class="pl-pds">"</span>name<span class="pl-pds">"</span></span><span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">"</span>John Smith<span class="pl-pds">"</span></span>,
+        <span class="pl-s"><span class="pl-pds">"</span>friendsCount<span class="pl-pds">"</span></span><span class="pl-k">:</span> <span class="pl-c1">42</span>
+    ],
+    [
+        <span class="pl-s"><span class="pl-pds">"</span>name<span class="pl-pds">"</span></span><span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">"</span>Jane Doe<span class="pl-pds">"</span></span>,
+        <span class="pl-s"><span class="pl-pds">"</span>friendsCount<span class="pl-pds">"</span></span><span class="pl-k">:</span> <span class="pl-c1">231</span>
+    ]
+]</pre></div>
+<h4>
+<a aria-hidden="true" class="anchor" href="#groupby-clause" id="user-content-groupby-clause"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><code>GroupBy</code> clause</h4>
+<p>The <code>GroupBy</code> clause lets you group results by a specified attribute/aggregate. This is useful only for <code>queryAttributes(...)</code> since <code>queryValue(...)</code> just returns the first value.</p>
+<div class="highlight highlight-source-swift"><pre><span class="pl-k">let</span> personJSON <span class="pl-k">=</span> CoreStore.<span class="pl-c1">queryAttributes</span>(
+    <span class="pl-c1">From</span>(MyPersonEntity),
+    <span class="pl-c1">Select</span>(<span class="pl-s"><span class="pl-pds">"</span>age<span class="pl-pds">"</span></span>, .<span class="pl-c1">Count</span>(<span class="pl-s"><span class="pl-pds">"</span>age<span class="pl-pds">"</span></span>, <span class="pl-c1">As</span>: <span class="pl-s"><span class="pl-pds">"</span>count<span class="pl-pds">"</span></span>)),
+    <span class="pl-c1">GroupBy</span>(<span class="pl-s"><span class="pl-pds">"</span>age<span class="pl-pds">"</span></span>)
+)</pre></div>
+<p>this returns dictionaries that shows the count for each <code>"age"</code>:</p>
+<div class="highlight highlight-source-swift"><pre>[
+    [
+        <span class="pl-s"><span class="pl-pds">"</span>age<span class="pl-pds">"</span></span><span class="pl-k">:</span> <span class="pl-c1">42</span>,
+        <span class="pl-s"><span class="pl-pds">"</span>count<span class="pl-pds">"</span></span><span class="pl-k">:</span> <span class="pl-c1">1</span>
+    ],
+    [
+        <span class="pl-s"><span class="pl-pds">"</span>age<span class="pl-pds">"</span></span><span class="pl-k">:</span> <span class="pl-c1">22</span>,
+        <span class="pl-s"><span class="pl-pds">"</span>count<span class="pl-pds">"</span></span><span class="pl-k">:</span> <span class="pl-c1">1</span>
+    ]
+]</pre></div>
+<h2>
+<a aria-hidden="true" class="anchor" href="#contents" id="user-content-contents"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Contents</h2>
+<ul>
+<li><a class="internal present" href="/JohnEstropia/CoreStore/wiki/TL%3BDR-%28a.k.a.-sample-codes%29">TL;DR (a.k.a. sample codes)</a></li>
+<li><a class="internal present" href="/JohnEstropia/CoreStore/wiki/Architecture">Architecture</a></li>
+<li>CoreStore Tutorials
+<ul>
+<li><a class="internal present" href="/JohnEstropia/CoreStore/wiki/Setting-up">Setting up</a></li>
+<li><a class="internal present" href="/JohnEstropia/CoreStore/wiki/Migrations">Migrations</a></li>
+<li><a class="internal present" href="/JohnEstropia/CoreStore/wiki/Saving-and-processing-transactions">Saving and processing transactions</a></li>
+<li><a class="internal present" href="/JohnEstropia/CoreStore/wiki/Fetching-and-querying">Fetching and querying</a></li>
+<li><a class="internal present" href="/JohnEstropia/CoreStore/wiki/Logging-and-error-handling">Logging and error handling</a></li>
+<li><a class="internal present" href="/JohnEstropia/CoreStore/wiki/Observing-changes-and-notifications">Observing changes and notifications</a></li>
+</ul>
+</li>
+<li><a class="internal present" href="/JohnEstropia/CoreStore/wiki/Installation">Installation</a></li>
+<li><a class="internal present" href="/JohnEstropia/CoreStore/wiki/Changesets">Changesets</a></li>
+</ul>
+
+        </div>
+
+    </div>]

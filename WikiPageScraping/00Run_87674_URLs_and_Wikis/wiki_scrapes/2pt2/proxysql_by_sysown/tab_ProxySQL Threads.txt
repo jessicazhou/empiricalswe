@@ -1,0 +1,74 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>ProxySQL is multi-threaded daemon, with one or more threads per module.<br/>
+The following is a list of threads normally running:</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#main-thread" id="user-content-main-thread"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Main thread</h2>
+<p>This thread is only responsible to bootstrap the core modules and to start the other core threads</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#admin-thread" id="user-content-admin-thread"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Admin thread</h2>
+<p>This thread is responsible for the following:</p>
+<ul>
+<li>it initializes and bootstraps of the Admin interface</li>
+<li>it performs the initial load of configuration from either config file or database file</li>
+<li>if enabled, it starts the HTTP server that handles the web UI</li>
+<li>if enabled, it configures the Cluster module</li>
+<li>it starts a listener responsible to accept new connections in Admin interface and creates a new thread for each admin/stats connection</li>
+</ul>
+<h2>
+<a aria-hidden="true" class="anchor" href="#mysql-workers" id="user-content-mysql-workers"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>MySQL workers</h2>
+<p><code>mysql-threads</code> threads are responsible to handle all the MySQL traffic, for all the clients connections and for all the backends connections. That is: few threads handling any number of connections.<br/>
+MySQL worker threads listen all on the same port(s). When a new client connects, one of MySQL workers will successfully accept the connection and creates a MySQL Session: that MySQL Session/client is bind to that specific worker until the client disconnects. In other words, a client connection is always processed by the same MySQL worker.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#mysql-auxiliary-threads" id="user-content-mysql-auxiliary-threads"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>MySQL auxiliary threads</h2>
+<p>These threads are also known as “idle threads”.<br/>
+If <code>proxysql</code> is started with <code>—idle-threads</code> option, for each MySQL worker thread an auxiliary thread is started. Each MySQL worker thread and it auxiliary thread work together: the first thread handles active connections and assign to the second thread all idle connections, while the second thread only waits for an event (or a timeout) to happen on the idle connections and pass them back to the first thread if this happens.<br/>
+The use of “idle threads” is recommended when the number of active clients connections is very small compared to the number of idle clients connections.<br/>
+This allows ProxySQL to handle hundreds of thousands of connections (tested up to 1 million connections).</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#http-server-new-in-144" id="user-content-http-server-new-in-144"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>HTTP server (new in 1.4.4)</h2>
+<p>ProxySQL has a built-in HTTP server that uses libmicrohttpd. Is configured with <code>MHD_USE_INTERNAL_POLLING_THREAD</code>, therefore can potentially use multiple threads.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#cluster-threads-new-in-142" id="user-content-cluster-threads-new-in-142"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Cluster threads (new in 1.4.2)</h2>
+<p>For each ProxySQL node in a ProxySQL Cluster, a thread is started and is responsible for that one peer only. The number of threads can dynamically increase or decreased if nodes are added or removed.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#query-cache-purge-thread" id="user-content-query-cache-purge-thread"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Query Cache purge thread</h2>
+<p>This thread acts as a garbage collector for query cache. A garbage collector is used to ensure that data purging is not performed in the serving path (while clients are waiting replies)</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#clickhouse-server-thread-new-in-143" id="user-content-clickhouse-server-thread-new-in-143"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>ClickHouse Server thread (new in 1.4.3)</h2>
+<p>If ClickHouse Server is enabled (if support for ClickHouse is compiled, and <code>proxysql</code> started with <code>--clickhouse-server</code>), this thread is responsible for the following:</p>
+<ul>
+<li>it initializes the ClickHouse module</li>
+<li>it starts a listener responsible to accept new connections and creates a new thread for each client connection that wants to access ClickHouse</li>
+</ul>
+<h2>
+<a aria-hidden="true" class="anchor" href="#sqlite3-server-thread-new-in-143" id="user-content-sqlite3-server-thread-new-in-143"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>SQLite3 Server thread (new in 1.4.3)</h2>
+<p>If SQLite3 Server is enabled (<code>proxysql</code> started with <code>--sqlite3-server</code>), this thread is responsible for the following:</p>
+<ul>
+<li>it initializes the SQLite3 Server module</li>
+<li>it starts a listener responsible to accept new connections and creates a new thread for each client connection that wants to access the built-in SQLite3 Server</li>
+</ul>
+<h2>
+<a aria-hidden="true" class="anchor" href="#monitor-threads" id="user-content-monitor-threads"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Monitor threads</h2>
+<p>Monitor module starts several threads.<br/>
+The implementation has changed in the past, some time reducing the number of threads, other time increasing it.<br/>
+In ProxySQL 1.4, the threads started by Monitor module are:</p>
+<ul>
+<li>a main thread responsible to start a thread for each monitor category (5 in total)</li>
+<li>a thread scheduling connection checks</li>
+<li>a thread scheduling ping checks</li>
+<li>a thread scheduling read-only checks</li>
+<li>a thread scheduling replication lag checks</li>
+<li>a thread scheduling group replication monitoring</li>
+<li>a threads pool (initially twice the size of <code>mysql-threads</code>)</li>
+</ul>
+<p>The thread pool is responsible to perform all the checks and monitoring scheduled by the scheduling threads. The pool can automatically grow and shrink based on the number of checks in the monitor queue. The same threads are also responsible to immediately take action based on the result of checks, like shunning a node or reconfigure a hostgroup.</p>
+<h1>
+<a aria-hidden="true" class="anchor" href="#note-on-cpu-usage" id="user-content-note-on-cpu-usage"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Note on CPU usage</h1>
+<p>The threads listed above have very difference CPU usage profiles.<br/>
+In general, MySQL worker threads are the most busy threads and the ones responsible for most of the CPU usage.<br/>
+Although their CPU usage is very low, it is possible that the Monitor module drastically increases the size of the Monitor thread pool if ProxySQL has to check hundreds or thousands of servers.</p>
+
+        </div>
+
+    </div>]

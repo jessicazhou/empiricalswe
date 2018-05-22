@@ -1,0 +1,113 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>This document serves as a quick guide to doing client development on the Ethereum C++ PoC-6 codebase. It is for those who wish to interface to the PoC-6 testnet for the purposes of submitting transactions, mining blocks and querying state. Ethereum is still in the very early stages of development and as such the code, protocol and API are changing speedily and in significant ways. In short, here be dragons.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#basics" id="user-content-basics"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Basics</h3>
+<p>To utilise the Ethereum network for your application you must create a new Ethereum client. Though a non-trivial undertaking, it is fairly streamlined.</p>
+<p>To use any of this, you're going to need a development build of cpp-ethereum (see github.com/ethereum/cpp-ethereum and it's wiki for how to do that). Once built, you'll end up with libethereum and a bunch of clients. You'll be using libethereum.</p>
+<p>The Ethereum library, libethereum, gives you all the APIs you need to develop a new Ethereum client, however for ease of development, a single class is provided in order to streamline your path to a useful client, called, surprisingly enough, <code>Client</code>.</p>
+<p>Find the header at libethereum/Client.h. You'll need to link your code to libethereum.so (or .dylib, .dll depending on your platform and build settings).</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#client-class-overview" id="user-content-client-class-overview"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Client class overview</h3>
+<p>The client class provides you with the ability to become a peer on the Ethereum network (via <code>startNetwork()</code> method), to mine blocks (<code>startMine()</code>, though if you're just wanting to transact and query state you can ignore this), to transact (the <code>transact()</code> methods) and to query the state (the <code>state()</code> method).</p>
+<p>The basic usage of the Client class involves first creating an instance:</p>
+<pre><code>eth::KeyPair me = eth::KeyPair::create();
+eth::Client client("My App", me.address(), "./MyApp");
+</code></pre>
+<p>This creates a client <code>client</code> whose network ID is "My App" and which stores the various disk-backed databases in the directory "./MyApp" (relative to the working directory of the application). You'll probably want to use a more permanently known path than the current directory; <code>eth::getDataDir()</code> might help you there.</p>
+<p>If the client does any mining, any proceeds will be placed in the account identified by our newly created keypair <code>me</code>. Using this code, it'd change each time you run the application. Hardly ideal. You'd want to generate it once and use that one generated address throughout.</p>
+<p>Creating this instance initialises the databases (if they don't already exist), but does little else. We're not on the network yet! To connect to the network, we use <code>startNetwork()</code>:</p>
+<pre><code>client.startNetwork(30303, "54.76.56.74", 30303);
+</code></pre>
+<p>This call puts us on the Ethereum peer network. We have to specify the port on which we want to listen (the first <code>30303</code>), the initial peer to which we want to connect (<code>"54.76.56.74"</code>, the PoC-6 testnet nexus, but any other peer will do if you know their address), the port to connect on (the second <code>30303</code>). There are  also bunch of parameters about how our peer behaves which we leave at the defaults; in this case we want a full peer, maintaining ideally 5 connections and we don't know its public IP but we'll use UPnP to determine that and set up any port forwarding (this will make this call block for a second or two).</p>
+<p>Once made, a second thread will service the network; you need to do nothing.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#querying-state" id="user-content-querying-state"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Querying state</h3>
+<p>So we use the client class to query state of the network. Suppose we want to check our balance (of the account we created earlier, stored in <code>me</code>):</p>
+<pre><code>eth::u256 myBalance = client.balanceAt(me.address());
+if (myBalance &gt; 0)
+{}   // Got Ether! :-)
+else
+{}   // Still Wei-less. :-(
+</code></pre>
+<p>In this case we just use the <code>Client::balanceAt()</code> method. Easy.</p>
+<p>Suppose we have a contract address (<code>myContract</code>, let's say) and we wish to query what is stored at address index <code>3</code>:</p>
+<pre><code>eth::Address myContract;
+// ...
+eth::u256 at3 = client.stateAt(myContract, 3);
+</code></pre>
+<p>or perhaps we know that there's something interesting to us stored at our address:</p>
+<pre><code>eth::u256 atMyAddress = client.stateAt(myContract, me.address());
+</code></pre>
+<h3>
+<a aria-hidden="true" class="anchor" href="#learning-of-changes" id="user-content-learning-of-changes"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Learning of Changes</h3>
+<p>Ethereum includes a powerful mechanism for determining when the state of the system changes, either because a transaction is submitted or because somebody mined something. At present, the system is based around a polling mechanism and 'watch'es; watches are triggered on particular changes to the system state and can be queried (in a thread-safe manner) whether the state has since changed. Watches can be created with the <code>Watch</code> class:</p>
+<pre><code>Watch chainChanged(client, ChainChangedFilter);
+</code></pre>
+<p>This creates a watch which <em>watches</em> (geddit?) for whenever the blockchain changes (i.e. when a new block is mined or the chain has altered in some other way). In addition to the ChainChangedFilter, there is another inbuilt filter for watching the pending transaction list: PendingChangedFilter. It works in the same way.</p>
+<p>The watch can be queried with <code>check</code>:</p>
+<pre><code>if (chainChanged.check())
+  cout &lt;&lt; "The chain has changed!" &lt;&lt; endl;
+</code></pre>
+<p>Calling <code>check</code> resets the status of the watch (calling it twice in a row will generally result in the second returning false). If you don't want to reset the status, use <code>peek</code>.</p>
+<p>Watches are non-copyable by design, though may be swapped (there is a std::swap method for them).</p>
+<p>While determining when the chain changes is an important ability, it is rather a fine net and tends to catch everything. There are ways of filtering in a much more detailed way avoiding being notified of uninteresting changes. This is done with <code>MessageFilter</code>s.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#filtering" id="user-content-filtering"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Filtering</h3>
+<p>A <code>MessageFilter</code> specifies a set of conditions against which messages (i.e. calls and contract creations) can be matched against.</p>
+<p>To use a message filter, you construct the object and then narrow-down the types of messages you wish to know about. For example, suppose we wish to be notified of messages that alter our account:</p>
+<pre><code>Watch myAccountWatch(client, MessageFilter().altered(me.address()));
+</code></pre>
+<p>There are a number of other ways of narrowing-down the messages that we might want to be notified of. <code>MessageFilter::from</code> and <code>::to</code> allow us to filter based on the source and receipt addresses. <code>MessageFilter::altered(addr, loc)</code> allows to to filter based on a particular contract's point in storage changing.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#gathering-messages" id="user-content-gathering-messages"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Gathering Messages</h3>
+<p>Once notified of changes, it is often useful to know the precise nature of those changes. As such, <code>MessageFilter</code>s have another purpose; namely to gather these messages and allow them to be inspected. Once a <code>Watch</code> is set up, you may call <code>messages</code> to return you a number of <code>PastMessage</code> objects. This is an ordered list, each one describing a particular message that was sent within Ethereum.</p>
+<pre><code>for (PastMessage const&amp; m: myWatchAccount.messages())
+  cout &lt;&lt; "I was altered by a message from " &lt;&lt; m.from &lt;&lt; " in block " &lt;&lt; m.number &lt;&lt; endl;
+</code></pre>
+<p>The <code>PastMessage</code> object has a number of fields of information. Particularly useful are the <code>input</code> and <code>output</code> fields, which can allow a contract to provide useful information to its operation to you, the querier. There is also <code>to</code>, <code>from</code> and <code>value</code>, together with <code>path</code> giving you insight into where in the block's message tree it is. There are also several fields which describe the block in which the message was active.</p>
+<p>Aside from using watches to rake in <code>PastMessage</code>s, you may also use the <code>Client</code> directly with the <code>messages</code> call. As might be expected, this takes a <code>MessageFilter</code> object and returns messages. This is particularly useful when combined with the <code>MessageFilter</code>'s ability to match only against a particular set of blocks on the blockchain (see <code>withEarliest</code> and <code>withLatest</code>).</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#transacting" id="user-content-transacting"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Transacting</h3>
+<p>To send a transaction onto the network, there are two <code>Client::transact()</code> methods; one for creating new contracts and one for creating message-calls. Creating contracts is probably not the sort of thing you want to do programatically yet; you'll probably just use AlethZero.</p>
+<p>Suppose we wished to send 10 Ether to the Bob, whose address we happen to know is stored in the variable <code>bob</code>. Then we would call:</p>
+<pre><code>client.transact(me.secret(), 10 * eth::ether, bob);
+</code></pre>
+<p>It's that easy.</p>
+<p>Suppose I want to send a message to a contract, which, again, I happen to know is stored in <code>myContract</code>. Suppose the message I want to send are the two bytes <code>0x4269</code> and let's say I don't want to send any Ether with it:</p>
+<pre><code>client.transact(me.secret(), 0, myContract, { 0x42, 0x69 });
+</code></pre>
+<p>Again, that simple.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#creating-contracts" id="user-content-creating-contracts"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Creating Contracts</h3>
+<p>Finally, let's assume I want to make a new contract. I want it to be a simple cash collection contract. I create it, and when I send a message to it, it suicides, giving me all its balance.</p>
+<p>Firstly, let's figure out what the contract's code would be. We'll write it in LLL, since a compiler for this is included in libethereum. For the contract's initialisation, it should remember who its creator is (since we'll be returning the cash to them later) and store it away (let's say at position 69):</p>
+<pre><code>[[69]] (caller)
+</code></pre>
+<p>For the body, it should check to see if the transaction is coming from the creator; if so, it should terminate and return the cash to them:</p>
+<pre><code>(when (= (caller) @@69) (suicide (caller)))
+</code></pre>
+<p>Not too difficult either.</p>
+<p>So now we need the two byte arrays that correspond to these. We compile them with the <code>eth::compileLisp()</code> function, found in the header Instruction.h:</p>
+<pre><code>eth::bytes initCode = eth::compileLisp("[[69]] (caller)");
+eth::bytes bodyCode = eth::compileLisp("(when (= (caller) @@69) (suicide (caller)))");
+</code></pre>
+<p>We then create the contract using this data. We won't endow it with any Ether:</p>
+<pre><code>eth::Address donations = client.transact(me.secret(), 0, bodyCode, initCode);
+</code></pre>
+<p>Now that's done, anyone will be able to donate to it. Suppose Alice comes along, who has her own keypair <code>alice</code> and she wants to donate 100 Finney. Then she would call:</p>
+<pre><code>client.transact(alice.secret(), 100 * eth::finney, donations);
+</code></pre>
+<p>On receipt it would check if the caller (Alice) is the same as the original creator (me). It's not, and so it would accept the funds and do nothing more.</p>
+<p>Now, suppose we want to empty the pot. We send an empty message to it signalling it to suicide:</p>
+<pre><code>client.transact(me.secret(), 0, donations);
+</code></pre>
+<p>This will run the same code as before, but this time, the caller is the same as the original creator and so it would suicide, depositing the entire balance (which is apparently just Alice's measly 100 Finney). And so, all other things being equal, we should be able to assert that we have 100 Finney more than we had earlier (stored in <code>myBalance</code>):</p>
+<pre><code>std::assert (client.balanceAt(me) == myBalance + 100 * eth::finney);
+</code></pre>
+<p>And that's it. Any questions?</p>
+<p>Gav.</p>
+
+        </div>
+
+    </div>]

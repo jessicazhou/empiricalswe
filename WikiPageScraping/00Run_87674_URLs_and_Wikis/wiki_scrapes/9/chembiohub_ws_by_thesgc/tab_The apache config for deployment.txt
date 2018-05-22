@@ -1,0 +1,29 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>The sample apache config file for deployment looks like this:</p>
+<pre><code>&lt;Directory /srv/chembiohub/chembiohub/deployment/static/&gt;
+     Options Indexes FollowSymLinks
+     AllowOverride None
+     Require all granted
+    &lt;/Directory&gt;
+    RewriteEngine On
+    #Re-write the url to add a slash
+    RewriteRule ^/chembiohub$ chembiohub/ [L,R=301]
+    ProxyTimeout 300
+    #ensure all requests for exactly /chembiohub/ or /chembiohub/index.html or any of the other urls used by django are redirected to django 
+    ProxyPassMatch ^/chembiohub/((?!#|\s*$|index\.html|api|admin|login|webauth|webauthlogout).*)$ !
+#Match /static urls to catch the css for django admin
+    AliasMatch ^/chembiohub/static/(.*)$ /srv/chembiohub/chembiohub/deployment/static/$1
+#Match other static urls
+    AliasMatch ^/chembiohub/((?!#|\s*$|index\.html).*)$ /srv/chembiohub/chembiohub/deployment/static/$1
+   #Anything not matched but on /chembiohub/ gets picked up below
+   ProxyPass /chembiohub/ http://127.0.0.1:35550/chembiohub/
+    ProxyPassReverse /chembiohub/ http://127.0.0.1:35550/chembiohub/
+</code></pre>
+<p>The reason that the apache config is complex is that we have used the grunt asset pipeline and pulled it in to django using the django collectstatic command. We are then serving index.html via uwsgi anyway.</p>
+<p>The configuration for index.html in the dist folder can be seen in the Index class in resource.py</p>
+<p><a href="https://github.com/thesgc/chembiohub_ws/blob/master/cbh_core_api/resources.py#L798">https://github.com/thesgc/chembiohub_ws/blob/master/cbh_core_api/resources.py#L798</a></p>
+
+        </div>
+
+    </div>]

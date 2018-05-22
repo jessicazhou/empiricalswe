@@ -1,0 +1,83 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <h1>
+<a aria-hidden="true" class="anchor" href="#event-dispatcher" id="user-content-event-dispatcher"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Event dispatcher</h1>
+<p>Event dispatchers task is notify subscribed listeners that some event was fired.
+When event is fired, dispatcher checks if event is defined and has listeners.
+If so - all listeners (either class or closure) are notified about event.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#event-listener" id="user-content-event-listener"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Event listener</h2>
+<p>Anything callable can be an event listener.
+Mostly its just a closure, but can be a class or anything else that fits into <code>callable</code>.
+All registered listeners will be injected with instance of <a class="internal present" href="/mossphp/moss-framework/wiki/Container">Container</a>, <code>$subject</code> and <code>$message</code>.
+The <code>subject</code> is an object, usually the one firing event (eg. exception), while <code>message</code> is a text associated with event (eg. exception message).</p>
+<div class="highlight highlight-text-html-php"><pre><span class="pl-s1">    <span class="pl-smi">$listener</span> <span class="pl-k">=</span> <span class="pl-k">function</span>(<span class="pl-c1">\Moss\Container\</span><span class="pl-c1">ContainerInterface</span> <span class="pl-smi">$container</span>, <span class="pl-smi">$subject</span> <span class="pl-k">=</span> <span class="pl-c1">null</span>, <span class="pl-smi">$message</span> <span class="pl-k">=</span> <span class="pl-c1">null</span>) {</span>
+<span class="pl-s1">        <span class="pl-c"><span class="pl-c">//</span> some action</span></span>
+<span class="pl-s1">    }</span></pre></div>
+<p>There is also an <code>\Moss\Dispatcher\Listener</code> class.
+To create such listener, that will call <code>method</code> with array of <code>arguments</code> on <code>component</code>.
+Method and arguments are optional.</p>
+<div class="highlight highlight-text-html-php"><pre><span class="pl-s1">    <span class="pl-smi">$listener</span> <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-c1">\Moss\Dispatcher\</span><span class="pl-c1">Listener</span>(<span class="pl-s"><span class="pl-pds">'</span>component<span class="pl-pds">'</span></span>, <span class="pl-s"><span class="pl-pds">'</span>method<span class="pl-pds">'</span></span>, <span class="pl-smi">$arguments</span>);</span></pre></div>
+<p>Arguments are defined just like in <a class="internal present" href="/mossphp/moss-framework/wiki/Container">Container</a> component's definitions, with two additional predefined components - <code>subject</code> and <code>message</code> same as injected to listeners.</p>
+<p>To react to event call <code>get</code> method on defined listener.</p>
+<div class="highlight highlight-text-html-php"><pre><span class="pl-s1">    <span class="pl-smi">$result</span> <span class="pl-k">=</span> <span class="pl-smi">$listener</span><span class="pl-k">-&gt;</span>get(<span class="pl-smi">$container</span>, <span class="pl-smi">$subject</span>, <span class="pl-smi">$message</span>);</span></pre></div>
+<p><strong>Listener class is used to handle listeners coming from textual definitions - see <a class="internal present" href="/mossphp/moss-framework/wiki/Config">Config</a></strong></p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#register-listener-to-event" id="user-content-register-listener-to-event"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Register listener to event</h2>
+<p>Register defined <code>$listener</code> to observe <code>foo</code> event:</p>
+<div class="highlight highlight-text-html-php"><pre><span class="pl-s1">    <span class="pl-smi">$dispatcher</span> <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-c1">\Moss\Dispatcher\</span><span class="pl-c1">Dispatcher</span>(<span class="pl-smi">$container</span>);</span>
+<span class="pl-s1">    <span class="pl-smi">$dispatcher</span><span class="pl-k">-&gt;</span>register(<span class="pl-s"><span class="pl-pds">'</span>foo<span class="pl-pds">'</span></span>, <span class="pl-smi">$listener</span>);</span></pre></div>
+<p>Or register closure as event listener:</p>
+<div class="highlight highlight-text-html-php"><pre><span class="pl-s1">    <span class="pl-smi">$dispatcher</span> <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-c1">\Moss\Dispatcher\</span><span class="pl-c1">Dispatcher</span>(<span class="pl-smi">$container</span>);</span>
+<span class="pl-s1">    <span class="pl-smi">$dispatcher</span><span class="pl-k">-&gt;</span>register(<span class="pl-s"><span class="pl-pds">'</span>foo<span class="pl-pds">'</span></span>, <span class="pl-k">function</span>(<span class="pl-smi">$container</span>, <span class="pl-smi">$subject</span> <span class="pl-k">=</span> <span class="pl-c1">null</span>, <span class="pl-smi">$message</span> <span class="pl-k">=</span> <span class="pl-c1">null</span>) {</span>
+<span class="pl-s1">        <span class="pl-k">return</span> <span class="pl-s"><span class="pl-pds">'</span>ClosureListenerResult<span class="pl-pds">'</span></span>;</span>
+<span class="pl-s1">    });</span></pre></div>
+<p>Or to multiple events:</p>
+<div class="highlight highlight-text-html-php"><pre><span class="pl-s1">    <span class="pl-smi">$dispatcher</span><span class="pl-k">-&gt;</span>register([<span class="pl-s"><span class="pl-pds">'</span>foo<span class="pl-pds">'</span></span>, <span class="pl-s"><span class="pl-pds">'</span>bar<span class="pl-pds">'</span></span>, <span class="pl-s"><span class="pl-pds">'</span>yada<span class="pl-pds">'</span></span>], <span class="pl-smi">$listener</span>);</span></pre></div>
+<p>Generally order in which listeners are registered to event is same order in which they are called.
+To change this, when registering listener set third argument <code>priority</code> that allows to change order - highest priority is <code>0</code>.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#fire-event" id="user-content-fire-event"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Fire event</h2>
+<p>To fire <code>foo</code> event, call:</p>
+<div class="highlight highlight-text-html-php"><pre><span class="pl-s1">    <span class="pl-smi">$dispatcher</span><span class="pl-k">-&gt;</span>fire(<span class="pl-s"><span class="pl-pds">'</span>foo<span class="pl-pds">'</span></span>);</span></pre></div>
+<p>All defined listeners, that observe <code>foo</code> event will be notified.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#stop" id="user-content-stop"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Stop</h2>
+<p>To stop other listeners from being notified, call <code>::stop()</code> method.</p>
+<div class="highlight highlight-text-html-php"><pre><span class="pl-s1">    <span class="pl-smi">$dispatcher</span><span class="pl-k">-&gt;</span>stop();</span></pre></div>
+<p>No other listeners will be notified about ongoing event.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#aspects" id="user-content-aspects"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Aspects</h2>
+<p>When <code>foo</code> event is fired, <code>dispatcher</code> actually fires three events (called <em>aspects</em>) - <code>foo:before</code>, <code>foo</code> and <code>foo:after</code> - in that order.
+If any of those events, throws unhandled exception <code>foo:exception</code> will be fired - and no further listeners will be notified.
+In case <code>foo:exception</code> has no listeners, exception will be rethrown.</p>
+<p>In case of <code>:exception</code>, thrown exception is passed as the <code>$subject</code> and its message as <code>$message</code>.</p>
+<p>Registering aspect listeners is identical as registering normal event, just remember aspect name postfix <code>:before</code>, <code>:after</code> and <code>:exception</code>.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#framework-events" id="user-content-framework-events"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Framework events</h2>
+<p>Framework has few basic events, fired when kernel reaches specific point (in that order):</p>
+<ul>
+<li>
+<code>kernel.request</code> - when received request,</li>
+<li>
+<code>kernel.route</code> - when found route matching request</li>
+<li>
+<code>kernel.controller</code> - just before calling controller</li>
+<li>
+<code>kernel.response</code> - after receiving response from controller</li>
+<li>
+<code>kernel.send</code> - just before sending response to client</li>
+</ul>
+<p>There are additional three events, occurring when something went wrong:</p>
+<ul>
+<li>
+<code>kernel.403</code> - fired when ForbiddenException is thrown,</li>
+<li>
+<code>kernel.404</code> - fired when NotFoundException is thrown,</li>
+<li>
+<code>kernel.500</code> - fired when other exception is thrown</li>
+</ul>
+
+        </div>
+
+    </div>]

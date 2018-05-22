@@ -1,0 +1,439 @@
+[<div class="wiki-body gollum-rest-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <h1>
+<a aria-hidden="true" class="anchor" href="#llvm-%E5%BE%AA%E7%8E%AF%E5%88%86%E6%9E%90%E6%80%BB%E7%BB%93" id="user-content-llvm-循环分析总结"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>llvm 循环分析总结</h1>
+<div>
+<p>Contents</p>
+<ul>
+<li>
+<a class="internal" href="#loop-trip-count-analysis-log" id="user-content-id9">1 Loop Trip Count Analysis Log</a><ul>
+<li><a class="internal" href="#status" id="user-content-id10">Status</a></li>
+<li><a class="internal" href="#problem" id="user-content-id11">Problem</a></li>
+<li><a class="internal" href="#how-to" id="user-content-id12">How To</a></li>
+<li><a class="internal" href="#analysis-log" id="user-content-id13">Analysis Log</a></li>
+<li><a class="internal" href="#method" id="user-content-id14">Method</a></li>
+<li><a class="internal" href="#result-validation" id="user-content-id15">Result Validation</a></li>
+</ul>
+</li>
+<li>
+<a class="internal" href="#valueprofiling" id="user-content-id16">2 ValueProfiling</a><ul>
+<li><a class="internal" href="#edgevalue-profiling" id="user-content-id17">edge和value profiling对比测试</a></li>
+<li><a class="internal" href="#id6" id="user-content-id18">总结</a></li>
+</ul>
+</li>
+<li><a class="internal" href="#pretty-print" id="user-content-id19">3 pretty-print</a></li>
+<li><a class="internal" href="#mdaresolve" id="user-content-id20">4 MDAResolve</a></li>
+<li><a class="internal" href="#slash-and-shrink" id="user-content-id21">5 Slash and Shrink</a></li>
+<li>
+<a class="internal" href="#print-helper" id="user-content-id22">6 Print Helper</a><ul>
+<li><a class="internal" href="#env" id="user-content-id23">Env</a></li>
+<li><a class="internal" href="#cg" id="user-content-id24">Cg</a></li>
+<li><a class="internal" href="#call" id="user-content-id25">Call</a></li>
+</ul>
+</li>
+<li><a class="internal" href="#ddgraph" id="user-content-id26">7 DDGraph</a></li>
+<li><a class="internal" href="#ddgraph-expr" id="user-content-id27">8 DDGraph::expr()</a></li>
+<li><a class="internal" href="#slglobalprofiling" id="user-content-id28">9 SLGlobalProfiling</a></li>
+<li><a class="internal" href="#profilingresolver" id="user-content-id29">10 带Profiling的Resolver</a></li>
+<li><a class="internal" href="#gvinfo" id="user-content-id30">11 GVInfo的使用</a></li>
+<li><a class="internal" href="#performance-predication" id="user-content-id31">12 Performance Predication</a></li>
+</ul>
+</div>
+<a name="user-content-loop-trip-count-analysis-log"></a>
+<h2>
+<a aria-hidden="true" class="anchor" href="#1-loop-trip-count-analysis-log" id="user-content-1-loop-trip-count-analysis-log"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><a href="#id9">1 Loop Trip Count Analysis Log</a>
+</h2>
+<a name="user-content-status"></a>
+<h3>
+<a aria-hidden="true" class="anchor" href="#status" id="user-content-status"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><a href="#id10">Status</a>
+</h3>
+<p>现在已经可以使用 <code>llvm::Loop::getCanonicalInductionVariable</code> 函数来获取标准
+循环变量i（满足从0开始，递增1的一个变量）。并且能够写出获取循环终止条件的函数了
+。现在终止条件是一个内部的临时变量，需要溯源到源代码可寻的变量。这一步也已经完
+成，实际上LLVM的变量的定义是不同于c语言的。c语言中的变量的赋值是有明显的储存读
+取过程，但是llvm的变量是 <strong>替换</strong> ，也就是说类似 <code>%a = b</code> 这类，可以将以后的
+所有出现的a都用b来代替。类似于宏，或者语义别名。直接打印这个变量就是这个变量的
+内容。因此我们可以通过 <code>%bnd = add %a, %b</code> 获取到 <code>%a</code> 和 <code>%b</code> ，然后再二
+叉递归的打印 <code>%a</code> , <code>%b</code> 直到遇到访问内存语句。通常访存语句不可精简，并且参
+数都是源代码可寻的，因此完成了我们的目标</p>
+<a name="user-content-problem"></a>
+<h3>
+<a aria-hidden="true" class="anchor" href="#problem" id="user-content-problem"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><a href="#id11">Problem</a>
+</h3>
+<p>代码种类太多，写的函数不能够很好的工作于许多特例情况，需要继续优化，另外限制条
+件太严格，只能对于标准循环变量进行分析，导致在测试NPB的bt.A的时候大量的分析失败
+。</p>
+<a name="user-content-how-to"></a>
+<h3>
+<a aria-hidden="true" class="anchor" href="#how-to" id="user-content-how-to"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><a href="#id12">How To</a>
+</h3>
+<p>下一步尝试研究llvm的循环变量标准化函数，测试其工作的范围，是不是总是可用的，为
+什么分析NPB的时候大量的分析失败。同时尝试处理一般的循环变量。</p>
+<a name="user-content-analysis-log"></a>
+<h3>
+<a aria-hidden="true" class="anchor" href="#analysis-log" id="user-content-analysis-log"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><a href="#id13">Analysis Log</a>
+</h3>
+<p>分析工作主要围绕 <em>bt.A.opt3.bc</em> 和 <em>cgpop_db.opt3.bc</em> , 首先opt3表示之前用
+<code>opt -O3</code> 优化过,优化之后能够简化结构,方便分析.另外一些分析工作有要求,必须要
+经过处理.所以如果是希望获取一个原始程序的性能模型,将会比经过优化的程序的分析更
+加困难.</p>
+<a name="user-content-method"></a>
+<h3>
+<a aria-hidden="true" class="anchor" href="#method" id="user-content-method"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><a href="#id14">Method</a>
+</h3>
+<p>分析工作需要结合多个文件,首先使用:</p>
+<pre>opt -load src/libLLVMPred.so -analyze -Loop-Trip-Count input.bc output.bc
+</pre>
+<p>来产生输出,现阶段代码对于不能分析的循环都会输出 <code>cycles: unknow</code> .然后对于所
+有不能分析的循环都去分析原因,再一个一个的修复,由此来从特殊到一般.</p>
+<p>首先使用 cfg(svg格式,可以用浏览器查看) 寻找到循环的位置,简单看一下,了解其大概结
+构.然后打开 ir文件(ll格式) 再认真分析数据依赖.找出原因. 这个文档的意义在于将那
+些不重复的原因都列举出来,方便理解最后的代码.</p>
+<a name="user-content-result-validation"></a>
+<h3>
+<a aria-hidden="true" class="anchor" href="#result-validation" id="user-content-result-validation"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><a href="#id15">Result Validation</a>
+</h3>
+<p>运行程序有两种方法:</p>
+<div class="highlight highlight-source-shell"><pre>opt -load src/libLLVMPred.so -analyze -Loop-Trip-Count bt.A.opt3.bc</pre></div>
+<p>以后会逐渐的趋向后者,因为那是LLVM的标准做法.获得结果,一个典型的循环分析的输出格式如下:</p>
+<pre>Loop at depth 1 containing: %"12.i"&lt;header&gt;&lt;exiting&gt;,%"13.i"&lt;latch&gt;&lt;exiting&gt;
+loop simplify:1
+loop  depth:1
+  %indvars.iv.i = phi i64 [ %indvars.iv.next.i, %"13.i" ], [ 1, %"11.i" ]
+start value:i64 1
+ind   value:  %indvars.iv.i = phi i64 [ %indvars.iv.next.i, %"13.i" ], [ 1, %"11.i" ]
+next  value:  %indvars.iv.next.i = add nuw nsw i64 %indvars.iv.i, 1
+end   value:  %141 = icmp eq i32 %140, 3
+cycles:i32 2
+</pre>
+<p>除了一些基本信息,循环分析还给出了 <strong>cycles</strong> --- 循环的次数,可能为常数或者是一
+个表达式, <strong>start value</strong> --- 开始值, <strong>next value</strong> --- 步进值, <strong>end value</strong>
+--- 结束值, <strong>ind value</strong> --- 归纳变量自身</p>
+<p>当需要对结果进行验证的时候,可以从简单验证和完整验证两方面入手,简单验证即直接从
+输出信息中验证,完整验证则是对照这ir重新分析一遍.</p>
+<p>使用简单验证的方法如下: <em>归纳变量</em> 的第二个参数应该等于开始变量,归纳变量的第一
+个变量应该等于步进, <em>步进</em> 应该等于归纳变量加上一个数, <em>结果</em> 则是icmp 指令的第
+二个参数, 最后的循环数等于结果减去开始.</p>
+<a name="user-content-valueprofiling"></a>
+<h2>
+<a aria-hidden="true" class="anchor" href="#2-valueprofiling" id="user-content-2-valueprofiling"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><a href="#id16">2 ValueProfiling</a>
+</h2>
+<p>llvm-loop 能够分析出循环的次数,对于那些不能够分析出来的会在最后说明 couldn't
+unresolved,另外还可以使用 <a href="#id2" id="user-content-id1">[1]</a></p>
+<pre>opt -load src/libLLVMPred.so -Insert-Trip-Count -insert-value-profiling input.bc -o output.bc
+</pre>
+<p>命令将找出来的循环cycle进行ValueProfiling插桩,(通过 <a href="https://github.com/xiehuc/llvm-prof">llvm-prof</a> ),生成的bitcode
+经过llc和链接成可执行文件,运行之后可以得到llvmprof.out的结果.</p>
+<table frame="void" rules="none">
+<colgroup>
+<col/>
+<col/>
+</colgroup>
+<tbody valign="top">
+<tr>
+<td><a href="#id1">[1]</a></td>
+<td>
+<ul>
+<li>-Insert-Trip-Count 是Pass,比Loop-Trip-Count多了一些详细的print方法,只
+有它内部使用了value插桩</li>
+<li>-insert-value-profiling 是Pass,在main函数中插入计数器的代码.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<p>对于MPI程序,需要编译llvm-prof的时候开启 <code>OUTPUT_HASPID</code> 选项,在生成文件名后面
+追加进程号,从而避免写入冲突.</p>
+<p>通过使用 <code>llvm-prof -list-all</code> 可以得到一个简单的报告,使用 <code>llvm-prof
+-value-content</code> 可以针对ValueProfiling输出详细的内容,</p>
+<p>它的顺序是没有排序的,也就是所第几行就表示 [index] 是几.这样和上面的结果对应起来
+就可以找出代码中的位置,括号中的数字是捕获次数,可以看到其实很多情况下捕获的值都
+是一样的,也就是说循环次数是固定不变的,表明这个循环次数是 <em>可优化</em> 的.</p>
+<p>然后llvm-pred提供了一个 <code>drawline.py</code> 的脚本帮助将value-content的输出绘制成
+图形,更加方便观察.根据机器上安装的python3或者是python2,使用 <code>&lt;python&gt;
+drawline.py value.log outdir</code> 来在outdir目录下面生成图像.</p>
+<a name="user-content-edgevalue-profiling"></a>
+<h3>
+<a aria-hidden="true" class="anchor" href="#edge%E5%92%8Cvalue-profiling%E5%AF%B9%E6%AF%94%E6%B5%8B%E8%AF%95" id="user-content-edge和value-profiling对比测试"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><a href="#id17">edge和value profiling对比测试</a>
+</h3>
+<p>由于ValueProfiling也会收集一些基本块的执行频率,所以可以和EdgeProfiling的做对比,
+简单验证一下正确性.</p>
+<p>注意EdgeProfiling的正确使用 <a href="#id5" id="user-content-id4">[2]</a></p>
+<table frame="void" rules="none">
+<colgroup>
+<col/>
+<col/>
+</colgroup>
+<tbody valign="top">
+<tr>
+<td><a href="#id4">[2]</a></td>
+<td>参见 llvm-cookbook <em>Q: 如何正确的使用 LLVM 的 edge profiling?</em>
+</td>
+</tr>
+</tbody>
+</table>
+<p>比较对应的基本块的执行频率,可以得到两者是相等的,另外ValueProfiling的
+<tt>\sum E_{loop}\times C\ge E_{header}</tt>, 其中 <tt>E_{loop}\text{和}C</tt> 是
+ValueProfiling中的捕获次数和循环次数, <tt>E_{header}</tt> 是Loop的Header所在的
+BasicBlock在EdgeProfiling中的执行频数. 因为捕获的插桩位置是Loop的Preheader,也就
+是说是在循环外面,然后循环次数就是一次完整的循环所运行的次数. 这样捕获了多少次乘
+以一次循环的次数,就是循环总共运行的次数和.现在,一个循环最典型结构就是Header,所
+以就拿Header为研究对象了.大于的情况是在循环有多个出口,我们计算只是计算真退出,在
+循环提前退出的情况下就明显达不到上界.</p>
+<a name="user-content-id6"></a>
+<h3>
+<a aria-hidden="true" class="anchor" href="#%E6%80%BB%E7%BB%93" id="user-content-总结"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><a href="#id18">总结</a>
+</h3>
+<p>通过ValueProfiling得到了数据的变化模式特征之后,更能帮助我们进行一些推导假设.例
+如对于不变的数,我们可以大胆的假设在其它数据规模下运行也是不变的,可能数的值会变
+化,但是值的确定能够在程序运行的初期就确定,表明这个值是我们努力下就能够从源代码
+的数据依赖分析中获取到的.也即它的数据依赖不太复杂.</p>
+<p>对于线性增长的数,我们也可以大胆的假设它下次运行的时候也是线性增长的.</p>
+<p>对于突变的数,我们需要首先手工分析一下它,了解为什么会突变,以及一些常见的突变原因
+.然后再想想这里可以做些什么.</p>
+<a name="user-content-pretty-print"></a>
+<h2>
+<a aria-hidden="true" class="anchor" href="#3-pretty-print" id="user-content-3-pretty-print"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><a href="#id19">3 pretty-print</a>
+</h2>
+<p>pretty-print 是不借助其它信息(如Profiling)直接从源代码静态分析出Value的表达式的
+过程. 使用 <a href="#id8" id="user-content-id7">[3]</a></p>
+<pre>opt -load src/libLLVMPred.so -analyze -Insert-Trip-Count bt.A.opt3.bc
+</pre>
+<p>来开启.当然,能力受限,不能够得出精细的结论.实现细节见cookbook. 这里主要讨论日志信息:</p>
+<table frame="void" rules="none">
+<colgroup>
+<col/>
+<col/>
+</colgroup>
+<tbody valign="top">
+<tr>
+<td><a href="#id7">[3]</a></td>
+<td>-Loop-Trip-Count的analyze只简单打印出找出的循环次数, -Insert-Trip-Count
+则是打印依赖分析之后的pretty-print的结果,但是也只是打印方式不同而已,在
+bitcode优化方面没有区别.</td>
+</tr>
+</tbody>
+</table>
+<p><strong>手动分析验证方法</strong></p>
+<p>手动分析验证的目的在于检查错误和调整bug,其方法也是同分析的过程类似,从需要分析的
+目标Value开始反向画树状的SSA,一步一步的检查为什么会得出错误的输出. 需要注意括号
+匹配是否正确.</p>
+<a name="user-content-mdaresolve"></a>
+<h2>
+<a aria-hidden="true" class="anchor" href="#4-mdaresolve" id="user-content-4-mdaresolve"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><a href="#id20">4 MDAResolve</a>
+</h2>
+<p>simplify过程是在分析出了cycle之后,尝试将没有解开的Value(那些追溯到Load指令的地
+方)通过内存依赖分析给解决出来. 然后继续分析.simplify和pretty-pring过程比较相近,
+区别在于后者只是简单的文字转换打印,而前者试图绕过分析截至的Load指令,找出对应的
+store的地址,并且继续分析下去.</p>
+<div>
+<p>Note</p>
+<p>在之前的代码,simplify使用MemoryDependenciesAnalysis来实现. 在新代码中, 使用
+了Resolver来提供更好的solve</p>
+</div>
+<p>由于该分析的特殊性,不能保证100%的成功率,也许做完了才回过头来发现,其实是根本无法
+实现的.</p>
+<p>例如:分析 <code>__io_serial_MOD_read_appmd</code> 的结果为:</p>
+<pre>::resolved list
+     %loop-cycle = sub i64 %573, %572, !dbg !1124
+     %573 = load i64* %404, align 8, !dbg !1124
+     store i64 %373, i64* %404, align 8, !dbg !1107
+     %373 = sext i32 %371 to i64, !dbg !1107
+     %572 = load i64* %403, align 8, !dbg !1124
+     store i64 1, i64* %403, align 8, !dbg !1107
+   i64 1
+::unresolved
+     %371 = load i32* %nx_block, align 4, !dbg !1107
+</pre>
+<p>pretty-print给出的结果为: <code>Cycles:*%iglob[0][3][0][2] - *%iglob[0][3][0][1]</code>
+而simplify整理之后的结果为: <code>*%nx_block -1</code>
+后者比前者精简不少.结果的含义更加明确. 但是 <code>%nx_block</code> 则无法再solve下去了.
+原因是 <code>%nx_block</code> 的赋值为:</p>
+<pre>%12 = call i32 @__netcdf_MOD_nf90_inquire_dimension\
+   (i32* %fh, i32* %dim_nx, [0 x i8]* null, i32* %nx_block, i32 0) \
+   #2, !dbg !1125
+</pre>
+<p>是通过调用函数来赋值的,这种情况还没有分析到.因此无法solve.</p>
+<a name="user-content-slash-and-shrink"></a>
+<h2>
+<a aria-hidden="true" class="anchor" href="#5-slash-and-shrink" id="user-content-5-slash-and-shrink"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><a href="#id21">5 Slash and Shrink</a>
+</h2>
+<p>SlashShrink总是和小核(minicore)挂钩的, 为了正确的使用SlashShrink, 可以使用如下的命令:</p>
+<pre>SHRINK_LEVEL=1 opt -load src/libLLVMPred.so -Insert-Trip-Count -Shrink
+</pre>
+<p>例如分析bt.A.opt3的原始bitcode的大小是176.9KB, 经过切削之后只有65.9KB, 原始程序
+执行时间是: real  2m0.041s user      1m58.683s sys   0m0.720s, 小核的执行时间只有:
+real    0m4.282s user   0m4.250s sys    0m0.013s. 可见达到了我们的要求.</p>
+<p>在削减cgpop的时候需要标记一些特别的系统函数, 所以使用:</p>
+<pre>LIBCALL_FILE=../LibCall.txt opt -load src/libLLVMPred.so -Insert-Trip-Count -Shrink
+</pre>
+<p>Shrink中借用了LibCallFunctionInfo来标记那些重要的函数, 而我们实现的
+LibCallFunctionInfo可以从 <code>LIBCALL_FILE</code> 的环境变量中读取文件, 并构造数组. 这
+无疑比写死在代码里面更加灵活. 注意本来也可以使用 <code>cl::opt&lt;&gt;</code> 来实现传入参数.
+不过不知道为什么呢, 我不太喜欢 <code>cl::opt</code> 感觉会把 <code>opt -help</code> 搞得好乱.</p>
+<p>现在实现先暂用Mod来表示函数重要, 但是它的原义是会写入内存, 并不等价于这个函数重要</p>
+<p>然后, <code>_gfortran_stop_string</code> 这个函数十分重要, 因为它的作用和 <code>exit(0)</code> 是
+一样的, 虽然名字上完全看不出来.</p>
+<p>MPI的所有函数都是很重要的</p>
+<a name="user-content-print-helper"></a>
+<h2>
+<a aria-hidden="true" class="anchor" href="#6-print-helper" id="user-content-6-print-helper"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><a href="#id22">6 Print Helper</a>
+</h2>
+<p>LLVMPred 提供了一些非常好用的小工具来帮助调试, 查看程序的信息, 掌握这些工具能帮
+助你更加容易应对这个困难的项目.</p>
+<a name="user-content-env"></a>
+<h3>
+<a aria-hidden="true" class="anchor" href="#env" id="user-content-env"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><a href="#id23">Env</a>
+</h3>
+<p>一个打印LLVMPred所使用的环境变量的工具, LLVMPred偏好环境变量, 因为它使用方式多
+种多样, 即可以针对一条语句的范围, 又可以用export针对整个会话的范围, 还可以写到
+bashrc永久生效. 总之, 能帮助你使用opt时不用输入冗长的指令. 因此 <em>Env</em> 是帮助你
+快速查看当前设置了哪些环境变量:</p>
+<pre>opt -load src/libLLVMPred.so -Env /dev/null -disable-output
+
+SHRINK_LEVEL:   2
+LIBCALL_FILE:   ../LibCall.txt
+IGNOREFUNC_FILE:   ../IgnoreFunc~.txt
+</pre>
+<a name="user-content-cg"></a>
+<h3>
+<a aria-hidden="true" class="anchor" href="#cg" id="user-content-cg"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><a href="#id24">Cg</a>
+</h3>
+<p>虽然llvm有自己的 <code>-print-callgraph</code> 不过那个信息太冗余了, 我们在进行切削的时
+候, 有时候需要从根节点进行切削, 这个时候使用Cg就十分方便了, 它只会打印模块内的
+Callgraph, 并且是以树形式显示出来的. 十分的直观:</p>
+<pre>opt -load src/libLLVMPred.so -Cg cgpop.O3.bc -disable-output
+</pre>
+<p>从Cg上就能够大致的看出程序的结构, 分为 init, solve, check, 因此我们首当其冲的是
+进行切削 check, 然后是solve, init则保持不动.</p>
+<a name="user-content-call"></a>
+<h3>
+<a aria-hidden="true" class="anchor" href="#call" id="user-content-call"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><a href="#id25">Call</a>
+</h3>
+<p>同Cg, 这里Call是LibCall的含义, 因为我们进行切削的时候会保留标准函数不动. 这些标
+准函数都是十分重要的. 然后为了确切的了解到底哪些函数里面调用了标准函数, 是不是
+能够正确的切削. 所以就可以使用Call, 来查看. 例如MPI的一系列的函数, 如bcast, 等
+等实际上是十分重要的. 包含这些调用的函数自然也是十分重要的:</p>
+<pre>opt -load src/libLLVMPred.so -Call cgpop.O3.bc -disable-output
+
+main:
+   mpi_init_
+   llvm.memcpy.p0i8.p0i8.i64
+   mpi_finalize_
+</pre>
+<a name="user-content-ddgraph"></a>
+<h2>
+<a aria-hidden="true" class="anchor" href="#7-ddgraph" id="user-content-7-ddgraph"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><a href="#id26">7 DDGraph</a>
+</h2>
+<p>为了方便的查看数据依赖图, 并且观察其中的错误, 特别使用LLVM的GraphWriter接口制作
+了DDGraph. 通过它, 能够将找到的循环次数的依赖以图形化的方式表现出来!!非常好用!!:</p>
+<pre>opt -load libLLVMPred.so -Ddg -Insert-Trip-Count
+</pre>
+<p>Ddg只是 <code>Insert-Trip-Count</code> 循环的一个参数, 使用它能够生成依赖图. 使用dot工具能够
+转化成人工可读的格式:</p>
+<pre>dot -Tsvg -o test.svg /tmp/***.dot
+</pre>
+<p>需要特别注意的是: 所有未解开依赖的节点使用 <em>虚点边框(dotted)</em> 表示,所有隐式依赖
+使用 <em>红色线条</em> 表示. 隐式依赖就是那些使用UseOnlyResolve或者是MDAResolve找到的
+依赖, 从load指令出发,找出依赖的store指令.</p>
+<a name="user-content-ddgraph-expr"></a>
+<h2>
+<a aria-hidden="true" class="anchor" href="#8-ddgraphexpr" id="user-content-8-ddgraphexpr"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><a href="#id27">8 DDGraph::expr()</a>
+</h2>
+<p>expr()的使用是和pretty_print的完全一样. 关键在于需要在config.h.in中使用宏定义
+<code>CYCLE_EXPR_USE_DDG</code> 指定是使用expr()还是pretty_print. 然后在原来pretty_print
+生成的表达式的位置, 就会使用expr()来代替pretty_print:</p>
+<pre>$ opt -load libLLVMPred.so -Insert-Trip-Count -analyze input.bc
+</pre>
+<a name="user-content-slglobalprofiling"></a>
+<h2>
+<a aria-hidden="true" class="anchor" href="#9-slglobalprofiling" id="user-content-9-slglobalprofiling"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><a href="#id28">9 SLGlobalProfiling</a>
+</h2>
+<p>SLGlobalProfiling 见llvm-prof的wiki. 它的使用方法是:</p>
+<pre>$ opt -load libLLVMProfiling.so -insert-slg-profiling input.bc -o output.bc
+</pre>
+<p>然后编译运行, 生成出来的out文件使用 <code>llvm-prof input.bc llvmprof.out</code> 查看, (
+由于它取得的结果不是一个次数, 所以不支持unsort, list-all等等方法) 例如:</p>
+<pre>39.   %13 = load i32* @__linear_MOD_nactive, align 4, !tbaa !0
+ --&gt;  store i32 %170, i32* @__linear_MOD_nactive, align 4, !tbaa !0          ## __linear_MOD_initdof:"42"
+40.   %28 = load i32* %27, align 4, !tbaa !0
+ --&gt;  store i32 %11, i32* %36, align 4, !tbaa !0             ## __linear_MOD_formhalodofck:"6"
+41.   %40 = load i32* @__linear_MOD_nactive, align 4, !tbaa !0
+ --&gt;  store i32 %170, i32* @__linear_MOD_nactive, align 4, !tbaa !0          ## __linear_MOD_initdof:"42"
+42.   %49 = load i32* %48, align 4, !tbaa !0
+ --&gt;  store i32 %116, i32* %128, align 4, !tbaa !0           ## __linear_MOD_initdof:"33"
+43.   %17 = load i32* @__simple_domain_MOD_nblocks_tropic, align 4, !tbaa !0
+</pre>
+<p>表明 编号为39的load指令依赖的store指令为 i32 %170. 同时位于
+<code>__linear_MOD_initdof</code> 函数的 <code>"42"</code> 号基本块内.</p>
+<a name="user-content-profilingresolver"></a>
+<h2>
+<a aria-hidden="true" class="anchor" href="#10-%E5%B8%A6profiling%E7%9A%84resolver" id="user-content-10-带profiling的resolver"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><a href="#id29">10 带Profiling的Resolver</a>
+</h2>
+<p>Resolver&lt;SLGResolve&gt; 能够读取SLGProfiling的信息, 并用于分析依赖.</p>
+<p>新代码中LoopSimplify依赖了ProfileInfo. 是一个AnalysisGroup. 如果什么都不做, 它
+就是用NoProfileInfo实现. 什么数据都不提供. 但是如果我们在opt中指定. 它就会初始
+化好ProfileInfo.</p>
+<p>然后又因为我们使用的是 Resolver&lt;UseOnlyResolve,SLGResolve&gt;. 在UseOnlyResolve分
+析失败之后, 就会去尝试SLGResolve. 于是我们之前指定的ProfileInfo就生效了.</p>
+<p>命令行指定ProfileInfo使用的是:</p>
+<pre>opt -load &lt;.so&gt; -profile-info-file=llvmprof.out -profile-loader -Ddg \
+ -Insert-Trip-Count &lt;input.bc&gt;
+</pre>
+<div>
+<p>Note</p>
+<p>但是,实际上在修了一个UseOnlyResolve的bug之后. 大部分情况UseOnlyResolve在全局
+变量上都能解析出来, 因此也就不会去用SLGResolve. 导致SLGResolve的发挥的效果比
+我们预想得要小得多得多.</p>
+</div>
+<a name="user-content-gvinfo"></a>
+<h2>
+<a aria-hidden="true" class="anchor" href="#11-gvinfo%E7%9A%84%E4%BD%BF%E7%94%A8" id="user-content-11-gvinfo的使用"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><a href="#id30">11 GVInfo的使用</a>
+</h2>
+<p>GVInfo是一个AnalysisPass. 所以使用:</p>
+<pre>opt -load src/libLLVMPred.so -analyze -GVinfo input.bc
+</pre>
+<a name="user-content-performance-predication"></a>
+<h2>
+<a aria-hidden="true" class="anchor" href="#12-performance-predication" id="user-content-12-performance-predication"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><a href="#id31">12 Performance Predication</a>
+</h2>
+<p>PerfPred有两种模式, <code>block_freq</code> 和 <code>exec_time</code> . 分别用于预测基本块执行频
+率和总的执行时间. 前者的目的主要是为了方便实验验证, 对比结果. 如果直接去比较时
+间, 可能由于指令执行时间预测的不精准, 造成的误差无法确定是预测基本块频率部分还
+是指令时间部分. 如果只比较基本块执行频率的话, 我们可以用它和 EdgeProfiling 的结
+果进行对比. 后者架构太复杂, 并且不容易于其它项目兼容, 考虑废除.</p>
+<p>对于两边, 首先是通过预测来获得所有的基本块的执行频率. 然后强制插入到Module中.
+再立刻插入PredBlockProfiling来捕获. 另一边, 直接用EdgeProfiling来插桩.最后两边运行
+出来生成的结果. 左边的Value的值即是预测结果, 右边EdgeProfiling计数器会给出实际
+结果. 两者比较即可得到准确率.</p>
+<p>预测插桩的方法是在编译的时候使用 <code>cmake .. -DPREF_TYPE=block_freq</code> 来选择模式
+, 然后使用:</p>
+<pre>opt -load &lt;.so&gt; -PerfPred -insert-pred-profiling input.bc -o output.bc
+</pre>
+<p>来完成预测和插桩. 运行出来的结果是BlockInfo格式的, 需要注意, 查看llvmprof.out的
+时候是使用插桩前的bitcode. 另外虽然一直是拿EdgeProfiling在说, 但实际二进制格式
+和EdgeProfiling是不同的, 是使用的BlockInfo, EdgeProfiling的对象是 <em>边</em>,能够从边
+的信息推导基本块, 但这里再计算边是相当麻烦的. 而BlockInfo的对象直接是基
+本块了, 因此比较合适.</p>
+<p>最后, 像操纵普通 edge profiling 一样的, 查看预测的结果, 然后进行对比. 在调试过
+程中需要了解每个block是分类为哪种预测的, 有 静态基本块预测, 静态循环基本块预测,
+识别循环预测为常量, 识别循环预测为变量 四种. 例如 静态循环基本块预测的准确度就
+会低于识别循环的, 如果是发现偏差比较大, 应该想办法识别出这个循环. 如果理论上准
+确度很高的识别循环实际上偏差比较大, 就需要排查代码哪里错了. 查看预测分类的方法
+是:</p>
+<pre>opt -load &lt;.so&gt; -analyze -PerfPred input.bc
+</pre>
+<p>此时只计算, 不写入, 就会给出每个基本块识别类型:</p>
+<pre>No.333       Static Block:   "3.preheader"   6.666667e-01
+No.285       Static Loop Block:      "30.preheader"  1.998438e+01
+No.73        Dynamic Loop Constant Trip Count:       "40"    24
+No.68        Dynamic Loop Instrumented Trip Count    "35"      %"35.bfreq" = mul \
+   i32 %"35.tc", 1, !dbg !240
+</pre>
+<p>以上对应4种分类, 两种静态的最后是double型的频率, 识别循环常数是i32类型的频率,
+识别循环变量是一个指令.</p>
+
+
+        </div>
+
+    </div>]

@@ -1,0 +1,213 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>The <strong>xnlogic</strong> DSL is a domain specific language that allows you to define a sophisticated graph database backed data model with a set of simple
+declarations.</p>
+<p>Before getting started with the DSL, you need to <a class="internal present" href="/xnlogic/xnlogic/wiki/Create-a-project-gem">create a project gem</a> and
+<a class="internal present" href="/xnlogic/xnlogic/wiki/Development-workspace">get a development workspace</a>. You should also understand the way an
+<a class="internal present" href="/xnlogic/xnlogic/wiki/Structuring-an-application">XN applications are structured</a> around <strong>Parts</strong>, which are combined into <strong>Models</strong>.</p>
+<h4>
+<a aria-hidden="true" class="anchor" href="#some-notes-on-naming" id="user-content-some-notes-on-naming"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Some notes on naming:</h4>
+<ul>
+<li>The XN DSL predates the formation of xnlogic the company. As such, we are in the habit of referring to it as <code>pacer-model</code>. We will
+try to be consistent about calling it the XN DSL, but if we mention pacer-model, now you know what we're talking about!</li>
+<li>A <code>Record</code> is represented in the graph by a <code>Vertex</code> (sometimes called a <code>Node</code>).</li>
+<li>A <code>Relationship</code> is represented in the graph by an <code>Edge</code>.</li>
+<li>A collection of results within a <code>graph traversal</code> may also be called a <code>Route</code>.</li>
+</ul>
+<a name="user-content-modules"></a>
+## Module Structure
+<p>XN uses some simple conventions together with Ruby's standard modules to structure your application. Your parts must be defined within a
+namespace module. Within each part module, you can define Vertex and Route modules. (<a class="internal present" href="/xnlogic/xnlogic/wiki/Module-structure">continue reading</a>)</p>
+<a name="user-content-pacer_vertex"></a>
+## Defining a Part
+<p>To define a part, use the <code>pacer_vertex</code> declaration. This declaration must be the first DSL-related
+declaration in the part because it is required to activate the DSL and effectively turn a standard Ruby module
+into a XN DSL part definition.</p>
+<p>The following declaration alone is enough to create a simple part that acts as a tag, marking a model as
+having some quality:</p>
+<div class="highlight highlight-source-ruby"><pre><span class="pl-k">module</span> <span class="pl-en">Asset</span>
+  pacer_vertex <span class="pl-c1">doc:</span> <span class="pl-s"><span class="pl-pds">"</span>Describe to API consumers what this part is for<span class="pl-pds">"</span></span>
+<span class="pl-k">end</span></pre></div>
+<a name="user-content-property"></a>
+## Property definitions
+<p>Most property definitions are very simple declarations. Below are some typical property definitions. For a
+complete listing of property definition options, <a class="internal present" href="/xnlogic/xnlogic/wiki/Property-definitions">click here</a>.</p>
+<div class="highlight highlight-source-ruby"><pre>property <span class="pl-c1">:name</span>, <span class="pl-c1">type:</span> <span class="pl-c1">:text</span>, <span class="pl-c1">index:</span> <span class="pl-c1">true</span>
+property <span class="pl-c1">:age</span>, <span class="pl-c1">type:</span> <span class="pl-c1">:numeric</span>, <span class="pl-c1">filter:</span> <span class="pl-c1">true</span>
+property <span class="pl-c1">:gender</span>, <span class="pl-c1">type:</span> <span class="pl-c1">:select</span>, <span class="pl-c1">options:</span> [<span class="pl-s"><span class="pl-pds">'</span>Female<span class="pl-pds">'</span></span>, <span class="pl-s"><span class="pl-pds">'</span>Male<span class="pl-pds">'</span></span>],
+         <span class="pl-c1">limit_to_list:</span> <span class="pl-c1">true</span></pre></div>
+<p>Using a property in business logic (<code>age</code> and <code>birth_year</code>):</p>
+<div class="highlight highlight-source-ruby"><pre><span class="pl-c1">self</span>.age <span class="pl-k">=</span> current_year <span class="pl-k">-</span> <span class="pl-c1">self</span>.birth_year <span class="pl-k">unless</span> <span class="pl-c1">self</span>.age</pre></div>
+<a name="user-content-relationships"></a>
+## Relationship definitions
+<p>When relationships are created in the graph, they are created as edges in the graph. Edges are always
+directional, so when we talk about them, we say they go <strong>from</strong> one record, <strong>to</strong> another record. Another
+way to say that is that they go <strong>out</strong> of one record (from), and <strong>in</strong> to another (to). Each edge goes from
+exactly one record to exactly one other record, but a <strong>relationship</strong> may encompass zero, one or many edges
+between records. In the XN DSL, we can define one relationships and many relationships in either direction:</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>from</th>
+<th>to</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>one</td>
+<td>[[from_one</td>
+<td>Relationship-definitions#from_one]]</td>
+</tr>
+<tr>
+<td>many</td>
+<td>[[from_many</td>
+<td>Relationship-definitions#from_many]]</td>
+</tr>
+</tbody>
+</table>
+<p>For a complete listing of relationship definition options, <a class="internal present" href="/xnlogic/xnlogic/wiki/Relationship-definitions">click here</a>.</p>
+<a name="user-content-relationship-pairs"></a>
+#### Relationship pairs
+<p>An important characteristic of edges in a graph is that they can be traversed either forward or in reverse.
+That means that when you define a relationship <code>A -&gt; B</code> in part A, you should also make a corresponding
+definition <code>B &lt;- A</code> in part B.  Note that the edge points from A to B in both instances. Likewise, when
+defining a corresponding relationship, it must be reversed in relationship to its pair. For example, here we
+define a from-one-to-many relationship, <code>HasNotes -&gt; Note</code>:</p>
+<div class="highlight highlight-source-ruby"><pre><span class="pl-k">module</span> <span class="pl-en">HasNotes</span>
+  <span class="pl-c"><span class="pl-c">#</span> ...</span>
+  to_many <span class="pl-c1">:Note</span>
+<span class="pl-k">end</span></pre></div>
+<div class="highlight highlight-source-ruby"><pre><span class="pl-k">module</span> <span class="pl-en">Note</span>
+  <span class="pl-c"><span class="pl-c">#</span> ...</span>
+  from_one <span class="pl-c1">:HasNotes</span>
+<span class="pl-k">end</span></pre></div>
+<a name="user-content-displays"></a>
+## Display properties
+<p>Display properties are simple, computed, read-only properties that are recalculated each time a record's
+properties are rendered by the API. Display properties should be very fast computations that result in a small
+amount of data. They should be free of side-effects and do not run within a transaction.</p>
+<p>A good candidate for a display property is one that changes over time. For instance, the age example above
+could be improved with a display:</p>
+<div class="highlight highlight-source-ruby"><pre>display <span class="pl-c1">:age</span> <span class="pl-k">do</span>
+  current_year <span class="pl-k">-</span> <span class="pl-c1">self</span>.birth_year <span class="pl-k">if</span> <span class="pl-c1">self</span>.birth_year
+<span class="pl-k">end</span></pre></div>
+<h4>
+<a aria-hidden="true" class="anchor" href="#display-name---a-special-display-property" id="user-content-display-name---a-special-display-property"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Display name - a special display property</h4>
+<p>Display name is treated like a title for a record. It is rendered even in the most compact API results view
+for a record.</p>
+<div class="highlight highlight-source-ruby"><pre>display_name <span class="pl-k">do</span>
+  <span class="pl-s"><span class="pl-pds">"</span><span class="pl-pse">#{</span><span class="pl-s1"> <span class="pl-c1">self</span>.first_name </span><span class="pl-pse">}</span> <span class="pl-pse">#{</span><span class="pl-s1"> <span class="pl-c1">self</span>.last_name </span><span class="pl-pse">}</span><span class="pl-pds">"</span></span>
+<span class="pl-k">end</span></pre></div>
+<p>For larger resultsets, or more computationally expensive methods, see <a href="#documents">Documents and Reports</a></p>
+<a name="user-content-traversals"></a>
+## Traversals
+<p>Traversals are like calculated, read-only relationships. They allow you to create arbitrarily complex
+traversals within your application, using the full power of <a href="https://github.com/pangloss/pacer">Pacer</a> and <a href="https://github.com/pangloss/pacer-neo4j">Pacer-Neo4j</a>, as
+well as the <a class="internal present" href="/xnlogic/xnlogic/wiki/History-graph-API">history graph</a>.</p>
+<p>Traversal definitions are usually very simple, but there are options for passing arguments to them, as well as
+for specifying special permission requirements for users to be allowed to run them. For details,
+<a class="internal present" href="/xnlogic/xnlogic/wiki/Traversal-definitions">click here</a>.</p>
+<p>Traversals do not generate any methods like relationship or property definitions, so it is considered best
+practice to define a method corresponding to a traversal and simply call it from the traversal definition:</p>
+<div class="highlight highlight-source-ruby"><pre>route_traversal <span class="pl-c1">:all_software_behind_firewall</span>, <span class="pl-c1">return_parts:</span> <span class="pl-c1">:Software</span> <span class="pl-k">do</span>
+  all_software_behind_firewall
+<span class="pl-k">end</span>
+
+<span class="pl-k">module</span> <span class="pl-en">Route</span>
+  <span class="pl-k">def</span> <span class="pl-en">all_software_behind_firewall</span>
+    protected_devices.software
+  <span class="pl-k">end</span>
+<span class="pl-k">end</span></pre></div>
+<p>There are two types of traversal: <code>route_traversal</code>, which traverses from a collection to another collection,
+and <code>traversal</code>, which traverses from a single record to a collection.</p>
+<a name="user-content-documents"></a>
+<a name="user-content-reports"></a>
+## Documents and Reports
+<p>Documents and reports are a way to create arbitrary response documents via the API. Any serializable
+response may be created by a document or report and will be returned to the client without any further change
+than being serialized as specified by the request (default is JSON).</p>
+<p>Documents and reports do not run in a transaction, and should not have any side effects.</p>
+<p>Documents and reports only differ in that a <code>document</code> is tied to an individual record, while a <code>report</code> is
+generated for any collection of records. That means that for a <code>document</code>, <code>self</code> is a vertex, while for a
+<code>report</code>, <code>self</code> is a route object. They otherwise are defined and function identically.</p>
+<p>For details on how to define arguments or set special permissions, <a class="internal present" href="/xnlogic/xnlogic/wiki/Method-arguments">click here</a>.</p>
+<div class="highlight highlight-source-ruby"><pre>document <span class="pl-c1">:switch_configuration</span> <span class="pl-k">do</span>
+  generate_switch_configuration
+<span class="pl-k">end</span></pre></div>
+<p>For very expensive or long running requests, an action or job that is queued and executed independently of the
+API server may be more appropriate. See the <a class="internal present" href="/xnlogic/xnlogic/wiki/DSL-intro#actions">actions and jobs section</a>.</p>
+<a name="user-content-actions"></a>
+<a name="user-content-jobs"></a>
+## Actions and Jobs
+<p>Actions and jobs are for doing arbitrary work on the API server or on a machine that listens to the API
+server's back-end message queues. When they complete, they can return either arbitrary data in the same way a
+document or report does, or they can return a collection of records from the graph.</p>
+<p>If your action or job requires arguments, special permissions, or guards to validate and prevent actions from
+being run in a bad state, <a class="internal present" href="/xnlogic/xnlogic/wiki/Method-arguments">click here</a> for details.</p>
+<h4>
+<a aria-hidden="true" class="anchor" href="#defining-an-action-or-job-for-the-message-queue" id="user-content-defining-an-action-or-job-for-the-message-queue"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Defining an action or job for the message queue</h4>
+<p>Despite the sophisticated functionality of defining a job that is offloaded to back end infrastructure,
+defining an action like this is very simple. In the basic case, you can simply do this:</p>
+<div class="highlight highlight-source-ruby"><pre>action <span class="pl-c1">:deploy_vm</span></pre></div>
+<p>Calling this action via the API will return a <code>job</code> record that the system uses to track the status of the out
+of process work. Once the work finishes, the job record will also be updated with the results of the job. A
+job record can be requested from the API in the same way as any other record. For instance:</p>
+<pre><code>get /is/job/id/9393
+</code></pre>
+<h4>
+<a aria-hidden="true" class="anchor" href="#defining-an-action-or-job-to-run-within-the-request" id="user-content-defining-an-action-or-job-to-run-within-the-request"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Defining an action or job to run within the request</h4>
+<p>Alternatively, a simple or fast running action can be defined in the business logic gem itself. This is useful
+for specialized record manipulation within the graph, or for other situations where processing time should be
+short and not rely on external data or services.</p>
+<div class="highlight highlight-source-ruby"><pre>action(<span class="pl-c1">:next_available_ip</span>,
+       <span class="pl-c1">return_parts:</span> <span class="pl-c1">:IP</span>,
+       <span class="pl-c1">guard:</span> <span class="pl-c1">:guard_next_avail_ip</span>
+       ) <span class="pl-k">do</span> |<span class="pl-smi">context</span>|
+  allocate_next_ip!
+<span class="pl-k">end</span></pre></div>
+<p>The first argument to an action block is the request context. The <a class="internal present" href="/xnlogic/xnlogic/wiki/Request-context">request context</a> provides
+access to the current application instance <code>context.app</code> as well as several other useful properties and methods.</p>
+<a name="user-content-validations"></a>
+## Validations
+<p>Simple validations like :min and :max, :required or :optional are built in to property and relationship
+definitions. To go beyond those, custom validations can be defined on a part as follows:</p>
+<div class="highlight highlight-source-ruby"><pre>validate <span class="pl-c1">:validate_all_caps_name</span>
+
+<span class="pl-k">module</span> <span class="pl-en">Vertex</span>
+  <span class="pl-k">def</span> <span class="pl-en">validate_all_caps_name</span>
+    <span class="pl-k">if</span> <span class="pl-c1">self</span>.name <span class="pl-k">!=</span> <span class="pl-c1">self</span>.name.upcase
+      <span class="pl-c1">self</span>.errors.add <span class="pl-c1">:name</span>, <span class="pl-s"><span class="pl-pds">"</span>should be all caps<span class="pl-pds">"</span></span>
+    <span class="pl-k">end</span>
+  <span class="pl-k">end</span>
+<span class="pl-k">end</span></pre></div>
+<a name="user-content-declarations"></a>
+## Other Declarations
+<h4>
+<a aria-hidden="true" class="anchor" href="#categorical-parts" id="user-content-categorical-parts"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Categorical parts</h4>
+<p>By marking a part as <code>categorical!</code>, the API metadata will group parts that are used together with this part
+in models as being members of a the category defined by this part. Categorical parts typically don't have any
+properties or relationship defined on them, though there is no actual restriction or differnce between
+categorical and regular parts.</p>
+<h4>
+<a aria-hidden="true" class="anchor" href="#sensitive-parts" id="user-content-sensitive-parts"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Sensitive parts</h4>
+<p>Parts may be marked as <code>sensitive!</code>, which means that any record that has a sensitive part won't appear in
+results if a user does not have read permissions for that sensitive part, even if they have read permissions
+for other parts present on the record.</p>
+<p>An example in Lightmesh is the <code>IP</code> type. IPs include the <code>HasNotes</code> part which most users have read access
+to, however because the IP is sensitive, a request for <code>/is/has_notes</code> will not include any IPs or other
+sensitive parts unless the current user has access to those sensitive parts.</p>
+<h4>
+<a aria-hidden="true" class="anchor" href="#non-descriptive-parts" id="user-content-non-descriptive-parts"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Non-descriptive parts</h4>
+<p>Some parts, like <code>Record</code> don't give any information about what a record actually is. Those parts can be
+marked as <code>not_descriptive!</code> which prevents users from requesting them without additional parts being included
+in the request. That means that a request like <code>/is/record</code> will fail, while <code>/is/record,asset</code> will succeed,
+because the asset part is descriptive enough to enable the API to respond to the request.</p>
+<h4>
+<a aria-hidden="true" class="anchor" href="#cloning" id="user-content-cloning"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Cloning</h4>
+<p>Parts may be marked as either <code>cloneable!</code> or <code>not_cloneable!</code>. See the <a class="internal present" href="/xnlogic/xnlogic/wiki/Cloning">cloning section</a> for
+details.</p>
+
+        </div>
+
+    </div>]

@@ -1,0 +1,60 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>ProxySQL config file is parsed using <a href="http://www.hyperrealm.com/libconfig/libconfig.html" rel="nofollow">libconfig</a> , and its grammar is described <a href="http://www.hyperrealm.com/libconfig/libconfig_manual.html#Configuration-File-Grammar" rel="nofollow">here</a></p>
+<p>For reference, grammar it is also copied at the end of this document.<br/>
+For examples, refers to sample <a href="../blob/v1.4.4/src/proxysql.cfg">config file</a>.</p>
+<p>Please refer to <a href="./Configuring-ProxySQL#startup">Startup</a> for a description of when the config file is parsed.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#general-variables" id="user-content-general-variables"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>General variables</h2>
+<p>Configuration file has 3 variables that are always parsed even if a database file is present:</p>
+<ul>
+<li>
+<code>datadir</code> : it defines the path of ProxySQL datadir, where database file, logs and other files are stored</li>
+<li>
+<code>restart_on_missing_heartbeats</code> (new in 1.4.4) : if MySQL threads miss <code>restart_on_missing_heartbeats</code> heartbeats, proxysql will raise a <code>SIGABRT</code> signal and restart. Default is 10 . See <a href="./Watchdog">watchdog</a> .</li>
+<li>
+<code>execute_on_exit_failure</code> (new in 1.4.4) : if set, ProxySQL parent process will execute the defined script every time ProxySQL crashes. It is recommended to use this setting to generate an alert or log the event. Note that proxysql is able to restart in few milliseconds in case of crash, therefore it is possible that a normal failure is not detected by other monitoring tools.</li>
+</ul>
+<h3>
+<a aria-hidden="true" class="anchor" href="#libconfig-grammar" id="user-content-libconfig-grammar"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>libconfig grammar</h3>
+<p>Below is the BNF grammar for configuration files. Comments and include directives are not part of the grammar, so they are not included here.</p>
+<pre><code>configuration = setting-list | empty
+
+setting-list = setting | setting-list setting
+
+setting = name (":" | "=") value (";" | "," | empty)
+
+value = scalar-value | array | list | group
+
+value-list = value | value-list "," value
+
+scalar-value = boolean | integer | integer64 | hex | hex64 | float
+               | string
+
+scalar-value-list = scalar-value | scalar-value-list "," scalar-value
+
+array = "[" (scalar-value-list | empty) "]"
+
+list = "(" (value-list | empty) ")"
+
+group = "{" (setting-list | empty) "}"
+
+empty =
+
+
+
+Terminals are defined below as regular expressions:
+
+boolean		([Tt][Rr][Uu][Ee])|([Ff][Aa][Ll][Ss][Ee])
+string		\"([^\"\\]|\\.)*\"
+name		[A-Za-z\*][-A-Za-z0-9_\*]*
+integer		[-+]?[0-9]+
+integer64	[-+]?[0-9]+L(L)?
+hex		0[Xx][0-9A-Fa-f]+
+hex64		0[Xx][0-9A-Fa-f]+L(L)?
+float		([-+]?([0-9]*)?\.[0-9]*([eE][-+]?[0-9]+)?)|([-+]([0-9]+)(\.[0-9]*)?[eE][-+]?[0-9]+)
+</code></pre>
+
+        </div>
+
+    </div>]

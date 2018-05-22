@@ -1,0 +1,61 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <h2>
+<a aria-hidden="true" class="anchor" href="#cameras" id="user-content-cameras"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Cameras</h2>
+<p>Concepts like "center" and "resolution" only have meaning for 2D top-down views of the map.  As soon as the view tilts the position of the view is different from the position at the center of the viewport, and resolution varies across the viewport. In 3D the position at the center of the viewport could be considered to be the point at which a ray traced from the camera through that pixel intersects the terrain, the surface of the underlying ellipsoid model, or even be undefined if the ray does not intersect the globe (e.g. the camera is pointing at the sky).</p>
+<p>For this reason, if views other than simple 2D views are to be supported, the current concepts of "center", "resolution" are inadequate. The concept of a view, or camera, needs to be separated from the map, and different camera classes will be needed for different views:</p>
+<p>2D top-down: position (center), resolution, heading (rotation), cartographic projection</p>
+<p>2D with tilt: position, height, heading, tilt, cartographic projection</p>
+<p>3D cartesian: position, height, heading, tilt, roll, cartographic projection, perspective projection parameters</p>
+<p>3D globe: position, height, heading, tilt, roll, perspective projection parameters (cartographic projection is generally fixed at EPSG:4326)</p>
+<p>See <a href="https://developers.google.com/earth/documentation/reference/interface_g_e_view" rel="nofollow">Google Earth API View</a> and <a href="https://github.com/AnalyticalGraphicsInc/cesium/blob/master/Source/Scene/Camera.js#L30">Cameras in Cesium</a>.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#frame-state" id="user-content-frame-state"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Frame state</h2>
+<p>If rendering is delayed (e.g. by deferring it to the next <code>requestAnimationFrame</code>) then the value returned by <code>map.getCenter()</code> will be different to the center actually rendered. This will cause confusion, and may cause subtle bugs.  Therefore, it is important to keep track of what exactly was rendered, and to track this separately from the "desired" parameters.</p>
+<p>The proposal includes the creation of a "frame state" class that is (a) populated to describe what <em>should</em> be rendered and (b) preserved to record what actually <em>was</em> rendered. By modifying the frame state before it is passed to the renderer, effects such as animations can easily be achieved with a flexible, generic framework.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#basic-flow" id="user-content-basic-flow"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Basic flow</h2>
+<ol>
+<li>
+<p>When it is time to render (for example when we just got our <code>requestAnimationFrame</code> callback), the map creates an initial frame state containing the current time, camera, viewport size, and layer settings.</p>
+</li>
+<li>
+<p>Zero or more pre-render hooks are called with the frame state. These pre-render hooks can modify the frame state in place, e.g. to animate the camera. Pre-render hooks can also deregister themselves, which is used, for example, for animation hooks when the animation that they control is complete.</p>
+</li>
+<li>
+<p>The updated frame state is passed to the renderer. The renderer effectively does a "diff" between the last rendered state and the updated frame state to minimise actual changes to the DOM. The renderer can further update the frame state, e.g. to indicate which data sources were used in the rendering.</p>
+</li>
+<li>
+<p>The final frame state is saved in the map so it can be used to for viewport-to-map transformations and vice versa.</p>
+</li>
+<li>
+<p>The map fires a <code>postrender</code> event indicating that a new frame has been rendered.</p>
+</li>
+</ol>
+<h2>
+<a aria-hidden="true" class="anchor" href="#how-various-things-would-work" id="user-content-how-various-things-would-work"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>How various things would work</h2>
+<p>Side-by-side demo: the two maps bind their cameras, rather than binding their individual center/resolution/rotation/projection properties. By careful binding of properties with some transformations, it should be possible to do side-by-side 2D and 3D views.</p>
+<p>Attribution control: this listens for <code>postrender</code>, reads the list of data sources directly from the frame state and updates itself accordingly. This avoids the expensive re-calculation of what was visible that the attribution control does currently, and it allows the attribution to be more precise. For example, if a renderer used an interim tile from a different zoom level, it can record this in the frame state.</p>
+<p>Overlays: this also listens for <code>postrender</code>, and simply updates its position. Note that this means that the overlay and the map always stay in sync, and that the overlays only update their positions when the map is re-rendered, avoiding unwanted redraws due to (say) multiple calls to <code>map.setCenter()</code></p>
+<p>Animated zooms, kinetic pan: these install a pre-render hook that update the camera position as a function of time, and de-register themselves when they are complete.</p>
+<p>Interruptible interaction-initiated animations (e.g. mousewheel zoom in interrupted by mousewheel zoom out): there is a maximum of one pre-render hook for these which is <em>replaced</em> when the user initiates a new change.</p>
+<p>Scheduling a redraw when a tile loads: the renderer calls <code>map.requestRenderFrame()</code>.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#advantages" id="user-content-advantages"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Advantages</h2>
+<p>Many features can now just listen for <code>postrender</code> rather than having to listen for all camera events (<code>center_changed</code> / <code>resolution_changed</code> / <code>rotation_changed</code> / <code>projection_changed</code>). This both decouples features from the camera representation and drastically simplifies their implementation.</p>
+<p>Animations, including multi-faceted ones like a rotating fly to and zoom, are easily scripted and work with all renderers. All animations are handled by the same architecture, there are no special cases. Any parameter can be animated, e.g. a layer's saturation or brightness. The framework is completely general and not restricted to only camera-related parameters.</p>
+<p>High quality animation: the frame state includes a timestamp that can be used for precise tweening of any parameter.</p>
+<p>Renderers are stupid, making them easy to write (e.g. the renderer knows nothing about animation).</p>
+<p>All of the advantages of the request render frame (explicit behaviour, freezing/unfreezing, no reliance on non-deterministic behaviour, support for platforms without rAF).</p>
+<p>All updates to the DOM are synchronized with <code>requestAnimationFrame</code>, via the <code>postrender</code> event.</p>
+<p>Corresponds closely to needs of WebGL and (eventual) Canvas 2D renderers. DOM renderer can easily be adapted (see below).</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#possible-downsides" id="user-content-possible-downsides"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Possible downsides</h2>
+<p>Traversing frame state to determine diff to render is more CPU/memory intensive than just responding instantaneously to events. This is only likely to be a problem for maps with many, many layers.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#dom-renderer-notes" id="user-content-dom-renderer-notes"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>DOM renderer notes</h2>
+<p>No CSS transitions, CSS properties are computed as a function of time when needed, the DOM is only ever modified during actual calls to render(), other changes (e.g. loaded images) are queued, no clever scaling algorithms: maintain a single DIV per layer with tile images in their original size, this DIV per layer is then transformed with a single CSS transform. Exception: CSS transition can be used to fade in tiles.</p>
+
+        </div>
+
+    </div>]

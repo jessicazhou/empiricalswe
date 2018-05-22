@@ -1,0 +1,131 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>Did my best to simulate how real elevators should move.</p>
+<p>Benchmark for #17:</p>
+<ul>
+<li>Transported/s: 1.98</li>
+<li>Avg waiting time: 6.7s</li>
+<li>Max waiting time: 17.2s</li>
+</ul>
+<div class="highlight highlight-source-js"><pre>{
+  <span class="pl-en">init</span><span class="pl-k">:</span> <span class="pl-k">function</span>(<span class="pl-smi">elevators</span>, <span class="pl-smi">floors</span>) {
+    <span class="pl-k">var</span> downQueue <span class="pl-k">=</span> [];
+    <span class="pl-k">var</span> upQueue <span class="pl-k">=</span> [];
+    <span class="pl-k">var</span> idleElevators <span class="pl-k">=</span> []
+    <span class="pl-k">var</span> topFloor <span class="pl-k">=</span> <span class="pl-smi">floors</span>.<span class="pl-c1">length</span> <span class="pl-k">-</span> <span class="pl-c1">1</span>;
+
+    <span class="pl-k">var</span> <span class="pl-en">goToAndSetIndicator</span> <span class="pl-k">=</span> <span class="pl-k">function</span>(<span class="pl-smi">elevator</span>, <span class="pl-smi">floorNum</span>) {
+      <span class="pl-k">if</span> (floorNum <span class="pl-k">&lt;</span> <span class="pl-smi">elevator</span>.<span class="pl-en">currentFloor</span>()) {
+        <span class="pl-smi">elevator</span>.<span class="pl-en">goingDownIndicator</span>(<span class="pl-c1">true</span>);
+        <span class="pl-smi">elevator</span>.<span class="pl-en">goingUpIndicator</span>(<span class="pl-c1">false</span>);
+      } <span class="pl-k">else</span> {
+        <span class="pl-smi">elevator</span>.<span class="pl-en">goingUpIndicator</span>(<span class="pl-c1">true</span>);
+        <span class="pl-smi">elevator</span>.<span class="pl-en">goingDownIndicator</span>(<span class="pl-c1">false</span>);
+      }
+      <span class="pl-smi">elevator</span>.<span class="pl-en">goToFloor</span>(floorNum);
+    }
+
+    <span class="pl-k">var</span> <span class="pl-en">callElevator</span> <span class="pl-k">=</span> <span class="pl-k">function</span>(<span class="pl-smi">queue</span>, <span class="pl-smi">floorNum</span>) {
+      <span class="pl-c"><span class="pl-c">//</span> if there is an idle elevator, wake it up</span>
+        <span class="pl-k">if</span> (<span class="pl-smi">idleElevators</span>.<span class="pl-c1">length</span> <span class="pl-k">&gt;</span> <span class="pl-c1">0</span>) {
+          elevator <span class="pl-k">=</span> <span class="pl-smi">idleElevators</span>.<span class="pl-c1">shift</span>();
+          <span class="pl-en">goToAndSetIndicator</span>(elevator, floorNum);
+        } <span class="pl-k">else</span> {
+          <span class="pl-c"><span class="pl-c">//</span> otherwise add it to the corresponding queue and wait for an elevator to pass</span>
+          <span class="pl-k">if</span> (<span class="pl-smi">queue</span>.<span class="pl-c1">indexOf</span>(floorNum) <span class="pl-k">&lt;</span> <span class="pl-c1">0</span>) <span class="pl-smi">queue</span>.<span class="pl-c1">push</span>(floorNum);
+          queue <span class="pl-k">=</span> <span class="pl-smi">downQueue</span>.<span class="pl-c1">sort</span>();
+        }
+    }
+
+    <span class="pl-smi">_</span>.<span class="pl-en">each</span>(elevators, <span class="pl-k">function</span>(<span class="pl-smi">elevator</span>) {
+
+      <span class="pl-smi">elevator</span>.<span class="pl-en">on</span>(<span class="pl-s"><span class="pl-pds">"</span>idle<span class="pl-pds">"</span></span>, <span class="pl-k">function</span>() {
+        <span class="pl-c"><span class="pl-c">//</span> see if there's anyone waiting</span>
+        <span class="pl-k">if</span> (<span class="pl-smi">upQueue</span>.<span class="pl-c1">length</span> <span class="pl-k">+</span> <span class="pl-smi">downQueue</span>.<span class="pl-c1">length</span> <span class="pl-k">&gt;</span> <span class="pl-c1">0</span>) {
+          <span class="pl-c"><span class="pl-c">//</span> if we were going up, go to the highest floor with a person waiting</span>
+          <span class="pl-c"><span class="pl-c">//</span> otherwise, go to the lowest floor with a person waiting</span>
+          <span class="pl-k">if</span> (<span class="pl-smi">elevator</span>.<span class="pl-en">goingUpIndicator</span>()) {
+            floorNum <span class="pl-k">=</span> (<span class="pl-smi">downQueue</span>.<span class="pl-c1">length</span> <span class="pl-k">&gt;</span> <span class="pl-c1">0</span> <span class="pl-k">?</span> <span class="pl-smi">downQueue</span>.<span class="pl-c1">pop</span>() <span class="pl-k">:</span> <span class="pl-smi">upQueue</span>.<span class="pl-c1">pop</span>())
+          } <span class="pl-k">else</span> {
+            floorNum <span class="pl-k">=</span> (<span class="pl-smi">upQueue</span>.<span class="pl-c1">length</span> <span class="pl-k">&gt;</span> <span class="pl-c1">0</span> <span class="pl-k">?</span> <span class="pl-smi">upQueue</span>.<span class="pl-c1">shift</span>() <span class="pl-k">:</span> <span class="pl-smi">downQueue</span>.<span class="pl-c1">shift</span>())
+          }
+          <span class="pl-en">goToAndSetIndicator</span>(elevator, floorNum);
+        } <span class="pl-k">else</span> {
+          <span class="pl-c"><span class="pl-c">//</span> if nobody was waiting, record that this elevator is idle, so it can be woken up later</span>
+          <span class="pl-smi">idleElevators</span>.<span class="pl-c1">push</span>(elevator);
+          <span class="pl-smi">elevator</span>.<span class="pl-en">goingDownIndicator</span>(<span class="pl-c1">false</span>);
+          <span class="pl-smi">elevator</span>.<span class="pl-en">goingUpIndicator</span>(<span class="pl-c1">false</span>);
+        }
+      });
+
+      <span class="pl-smi">elevator</span>.<span class="pl-en">on</span>(<span class="pl-s"><span class="pl-pds">"</span>floor_button_pressed<span class="pl-pds">"</span></span>, <span class="pl-k">function</span>(<span class="pl-smi">floorNum</span>) {
+        <span class="pl-c"><span class="pl-c">//</span> add the new floor to the queue if it wasn't already requested</span>
+        <span class="pl-k">if</span> (<span class="pl-smi">elevator</span>.<span class="pl-smi">destinationQueue</span>.<span class="pl-c1">indexOf</span>(floorNum) <span class="pl-k">&lt;</span> <span class="pl-c1">0</span> ) {
+          <span class="pl-smi">elevator</span>.<span class="pl-smi">destinationQueue</span>.<span class="pl-c1">push</span>(floorNum);
+          <span class="pl-c"><span class="pl-c">//</span> sort to make sure we visit floors in order</span>
+          <span class="pl-smi">elevator</span>.<span class="pl-smi">destinationQueue</span> <span class="pl-k">=</span> <span class="pl-smi">elevator</span>.<span class="pl-smi">destinationQueue</span>.<span class="pl-c1">sort</span>();
+          <span class="pl-k">if</span> (<span class="pl-smi">elevator</span>.<span class="pl-en">goingDownIndicator</span>()) {
+            <span class="pl-smi">elevator</span>.<span class="pl-smi">destinationQueue</span> <span class="pl-k">=</span> <span class="pl-smi">elevator</span>.<span class="pl-smi">destinationQueue</span>.<span class="pl-c1">reverse</span>();
+          }
+          <span class="pl-c"><span class="pl-c">//</span> apply the changes</span>
+          <span class="pl-smi">elevator</span>.<span class="pl-en">checkDestinationQueue</span>();
+        }
+      });
+
+      <span class="pl-smi">elevator</span>.<span class="pl-en">on</span>(<span class="pl-s"><span class="pl-pds">"</span>stopped_at_floor<span class="pl-pds">"</span></span>, <span class="pl-k">function</span>(<span class="pl-smi">floorNum</span>) {
+          <span class="pl-k">if</span> (floorNum <span class="pl-k">==</span> <span class="pl-c1">0</span>) {
+            <span class="pl-c"><span class="pl-c">//</span> start moving up once we reach the bottom</span>
+            <span class="pl-smi">elevator</span>.<span class="pl-en">goingDownIndicator</span>(<span class="pl-c1">false</span>);
+            <span class="pl-smi">elevator</span>.<span class="pl-en">goingUpIndicator</span>(<span class="pl-c1">true</span>);
+          } <span class="pl-k">else</span> <span class="pl-k">if</span> (floorNum <span class="pl-k">==</span> topFloor) {
+            <span class="pl-c"><span class="pl-c">//</span> start moving down once we reach the top</span>
+            <span class="pl-smi">elevator</span>.<span class="pl-en">goingUpIndicator</span>(<span class="pl-c1">false</span>);
+            <span class="pl-smi">elevator</span>.<span class="pl-en">goingDownIndicator</span>(<span class="pl-c1">true</span>);
+          }
+          <span class="pl-k">else</span> <span class="pl-k">if</span> (<span class="pl-smi">elevator</span>.<span class="pl-smi">destinationQueue</span>.<span class="pl-c1">length</span> <span class="pl-k">==</span> <span class="pl-c1">0</span>) {
+            <span class="pl-c"><span class="pl-c">//</span> if this was our final stop, pick up anybody here</span>
+            <span class="pl-c"><span class="pl-c">//</span> if we end up idling, then these will both get set to false</span>
+            <span class="pl-smi">elevator</span>.<span class="pl-en">goingUpIndicator</span>(<span class="pl-c1">true</span>);
+            <span class="pl-smi">elevator</span>.<span class="pl-en">goingDownIndicator</span>(<span class="pl-c1">true</span>);
+          }
+          <span class="pl-c"><span class="pl-c">//</span> remove this floor from the corresponding queue if we picked someone up</span>
+          <span class="pl-k">if</span> (<span class="pl-smi">elevator</span>.<span class="pl-en">goingUpIndicator</span>()) {
+            index <span class="pl-k">=</span> <span class="pl-smi">upQueue</span>.<span class="pl-c1">indexOf</span>(floorNum);
+            <span class="pl-k">if</span> (index <span class="pl-k">&gt;=</span> <span class="pl-c1">0</span>) <span class="pl-smi">upQueue</span>.<span class="pl-c1">splice</span>(index, <span class="pl-c1">1</span>);
+          } <span class="pl-k">else</span> <span class="pl-k">if</span> (<span class="pl-smi">elevator</span>.<span class="pl-en">goingDownIndicator</span>()) {
+            index <span class="pl-k">=</span> <span class="pl-smi">downQueue</span>.<span class="pl-c1">indexOf</span>(floorNum);
+            <span class="pl-k">if</span> (index <span class="pl-k">&gt;=</span> <span class="pl-c1">0</span>) <span class="pl-smi">downQueue</span>.<span class="pl-c1">splice</span>(index, <span class="pl-c1">1</span>);
+          }
+      });
+
+      <span class="pl-smi">elevator</span>.<span class="pl-en">on</span>(<span class="pl-s"><span class="pl-pds">"</span>passing_floor<span class="pl-pds">"</span></span>, <span class="pl-k">function</span>(<span class="pl-smi">floorNum</span>, <span class="pl-smi">direction</span>) {
+        <span class="pl-c"><span class="pl-c">//</span> check if there is someone here who wants to go our direction</span>
+        queue <span class="pl-k">=</span> direction <span class="pl-k">==</span> <span class="pl-s"><span class="pl-pds">"</span>up<span class="pl-pds">"</span></span> <span class="pl-k">?</span> upQueue <span class="pl-k">:</span> downQueue;
+        index <span class="pl-k">=</span> <span class="pl-smi">queue</span>.<span class="pl-c1">indexOf</span>(floorNum);
+        <span class="pl-k">if</span> (index <span class="pl-k">&gt;=</span> <span class="pl-c1">0</span> <span class="pl-k">&amp;&amp;</span> <span class="pl-smi">elevator</span>.<span class="pl-en">loadFactor</span>() <span class="pl-k">&lt;</span> <span class="pl-c1">0.7</span>) {
+          <span class="pl-c"><span class="pl-c">//</span> if yes, and we have room, stop for them</span>
+          <span class="pl-smi">elevator</span>.<span class="pl-en">goToFloor</span>(floorNum, <span class="pl-c1">true</span>);
+        }
+      });
+    });
+
+    <span class="pl-smi">_</span>.<span class="pl-en">each</span>(floors, <span class="pl-k">function</span>(<span class="pl-smi">floor</span>) {
+
+      <span class="pl-smi">floor</span>.<span class="pl-en">on</span>(<span class="pl-s"><span class="pl-pds">"</span>up_button_pressed<span class="pl-pds">"</span></span>, <span class="pl-k">function</span>() {
+        <span class="pl-en">callElevator</span>(upQueue, <span class="pl-smi">floor</span>.<span class="pl-en">floorNum</span>());
+      });
+
+      <span class="pl-smi">floor</span>.<span class="pl-en">on</span>(<span class="pl-s"><span class="pl-pds">"</span>down_button_pressed<span class="pl-pds">"</span></span>, <span class="pl-k">function</span>() {
+        <span class="pl-en">callElevator</span>(downQueue, <span class="pl-smi">floor</span>.<span class="pl-en">floorNum</span>());
+      });
+    });
+
+  },
+  <span class="pl-en">update</span><span class="pl-k">:</span> <span class="pl-k">function</span>(<span class="pl-smi">dt</span>, <span class="pl-smi">elevators</span>, <span class="pl-smi">floors</span>) {
+    <span class="pl-c"><span class="pl-c">//</span> We normally don't need to do anything here</span>
+  }
+}</pre></div>
+
+        </div>
+
+    </div>]

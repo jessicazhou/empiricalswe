@@ -1,0 +1,71 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>It's trivial to create a resource which provides data to the REST API that is taken from a secondary database (for more on how Drupal can connect to multiple databases, see <a href="https://www.drupal.org/node/18429" rel="nofollow">https://www.drupal.org/node/18429</a>).</p>
+<ol>
+<li>
+<p>Set up a resource that extends <code>RestfulDataProviderDbQuery</code>. An easy way to get started is to clone the restful_example module's <code>watchdog</code> resource (<code>restful/modules/restful_example/plugins/restful/db_query/watchdog</code>).</p>
+</li>
+<li>
+<p>Make sure you modify the <code>$plugin</code> array so it references the correct database table and table ID e.g.</p>
+</li>
+</ol>
+<div class="highlight highlight-text-html-php"><pre><span class="pl-s1"><span class="pl-smi">$plugin</span> <span class="pl-k">=</span> <span class="pl-c1">array</span>(</span>
+<span class="pl-s1"><span class="pl-k">...</span></span>
+<span class="pl-s1"></span>
+<span class="pl-s1"><span class="pl-s"><span class="pl-pds">'</span>data_provider_options<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-c1">array</span>(</span>
+<span class="pl-s1">  <span class="pl-s"><span class="pl-pds">'</span>table_name<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-s"><span class="pl-pds">'</span>my_external_db_table<span class="pl-pds">'</span></span>,</span>
+<span class="pl-s1">  <span class="pl-s"><span class="pl-pds">'</span>id_column<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-s"><span class="pl-pds">'</span>external_table_id_column_name<span class="pl-pds">'</span></span>,</span>
+<span class="pl-s1">),</span>
+<span class="pl-s1"></span>
+<span class="pl-s1"><span class="pl-k">...</span></span>
+<span class="pl-s1">);</span></pre></div>
+<ol start="3">
+<li>Your <code>publicFieldsInfo</code> fields can then reference the columns in your external database table. e.g.</li>
+</ol>
+<div class="highlight highlight-text-html-php"><pre><span class="pl-s1"><span class="pl-k">public</span> <span class="pl-k">function</span> <span class="pl-en">publicFieldsInfo</span>() {</span>
+<span class="pl-s1"></span>
+<span class="pl-s1">  <span class="pl-smi">$public_fields</span>[<span class="pl-s"><span class="pl-pds">'</span>name<span class="pl-pds">'</span></span>] <span class="pl-k">=</span> <span class="pl-c1">array</span>(</span>
+<span class="pl-s1">    <span class="pl-s"><span class="pl-pds">'</span>property<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-s"><span class="pl-pds">'</span>name_column_in_external_db_table<span class="pl-pds">'</span></span>,</span>
+<span class="pl-s1">  );</span></pre></div>
+<ol start="4">
+<li>In your <code>RestfulSomethingResource.class.php</code> override the <code>getQuery()</code> method with your own, similar to the following:</li>
+</ol>
+<div class="highlight highlight-text-html-php"><pre><span class="pl-s1"><span class="pl-c"><span class="pl-c">/**</span></span></span>
+<span class="pl-s1"><span class="pl-c"> * Get a basic query object.</span></span>
+<span class="pl-s1"><span class="pl-c"> *</span></span>
+<span class="pl-s1"><span class="pl-c"> * <span class="pl-k">@return</span> SelectQuery</span></span>
+<span class="pl-s1"><span class="pl-c"> *   A new SelectQuery object for this connection.</span></span>
+<span class="pl-s1"><span class="pl-c"> <span class="pl-c">*/</span></span></span>
+<span class="pl-s1"><span class="pl-k">protected</span> <span class="pl-k">function</span> <span class="pl-en">getQuery</span>() {</span>
+<span class="pl-s1">  <span class="pl-smi">$table</span> <span class="pl-k">=</span> <span class="pl-smi">$this</span><span class="pl-k">-&gt;</span>getTableName();</span>
+<span class="pl-s1">  <span class="pl-k">return</span> <span class="pl-c1">Database</span><span class="pl-k">::</span>getConnection(<span class="pl-s"><span class="pl-pds">'</span>default<span class="pl-pds">'</span></span>, <span class="pl-s"><span class="pl-pds">'</span>my_other_database<span class="pl-pds">'</span></span>)<span class="pl-k">-&gt;</span>select(<span class="pl-smi">$table</span>)<span class="pl-k">-&gt;</span>fields(<span class="pl-smi">$table</span>);</span>
+<span class="pl-s1">}</span></pre></div>
+<p>This will correspond to a <code>settings.php</code> config such as:</p>
+<div class="highlight highlight-text-html-php"><pre><span class="pl-s1"><span class="pl-smi">$databases</span> <span class="pl-k">=</span> <span class="pl-k">array</span> (</span>
+<span class="pl-s1">  <span class="pl-s"><span class="pl-pds">'</span>default<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-k">array</span> (</span>
+<span class="pl-s1">   <span class="pl-s"><span class="pl-pds">'</span>default<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-k">array</span> (</span>
+<span class="pl-s1">     <span class="pl-s"><span class="pl-pds">'</span>driver<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-s"><span class="pl-pds">'</span>mysql<span class="pl-pds">'</span></span>,</span>
+<span class="pl-s1">     <span class="pl-s"><span class="pl-pds">'</span>database<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-s"><span class="pl-pds">'</span>drupal<span class="pl-pds">'</span></span>,</span>
+<span class="pl-s1">     <span class="pl-s"><span class="pl-pds">'</span>username<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-s"><span class="pl-pds">'</span>mysqlusername<span class="pl-pds">'</span></span>,</span>
+<span class="pl-s1">     <span class="pl-s"><span class="pl-pds">'</span>password<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-s"><span class="pl-pds">'</span>oui&amp;^%fgso^iuhfsh99hrf<span class="pl-pds">'</span></span>,</span>
+<span class="pl-s1">     <span class="pl-s"><span class="pl-pds">'</span>host<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-s"><span class="pl-pds">'</span>localhost<span class="pl-pds">'</span></span>,</span>
+<span class="pl-s1">     <span class="pl-s"><span class="pl-pds">'</span>port<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-s"><span class="pl-pds">'</span><span class="pl-pds">'</span></span>,</span>
+<span class="pl-s1">     <span class="pl-s"><span class="pl-pds">'</span>prefix<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-s"><span class="pl-pds">'</span><span class="pl-pds">'</span></span>,</span>
+<span class="pl-s1">   ),</span>
+<span class="pl-s1">  ),</span>
+<span class="pl-s1">  <span class="pl-s"><span class="pl-pds">'</span>my_other_database<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-k">array</span> (</span>
+<span class="pl-s1">   <span class="pl-s"><span class="pl-pds">'</span>default<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-k">array</span> (</span>
+<span class="pl-s1">     <span class="pl-s"><span class="pl-pds">'</span>driver<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-s"><span class="pl-pds">'</span>mysql<span class="pl-pds">'</span></span>,</span>
+<span class="pl-s1">     <span class="pl-s"><span class="pl-pds">'</span>database<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-s"><span class="pl-pds">'</span>my_other_database<span class="pl-pds">'</span></span>,</span>
+<span class="pl-s1">     <span class="pl-s"><span class="pl-pds">'</span>username<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-s"><span class="pl-pds">'</span>mysqlusername<span class="pl-pds">'</span></span>,</span>
+<span class="pl-s1">     <span class="pl-s"><span class="pl-pds">'</span>password<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-s"><span class="pl-pds">'</span>oui&amp;^%fgso^iuhfsh99hrf<span class="pl-pds">'</span></span>,</span>
+<span class="pl-s1">     <span class="pl-s"><span class="pl-pds">'</span>host<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-s"><span class="pl-pds">'</span>localhost<span class="pl-pds">'</span></span>,</span>
+<span class="pl-s1">     <span class="pl-s"><span class="pl-pds">'</span>port<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-s"><span class="pl-pds">'</span><span class="pl-pds">'</span></span>,</span>
+<span class="pl-s1">     <span class="pl-s"><span class="pl-pds">'</span>prefix<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-s"><span class="pl-pds">'</span><span class="pl-pds">'</span></span>,</span>
+<span class="pl-s1">   ),</span>
+<span class="pl-s1">  ),</span>
+<span class="pl-s1">);</span></pre></div>
+
+        </div>
+
+    </div>]

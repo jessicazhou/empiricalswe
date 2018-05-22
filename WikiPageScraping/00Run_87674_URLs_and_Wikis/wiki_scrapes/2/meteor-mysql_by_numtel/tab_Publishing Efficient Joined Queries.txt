@@ -1,0 +1,163 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>Suppose that you were trying to publish the following parameterized query: (Example SQL data is listed at the end of this page)</p>
+<div class="highlight highlight-source-sql"><pre><span class="pl-k">SELECT</span>
+  <span class="pl-c1">students</span>.<span class="pl-c1">name</span> <span class="pl-k">AS</span> student_name,
+  <span class="pl-c1">students</span>.<span class="pl-c1">id</span> <span class="pl-k">AS</span> student_id,
+  <span class="pl-c1">assignments</span>.<span class="pl-c1">name</span>,
+  <span class="pl-c1">assignments</span>.<span class="pl-c1">value</span>,
+  <span class="pl-c1">scores</span>.<span class="pl-c1">score</span>
+<span class="pl-k">FROM</span>
+  scores
+<span class="pl-k">INNER JOIN</span> assignments <span class="pl-k">ON</span>
+  (<span class="pl-c1">assignments</span>.<span class="pl-c1">id</span> <span class="pl-k">=</span> <span class="pl-c1">scores</span>.<span class="pl-c1">assignment_id</span>)
+<span class="pl-k">INNER JOIN</span> students <span class="pl-k">ON</span>
+  (<span class="pl-c1">students</span>.<span class="pl-c1">id</span> <span class="pl-k">=</span> <span class="pl-c1">scores</span>.<span class="pl-c1">student_id</span>)
+<span class="pl-k">WHERE</span>
+  <span class="pl-c1">assignments</span>.<span class="pl-c1">class_id</span> <span class="pl-k">=</span> ?;</pre></div>
+<p>The result set of this query will need to be refreshed when:</p>
+<ul>
+<li>An <code>assignments</code> row changes that matches the <code>class_id</code> given</li>
+<li>Any <code>students</code> row included in the results changes (in case the <code>name</code> changes)</li>
+<li>Or any <code>scores</code> row changes that matches an <code>assignments</code> row with the correct <code>class_id</code>
+</li>
+</ul>
+<p>In order to write triggers for this joined query, an extra supporting query to load all of the <code>assignments</code> rows that match the selected <code>class_id</code>.</p>
+<p>The following code listing provides a complete <code>Meteor.publish</code> function for this query:</p>
+<blockquote>
+<p>ECMAScript 6 'template strings' are used in the following example to make writing SQL queries in Javascript code much easier. <a href="https://babeljs.io/docs/learn-es6/#template-strings" rel="nofollow">Read more about ES6 template strings</a> or check out <a href="https://github.com/grigio/meteor-babel/">the <code>grigio:babel</code> package</a> for using ES6 with Meteor...</p>
+</blockquote>
+<div class="highlight highlight-source-js"><pre><span class="pl-smi">Meteor</span>.<span class="pl-en">publish</span>(<span class="pl-s"><span class="pl-pds">'</span>myClassScores<span class="pl-pds">'</span></span>, <span class="pl-k">function</span>(<span class="pl-smi">classId</span>) {
+  <span class="pl-k">if</span>(<span class="pl-k">typeof</span> classId <span class="pl-k">!==</span> <span class="pl-s"><span class="pl-pds">'</span>number<span class="pl-pds">'</span></span>)
+    <span class="pl-k">throw</span> <span class="pl-k">new</span> <span class="pl-en">Error</span>(<span class="pl-s"><span class="pl-pds">'</span>classId must be integer<span class="pl-pds">'</span></span>);
+
+  <span class="pl-c"><span class="pl-c">//</span> Triggers require caches of columns that are joined on</span>
+  <span class="pl-k">var</span> assignmentIds <span class="pl-k">=</span> [], studentIds <span class="pl-k">=</span> [];
+
+  <span class="pl-c"><span class="pl-c">//</span> Prepare supporting query to main query</span>
+  <span class="pl-k">var</span> classAssignments <span class="pl-k">=</span> <span class="pl-smi">liveDb</span>.<span class="pl-c1">select</span>(<span class="pl-s"><span class="pl-pds">`</span></span>
+<span class="pl-s">      SELECT</span>
+<span class="pl-s">        id</span>
+<span class="pl-s">      FROM</span>
+<span class="pl-s">        assignments</span>
+<span class="pl-s">      WHERE</span>
+<span class="pl-s">        class_id = <span class="pl-s1"><span class="pl-pse">${</span><span class="pl-smi">liveDb</span>.<span class="pl-smi">db</span>.<span class="pl-en">escape</span>(classId)<span class="pl-pse">}</span></span></span>
+<span class="pl-s">    <span class="pl-pds">`</span></span>, [ {
+      table<span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">'</span>assignments<span class="pl-pds">'</span></span>,
+      <span class="pl-en">condition</span><span class="pl-k">:</span> <span class="pl-k">function</span>(<span class="pl-smi">row</span>, <span class="pl-smi">newRow</span>){
+        <span class="pl-k">return</span> <span class="pl-smi">row</span>.<span class="pl-smi">class_id</span> <span class="pl-k">===</span> classId <span class="pl-k">||</span>
+          (newRow <span class="pl-k">&amp;&amp;</span> <span class="pl-smi">newRow</span>.<span class="pl-smi">class_id</span> <span class="pl-k">===</span> classId);
+      }
+    } ]
+  );
+  <span class="pl-c"><span class="pl-c">//</span> Update cache on new data</span>
+  <span class="pl-smi">classAssignments</span>.<span class="pl-en">on</span>(<span class="pl-s"><span class="pl-pds">'</span>update<span class="pl-pds">'</span></span>, <span class="pl-k">function</span>(<span class="pl-smi">diff</span>, <span class="pl-smi">results</span>) {
+    assignmentIds <span class="pl-k">=</span> <span class="pl-smi">results</span>.<span class="pl-en">map</span>(<span class="pl-k">function</span>(<span class="pl-smi">row</span>) { <span class="pl-k">return</span> <span class="pl-smi">row</span>.<span class="pl-c1">id</span> });
+  });
+
+  <span class="pl-c"><span class="pl-c">//</span> Subscription has been stopped, also stop supporting query</span>
+  <span class="pl-c1">this</span>.<span class="pl-en">onStop</span>(<span class="pl-k">function</span>() {
+    <span class="pl-smi">classAssignments</span>.<span class="pl-c1">stop</span>();
+  });
+
+  <span class="pl-k">var</span> classScores <span class="pl-k">=</span> <span class="pl-smi">liveDb</span>.<span class="pl-c1">select</span>(<span class="pl-s"><span class="pl-pds">`</span></span>
+<span class="pl-s">    SELECT</span>
+<span class="pl-s">      students.name AS student_name,</span>
+<span class="pl-s">      students.id AS student_id,</span>
+<span class="pl-s">      assignments.name,</span>
+<span class="pl-s">      assignments.value,</span>
+<span class="pl-s">      scores.score</span>
+<span class="pl-s">    FROM</span>
+<span class="pl-s">      scores</span>
+<span class="pl-s">    INNER JOIN assignments ON</span>
+<span class="pl-s">      (assignments.id = scores.assignment_id)</span>
+<span class="pl-s">    INNER JOIN students ON</span>
+<span class="pl-s">      (students.id = scores.student_id)</span>
+<span class="pl-s">    WHERE</span>
+<span class="pl-s">      assignments.class_id = <span class="pl-s1"><span class="pl-pse">${</span><span class="pl-smi">liveDb</span>.<span class="pl-smi">db</span>.<span class="pl-en">escape</span>(classId)<span class="pl-pse">}</span></span>;</span>
+<span class="pl-s">  <span class="pl-pds">`</span></span>, [
+    {
+      table<span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">'</span>assignments<span class="pl-pds">'</span></span>,
+      <span class="pl-en">condition</span><span class="pl-k">:</span> <span class="pl-k">function</span>(<span class="pl-smi">row</span>, <span class="pl-smi">newRow</span>) {
+        <span class="pl-c"><span class="pl-c">//</span> newRow only passed on UPDATE events</span>
+        <span class="pl-k">return</span> <span class="pl-smi">row</span>.<span class="pl-smi">class_id</span> <span class="pl-k">===</span> classId <span class="pl-k">||</span>
+          (newRow <span class="pl-k">&amp;&amp;</span> <span class="pl-smi">newRow</span>.<span class="pl-smi">class_id</span> <span class="pl-k">===</span> classId)
+      }
+    },
+    {
+      table<span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">'</span>students<span class="pl-pds">'</span></span>,
+      <span class="pl-en">condition</span><span class="pl-k">:</span> <span class="pl-k">function</span>(<span class="pl-smi">row</span>, <span class="pl-smi">newRow</span>) {
+        <span class="pl-c"><span class="pl-c">//</span> Check if the id of this row matches cache value set</span>
+        <span class="pl-k">return</span> <span class="pl-smi">studentIds</span>.<span class="pl-c1">indexOf</span>(<span class="pl-smi">row</span>.<span class="pl-c1">id</span>) <span class="pl-k">!==</span> <span class="pl-k">-</span><span class="pl-c1">1</span> <span class="pl-k">||</span>
+          (newRow <span class="pl-k">&amp;&amp;</span> <span class="pl-smi">studentIds</span>.<span class="pl-c1">indexOf</span>(<span class="pl-smi">newRow</span>.<span class="pl-c1">id</span>) <span class="pl-k">!==</span> <span class="pl-k">-</span><span class="pl-c1">1</span>)
+      }
+    },
+    {
+      table<span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">'</span>scores<span class="pl-pds">'</span></span>,
+      <span class="pl-en">condition</span><span class="pl-k">:</span> <span class="pl-k">function</span>(<span class="pl-smi">row</span>, <span class="pl-smi">newRow</span>) {
+        <span class="pl-c"><span class="pl-c">//</span> Check if the assignment_id of this row matches cache value set</span>
+        <span class="pl-k">return</span> <span class="pl-smi">assignmentIds</span>.<span class="pl-c1">indexOf</span>(<span class="pl-smi">row</span>.<span class="pl-smi">assignment_id</span>) <span class="pl-k">!==</span> <span class="pl-k">-</span><span class="pl-c1">1</span> <span class="pl-k">||</span>
+          (newRow <span class="pl-k">&amp;&amp;</span> <span class="pl-smi">assignmentIds</span>.<span class="pl-c1">indexOf</span>(<span class="pl-smi">newRow</span>.<span class="pl-smi">assignment_id</span>) <span class="pl-k">!==</span> <span class="pl-k">-</span><span class="pl-c1">1</span>)
+      }
+    }
+  ]);
+
+  <span class="pl-smi">classScores</span>.<span class="pl-en">on</span>(<span class="pl-s"><span class="pl-pds">'</span>update<span class="pl-pds">'</span></span>, <span class="pl-k">function</span>(<span class="pl-smi">diff</span>, <span class="pl-smi">results</span>) {
+    <span class="pl-c"><span class="pl-c">//</span> Update student_id cache</span>
+    studentIds <span class="pl-k">=</span> <span class="pl-smi">results</span>.<span class="pl-en">map</span>(<span class="pl-k">function</span>(<span class="pl-smi">row</span>) { <span class="pl-k">return</span> <span class="pl-smi">row</span>.<span class="pl-smi">student_id</span> });
+  });
+
+  <span class="pl-k">return</span> classScores;
+});
+</pre></div>
+<h2>
+<a aria-hidden="true" class="anchor" href="#appendix" id="user-content-appendix"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Appendix</h2>
+<h3>
+<a aria-hidden="true" class="anchor" href="#sample-sql" id="user-content-sample-sql"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Sample SQL</h3>
+<div class="highlight highlight-source-sql"><pre><span class="pl-k">CREATE</span> <span class="pl-k">TABLE</span> `<span class="pl-en">students</span>` (
+  <span class="pl-s"><span class="pl-pds">`</span>id<span class="pl-pds">`</span></span> <span class="pl-k">int</span>(<span class="pl-c1">11</span>) <span class="pl-k">NOT NULL</span> AUTO_INCREMENT,
+  <span class="pl-s"><span class="pl-pds">`</span>name<span class="pl-pds">`</span></span> <span class="pl-k">varchar</span>(<span class="pl-c1">45</span>) DEFAULT <span class="pl-k">NULL</span>,
+  <span class="pl-k">PRIMARY KEY</span> (<span class="pl-s"><span class="pl-pds">`</span>id<span class="pl-pds">`</span></span>)
+) ENGINE<span class="pl-k">=</span>InnoDB AUTO_INCREMENT<span class="pl-k">=</span><span class="pl-c1">3</span> DEFAULT CHARSET<span class="pl-k">=</span>latin1;
+
+<span class="pl-k">INSERT INTO</span> <span class="pl-s"><span class="pl-pds">`</span>students<span class="pl-pds">`</span></span> <span class="pl-k">VALUES</span>
+  (<span class="pl-c1">1</span> , <span class="pl-s"><span class="pl-pds">'</span>John Doe<span class="pl-pds">'</span></span>),
+  (<span class="pl-c1">2</span> , <span class="pl-s"><span class="pl-pds">'</span>Larry Loe<span class="pl-pds">'</span></span>);
+
+<span class="pl-k">CREATE</span> <span class="pl-k">TABLE</span> `<span class="pl-en">assignments</span>` (
+  <span class="pl-s"><span class="pl-pds">`</span>id<span class="pl-pds">`</span></span> <span class="pl-k">int</span>(<span class="pl-c1">11</span>) <span class="pl-k">NOT NULL</span> AUTO_INCREMENT,
+  <span class="pl-s"><span class="pl-pds">`</span>class_id<span class="pl-pds">`</span></span> <span class="pl-k">int</span>(<span class="pl-c1">11</span>) <span class="pl-k">NOT NULL</span>,
+  <span class="pl-s"><span class="pl-pds">`</span>name<span class="pl-pds">`</span></span> <span class="pl-k">varchar</span>(<span class="pl-c1">45</span>) DEFAULT <span class="pl-k">NULL</span>,
+  <span class="pl-s"><span class="pl-pds">`</span>value<span class="pl-pds">`</span></span> <span class="pl-k">int</span>(<span class="pl-c1">11</span>) DEFAULT <span class="pl-k">NULL</span>,
+  <span class="pl-k">PRIMARY KEY</span> (<span class="pl-s"><span class="pl-pds">`</span>id<span class="pl-pds">`</span></span>)
+) ENGINE<span class="pl-k">=</span>InnoDB AUTO_INCREMENT<span class="pl-k">=</span><span class="pl-c1">6</span> DEFAULT CHARSET<span class="pl-k">=</span>latin1;
+
+
+<span class="pl-k">INSERT INTO</span> <span class="pl-s"><span class="pl-pds">`</span>assignments<span class="pl-pds">`</span></span> <span class="pl-k">VALUES</span>
+  (<span class="pl-c1">1</span> , <span class="pl-c1">1</span> , <span class="pl-s"><span class="pl-pds">'</span>Homework<span class="pl-pds">'</span></span>    , <span class="pl-c1">10</span>),
+  (<span class="pl-c1">2</span> , <span class="pl-c1">1</span> , <span class="pl-s"><span class="pl-pds">'</span>Test<span class="pl-pds">'</span></span>        , <span class="pl-c1">100</span>),
+  (<span class="pl-c1">3</span> , <span class="pl-c1">2</span> , <span class="pl-s"><span class="pl-pds">'</span>Art Project<span class="pl-pds">'</span></span> , <span class="pl-c1">30</span>),
+  (<span class="pl-c1">4</span> , <span class="pl-c1">1</span> , <span class="pl-s"><span class="pl-pds">'</span>HW 2<span class="pl-pds">'</span></span>        , <span class="pl-c1">10</span>),
+  (<span class="pl-c1">5</span> , <span class="pl-c1">1</span> , <span class="pl-s"><span class="pl-pds">'</span>HW 3<span class="pl-pds">'</span></span>        , <span class="pl-c1">10</span>);
+
+
+<span class="pl-k">CREATE</span> <span class="pl-k">TABLE</span> `<span class="pl-en">scores</span>` (
+  <span class="pl-s"><span class="pl-pds">`</span>id<span class="pl-pds">`</span></span> <span class="pl-k">int</span>(<span class="pl-c1">11</span>) <span class="pl-k">NOT NULL</span> AUTO_INCREMENT,
+  <span class="pl-s"><span class="pl-pds">`</span>assignment_id<span class="pl-pds">`</span></span> <span class="pl-k">int</span>(<span class="pl-c1">11</span>) <span class="pl-k">NOT NULL</span>,
+  <span class="pl-s"><span class="pl-pds">`</span>student_id<span class="pl-pds">`</span></span> <span class="pl-k">int</span>(<span class="pl-c1">11</span>) <span class="pl-k">NOT NULL</span>,
+  <span class="pl-s"><span class="pl-pds">`</span>score<span class="pl-pds">`</span></span> <span class="pl-k">int</span>(<span class="pl-c1">11</span>) DEFAULT <span class="pl-k">NULL</span>,
+  <span class="pl-k">PRIMARY KEY</span> (<span class="pl-s"><span class="pl-pds">`</span>id<span class="pl-pds">`</span></span>)
+) ENGINE<span class="pl-k">=</span>InnoDB AUTO_INCREMENT<span class="pl-k">=</span><span class="pl-c1">9</span> DEFAULT CHARSET<span class="pl-k">=</span>latin1;
+
+
+<span class="pl-k">INSERT INTO</span> <span class="pl-s"><span class="pl-pds">`</span>scores<span class="pl-pds">`</span></span> <span class="pl-k">VALUES</span>
+  (<span class="pl-c1">1</span> , <span class="pl-c1">1</span> , <span class="pl-c1">1</span> , <span class="pl-c1">10</span>),
+  (<span class="pl-c1">2</span> , <span class="pl-c1">1</span> , <span class="pl-c1">2</span> , <span class="pl-c1">8</span>),
+  (<span class="pl-c1">3</span> , <span class="pl-c1">2</span> , <span class="pl-c1">1</span> , <span class="pl-c1">70</span>),
+  (<span class="pl-c1">4</span> , <span class="pl-c1">2</span> , <span class="pl-c1">2</span> , <span class="pl-c1">82</span>),
+  (<span class="pl-c1">5</span> , <span class="pl-c1">3</span> , <span class="pl-c1">1</span> , <span class="pl-c1">15</span>),
+  (<span class="pl-c1">8</span> , <span class="pl-c1">5</span> , <span class="pl-c1">1</span> , <span class="pl-c1">10</span>);</pre></div>
+
+        </div>
+
+    </div>]

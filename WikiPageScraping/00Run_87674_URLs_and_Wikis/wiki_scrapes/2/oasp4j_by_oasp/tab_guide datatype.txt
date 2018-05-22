@@ -1,0 +1,167 @@
+[<div class="wiki-body gollum-asciidoc-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <div>
+<div>Table of Contents</div>
+<ul>
+<li>
+<a href="#datatypes">Datatypes</a>
+<ul>
+<li><a href="#datatype-packaging">Datatype Packaging</a></li>
+<li><a href="#technical-concerns">Technical Concerns</a></li>
+<li><a href="#datatypes-in-entities">Datatypes in Entities</a></li>
+<li>
+<a href="#datatypes-in-transfer-objects">Datatypes in Transfer-Objects</a>
+<ul>
+<li><a href="#xml">XML</a></li>
+<li><a href="#json">JSON</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</div>
+<h1 id="user-content-datatypes">
+<a aria-hidden="true" class="anchor" href="#datatypes" id="user-content-datatypes"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Datatypes</h1>
+<div>
+<blockquote>
+<div>
+<p>A datatype is an object representing a value of a specific type with the following aspects:</p>
+</div>
+<div>
+<ul>
+<li>
+<p>It has a technical or business specific semantic.</p>
+</li>
+<li>
+<p>Its JavaDoc explains the meaning and semantic of the value.</p>
+</li>
+<li>
+<p>It is immutable and therefore stateless (its value assigned at construction time and can not be modified).</p>
+</li>
+<li>
+<p>It is Serializable.</p>
+</li>
+<li>
+<p>It properly implements #equals(Object) and #hashCode() (two different instances with the same value are equal and have the same hash).</p>
+</li>
+<li>
+<p>It shall ensure syntactical validation so it is NOT possible to create an instance with an invalid value.</p>
+</li>
+<li>
+<p>It is responsible for formatting its value to a string representation suitable for sinks such as UI, loggers, etc. Also consider cases like a Datatype representing a password where toString() should return something like "<strong><strong></strong></strong>**" instead of the actual password to prevent security accidents.</p>
+</li>
+<li>
+<p>It is responsible for parsing the value from other representations such as a string (as needed).</p>
+</li>
+<li>
+<p>It shall provide required logical operations on the value to prevent redundancies. Due to the immutable attribute all manipulative operations have to return a new Datatype instance (see e.g. BigDecimal.add(java.math.BigDecimal)).</p>
+</li>
+<li>
+<p>It should implement Comparable if a natural order is defined.</p>
+</li>
+</ul>
+</div>
+<div>
+<p>Based on the Datatype a presentation layer can decide how to view and how to edit the value. Therefore a structured data model should make use of custom datatypes in order to be expressive.
+Common generic datatypes are String, Boolean, Number and its subclasses, Currency, etc.
+Please note that both Date and Calendar are mutable and have very confusing APIs. Therefore, use JSR-310 or jodatime instead.
+Even if a datatype is technically nothing but a String or a Number but logically something special it is worth to define it as a dedicated datatype class already for the purpose of having a central javadoc to explain it. On the other side avoid to introduce technical datatypes like String32 for a String with a maximum length of 32 characters as this is not adding value in the sense of a real Datatype.
+It is suitable and in most cases also recommended to use the class implementing the datatype as API omitting a dedicated interface.</p>
+</div>
+</blockquote>
+<div>
+— mmm project<br/>
+<cite>datatype javadoc</cite>
+</div>
+</div>
+<div>
+<p>See <a href="http://m-m-m.sourceforge.net/apidocs/net/sf/mmm/util/lang/api/Datatype.html" rel="nofollow">mmm datatype javadoc</a>.</p>
+</div>
+<div>
+<h2 id="user-content-datatype-packaging">
+<a aria-hidden="true" class="anchor" href="#datatype-packaging" id="user-content-datatype-packaging"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Datatype Packaging</h2>
+<div>
+<div>
+<p>For the OASP we use a common <a href="coding-conventions#packages">packaging schema</a>.
+The specifics for datatypes are as following:</p>
+</div>
+<table>
+<colgroup>
+<col/>
+<col/>
+<col/>
+</colgroup>
+<thead>
+<tr>
+<th><strong>Segment</strong></th>
+<th><strong>Value</strong></th>
+<th><strong>Explanation</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><p>&lt;component&gt;</p></td>
+<td><p>*</p></td>
+<td><p>Here we use the (business) component defining the datatype or general for generic datatypes.</p></td>
+</tr>
+<tr>
+<td><p>&lt;layer&gt;</p></td>
+<td><p>common</p></td>
+<td><p>Datatypes are used across all layers and are not assigned to a dedicated layer.</p></td>
+</tr>
+<tr>
+<td><p>&lt;scope&gt;</p></td>
+<td><p>api</p></td>
+<td><p>Datatypes are always used directly as API even tough they may contain (simple) implementation logic. Most datatypes are simple wrappers for generic Java types (e.g. String) but make these explicit and might add some validation.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div>
+<h2 id="user-content-technical-concerns">
+<a aria-hidden="true" class="anchor" href="#technical-concerns" id="user-content-technical-concerns"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Technical Concerns</h2>
+<div>
+<div>
+<p>It has been exposed, that multiple technologies like Dozer and QueryDSL’s (alias API) are heavily based on reflection to make the programmers world easier. However, to let them work properly with custom datatypes, the frameworks have to be able to instantiate custom datatypes by non-argument constructors. Therefore, we propose to implement a non-argument constructor for each datatype of at least protected visibility.</p>
+</div>
+</div>
+</div>
+<div>
+<h2 id="user-content-datatypes-in-entities">
+<a aria-hidden="true" class="anchor" href="#datatypes-in-entities" id="user-content-datatypes-in-entities"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Datatypes in Entities</h2>
+<div>
+<div>
+<p>The usage of custom datatypes in entities is explained in the <a href="guide-dataaccess-layer#entities-and-datatypes">persistence layer guide</a>.</p>
+</div>
+</div>
+</div>
+<div>
+<h2 id="user-content-datatypes-in-transfer-objects">
+<a aria-hidden="true" class="anchor" href="#datatypes-in-transfer-objects" id="user-content-datatypes-in-transfer-objects"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Datatypes in Transfer-Objects</h2>
+<div>
+<div>
+<h3 id="user-content-xml">
+<a aria-hidden="true" class="anchor" href="#xml" id="user-content-xml"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>XML</h3>
+<div>
+<p>For mapping datatypes with JAXB see <a href="guide-xml">XML guide</a>.</p>
+</div>
+</div>
+<div>
+<h3 id="user-content-json">
+<a aria-hidden="true" class="anchor" href="#json" id="user-content-json"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>JSON</h3>
+<div>
+<p>For mapping datatypes from and to JSON see <a href="guide-json#json-custom-mapping">JSON custom mapping</a>.</p>
+</div>
+</div>
+</div>
+</div>
+        </div>
+
+        <div class="wiki-footer gollum-markdown-content boxed-group" id="wiki-footer">
+          <div class="boxed-group-inner wiki-auxiliary-content markdown-body">
+            <p><a href="http://creativecommons.org/licenses/by-nd/4.0/" rel="nofollow"><img alt="Creative Commons License Agreement" data-canonical-src="http://i.creativecommons.org/l/by-nd/4.0/88x31.png" src="https://camo.githubusercontent.com/171d004f9ccb9199e35ac8ec3d99ede916037a9f/687474703a2f2f692e6372656174697665636f6d6d6f6e732e6f72672f6c2f62792d6e642f342e302f38387833312e706e67"/></a><br/><span>This documentation</span> is licensed under the <a href="http://creativecommons.org/licenses/by-nd/4.0/" rel="nofollow">Creative Commons License (Attribution-NoDerivatives 4.0 International)</a>.</p>
+
+          </div>
+        </div>
+    </div>]

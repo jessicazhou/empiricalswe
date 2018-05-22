@@ -1,0 +1,24 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>This will replay the I/Q clip in a loop.</p>
+<ol>
+<li>Record raw I/Q data with command-line tool.</li>
+</ol>
+<div class="highlight highlight-source-shell"><pre><span class="pl-c1">cd</span> openwebrx
+rtl_sdr -s250000 -f145000000 iqfile.iq</pre></div>
+<ol start="2">
+<li>Edit <code>config_webrx.py</code>:</li>
+</ol>
+<div class="highlight highlight-source-python"><pre>samp_rate<span class="pl-k">=</span><span class="pl-c1">250000</span>
+bytes_per_sample <span class="pl-k">=</span> <span class="pl-c1">1</span> <span class="pl-c"><span class="pl-c">#</span>should be 1 for u8/s8, 2 for s16, 4 for float</span>
+start_rtl_command<span class="pl-k">=</span><span class="pl-s"><span class="pl-pds">"</span>(while true; do cat iqfile.iq; done) | csdr flowcontrol <span class="pl-c1">{data_rate}</span> 10 <span class="pl-pds">"</span></span>.format(<span class="pl-v">data_rate</span><span class="pl-k">=</span><span class="pl-c1">2</span><span class="pl-k">*</span>samp_rate<span class="pl-k">*</span>bytes_per_sample)
+format_conversion<span class="pl-k">=</span><span class="pl-s"><span class="pl-pds">"</span>csdr convert_u8_f<span class="pl-pds">"</span></span></pre></div>
+<p><strong>Note:</strong> You should especially take care that the <em>format</em> and the <em>sampling rate</em> set here should be the same as for your recorded I/Q file!</p>
+<hr/>
+<p>A version that also works for 16-bit I/Q files:</p>
+<div class="highlight highlight-source-python"><pre>format_conversion<span class="pl-k">=</span><span class="pl-s"><span class="pl-pds">"</span>csdr convert_s16_f<span class="pl-pds">"</span></span>
+start_rtl_command<span class="pl-k">=</span><span class="pl-s"><span class="pl-pds">"</span>(while true; do cat iqfile.iq; done) | csdr flowcontrol <span class="pl-c1">{data_rate}</span> 10 <span class="pl-pds">"</span></span>.format(<span class="pl-v">data_rate</span><span class="pl-k">=</span><span class="pl-c1">2</span><span class="pl-k">*</span>samp_rate<span class="pl-k">*</span>(<span class="pl-c1">2</span> <span class="pl-k">if</span> (<span class="pl-s"><span class="pl-pds">"</span>u16<span class="pl-pds">"</span></span> <span class="pl-k">in</span> format_conversion) <span class="pl-k">or</span> (<span class="pl-s"><span class="pl-pds">"</span>s16<span class="pl-pds">"</span></span> <span class="pl-k">in</span> format_conversion) <span class="pl-k">else</span> <span class="pl-c1">1</span>))</pre></div>
+
+        </div>
+
+    </div>]

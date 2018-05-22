@@ -1,0 +1,169 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>MailSlurper supports three database engines: SQLite, Microsoft SQL Server, and MySQL. This section will talk about how to configure Microsoft SQL Server and MySQL.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#prerequisites" id="user-content-prerequisites"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Prerequisites</h2>
+<p>To use either Microsoft SQL Server and MySQL you must first create a database. It is beyond the scope of this documentation to teach you how to do this. However, you will need a database to hold your MailSlurper data. Here are some links to get you started.</p>
+<ul>
+<li><a href="https://msdn.microsoft.com/en-us/library/ms186312(v=sql.120).aspx" rel="nofollow">Create a MSSQL Database</a></li>
+<li><a href="http://dev.mysql.com/doc/refman/5.7/en/creating-database.html" rel="nofollow">Create a MySQL Database</a></li>
+</ul>
+<h2>
+<a aria-hidden="true" class="anchor" href="#mssql-creation-script" id="user-content-mssql-creation-script"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>MSSQL Creation Script</h2>
+<p>Once you have a database run the following script to create the schema.</p>
+<div class="highlight highlight-source-sql"><pre><span class="pl-c"><span class="pl-c">/*</span></span>
+<span class="pl-c"> * Mail Item</span>
+<span class="pl-c"> <span class="pl-c">*/</span></span>
+<span class="pl-k">CREATE</span> <span class="pl-k">TABLE</span> <span class="pl-en">mailitem</span> (
+	id <span class="pl-k">VARCHAR</span>(<span class="pl-c1">36</span>) <span class="pl-k">NOT NULL</span> <span class="pl-k">PRIMARY KEY</span>,
+	dateSent DATETIME,
+	fromAddress <span class="pl-k">VARCHAR</span>(<span class="pl-c1">50</span>) <span class="pl-k">NOT NULL</span>,
+	toAddressList <span class="pl-k">VARCHAR</span>(<span class="pl-c1">1024</span>) <span class="pl-k">NOT NULL</span>,
+	subject <span class="pl-k">VARCHAR</span>(<span class="pl-c1">255</span>),
+	xmailer <span class="pl-k">VARCHAR</span>(<span class="pl-c1">50</span>),
+	body <span class="pl-k">TEXT</span>,
+	contentType <span class="pl-k">VARCHAR</span>(<span class="pl-c1">50</span>),
+	boundary <span class="pl-k">VARCHAR</span>(<span class="pl-c1">255</span>)
+);
+
+<span class="pl-c"><span class="pl-c">/*</span></span>
+<span class="pl-c"> * Attachment</span>
+<span class="pl-c"> <span class="pl-c">*/</span></span>
+<span class="pl-k">CREATE</span> <span class="pl-k">TABLE</span> <span class="pl-en">attachment</span> (
+	id <span class="pl-k">VARCHAR</span>(<span class="pl-c1">36</span>) <span class="pl-k">NOT NULL</span> <span class="pl-k">PRIMARY KEY</span>,
+	mailItemId <span class="pl-k">VARCHAR</span>(<span class="pl-c1">36</span>) <span class="pl-k">NOT NULL</span>,
+	fileName <span class="pl-k">VARCHAR</span>(<span class="pl-c1">255</span>),
+	contentType <span class="pl-k">VARCHAR</span>(<span class="pl-c1">50</span>),
+	content <span class="pl-k">TEXT</span>
+);</pre></div>
+<h2>
+<a aria-hidden="true" class="anchor" href="#mysql-creation-script" id="user-content-mysql-creation-script"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>MySQL Creation Script</h2>
+<p>Once you have a database run the following script to create the schema.</p>
+<div class="highlight highlight-source-sql"><pre><span class="pl-c"><span class="pl-c">/*</span></span>
+<span class="pl-c"> * Mail Item</span>
+<span class="pl-c"> <span class="pl-c">*/</span></span>
+<span class="pl-k">CREATE</span> <span class="pl-k">TABLE</span> <span class="pl-en">mailitem</span> (
+	id <span class="pl-k">VARCHAR</span>(<span class="pl-c1">36</span>) <span class="pl-k">NOT NULL</span> <span class="pl-k">PRIMARY KEY</span>,
+	dateSent DATETIME,
+	fromAddress <span class="pl-k">VARCHAR</span>(<span class="pl-c1">50</span>) <span class="pl-k">NOT NULL</span>,
+	toAddressList <span class="pl-k">VARCHAR</span>(<span class="pl-c1">1024</span>) <span class="pl-k">NOT NULL</span>,
+	subject <span class="pl-k">VARCHAR</span>(<span class="pl-c1">255</span>),
+	xmailer <span class="pl-k">VARCHAR</span>(<span class="pl-c1">50</span>),
+	body <span class="pl-k">TEXT</span>,
+	contentType <span class="pl-k">VARCHAR</span>(<span class="pl-c1">50</span>),
+	boundary <span class="pl-k">VARCHAR</span>(<span class="pl-c1">255</span>)
+) ENGINE<span class="pl-k">=</span>MyISAM;
+
+<span class="pl-c"><span class="pl-c">/*</span></span>
+<span class="pl-c"> * Attachment</span>
+<span class="pl-c"> <span class="pl-c">*/</span></span>
+<span class="pl-k">CREATE</span> <span class="pl-k">TABLE</span> <span class="pl-en">attachment</span> (
+	id <span class="pl-k">VARCHAR</span>(<span class="pl-c1">36</span>) <span class="pl-k">NOT NULL</span> <span class="pl-k">PRIMARY KEY</span>,
+	mailItemId <span class="pl-k">VARCHAR</span>(<span class="pl-c1">36</span>) <span class="pl-k">NOT NULL</span>,
+	fileName <span class="pl-k">VARCHAR</span>(<span class="pl-c1">255</span>),
+	contentType <span class="pl-k">VARCHAR</span>(<span class="pl-c1">50</span>),
+	content <span class="pl-k">TEXT</span>
+) ENGINE<span class="pl-k">=</span>MyISAM;</pre></div>
+<h2>
+<a aria-hidden="true" class="anchor" href="#example-server-configurations" id="user-content-example-server-configurations"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Example Server Configurations</h2>
+<p>Here are some sample <strong>config.json</strong> files to demonstrate using MSSQL and MySQL. These assume you have created a database named <strong>mailslurper</strong>, and have created a user named <strong>mailslurperuser</strong> with a password of <strong>password</strong> that has access to this database. PLEASE NOTE: Do <em><strong>not</strong></em> make a user account with a password as terrible as <strong>password</strong>. Always use strong passwords!!</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#mssql-running-locally" id="user-content-mssql-running-locally"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>MSSQL Running Locally</h3>
+<p>In this sample MSSQL is running on your local machine and using the <em>default</em> instance.</p>
+<div class="highlight highlight-source-js"><pre>{
+	<span class="pl-s"><span class="pl-pds">"</span>wwwAddress<span class="pl-pds">"</span></span><span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">"</span>127.0.0.1<span class="pl-pds">"</span></span>,
+	<span class="pl-s"><span class="pl-pds">"</span>wwwPort<span class="pl-pds">"</span></span><span class="pl-k">:</span> <span class="pl-c1">8080</span>,
+	<span class="pl-s"><span class="pl-pds">"</span>serviceAddress<span class="pl-pds">"</span></span><span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">"</span>127.0.0.1<span class="pl-pds">"</span></span>,
+	<span class="pl-s"><span class="pl-pds">"</span>servicePort<span class="pl-pds">"</span></span><span class="pl-k">:</span> <span class="pl-c1">8888</span>,
+	<span class="pl-s"><span class="pl-pds">"</span>smtpAddress<span class="pl-pds">"</span></span><span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">"</span>127.0.0.1<span class="pl-pds">"</span></span>,
+	<span class="pl-s"><span class="pl-pds">"</span>smtpPort<span class="pl-pds">"</span></span><span class="pl-k">:</span> <span class="pl-c1">25</span>,
+	<span class="pl-s"><span class="pl-pds">"</span>dbEngine<span class="pl-pds">"</span></span><span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">"</span>MSSQL<span class="pl-pds">"</span></span>,
+	<span class="pl-s"><span class="pl-pds">"</span>dbHost<span class="pl-pds">"</span></span><span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">"</span>localhost<span class="pl-pds">"</span></span>,
+	<span class="pl-s"><span class="pl-pds">"</span>dbPort<span class="pl-pds">"</span></span><span class="pl-k">:</span> <span class="pl-c1">1433</span>,
+	<span class="pl-s"><span class="pl-pds">"</span>dbDatabase<span class="pl-pds">"</span></span><span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">"</span>mailslurper<span class="pl-pds">"</span></span>,
+	<span class="pl-s"><span class="pl-pds">"</span>dbUserName<span class="pl-pds">"</span></span><span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">"</span>mailslurperuser<span class="pl-pds">"</span></span>,
+	<span class="pl-s"><span class="pl-pds">"</span>dbPassword<span class="pl-pds">"</span></span><span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">"</span>password<span class="pl-pds">"</span></span>,
+	<span class="pl-s"><span class="pl-pds">"</span>maxWorkers<span class="pl-pds">"</span></span><span class="pl-k">:</span> <span class="pl-c1">1000</span>
+}</pre></div>
+<h3>
+<a aria-hidden="true" class="anchor" href="#mssql-running-locally-with-a-named-instance" id="user-content-mssql-running-locally-with-a-named-instance"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>MSSQL Running Locally With a Named Instance</h3>
+<p>In this sample MSSQL is running on your local machine and running in an instance named <em>MSSQL2014</em>.</p>
+<div class="highlight highlight-source-js"><pre>{
+	<span class="pl-s"><span class="pl-pds">"</span>wwwAddress<span class="pl-pds">"</span></span><span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">"</span>127.0.0.1<span class="pl-pds">"</span></span>,
+	<span class="pl-s"><span class="pl-pds">"</span>wwwPort<span class="pl-pds">"</span></span><span class="pl-k">:</span> <span class="pl-c1">8080</span>,
+	<span class="pl-s"><span class="pl-pds">"</span>serviceAddress<span class="pl-pds">"</span></span><span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">"</span>127.0.0.1<span class="pl-pds">"</span></span>,
+	<span class="pl-s"><span class="pl-pds">"</span>servicePort<span class="pl-pds">"</span></span><span class="pl-k">:</span> <span class="pl-c1">8888</span>,
+	<span class="pl-s"><span class="pl-pds">"</span>smtpAddress<span class="pl-pds">"</span></span><span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">"</span>127.0.0.1<span class="pl-pds">"</span></span>,
+	<span class="pl-s"><span class="pl-pds">"</span>smtpPort<span class="pl-pds">"</span></span><span class="pl-k">:</span> <span class="pl-c1">25</span>,
+	<span class="pl-s"><span class="pl-pds">"</span>dbEngine<span class="pl-pds">"</span></span><span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">"</span>MSSQL<span class="pl-pds">"</span></span>,
+	<span class="pl-s"><span class="pl-pds">"</span>dbHost<span class="pl-pds">"</span></span><span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">"</span>localhost<span class="pl-cce">\\</span>MSSQL2014<span class="pl-pds">"</span></span>,
+	<span class="pl-s"><span class="pl-pds">"</span>dbPort<span class="pl-pds">"</span></span><span class="pl-k">:</span> <span class="pl-c1">1433</span>,
+	<span class="pl-s"><span class="pl-pds">"</span>dbDatabase<span class="pl-pds">"</span></span><span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">"</span>mailslurper<span class="pl-pds">"</span></span>,
+	<span class="pl-s"><span class="pl-pds">"</span>dbUserName<span class="pl-pds">"</span></span><span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">"</span>mailslurperuser<span class="pl-pds">"</span></span>,
+	<span class="pl-s"><span class="pl-pds">"</span>dbPassword<span class="pl-pds">"</span></span><span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">"</span>password<span class="pl-pds">"</span></span>,
+	<span class="pl-s"><span class="pl-pds">"</span>maxWorkers<span class="pl-pds">"</span></span><span class="pl-k">:</span> <span class="pl-c1">1000</span>
+}</pre></div>
+<h3>
+<a aria-hidden="true" class="anchor" href="#mssql-running-remotely" id="user-content-mssql-running-remotely"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>MSSQL Running Remotely</h3>
+<p>In this sample MSSQL is running on a remote machine named <strong>DEVSERVER</strong>. This sample assumes DNS is configured to resolve this name. It also assumes that you have configured your SQL server instance to accept remote connections over TCP.</p>
+<div class="highlight highlight-source-js"><pre>{
+	<span class="pl-s"><span class="pl-pds">"</span>wwwAddress<span class="pl-pds">"</span></span><span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">"</span>127.0.0.1<span class="pl-pds">"</span></span>,
+	<span class="pl-s"><span class="pl-pds">"</span>wwwPort<span class="pl-pds">"</span></span><span class="pl-k">:</span> <span class="pl-c1">8080</span>,
+	<span class="pl-s"><span class="pl-pds">"</span>serviceAddress<span class="pl-pds">"</span></span><span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">"</span>127.0.0.1<span class="pl-pds">"</span></span>,
+	<span class="pl-s"><span class="pl-pds">"</span>servicePort<span class="pl-pds">"</span></span><span class="pl-k">:</span> <span class="pl-c1">8888</span>,
+	<span class="pl-s"><span class="pl-pds">"</span>smtpAddress<span class="pl-pds">"</span></span><span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">"</span>127.0.0.1<span class="pl-pds">"</span></span>,
+	<span class="pl-s"><span class="pl-pds">"</span>smtpPort<span class="pl-pds">"</span></span><span class="pl-k">:</span> <span class="pl-c1">25</span>,
+	<span class="pl-s"><span class="pl-pds">"</span>dbEngine<span class="pl-pds">"</span></span><span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">"</span>MSSQL<span class="pl-pds">"</span></span>,
+	<span class="pl-s"><span class="pl-pds">"</span>dbHost<span class="pl-pds">"</span></span><span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">"</span>DEVSERVER<span class="pl-pds">"</span></span>,
+	<span class="pl-s"><span class="pl-pds">"</span>dbPort<span class="pl-pds">"</span></span><span class="pl-k">:</span> <span class="pl-c1">1433</span>,
+	<span class="pl-s"><span class="pl-pds">"</span>dbDatabase<span class="pl-pds">"</span></span><span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">"</span>mailslurper<span class="pl-pds">"</span></span>,
+	<span class="pl-s"><span class="pl-pds">"</span>dbUserName<span class="pl-pds">"</span></span><span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">"</span>mailslurperuser<span class="pl-pds">"</span></span>,
+	<span class="pl-s"><span class="pl-pds">"</span>dbPassword<span class="pl-pds">"</span></span><span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">"</span>password<span class="pl-pds">"</span></span>,
+	<span class="pl-s"><span class="pl-pds">"</span>maxWorkers<span class="pl-pds">"</span></span><span class="pl-k">:</span> <span class="pl-c1">1000</span>
+}</pre></div>
+<h3>
+<a aria-hidden="true" class="anchor" href="#mysql-running-locally" id="user-content-mysql-running-locally"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>MySQL Running Locally</h3>
+<p>In this sample MySQL is running on your local machine.</p>
+<div class="highlight highlight-source-js"><pre>{
+	<span class="pl-s"><span class="pl-pds">"</span>wwwAddress<span class="pl-pds">"</span></span><span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">"</span>127.0.0.1<span class="pl-pds">"</span></span>,
+	<span class="pl-s"><span class="pl-pds">"</span>wwwPort<span class="pl-pds">"</span></span><span class="pl-k">:</span> <span class="pl-c1">8080</span>,
+	<span class="pl-s"><span class="pl-pds">"</span>serviceAddress<span class="pl-pds">"</span></span><span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">"</span>127.0.0.1<span class="pl-pds">"</span></span>,
+	<span class="pl-s"><span class="pl-pds">"</span>servicePort<span class="pl-pds">"</span></span><span class="pl-k">:</span> <span class="pl-c1">8888</span>,
+	<span class="pl-s"><span class="pl-pds">"</span>smtpAddress<span class="pl-pds">"</span></span><span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">"</span>127.0.0.1<span class="pl-pds">"</span></span>,
+	<span class="pl-s"><span class="pl-pds">"</span>smtpPort<span class="pl-pds">"</span></span><span class="pl-k">:</span> <span class="pl-c1">25</span>,
+	<span class="pl-s"><span class="pl-pds">"</span>dbEngine<span class="pl-pds">"</span></span><span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">"</span>MySQL<span class="pl-pds">"</span></span>,
+	<span class="pl-s"><span class="pl-pds">"</span>dbHost<span class="pl-pds">"</span></span><span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">"</span>localhost<span class="pl-pds">"</span></span>,
+	<span class="pl-s"><span class="pl-pds">"</span>dbPort<span class="pl-pds">"</span></span><span class="pl-k">:</span> <span class="pl-c1">3306</span>,
+	<span class="pl-s"><span class="pl-pds">"</span>dbDatabase<span class="pl-pds">"</span></span><span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">"</span>mailslurper<span class="pl-pds">"</span></span>,
+	<span class="pl-s"><span class="pl-pds">"</span>dbUserName<span class="pl-pds">"</span></span><span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">"</span>mailslurperuser<span class="pl-pds">"</span></span>,
+	<span class="pl-s"><span class="pl-pds">"</span>dbPassword<span class="pl-pds">"</span></span><span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">"</span>password<span class="pl-pds">"</span></span>,
+	<span class="pl-s"><span class="pl-pds">"</span>maxWorkers<span class="pl-pds">"</span></span><span class="pl-k">:</span> <span class="pl-c1">1000</span>
+}</pre></div>
+<h3>
+<a aria-hidden="true" class="anchor" href="#mysql-running-remotely" id="user-content-mysql-running-remotely"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>MySQL Running Remotely</h3>
+<p>In this sample MySQL is running on a remote machine named <strong>DEVSERVER</strong>. This sample assumes DNS is configured to resolve this name. It also assumes that you have configured your SQL server instance to accept remote connections over TCP.</p>
+<div class="highlight highlight-source-js"><pre>{
+	<span class="pl-s"><span class="pl-pds">"</span>wwwAddress<span class="pl-pds">"</span></span><span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">"</span>127.0.0.1<span class="pl-pds">"</span></span>,
+	<span class="pl-s"><span class="pl-pds">"</span>wwwPort<span class="pl-pds">"</span></span><span class="pl-k">:</span> <span class="pl-c1">8080</span>,
+	<span class="pl-s"><span class="pl-pds">"</span>serviceAddress<span class="pl-pds">"</span></span><span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">"</span>127.0.0.1<span class="pl-pds">"</span></span>,
+	<span class="pl-s"><span class="pl-pds">"</span>servicePort<span class="pl-pds">"</span></span><span class="pl-k">:</span> <span class="pl-c1">8888</span>,
+	<span class="pl-s"><span class="pl-pds">"</span>smtpAddress<span class="pl-pds">"</span></span><span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">"</span>127.0.0.1<span class="pl-pds">"</span></span>,
+	<span class="pl-s"><span class="pl-pds">"</span>smtpPort<span class="pl-pds">"</span></span><span class="pl-k">:</span> <span class="pl-c1">25</span>,
+	<span class="pl-s"><span class="pl-pds">"</span>dbEngine<span class="pl-pds">"</span></span><span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">"</span>MySQL<span class="pl-pds">"</span></span>,
+	<span class="pl-s"><span class="pl-pds">"</span>dbHost<span class="pl-pds">"</span></span><span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">"</span>DEVSERVER<span class="pl-pds">"</span></span>,
+	<span class="pl-s"><span class="pl-pds">"</span>dbPort<span class="pl-pds">"</span></span><span class="pl-k">:</span> <span class="pl-c1">3306</span>,
+	<span class="pl-s"><span class="pl-pds">"</span>dbDatabase<span class="pl-pds">"</span></span><span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">"</span>mailslurper<span class="pl-pds">"</span></span>,
+	<span class="pl-s"><span class="pl-pds">"</span>dbUserName<span class="pl-pds">"</span></span><span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">"</span>mailslurperuser<span class="pl-pds">"</span></span>,
+	<span class="pl-s"><span class="pl-pds">"</span>dbPassword<span class="pl-pds">"</span></span><span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">"</span>password<span class="pl-pds">"</span></span>,
+	<span class="pl-s"><span class="pl-pds">"</span>maxWorkers<span class="pl-pds">"</span></span><span class="pl-k">:</span> <span class="pl-c1">1000</span>
+}</pre></div>
+
+        </div>
+
+        <div class="wiki-footer gollum-markdown-content boxed-group" id="wiki-footer">
+          <div class="boxed-group-inner wiki-auxiliary-content markdown-body">
+            <p>MailSlurper is copyright © 2013-2016 Adam Presley. It is released under the MIT software license.</p>
+
+          </div>
+        </div>
+    </div>]

@@ -1,0 +1,49 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>When working with ChemBio Hub and the tastypie api framework there are a number of things to check for when getting a 401 error for a PATCH or POST request.</p>
+<p>In ChemBio Hub we throw the 401 error on the following resources:</p>
+<ul>
+<li>CompoundBatchResource (For updates, uploads and listing data on Compound Batches)</li>
+<li>ProjectResource (For updates on project names and listing projects)</li>
+<li>DataPointClassificationResource (For updates and requests on AssayReg data)</li>
+</ul>
+<p>The 401 errors in ChemBio Hub are thrown with a message so you will generally know if you have hit one of these.</p>
+<p>If, however you get a different 401 error, perhaps in the generic tastypie code, there will be no stack trace - what could it come from?</p>
+<p>Possible things to check:</p>
+<p>###If you get a blanks screen and 401 errors on all resources:</p>
+<p>Is the user logged in properly? Has the login expired or the cookie name changed? Have you got logins from multiple environments saved in your browser which are all on localhost?</p>
+<ul>
+<li>
+<p>If in development environment the redirects may not work so you will just get a blank screen</p>
+</li>
+<li>
+<p>Clear all cookies from localhost</p>
+</li>
+<li>
+<p>Run this command on the command line</p>
+<p>python manage.py clearsessions</p>
+</li>
+<li>
+<p>Head to localhost:9000/dev/login and log in again if you can</p>
+</li>
+</ul>
+<p>###If GET requests are working but POST or PATCH requests are not working and not actually calling any of the chembiohub code according to your debug statements</p>
+<p>Are you setting a header appropriately for cross-site-forgery-prevention (CSRF)? This is done in ChemBio Hub by the following pieces of code:</p>
+<p>We force setting of the CSRF cookie on the backend for all login classes in all cases <a href="https://github.com/thesgc/cbh_core_ws/search?utf8=%E2%9C%93&amp;q=csrf_token+%3D+get_token%28request%29">here</a>.</p>
+<p>We get this cookie and set it for all cases where $http or $resource are used in the global frontend app configuration <a href="https://github.com/thesgc/ng-chem/search?utf8=%E2%9C%93&amp;q=%24cookies%5Bpref+%2B+%22csrftoken%22%5D&amp;type=Code">here</a>.</p>
+<p>We set the CSRF header for file uploads in the ng-flow configuration in chemreg here and assayreg <a href="https://github.com/thesgc/ng-chem/search?utf8=%E2%9C%93&amp;q=%22%24scope.csrftoken%22&amp;type=Code">here</a>.</p>
+<p>Note that the app.js code needs to be able to select the cookie by cookie name and then set that as a header to POST requests. This is done by the assumption that the cookie name can be derived from the prefix of the URL of the page which is set globally in <a href="https://github.com/thesgc/ng-chem/blob/master/app/scripts/config.js">config.js</a>. This code also assumes that the api paths will be prefixes with site.com/foo/api where foo is configurable.</p>
+<p>###If GET requests are working but POST or PATCH requests are not working and you are satisfied that your code is being called:</p>
+<p>The specific methods of the authorization class must permit the operation for the type of user that is sending the request.</p>
+<p>For updating single records this means that the "update_detail" function should return True if the user is autorised.</p>
+<p>For updating an object list then the update list function must return the list of objects</p>
+<p>For creating a record then the create_detail function must return True or else unauthorized will be called - see github issue <a href="https://github.com/django-tastypie/django-tastypie/issues/1412">here</a></p>
+<p>Look through all of the related resources to the one you are PATCHing or POSTing to and check the following things in the Meta class.</p>
+<p>Each of the related resources needs to either be readonly or the Meta class must be linked to a subclass of the tastypie Authorization class.</p>
+<p>For each of the related resources the methods (PATCH, PUT and POST) must be enabled in the META class - for example see ChemRegProjectResource.</p>
+<p>###If you find another way in which a 401 error can be thrown...</p>
+<p>My suggestion is to implement all of the tastypie ModelResource methods in your own class and debug until you find the line that throws the error.</p>
+
+        </div>
+
+    </div>]

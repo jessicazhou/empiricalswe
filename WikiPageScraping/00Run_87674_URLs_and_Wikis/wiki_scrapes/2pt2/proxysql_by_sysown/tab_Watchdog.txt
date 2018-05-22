@@ -1,0 +1,18 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>ProxySQL is multi-threaded daemon, with one or more threads per module, as already pointed in <a href="./ProxySQL-Threads">ProxySQL Threads</a>.<br/>
+The most critical threads are the the <a href="./ProxySQL-Threads#mysql-workers">MySQL Threads</a>.<br/>
+Although the number of critical sections is limited, few bugs in the past caused unexpected locking issues and stalls.<br/>
+For this reason, ProxySQL 1.4.4 introduces a watchdog that monitors <a href="./ProxySQL-Threads#mysql-workers">MySQL Threads</a> and <a href="./ProxySQL-Threads#mysql-auxiliary-threads">MySQL Auxiliary Threads</a>(if enabled). If the watchdog detects that any of these threads are missing heartbeats, it assumes they are blocked and it automatically asserts, resulting in a core dump and an automatic restart from the parent process.</p>
+<p>Watchdog is enabled by default.<br/>
+Because each thread should never block for longer than <code>mysql-poll_timeout</code> milliseconds (2000 by default), watchdog checks heartbeats every <code>mysql-poll_timeout</code>+1000 milliseconds (3 seconds by default, 2000ms + 1000ms): if <code>restart_on_missing_heartbeats</code> heartbeats are missing, watchdog triggers an assert.</p>
+<p><code>restart_on_missing_heartbeats</code> can only be configured in the global section of configuration file, and its default value is 10.<br/>
+If <code>restart_on_missing_heartbeats</code> is set to 0, watchdogs will still perform checks and generates entries in the error log, but it will not assert and it will not restart proxysql.</p>
+<p>See <a href="./Configuration-file">Configuration file</a> for details.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#note-on-proxysql-and-gdb" id="user-content-note-on-proxysql-and-gdb"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Note on proxysql and gdb</h3>
+<p>The watchdog module is extremely simple and lock free, therefore it should never block. Nonetheless, the watchdog module has is own heartbeat, therefore is able to detect if proxysql was intentionally blocked, for example with a <code>SIGSTOP</code> signal or <code>SIGINT</code> signal in <code>gdb</code>: if this happens, it will not assert.</p>
+
+        </div>
+
+    </div>]

@@ -1,0 +1,191 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>To make your ÐApp work with on Ethereum, you'll need to know about the Ethereum Javascript bindings, or, if you like, magic Javascript objects. These are still pretty simple for PoC-6, rest assured, they'll become nicer as time goes on. In the meantime, bear with us.</p>
+<p>There is currently only one such object; the <code>eth</code> object.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#parameters" id="user-content-parameters"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Parameters</h3>
+<p>Parameters are always data represented as hex, prefixed with an <code>0x</code>. There's automatic conversion from decimal strings to the hex representation (interpreted as a big-endian as is standard for Ethereum). So, the following two forms are identically interpreted:</p>
+<ul>
+<li><code>"0x414243"</code></li>
+<li><code>"4276803"</code></li>
+</ul>
+<p>In each case, they are interpreted as the number 4276803. To convert to or from other datatypes, there are a number of conversion functions, detailed later.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#eth" id="user-content-eth"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>eth</h3>
+<p><strong>Properties</strong>: For each such item, there is also an asynchronous method, taking a parameter of the callback function, itself taking a single parameter of the property's return value and of the same name but prefixed with get and recapitalised, e.g. <code>getCoinbase(_fn)</code>.</p>
+<ul>
+<li>
+<code>coinbase</code> Returns the coinbase address of the client.</li>
+<li>
+<code>listening</code> Returns true if and only if the client is actively listening for network connections.</li>
+<li>
+<code>mining</code> Returns true if and only if the client is actively mining new blocks.</li>
+<li>
+<code>gasPrice</code> Returns the special 256-bit number equal to the hard-coded testnet price of gas.</li>
+<li>
+<code>key</code> Returns the special key-pair object corresponding to the preferred account owned by the client.</li>
+<li>
+<code>keys</code> Returns a list of the special key-pair objects corresponding to all accounts owned by the client.</li>
+<li>
+<code>peerCount</code> Returns the number of peers currently connected to the client.</li>
+<li>
+<code>defaultBlock</code> The default block number/age to use when querying state. When positive this is a block number, when 0 or negative it is a block age. -1 therefore means the most recently mined block, 0 means the block being currently mined (i.e. to include pending transactions). Defaults to -1.</li>
+</ul>
+<p><strong>Synchronous Getters</strong>: For each such item, there is also an asynchronous method, taking an additional parameter of the callback function, itself taking a single parameter of the synchronous method's return value and of the same name but prefixed with get and recapitalised, e.g. <code>getBalanceAt(_a, _fn)</code>.</p>
+<ul>
+<li>
+<code>balanceAt(_a)</code> Returns the balance of the account of address given by the address <code>_a</code>. For example, <code>eth.toDecimal(eth.balanceAt('0x1d916bed61249f6c12f3ca8b3f78b8f4cedbe24b'))</code> will return the balance (in Wei) for that account's address.</li>
+<li>
+<code>stateAt(_a, _s)</code> Returns the value in storage at position given by the string <code>_s</code> of the account of address given by the address <code>_a</code>.</li>
+<li>
+<code>countAt(_a)</code> Returns the number of transactions send from the account of address given by <code>_a</code>.</li>
+<li>
+<code>codeAt(_a)</code> Returns true if the account of address given by <code>_a</code> is a contract-account.</li>
+<li>
+<code>block(_hash)</code> Returns an anonymous object describing the block with hash <code>_hash</code>, passed as a string.</li>
+<li>
+<code>block(_number)</code> Returns an anonymous object describing the block with number <code>_number</code>, passed as an integer.</li>
+</ul>
+<p>The block number you wish to query can be given either as an extra parameter (or age if less than 1: you may use 0 to include pending transactions, use -1 to include only mined transactions &amp;c.), or alternatively, you may use these without the extra parameter, in which case the state at the end of the most recently mined block will be used. This can be altered with the <code>defaultBlock</code> property.</p>
+<p><strong>Transactions</strong></p>
+<ul>
+<li>
+<code>transact(_params, _fn)</code> Creates a new message-call transaction.
+<ul>
+<li>
+<code>_params</code>, an anonymous object specifying the parameters of the transaction.
+<ul>
+<li>
+<code>from</code>, the secret-key for the sender;</li>
+<li>
+<code>value</code>, the value transferred for the transaction (in Wei), also the endowment if it's a contract-creation transaction;</li>
+<li>
+<code>endowment</code>, synonym for <code>value</code>;</li>
+<li>
+<code>to</code>, the destination address of the message, left undefined for a contract-creation transaction;</li>
+<li>
+<code>data</code>, either a byte array or an array of values, to be 32-byte aligned, containing the associated data of the message, or in the case of a contract-creation transaction, the initialisation code;</li>
+<li>
+<code>code</code>, a synonym for <code>data</code>;</li>
+<li>
+<code>gas</code>, the amount of gas to purchase for the transaction (unused gas is refunded), defaults to the most gas your ether balance allows; and</li>
+<li>
+<code>gasPrice</code>, the price of gas for this transaction, defaults to the mean network gasPrice.</li>
+</ul>
+</li>
+<li>
+<code>_fn</code>, the callback function, called on completion of the transaction. If the transaction was a contract-creation transaction, it is passed with a single argument; the address of the new account.</li>
+</ul>
+</li>
+<li>
+<code>call(_params, _fn)</code> Executes a new message-call immediately without creating a transaction on the block chain.
+<ul>
+<li>
+<code>_params</code>, an anonymous object specifying the parameters of the transaction, similar to that above.</li>
+<li>
+<code>_fn</code>, the callback function, called on completion of the message call. A single argument is passed equal to the output data of the message call.</li>
+</ul>
+</li>
+</ul>
+<p><strong>Watches and Message Filtering</strong> Past messages may be filtered and their attributes inspected, and future messages (and the changes they implicitly bring) may be notified of.</p>
+<ul>
+<li>
+<code>messages(_filter)</code>: Returns the list of messages in Ethereum matching the given <code>_filter</code>. The filter is an object including fields:
+<ul>
+<li>
+<code>earliest</code>: The number of the earliest block (-1 may be given to mean the most recent, currently mining, block).</li>
+<li>
+<code>latest</code>: The number of the latest block (-1 may be given to mean the most recent, currently mining, block).</li>
+<li>
+<code>max</code>: The maximum number of messages to return.</li>
+<li>
+<code>skip</code>: The number of messages to skip before the list is constructed. May be used with <code>max</code> to paginate messages into multiple calls.</li>
+<li>
+<code>from</code>: Either an address or a list of addresses to restrict messages by requiring them to be made from a particular account.</li>
+<li>
+<code>to</code>: Either an address or a list of addresses to restrict messages by requiring them to be made to a particular account.</li>
+<li>
+<code>altered</code>: Either an address, or an address/location object, or a mixed list of such values, to restrict messages by requiring them to have made an alteration, respectively either to an account, a particular contract's storage location, or one of a number of these. An address/location object is an object that contains two fields:
+<ul>
+<li>
+<code>id</code>: The address of the contract.</li>
+<li>
+<code>at</code>: The location of a point in contract's storage.</li>
+</ul>
+</li>
+<li>Returns a list of past message objects; each includes the following fields:
+<ul>
+<li>
+<code>from</code>: The sender address of the message.</li>
+<li>
+<code>to</code>: The recipient address of the message (or '' if it was a contract-creation message).</li>
+<li>
+<code>input</code>: The input data to the message (the initialisation code if it was a contract-creation message).</li>
+<li>
+<code>output</code>: The output data of the message (the body code if it was a contract-creation message).</li>
+<li>
+<code>value</code>: The value associated with the message (in Wei, the endowment if it was a contract-creation message). [ C++ : TODO ]</li>
+<li>
+<code>path</code>: The call-path of the message. The first entry is the transaction index into the block. The second, if there is one, is the index of the message within the transaction, and so on.</li>
+<li>
+<code>origin</code>: The original sender of the transaction.</li>
+<li>
+<code>timestamp</code>: The timestamp of the block in which the message takes place.</li>
+<li>
+<code>coinbase</code>: The coinbase of the block in which the message takes place.</li>
+<li>
+<code>block</code>: The hash of the block in which the message takes place.</li>
+<li>
+<code>number</code>: The number of the block in which the message takes place.</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+<code>watch(_filter)</code>: Creates a watch object to notify when the state changes in a particular way, given by <code>_filter</code>. Filter may be a message filter object, as defined above. It may also be either <code>'chain'</code> or <code>'pending'</code> to watch for changes in the chain or pending transactions respectively. Returns a watch object with the following methods:
+<ul>
+<li>
+<code>changed(_f)</code>: Installs a handler, <code>_f</code>, which is called when the state changes due to messages that fit <code>_filter</code>.</li>
+<li>
+<code>messages()</code>: Returns the messages that fit <code>_filter</code>.</li>
+<li>
+<code>uninstall()</code>: Uninstalls the watch. Should always be called once it is done with.</li>
+</ul>
+</li>
+</ul>
+<p><strong>Misc</strong></p>
+<ul>
+<li>
+<code>secretToAddress(_a)</code>: Determines the address from the secret key <code>_a</code>.</li>
+<li>
+<code>lll(_s)</code>: Compiles the LLL source code <code>_s</code> and returns the output data.</li>
+<li>
+<code>sha3(_s)</code>: Returns the SHA3 of the given data.</li>
+<li>
+<code>toAscii(_s)</code>: Returns an ASCII string made from the data <code>_s</code>.</li>
+<li>
+<code>fromAscii(_s, _padding = 32)</code>: Returns data of the ASCII string <code>_s</code>, auto-padded to <code>_padding</code> bytes (default to 32) and left-aligned.</li>
+<li>
+<code>toDecimal(_s)</code>: Returns the decimal string representing the data <code>_s</code> (when interpreted as a big-endian integer).</li>
+<li>
+<code>toFixed(_s)</code>: Returns the floating-point number representing the data <code>_s</code> (when interpreted as a fixed-point value divided by 2^128).</li>
+<li>
+<code>fromFixed(_s)</code>: Returns data representing the floating-point number <code>_s</code> (when interpreted as a fixed-point value divided by 2^128).</li>
+<li>
+<code>offset(_s, _o)</code>: Returns data representing the data <code>_s</code> when offset by the integer <code>_o</code>.</li>
+</ul>
+<h2>
+<a aria-hidden="true" class="anchor" href="#example" id="user-content-example"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Example</h2>
+<p>A simple HTML snippet that will display the user's primary account balance of Ether:</p>
+<div class="highlight highlight-text-html-basic"><pre>&lt;<span class="pl-ent">div</span>&gt;You have &lt;<span class="pl-ent">span</span> <span class="pl-e">id</span>=<span class="pl-s"><span class="pl-pds">"</span>ether<span class="pl-pds">"</span></span>&gt;?&lt;/<span class="pl-ent">span</span>&gt;.&lt;/<span class="pl-ent">div</span>&gt;
+&lt;<span class="pl-ent">script</span>&gt;<span class="pl-s1"></span>
+<span class="pl-s1"><span class="pl-smi">eth</span>.<span class="pl-c1">watch</span>({altered<span class="pl-k">:</span> <span class="pl-smi">eth</span>.<span class="pl-en">secretToAddress</span>(<span class="pl-smi">eth</span>.<span class="pl-smi">key</span>)}).<span class="pl-en">changed</span>(<span class="pl-k">function</span>() {</span>
+<span class="pl-s1">    <span class="pl-c1">document</span>.<span class="pl-c1">getElementById</span>(<span class="pl-s"><span class="pl-pds">"</span>ether<span class="pl-pds">"</span></span>).<span class="pl-smi">innerText</span> <span class="pl-k">=</span> <span class="pl-smi">eth</span>.<span class="pl-en">toDecimal</span>(<span class="pl-smi">eth</span>.<span class="pl-en">balanceAt</span>(<span class="pl-smi">eth</span>.<span class="pl-en">secretToAddress</span>(<span class="pl-smi">eth</span>.<span class="pl-smi">key</span>)))</span>
+<span class="pl-s1">});</span>
+<span class="pl-s1"></span><span class="pl-s1">&lt;</span>/<span class="pl-ent">script</span>&gt;</pre></div>
+<p>To test it, just put <code>&lt;html&gt;&lt;body&gt;</code> before it and <code>&lt;/body&gt;&lt;/html&gt;</code> after, then save the file. Load it in AlethZero PoC-6 and point the URL to file:///WHEREVER_YOU_SAVED_IT</p>
+<p>Job done. Now go create.</p>
+
+        </div>
+
+    </div>]

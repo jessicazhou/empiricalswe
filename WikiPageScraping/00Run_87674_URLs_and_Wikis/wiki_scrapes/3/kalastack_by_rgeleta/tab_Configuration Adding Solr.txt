@@ -1,0 +1,54 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>Currently, Kalastack does not come with Apache Solr installed by default, as it would add significantly extra to download even for those who don't use it. If you want to utilize Solr on your box, navigate to your Kalastack directory in the command prompt and follow these steps:</p>
+<p>###Installing Apache Solr
+Halt the box if its running:</p>
+<div class="highlight highlight-source-shell"><pre>$ vagrant halt</pre></div>
+<p>Set the KALABOX_SOLR environmental variable on the command line and run vagrant up</p>
+<div class="highlight highlight-source-shell"><pre>$ <span class="pl-k">export</span> KALABOX_SOLR=TRUE
+$ vagrant up --provision
+$ <span class="pl-c1">unset</span> KALABOX_SOLR</pre></div>
+<p>##Testing Solr
+To ssh into your server, from within ~/kalastack, issue:</p>
+<div class="highlight highlight-source-shell"><pre>$ vagrant ssh</pre></div>
+<p>You should now be able to hit the solr admin page at <a href="http://solr.kala:8983/solr/admin/" rel="nofollow">http://solr.kala:8983/solr/admin/</a> if your /etc/hosts file is set up to point 1.3.3.7 to solr.kala.
+To get up and running on Pantheon integration, visit the github documentation.</p>
+<p>##Pointing Drupal to your local solr search environment</p>
+<p>Kalabox provides us with a local solr instance. This is awesome.</p>
+<p>Every time you pull a database down from Pantheon, you will need to disable the pantheon_apachesolr module, which will otherwise prevent you from connecting to the local solr on Kalabox.</p>
+<div class="highlight highlight-source-shell"><pre>$ drush -y dis pantheon_apachesolr</pre></div>
+<p>###Rebuilding the solr index
+Every time you pull a fresh database down, you will want to clear out the contents of your local index and re-index it.</p>
+<p>####A) via the UI
+The status of the index reported at admin/config/search/search_api/ is provided by the Drupal database. If you just pulled a new database down, you're looking at the state of the upstream solr, not your local index. You can clear out the index from the Drupal UI at the above page by first clicking on the index name, then the "Clear all indexed data" button at the bottom of the page.</p>
+<p>You can click the "Index now" button, but we suggest drush for all solr operations however.</p>
+<p>####B) With Drush
+Let's see what we have:</p>
+<div class="highlight highlight-source-shell"><pre>$ drush search-api-status
+   Id  Index              % Complete  Indexed  Total
+   4   my custom index    100%        22680    22680</pre></div>
+<p>We find the ID of the solr index (4 here, but the number may differ for you). If this was a fresh DB pull, the indexed % represents what was upstream, not on your local solr.</p>
+<p>We need tell drupal it will have to re-index the solr.</p>
+<div class="highlight highlight-source-shell"><pre>$ drush search-api-reindex
+  gbz_content_search was successfully marked <span class="pl-k">for</span> re-indexing.</pre></div>
+<p>This command does not actually do any indexing, it just clears out the index:</p>
+<div class="highlight highlight-source-shell"><pre>$ drush search-api-status
+   Id  Index              % Complete  Indexed  Total
+   4   my custom index    0%          0        1597</pre></div>
+<p>Now, we perform the indexing operation, specifying the solr index ID (4), and the number of items to index (2000). We can also increase the batch size up from its default (10) to a more impressive count (50):</p>
+<div class="highlight highlight-source-shell"><pre>$ drush search-api-index 4 2000 50</pre></div>
+<p>and (eventually) we can verify our index status for completeness</p>
+<div class="highlight highlight-source-shell"><pre>$ drush search-api-status
+   Id  Index              % Complete  Indexed  Total
+   4   my custom index    100%         1597     1597</pre></div>
+<p>Run search-api-index again if you add new fields to the solr index locally, or new content you want indexed. No need to clear it out every time, just when you grab a new upstream database.</p>
+
+        </div>
+
+        <div class="wiki-footer gollum-markdown-content boxed-group" id="wiki-footer">
+          <div class="boxed-group-inner wiki-auxiliary-content markdown-body">
+            <p>Copyright © 2014 Kalamuna, LLC</p>
+
+          </div>
+        </div>
+    </div>]

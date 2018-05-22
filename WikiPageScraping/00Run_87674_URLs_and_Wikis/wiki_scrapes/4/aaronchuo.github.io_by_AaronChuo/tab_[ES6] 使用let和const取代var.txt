@@ -1,0 +1,43 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>過去寫JavaScript，宣告變數總是只能使用<code>var</code>，然而<code>var</code>的scope總是令初學者困惑，像是下面這個例子：</p>
+<div class="highlight highlight-source-js"><pre><span class="pl-k">var</span> a <span class="pl-k">=</span> <span class="pl-c1">1</span>;
+<span class="pl-k">function</span> <span class="pl-en">testScope</span>() {
+  <span class="pl-c"><span class="pl-c">//</span> (1) a = ?</span>
+  <span class="pl-k">if</span>(<span class="pl-c1">true</span>) {
+    <span class="pl-k">var</span> a <span class="pl-k">=</span> <span class="pl-c1">3</span>;
+  }
+  <span class="pl-c"><span class="pl-c">//</span> (2) a = ?</span>
+}
+<span class="pl-en">testScope</span>();
+<span class="pl-c"><span class="pl-c">//</span> (3) a = ?</span></pre></div>
+<p>猜猜(1)、(2)、(3)各log出來的<code>a</code>會是什麼結果？(1)竟成了<code>undefined</code>，(2)則是3，(3)又變成了1，這確實和大多數程式語言有些不太一樣的地方，其最主要的原因是<code>function</code>對JavaScript的變數來說是一種 <strong>Block</strong>（區塊），而<code>if</code>卻不是；當在<code>function</code>中任何位置使用<code>var</code>時，JavaScript皆會將之提至<code>function</code>裡最上方的位置宣告，但assign值仍然在原本的位置做。</p>
+<p>它實際上是這樣運作如下：</p>
+<div class="highlight highlight-source-js"><pre><span class="pl-k">var</span> a <span class="pl-k">=</span> <span class="pl-c1">1</span>;
+<span class="pl-k">function</span> <span class="pl-en">testScope</span>() {
+  <span class="pl-k">var</span> a;
+  <span class="pl-k">if</span>(<span class="pl-c1">true</span>) {
+    a <span class="pl-k">=</span> <span class="pl-c1">3</span>;
+  }
+}
+<span class="pl-en">testScope</span>();</pre></div>
+<p>最上方的a是<code>global</code>（全域）變數，<code>testScope()</code>裡的<code>var a</code>因為還沒有assign值，所以是<code>undefined</code>，<code>if</code>裡才assign值給<code>a</code>，有一點特別注意：<code>function</code>外的<code>a</code>和<code>function</code>裡的<code>a</code>會被視為不同的變數，但<code>function</code>裡仍可以存取<code>function</code>外的變數，以前ES5時代常用的 <strong>Closure</strong>（閉包）技巧，就是利用這個特性去實作的。</p>
+<p>但，這種容易造成混淆的特性，也造就了debug的高成本，若沒有掌控好<code>var</code>的scope，就有可能導致莫名奇妙的issue...</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#%E4%BD%BF%E7%94%A8let" id="user-content-使用let"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>使用let</h2>
+<p>ES6的<code>let</code>用法就和ES5的<code>var</code>一樣，唯一不同的是<strong>scope</strong>，<code>let</code>的生命週期只在各個大括號<code>{}</code>的區塊裡，包含<code>if</code>條件式、<code>for</code>迴圈、<code>function</code>函式、<code>class</code>類別...等等所有有大括號包覆的語法，當你使用<code>let</code>宣告變數後，這個變數只存在於該區塊裡，並在遇到該區塊的尾端<code>}</code>時被記憶體回收，也就是所謂的<strong>區域變數</strong>。</p>
+<p>來些範例：</p>
+<blockquote>
+<p>if條件式</p>
+</blockquote>
+<div class="highlight highlight-source-js"><pre><span class="pl-k">let</span> a <span class="pl-k">=</span> <span class="pl-c1">1</span>;
+<span class="pl-k">if</span>(a) {
+  <span class="pl-k">let</span> a <span class="pl-k">=</span> <span class="pl-c1">2</span>;
+  <span class="pl-k">let</span> b <span class="pl-k">=</span> <span class="pl-c1">3</span>;
+}
+<span class="pl-en">console</span>.<span class="pl-c1">log</span>(a); <span class="pl-c"><span class="pl-c">//</span> a = 1</span>
+<span class="pl-en">console</span>.<span class="pl-c1">log</span>(b); <span class="pl-c"><span class="pl-c">//</span> b is not defined</span></pre></div>
+
+        </div>
+
+    </div>]

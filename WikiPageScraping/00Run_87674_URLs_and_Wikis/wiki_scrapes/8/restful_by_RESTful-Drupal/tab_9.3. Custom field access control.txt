@@ -1,0 +1,38 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p><strong>The following document is for RESTful version 1.x.</strong></p>
+<p>Public fields defined in an entity resource may specify one or more <code>access_callbacks</code> which determine whether the field should be exposed in the request response.</p>
+<p><em>Note that resources which extend the <code>RestfulDataProviderDbQuery</code> class do not inherit this functionality.</em></p>
+<p>###Example use case</p>
+<p>I want to hide a field for a certain group of roles (Group A). There is another group of roles (Group B) that will be allowed if the user has an email address from the organization. Group C is always allowed.</p>
+<p>Implementation:</p>
+<div class="highlight highlight-text-html-php"><pre><span class="pl-s1">  …</span>
+<span class="pl-s1">  <span class="pl-s"><span class="pl-pds">'</span>access_callbacks<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-c1">array</span>(</span>
+<span class="pl-s1">    <span class="pl-c1">array</span>(<span class="pl-smi">$this</span>, <span class="pl-s"><span class="pl-pds">'</span>fieldRoleAccess<span class="pl-pds">'</span></span>),</span>
+<span class="pl-s1">    <span class="pl-c1">array</span>(<span class="pl-c1">array</span>(<span class="pl-smi">$this</span>, <span class="pl-s"><span class="pl-pds">'</span>checkEmailDomain<span class="pl-pds">'</span></span>), <span class="pl-c1">array</span>(<span class="pl-s"><span class="pl-pds">'</span>drupal.org<span class="pl-pds">'</span></span>)),</span>
+<span class="pl-s1">  ),</span>
+<span class="pl-s1">  …</span></pre></div>
+<div class="highlight highlight-text-html-php"><pre><span class="pl-s1"><span class="pl-k">public</span> <span class="pl-k">function</span> <span class="pl-en">fieldRoleAccess</span>(<span class="pl-c1">\</span><span class="pl-c1">EntityMetadataWrapper</span> <span class="pl-smi">$property_wrapper</span>, <span class="pl-smi">$op</span>, <span class="pl-c1">\</span><span class="pl-c1">EntityMetadataWrapper</span> <span class="pl-smi">$wrapper</span>) {</span>
+<span class="pl-s1">  <span class="pl-smi">$account</span> <span class="pl-k">=</span> <span class="pl-smi">$this</span><span class="pl-k">-&gt;</span>getUser();</span>
+<span class="pl-s1">  <span class="pl-k">if</span> (is_allowed_role(<span class="pl-smi">$account</span>)) {</span>
+<span class="pl-s1">    <span class="pl-k">return</span> <span class="pl-c1">\</span><span class="pl-c1">RestfulInterface</span><span class="pl-k">::</span><span class="pl-c1">ACCESS_ALLOW</span>;</span>
+<span class="pl-s1">  }</span>
+<span class="pl-s1">  <span class="pl-k">if</span> (is_semi_trusted_role(<span class="pl-smi">$account</span>)) {</span>
+<span class="pl-s1">    <span class="pl-k">return</span> <span class="pl-c1">\</span><span class="pl-c1">RestfulInterface</span><span class="pl-k">::</span><span class="pl-c1">ACCESS_IGNORE</span>;</span>
+<span class="pl-s1">  }</span>
+<span class="pl-s1">  <span class="pl-k">return</span> <span class="pl-c1">\</span><span class="pl-c1">RestfulInterface</span><span class="pl-k">::</span><span class="pl-c1">ACCESS_DENY</span>;</span>
+<span class="pl-s1">}</span>
+<span class="pl-s1"></span>
+<span class="pl-s1"><span class="pl-k">public</span> <span class="pl-k">function</span> <span class="pl-en">fieldDomainAccess</span>(<span class="pl-c1">\</span><span class="pl-c1">EntityMetadataWrapper</span> <span class="pl-smi">$property_wrapper</span>, <span class="pl-smi">$op</span>, <span class="pl-c1">\</span><span class="pl-c1">EntityMetadataWrapper</span> <span class="pl-smi">$wrapper</span>, <span class="pl-smi">$access</span>, <span class="pl-smi">$domain</span>) {</span>
+<span class="pl-s1">  <span class="pl-k">if</span> (<span class="pl-smi">$access</span> <span class="pl-k">==</span> <span class="pl-c1">\</span><span class="pl-c1">RestfulInterface</span><span class="pl-k">::</span><span class="pl-c1">ACCESS_IGNORE</span>) {</span>
+<span class="pl-s1">    <span class="pl-k">return</span> check_domain(<span class="pl-smi">$this</span><span class="pl-k">-&gt;</span>getUser(), <span class="pl-smi">$domain</span>) ? <span class="pl-c1">\</span><span class="pl-c1">RestfulInterface</span><span class="pl-k">::</span><span class="pl-c1">ACCESS_ALLOW</span> : <span class="pl-c1">\</span><span class="pl-c1">RestfulInterface</span><span class="pl-k">::</span><span class="pl-c1">ACCESS_DENY</span>;</span>
+<span class="pl-s1">  }</span>
+<span class="pl-s1">  <span class="pl-k">return</span> <span class="pl-smi">$access</span>;</span>
+<span class="pl-s1">}</span></pre></div>
+<p>Group A: DENY, DENY<br/>
+Group B: IGNORE, GRANT | DENY<br/>
+Group C: GRANT, GRANT</p>
+
+        </div>
+
+    </div>]

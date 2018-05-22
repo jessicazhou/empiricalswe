@@ -1,0 +1,162 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>Install a GNOME 3.14 / Gentoo / OpenRC system to your PC's (MBR) hard drive in under 15 minutes, from a running live-USB session!</p>
+<blockquote>
+<p>Note that this process is strictly optional, you can simply run GNOME from the live-USB (if experimenting), or follow <a class="internal present" href="/sakaki-/funtoo-2-gentoo/wiki/Setting-Up-the-Overlays%2C-and-Emerging-GNOME-from-Scratch">these notes</a> if you'd rather build from source.</p>
+</blockquote>
+<h2>
+<a aria-hidden="true" class="anchor" href="#introduction" id="user-content-introduction"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Introduction</h2>
+<p>To make use of these instructions, you'll need to be currently booted into (and logged onto) a GNOME session using the live-USB (see <a class="internal present" href="/sakaki-/funtoo-2-gentoo/wiki/Downloading-and-Running-the-Live-USB-Image">these notes</a> if you haven't yet done so).</p>
+<blockquote>
+<p><strong>Warning</strong> - be aware that the below process will wipe any existing software and data on your PC's hard drive, so  be sure to back up first, before proceeding.</p>
+</blockquote>
+<p>We're going to assume here that you wish to use a conventional MBR-style approach. If you'd rather use a UEFI BIOS / GPT-formatted disk (and stub-EFI kernel), you should refer to <a class="internal present" href="/sakaki-/funtoo-2-gentoo/wiki/Installing-from-the-Live-USB-to-a-GPT-Drive">these notes</a> instead.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#prepare-your-pcs-hard-drive" id="user-content-prepare-your-pcs-hard-drive"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Prepare your PC's Hard Drive</h2>
+<p>In the following, we'll assume that your PC hard drive is on <code>/dev/sda</code> - if it is not, modify the paths given accordingly (you can check with the <code>lsblk</code> command).</p>
+<p>Per the <a href="https://wiki.gentoo.org/wiki/Handbook:AMD64/Installation/Disks#Default_partitioning_scheme" rel="nofollow">Gentoo Handbook</a>, we will go for a simple layout here, with 4 primary partitions (modify as desired):</p>
+<table>
+<thead>
+<tr>
+<th align="left">Partition</th>
+<th align="right">Size</th>
+<th align="right">Filesystem</th>
+<th align="right">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="left">/dev/sda1</td>
+<td align="right">2MiB</td>
+<td align="right">N/A</td>
+<td align="right">BIOS boot partition</td>
+</tr>
+<tr>
+<td align="left">/dev/sda2</td>
+<td align="right">256MiB</td>
+<td align="right">ext2</td>
+<td align="right">Boot partition</td>
+</tr>
+<tr>
+<td align="left">/dev/sda3</td>
+<td align="right">5GiB</td>
+<td align="right">swap</td>
+<td align="right">Swap (if 4GiB RAM, hibernation wanted)</td>
+</tr>
+<tr>
+<td align="left">/dev/sda4</td>
+<td align="right">Rest of drive</td>
+<td align="right">ext4</td>
+<td align="right">Root partition</td>
+</tr>
+</tbody>
+</table>
+<p>From your GNOME session on the live-USB, open a terminal, get <code>root</code>, and issue:</p>
+<blockquote>
+<p><strong>Warning</strong> - this will delete any data and programs on <code>/dev/sda</code> - only proceed if you are sure!</p>
+</blockquote>
+<pre><code># fdisk /dev/sda
+&lt;type o and Enter (to create a new partition table)&gt;
+&lt;type n and Enter (to create a new partition)&gt;
+&lt;press Enter (to make a primary partition)&gt;
+&lt;press Enter (to define partition 1)&gt;
+&lt;press Enter (to accept the default start location)&gt;
+&lt;type +2M and press Enter (to make a 2MiB sector, for BIOS boot)&gt;
+&lt;type t and press Enter (to change the sector type)&gt;
+&lt;type ef and press Enter (to set the sector type as EFI (even though MBR booting))&gt;
+&lt;type n and Enter (to create a new partition)&gt;
+&lt;press Enter (to make a primary partition)&gt;
+&lt;press Enter (to define partition 2)&gt;
+&lt;press Enter (to accept the default start location)&gt;
+&lt;type +256M and press Enter (to make a 256MiB sector, for boot)&gt;
+&lt;type a and press Enter (to turn the boot flag on)&gt;
+&lt;type 2 and Enter (to change the boot flag on sector 2)&gt;
+&lt;type n and Enter (to create a new partition)&gt;
+&lt;press Enter (to make a primary partition)&gt;
+&lt;press Enter (to define partition 3)&gt;
+&lt;press Enter (to accept the default start location)&gt;
+&lt;type +5G and press Enter (to make a 5GiB sector, for swap; modify as appropriate)&gt;
+&lt;type t and press Enter (to change the sector type)&gt;
+&lt;press Enter (to accept changing partition 3's type)&gt;
+&lt;type 82 and press Enter (to set the type as swap)&gt;
+&lt;type n and press Enter (to create a new partition)&gt;
+&lt;type p and press Enter (to make a primary partition)&gt;
+&lt;press Enter (to define partition 4)&gt;
+&lt;press Enter (to accept the default start location)&gt;
+&lt;press Enter (to use all remaining space on the drive)&gt;
+&lt;type p and press Enter (to review the partition table)&gt;
+&lt;type w and press Enter (to write the table and exit)&gt;
+</code></pre>
+<p>Next, format the partitions:</p>
+<pre><code># mkfs.ext2 -L "boot" /dev/sda2
+# mkswap -L "swap" /dev/sda3
+# mkfs.ext4 -L "root" /dev/sda4
+</code></pre>
+<h2>
+<a aria-hidden="true" class="anchor" href="#copy-files-from-the-live-usb-image" id="user-content-copy-files-from-the-live-usb-image"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Copy Files from the Live-USB Image</h2>
+<p>Next, we need to mount the hard drive filesystems, and copy the necessary files across from our running image. Issue:</p>
+<pre><code># mkdir /mnt/{sdaboot,sdaroot}
+# mount /dev/sda2 /mnt/sdaboot
+# mount /dev/sda4 /mnt/sdaroot
+</code></pre>
+<p>Then copy the kernel and its configuration (there is no initramfs used on the live USB):</p>
+<pre><code># cp -ax /boot/* /mnt/sdaboot/
+</code></pre>
+<p>Now we can copy the root partition contents. The process below isn't quite what your mother would recommend ^-^, but it gets the job done (the first line may take some time to complete):</p>
+<pre><code># cp -ax /bin /dev /etc /home /lib /lib32 /lib64 /root /sbin /tmp /usr /var /mnt/sdaroot/
+# mkdir /mnt/sdaroot/{boot,media,mnt,opt,proc,run,sys}
+</code></pre>
+<p>As we've just blindly copied over the <code>/etc/fstab</code> file from our running USB system, it will be wrong. A valid fstab (for this partition ordering, assuming <code>/dev/sda</code>) has been provided in <code>root</code>'s home directory on the USB image, so copy that over now:</p>
+<pre><code># cp /root/fstab-mbr /mnt/sdaroot/etc/fstab
+</code></pre>
+<p>Lastly for this section, if you have been running <code>sshd</code> from the USB image, you'll probably want to delete your copied host keys (to force a fresh set to be generated for the hard-drive install). Issue:</p>
+<pre><code># rm -f /mnt/sdaroot/etc/ssh/*key*
+</code></pre>
+<p>to do that.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#install-bootloader" id="user-content-install-bootloader"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Install Bootloader</h2>
+<p>Our last task is to install the GRUB bootloader into our new system (which is otherwise complete). We'll quickly <code>chroot</code> in to do this. Issue:</p>
+<pre><code># cd /mnt/sdaroot
+# mount -t proc none proc
+# mount --rbind /sys sys
+# mount --rbind /dev dev
+# mount --rbind /mnt/sdaboot boot
+# chroot . /bin/bash
+# source /etc/profile
+</code></pre>
+<p>Now we are <code>chroot</code>ed in, we can set up the bootloader (the package is already emerged); issue:</p>
+<pre><code># grub2-install --no-floppy --target=i386-pc /dev/sda
+# grub2-mkconfig -o /boot/grub/grub.cfg
+</code></pre>
+<p>If those commands completed without error, you should be good to go! Exit the chroot and dismount:</p>
+<pre><code># sync
+# exit
+# umount -l boot proc sys dev
+# cd
+# umount -l /mnt/{sdaboot,sdaroot}
+</code></pre>
+<h2>
+<a aria-hidden="true" class="anchor" href="#reboot" id="user-content-reboot"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Reboot!</h2>
+<p>Your system is installed! To try it out, just issue:</p>
+<pre><code># shutdown -P now
+</code></pre>
+<p>wait for the PC to power down, and remove the live-USB key. Then, power up again. If all is well, you should get a GRUB screen, after which your kernel should boot, and then the GNOME login page should come up. If it does, congratulations, you're all done! Login with your existing password (the passwords will have been copied over, along with everything else, from the live-USB).</p>
+<blockquote>
+<p>As a reminder, the password is <code>changeme123</code> for both <code>root</code> and <code>demouser</code> on the live-USB, unless you have already changed this.</p>
+</blockquote>
+<p>You can now work from your PC without needing the USB key. Feel free to create proper user accounts, modify the configuration to your requirements, emerge any additional packages that you want etc.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#next-steps" id="user-content-next-steps"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Next Steps</h2>
+<p>Your installed system has <code>eix</code> configured, and I recommend that you use that when syncing, as it will update the overlays too. See <a class="internal present" href="/sakaki-/funtoo-2-gentoo/wiki/Keeping-Up-to-Date">these notes</a> for more information.</p>
+
+        </div>
+
+        <div class="wiki-footer gollum-markdown-content boxed-group" id="wiki-footer">
+          <div class="boxed-group-inner wiki-auxiliary-content markdown-body">
+            <p><a href="https://github.com/sakaki-/funtoo-2-gentoo">Project Home</a> / <a class="internal present" href="/sakaki-/funtoo-2-gentoo/wiki/Home">Wiki Home</a></p>
+<p><img alt="Creative Commons License" data-canonical-src="https://i.creativecommons.org/l/by-sa/4.0/80x15.png" src="https://camo.githubusercontent.com/d1b3cb5c3bc0b0de6fb5445b1657c03464125482/68747470733a2f2f692e6372656174697665636f6d6d6f6e732e6f72672f6c2f62792d73612f342e302f38307831352e706e67"/>
+Wiki content license: <a href="http://creativecommons.org/licenses/by-sa/4.0/" rel="nofollow">Creative Commons Attribution-ShareAlike 4.0 International License</a></p>
+
+          </div>
+        </div>
+    </div>]

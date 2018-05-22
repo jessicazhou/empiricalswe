@@ -1,0 +1,26 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <h1>
+<a aria-hidden="true" class="anchor" href="#the-blackhole-casing-issue" id="user-content-the-blackhole-casing-issue"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>The BlackHole casing issue</h1>
+<p>Problem: the <code>Zend_Cache_Backend_BlackHole</code> class cannot be loaded.</p>
+<p>Historically, this class has been in the wrong file. At this point I'm not even sure if that's Zend Framework's fault or if we changed it at some point. In any case: the classname is <code>BlackHole</code>, so the filename should be <code>BlackHole.php</code>.</p>
+<p>The filename used to be <code>Blackhole.php</code> however, because this is where <code>Zend_Cache</code> is looking when you configure <code>BlackHole</code> for the backend. No problem on case-insensitive systems, but stricter servers complain about the filename and search for <code>BlackHole.php</code>. Historically we patched it by symlinking <code>BlackHole.php</code> to <code>Blackhole.php</code>, keeping the latter in the repository. A laughably absurd solution, of course.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#the-new-solution" id="user-content-the-new-solution"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>The new solution</h2>
+<p>First of all: fix the filename. It should match the class and thus be named <code>BlackHole.php</code>. Git might not see the change on a Mac. To force git into registering the filename change you can use <code>git mv -f Blackhole.php BlackHole.php</code>.<br/>
+Then: <code>Zend_Cache</code> mangles the name. If you give it <code>BlackHole</code>, it will "normalize" to <code>Blackhole</code>. Very clever, you little shit.<br/>
+It turns out this is fixable by using <code>Black-Hole</code> or <code>Black_Hole</code>, so make sure that's what is used.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#a-working-example" id="user-content-a-working-example"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>A working example</h2>
+<pre><code>$cache = Zend_Cache::factory(
+  'Core',
+  'Black-Hole',
+  array(),
+  array()
+);
+</code></pre>
+<p><a href="troubleshooting">Back to Troubleshooting</a></p>
+
+        </div>
+
+    </div>]

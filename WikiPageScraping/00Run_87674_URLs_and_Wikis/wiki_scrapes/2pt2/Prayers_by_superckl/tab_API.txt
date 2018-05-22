@@ -1,0 +1,72 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <h2>
+<a aria-hidden="true" class="anchor" href="#getting-started" id="user-content-getting-started"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Getting Started</h2>
+<p>Prayers contains a very simple API that allows you to modify nearly everything. To begin, Prayers listens to FML intermod communications with the key "register". This means that FML and will handle checking if Prayers is enabled for you! If it is, Prayers will respond to the communication you sent. Here is an example of sending a communication to Prayers:</p>
+<pre><code>FMLInterModComms.sendMessage("Prayers", "register", "me.superckl.exampleaddon.integration.PrayersIntegration.register");
+</code></pre>
+<p>If Prayers is not enabled, this message will simply do nothing. However, if Prayers is running, it will receive the message after FML Initialization via the IMCEvent. When this happens, Prayers will parse the String you passed along with the message. In this example, the String points to the method "register" in the class "PrayersIntegration".</p>
+<pre><code>package me.superckl.exampleaddon.integration;
+
+public class PrayersIntegration {
+
+	public void register(){
+		//Register Altar blocks, prayers, and recipes here.
+	}
+
+}
+</code></pre>
+<p>Of course, you can do whatever you wish inside the actual method. This is just an easy way of having FML and Prayers handle loaded-checking for you. We're now going to discuss a bit more advanced features of the system Prayers has implemented for this.</p>
+<p>The above example is a very simple class and may not be suitable for more advanced integration setups. There are a few options that you can use to make this fit into your integration setup.</p>
+<p>Firstly, we note that in the above example, a public constructor that takes no arguments is required. Prayers will instantiate an instance of PrayersIntegration so that it may invoke the method "register". If you do not want this, you can simple make "register" static:</p>
+<pre><code>public class PrayersIntegration {
+
+	public static void register(){
+		//Register Altar blocks and recipes here.
+	}
+
+}
+</code></pre>
+<p>Prayers will no longer look for a blank constructor, and will simply invoke the method. Now, static methods may not fit into certain integration setups, so Prayers offer another way to accomplish this task.</p>
+<p>In Prayers' utility package, there is an annotation named "InstanceField". As you may expect, this can be used to tell Prayers where to look for an instance. Say I have the following class:</p>
+<pre><code>public class PrayersIntegration {
+
+	public static final PrayersIntegration INSTANCE = new PrayersIntegration();
+	
+	private PrayersIntegration() {}
+	
+	@InstanceField("INSTANCE")
+	public void register(){
+		//Register Altar blocks and recipes here.
+	}
+	
+}
+</code></pre>
+<p>In this example, if we sent the same intermod communication as before, Prayers will see that "register" is not a static method, and instead of instantiating a new instance of PrayersIntegration, it will look for a static field called "INSTANCE" in the current class that it can use as an instance. This allows you to have complete control over your instances and still have your setup be compatible with Prayers. (<strong>Note that Prayers will complain if the field you specified in the annotation isn't valid.</strong> You may also specify fully-qualified class names in the annotation if your instance is not contained in the same class.)</p>
+<p>If none of the above works for you, you can of course go with the classic <code>Loader.isModLoaded("Prayers")</code> approach.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#actually-doing-stuff" id="user-content-actually-doing-stuff"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Actually Doing Stuff</h2>
+<p>Now that we've gotten the formalities out of the way, it's time to actually do things. First, we look at registering new blocks for use in Altars.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#offering-table-recipes" id="user-content-offering-table-recipes"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Offering Table Recipes</h3>
+<p>Here is another example from Prayers:</p>
+<pre><code>final ItemStack filledBottle = ModFluids.filledHolyBottle();
+AltarRegistry.registerOfferingTableRecipe(new BasicTableCraftingHandler(filledBottle, new ItemStack(Items.potionitem, 1, 0), Collections.EMPTY_LIST, 200, 0.5F));
+</code></pre>
+<p>This method call is telling Prayers that there is a way to create holy water bottles on offering tables. Specifically, it says that one water bottle, no tertiary ingredients, and 200 ticks with a drain of 0.5 points/tick will create one holy water bottle. <strong>Note that the offering table only holds stacks with one item as inputs. If you wish to require more than one of an item, add it more than once to the tertiary ingredients list. The end result of the recipe may be larger than one item.</strong> This example uses the <a href="https://github.com/superckl/Prayers/blob/master/src/main/java/me/superckl/prayers/common/prayer/BasicTableCraftingHandler.java">BasicTableCraftingHandler</a>, a very simple implementation of <a href="https://github.com/superckl/Prayers/blob/master/src/main/java/me/superckl/prayers/common/prayer/OfferingTableCraftingHandler.java">OfferingTableCraftingHandler</a>. There is also an <a href="https://github.com/superckl/Prayers/blob/master/src/main/java/me/superckl/prayers/common/prayer/BasicTableNBTCraftingHandler.java">NBT sensitive version</a>. Feel free to implement your own crafting handlers if you need special conditions.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#mobs-that-use-prayers" id="user-content-mobs-that-use-prayers"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Mobs That Use Prayers</h3>
+<p>If you wish to implement a LivingEntity that uses prayers and want to use Prayers' built in damage calculations, simply have your LivingEntity implement <a href="https://github.com/superckl/Prayers/blob/master/src/main/java/me/superckl/prayers/common/prayer/IPrayerUser.java">IPrayerUser</a>. An example is the <a href="https://github.com/superckl/Prayers/blob/master/src/main/java/me/superckl/prayers/common/entity/EntityUndeadWizardPriest.java">Undead Wizard Priest</a>:</p>
+<pre><code>public class EntityUndeadWizardPriest extends EntityMob implements IPrayerUser, IRangedAttackMob
+</code></pre>
+<p>If the mob is to have prayer points, you must handle that yourself.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#adding-prayers" id="user-content-adding-prayers"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Adding Prayers</h3>
+<p>In <a href="https://github.com/superckl/Prayers/blob/master/src/main/java/me/superckl/prayers/common/prayer/EnumPrayers.java">EnumPrayers</a>, you'll find a method called 'addPrayer'. This is simply a helper method to add an entry to the enumeration using Forge's <a href="https://github.com/MinecraftForge/MinecraftForge/blob/master/src/main/java/net/minecraftforge/common/util/EnumHelper.java()">EnumHelper</a>. Here is an example:</p>
+<pre><code>EnumPrayers.addPrayer("TEST", "test", "Test", new ArrayList&lt;String&gt;(), 1F, true, false, new ResourceLocation("textures/items/fire.png"))
+</code></pre>
+<p>Of course, you should provide a nicer display name and description for the prayer.</p>
+
+        </div>
+
+    </div>]

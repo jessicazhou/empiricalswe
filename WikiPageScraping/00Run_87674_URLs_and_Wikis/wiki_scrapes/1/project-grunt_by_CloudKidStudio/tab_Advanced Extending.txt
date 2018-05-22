@@ -1,0 +1,85 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>Grunt Game Builder was designed to be very extensible. Here's an example of how to add additional tasks or override tasks in the default builder tasks. In this example we create some custom exec call which export a MySQL database for our project. We'll be registering two additional Grunt tasks <strong>db-export</strong> and <strong>db-import</strong>.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#packagejson" id="user-content-packagejson"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>./package.json</h2>
+<p>In addition to Grunt and the Builder, include some additional plugins.</p>
+<div class="highlight highlight-source-js"><pre>{
+  <span class="pl-s"><span class="pl-pds">"</span>private<span class="pl-pds">"</span></span><span class="pl-k">:</span> <span class="pl-c1">true</span>,
+  <span class="pl-s"><span class="pl-pds">"</span>dependencies<span class="pl-pds">"</span></span><span class="pl-k">:</span> {
+    <span class="pl-s"><span class="pl-pds">"</span>grunt<span class="pl-pds">"</span></span><span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">"</span>~0.4.5<span class="pl-pds">"</span></span>,
+    <span class="pl-s"><span class="pl-pds">"</span>grunt-game-builder<span class="pl-pds">"</span></span><span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">"</span>*<span class="pl-pds">"</span></span>,
+    <span class="pl-s"><span class="pl-pds">"</span>grunt-exec<span class="pl-pds">"</span></span><span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">"</span>~0.4.6<span class="pl-pds">"</span></span>,
+    <span class="pl-s"><span class="pl-pds">"</span>load-grunt-config<span class="pl-pds">"</span></span><span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">"</span>~0.13.1<span class="pl-pds">"</span></span>,
+    <span class="pl-s"><span class="pl-pds">"</span>lodash<span class="pl-pds">"</span></span><span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">"</span>~2.4.1<span class="pl-pds">"</span></span>
+  }
+}</pre></div>
+<h2>
+<a aria-hidden="true" class="anchor" href="#gruntfilejs" id="user-content-gruntfilejs"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>./Gruntfile.js</h2>
+<p>This Grunt file combine the Grunt Game Builder plugin tasks with your custom project tasks. This relies heavily on the <a href="https://www.npmjs.org/package/load-grunt-config" rel="nofollow">load-grunt-config</a> plugin for making more manageable projects and tasks.</p>
+<div class="highlight highlight-source-js"><pre><span class="pl-c1">module</span>.<span class="pl-en">exports</span> <span class="pl-k">=</span> <span class="pl-k">function</span>(<span class="pl-smi">grunt</span>)
+{
+	<span class="pl-k">var</span> path <span class="pl-k">=</span> <span class="pl-c1">require</span>(<span class="pl-s"><span class="pl-pds">'</span>path<span class="pl-pds">'</span></span>),
+		_ <span class="pl-k">=</span> <span class="pl-c1">require</span>(<span class="pl-s"><span class="pl-pds">'</span>lodash<span class="pl-pds">'</span></span>);
+
+	<span class="pl-c"><span class="pl-c">//</span> Combine the game builder and current project</span>
+	<span class="pl-c"><span class="pl-c">//</span> configs into one object</span>
+	<span class="pl-smi">grunt</span>.<span class="pl-en">initConfig</span>(<span class="pl-smi">_</span>.<span class="pl-en">extend</span>(
+
+		<span class="pl-c"><span class="pl-c">//</span> Setup the default game tasks</span>
+		<span class="pl-c1">require</span>(<span class="pl-s"><span class="pl-pds">'</span>grunt-game-builder<span class="pl-pds">'</span></span>)(grunt, { autoInit<span class="pl-k">:</span> <span class="pl-c1">false</span> }), 
+
+		<span class="pl-c"><span class="pl-c">//</span> Setup the current project tasks</span>
+		<span class="pl-c1">require</span>(<span class="pl-s"><span class="pl-pds">'</span>load-grunt-config<span class="pl-pds">'</span></span>)(grunt, {
+			<span class="pl-c"><span class="pl-c">//</span> The path for the tasks</span>
+			configPath<span class="pl-k">:</span> <span class="pl-smi">path</span>.<span class="pl-c1">join</span>(<span class="pl-c1">process</span>.<span class="pl-en">cwd</span>(), <span class="pl-s"><span class="pl-pds">'</span>tasks<span class="pl-pds">'</span></span>),
+			autoInit<span class="pl-k">:</span> <span class="pl-c1">false</span>, 
+
+			<span class="pl-c"><span class="pl-c">//</span> We don't want to reload builder</span>
+			loadGruntTasks<span class="pl-k">:</span> { pattern<span class="pl-k">:</span> [
+				<span class="pl-s"><span class="pl-pds">'</span>grunt-*<span class="pl-pds">'</span></span>, 
+				<span class="pl-s"><span class="pl-pds">'</span>!grunt-game-builder<span class="pl-pds">'</span></span>
+			] },
+
+			<span class="pl-c"><span class="pl-c">//</span> Share the deploy folder with the tasks</span>
+			data<span class="pl-k">:</span> {	
+				mysqlPath <span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">'</span>/Applications/XAMPP/xamppfiles/bin<span class="pl-pds">'</span></span>,
+				dbFile <span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">'</span>db/database.sql<span class="pl-pds">'</span></span>,
+				dbName <span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">'</span>site_db<span class="pl-pds">'</span></span>
+			}
+		})
+	));
+};</pre></div>
+<h2>
+<a aria-hidden="true" class="anchor" href="#tasksexecjs" id="user-content-tasksexecjs"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>./tasks/exec.js</h2>
+<p>Basic <code>mysqldump</code> and <code>mysql</code> import commands.</p>
+<div class="highlight highlight-source-js"><pre><span class="pl-c1">module</span>.<span class="pl-smi">exports</span> <span class="pl-k">=</span> {
+	export<span class="pl-k">:</span>
+	{
+		cmd<span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">'</span>&lt;%= mysqlPath %&gt;/mysqldump &lt;%= dbName %&gt; &lt;%= dbFile %&gt;<span class="pl-pds">'</span></span>
+	},
+	import<span class="pl-k">:</span>
+	{
+		cmd<span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">'</span>&lt;%= mysqlPath %&gt;/mysql &lt;%= dbName %&gt; &lt; &lt;%= dbFile %&gt;<span class="pl-pds">'</span></span>
+	}
+};</pre></div>
+<h2>
+<a aria-hidden="true" class="anchor" href="#tasksaliasesjs" id="user-content-tasksaliasesjs"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>./tasks/aliases.js</h2>
+<p>Register custom tasks for importing and export. The <strong>aliases.js</strong> file is automatically loaded by the <strong>load-grunt-config</strong> plugin.</p>
+<div class="highlight highlight-source-js"><pre><span class="pl-c1">module</span>.<span class="pl-en">exports</span> <span class="pl-k">=</span> <span class="pl-k">function</span>(<span class="pl-smi">grunt</span>)
+{
+	<span class="pl-smi">grunt</span>.<span class="pl-en">registerTask</span>(
+		<span class="pl-s"><span class="pl-pds">'</span>db-import<span class="pl-pds">'</span></span>,
+		<span class="pl-s"><span class="pl-pds">'</span>Import the database from the filesystem<span class="pl-pds">'</span></span>, 
+		[<span class="pl-s"><span class="pl-pds">'</span>exec:import<span class="pl-pds">'</span></span>]
+	);
+	<span class="pl-smi">grunt</span>.<span class="pl-en">registerTask</span>(
+		<span class="pl-s"><span class="pl-pds">'</span>db-export<span class="pl-pds">'</span></span>,
+		<span class="pl-s"><span class="pl-pds">'</span>Export the database to the filesystem<span class="pl-pds">'</span></span>, [
+		<span class="pl-s"><span class="pl-pds">'</span>exec:export<span class="pl-pds">'</span></span>]
+	);
+};</pre></div>
+
+        </div>
+
+    </div>]

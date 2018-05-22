@@ -1,0 +1,41 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>See <a class="internal present" href="/imapp-pl/cpp-ethereum/wiki/LLL-PoC-4">LLL PoC 4</a> or <a class="internal present" href="/imapp-pl/cpp-ethereum/wiki/LLL-PoC-5">LLL PoC 5</a> for the latest version of LLL.</p>
+<p>LLL is the Ethereum PoC Low-level Lisp-like Language.</p>
+<p>It is Lisp-like in syntax rather than anything deeper and is designed to make easier the task of writing a program in EVM-code 1, aka ES-1. It is automatically compiled in Ethereum PoC series including PoC-3 upwards.</p>
+<p>A contract written in LLL takes the form of a single expression. An expression may be one of:</p>
+<ul>
+<li>A quoted string e.g. <code>"Hello world!"</code> or <code>"This is \"Great\""</code>. Such strings have maximum 32 characters are evaluate to the 32 byte value with the ASCII encoding of the string aligned to the left-side (i.e. in the high-order bytes should it be interpreted as a big endian integer).</li>
+<li>An integer, optionally prefixed with <code>0x</code> for hex base and suffixed with any of the standard Ethereum denominations. e.g. <code>69</code>, <code>0x42</code> or <code>3finney</code>.</li>
+<li>An executed expression which takes the form of a parenthesised list of expressions e.g. <code>(add 1 2)</code>, with the first expression of the list being the operation and the others being operands.</li>
+</ul>
+<p>All instructions of the EVM-code 1 spec are valid, though you generally shouldn't need to use the stack manipulation and jump operations. The operands should be given in order from top of the stack downwards.</p>
+<p>In addition, several control flow operations are provided:</p>
+<ul>
+<li>
+<code>(if PRED Y N)</code> executes <code>PRED</code>, pops the stack and executes <code>Y</code> if the popped value is non-zero otherwise <code>N</code>.</li>
+<li>
+<code>(when PRED BODY)</code> executes <code>PRED</code>, pops the stack and executes <code>BODY</code> if the popped value is non-zero.</li>
+<li>
+<code>(unless PRED BODY)</code> executes <code>PRED</code>, pops the stack and executes <code>BODY</code> if the popped value is zero.</li>
+<li>
+<code>(for PRED BODY)</code> executes <code>PRED</code>, pops the stack and executes <code>BODY</code> if the popped value is non-zero before repeating all again indefinitely.</li>
+<li>
+<code>(seq A B ...)</code> executes all following expressions in order.</li>
+</ul>
+<p>And two shorthand forms for storing and loading to the permanent store:</p>
+<ul>
+<li>
+<code>(INT)</code>, <code>(STRING)</code> treats the value as an address and fetches to the top of the stack the value from storage (i.e. executes a <code>PUSH</code> &amp; <code>SLOAD</code>)</li>
+<li>
+<code>(INT EXPR)</code>, <code>(STRING EXPR)</code> treats the first value as an address as above and stores the <code>EXPR</code> in storage at that address.</li>
+</ul>
+<p>It's inefficient, but you can generally use the last two as a sort of replacement for global variables. Set <code>i</code> to 0 with <code>("i" 0)</code> and read it back again with <code>("i")</code>.</p>
+<p>There's also <code>and</code> and <code>or</code> for building boolean conditions (they skip evaluation of later, unneeded arguments like in C) and may be used for any non-zero number of arguments. The multi-ary operators <code>+</code>, <code>-</code>, <code>*</code>, <code>/</code> and <code>%</code> may be used, along side the binary operators <code>&lt;</code>, <code>&lt;=</code>, <code>&gt;</code>, <code>&gt;=</code>, <code>=</code> and <code>!=</code> and the unary operator <code>!</code>. e.g. <code>(and 0 (= (+ 2 2 4) 8))</code> would evaluate to (i.e. leave atop the stack) <code>0</code> without evaluating the equality.</p>
+<p>You'll generally want to enclose your programs with <code>(seq ...)</code> so you can execute more than a single expression.</p>
+<p>Finally, any comments should begin with a <code>;</code>, after which all text will be ignored until the end of the line.</p>
+<p>See <a class="internal present" href="/imapp-pl/cpp-ethereum/wiki/LLL-Examples-for-PoC-3">LLL Examples for PoC 3</a> for examples and the <a class="internal present" href="/imapp-pl/cpp-ethereum/wiki/LLL-Tutorial-PoC-3">LLL Tutorial PoC 3</a> for a tutorial.</p>
+
+        </div>
+
+    </div>]

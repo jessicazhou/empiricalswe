@@ -1,0 +1,55 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <h1>
+<a aria-hidden="true" class="anchor" href="#garp-on-the-command-line" id="user-content-garp-on-the-command-line"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Garp on the command-line</h1>
+<p>Garp provides several commands in the <strong>Garp_Cli_Command_</strong> namespace that can be used to interface with the project from the command line.</p>
+<p>The starting point is always <strong>/garp/scripts/garp.php</strong>:</p>
+<pre><code>$ garp/scripts/garp Db replace "old string" "new string"
+</code></pre>
+<p>The first argument is always the name of the command (e.g. <em>Garp_Cli_Command_Db</em>). The rest depends on the implementation.</p>
+<p>Commands must be subclasses of Garp_Cli_Command, an abstract class providing a single main() method. This method provides a route to the actual requested method. It assumes that the first argument after the command (this would be "replace" in the above example) is the methodname. Thus the above example will route to Garp_Cli_Command_Db::replace(). Arguments that follow will be passed along in an array.
+Adding new CLI commands
+Let's create a new command, for instance a command that generates Controller actions. Ideally, we wrap that functionality in a Controller submodule, so let's create Garp_Cli_Command_Controller:</p>
+<pre><code>&lt;?php
+class Garp_Cli_Command_Controller extends Garp_Cli_Command {
+}
+?&gt;
+</code></pre>
+<p>If we leave the main() method alone, we only have to add the submodule's method as a public method to this class. Let's name it add_action:</p>
+<pre><code>&lt;?php
+class Garp_Cli_Command_Controller extends Garp_Cli_Command {
+    public function add_action(array $args = array()) {
+    }
+}
+?&gt;
+</code></pre>
+<p>Nice. We have now enabled the following CLI interface:</p>
+<pre><code>$ garp controller add_action
+</code></pre>
+<p>The $args array will contain the parameters that follow the method on the commandline. Note that you can also use named parameters, which will translate to keys in the $args array:</p>
+<pre><code>$ garp controller add_action --c=IndexController
+</code></pre>
+<p>will populate $args like this:</p>
+<pre><code>&lt;?php
+array(
+  'c' =&gt; 'IndexController'
+)
+?&gt;
+</code></pre>
+<p>Other than that the array will be numerically indexed, starting with 0 for the first argument after the method name.</p>
+<p>It's good practice to add a <em>help</em> method, explaining your command's API. When your command is called without parameters, this method will automatically be called if present.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#helper-methods" id="user-content-helper-methods"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Helper methods</h2>
+<p>Garp_Cli contains a couple of static helper methods that you can use in your commands to interface with the commandline:</p>
+<ul>
+<li>
+<strong>Garp_Cli::lineOut()</strong> echoes a formatted line. Please use this in favor of echo or print calls, to ensure uniform formatting across CLI commands.</li>
+<li>
+<strong>Garp_Cli::errorOut()</strong> echoes a formatted error.</li>
+<li>
+<strong>Garp_Cli::prompt($question = '')</strong> prompts the user for input. Use $question to print a request for input.</li>
+</ul>
+
+        </div>
+
+    </div>]

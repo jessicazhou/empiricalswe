@@ -1,0 +1,86 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <h1>
+<a aria-hidden="true" class="anchor" href="#preamble" id="user-content-preamble"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Preamble</h1>
+<p>If you made to here, you probably want to create your own accessory, as your favorite toy doesn't yet show up in the list of shims.
+The <a href="https://github.com/nfarina/homebridge-legacy-plugins/blob/47520541156b820ce2c8e21d2ba4a0e761ffc36a/accessories/Http.js">http.js</a> is a very basic shim you can use for getting acquainted to the API. In this wiki page you'll find some hints on the code.</p>
+<h1>
+<a aria-hidden="true" class="anchor" href="#basics" id="user-content-basics"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Basics</h1>
+<p>An accessory has to export a function literally called <code>accessory</code>.</p>
+<div class="highlight highlight-source-js"><pre><span class="pl-c1">module</span>.<span class="pl-smi">exports</span> <span class="pl-k">=</span> {
+  accessory<span class="pl-k">:</span> HttpAccessory
+}</pre></div>
+<p>The accessory needs a constructor, and some functionality in its prototype to work.</p>
+<h1>
+<a aria-hidden="true" class="anchor" href="#constructor" id="user-content-constructor"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Constructor</h1>
+<div class="highlight highlight-source-js"><pre><span class="pl-k">function</span> <span class="pl-en">HttpAccessory</span>(<span class="pl-smi">log</span>, <span class="pl-smi">config</span>) {
+  <span class="pl-c1">this</span>.<span class="pl-smi">log</span> <span class="pl-k">=</span> log;
+
+  <span class="pl-c"><span class="pl-c">//</span> url info</span>
+  <span class="pl-c1">this</span>.<span class="pl-smi">on_url</span> <span class="pl-k">=</span> config[<span class="pl-s"><span class="pl-pds">"</span>on_url<span class="pl-pds">"</span></span>];
+  <span class="pl-c1">this</span>.<span class="pl-smi">off_url</span> <span class="pl-k">=</span> config[<span class="pl-s"><span class="pl-pds">"</span>off_url<span class="pl-pds">"</span></span>];
+  <span class="pl-c1">this</span>.<span class="pl-smi">brightness_url</span> <span class="pl-k">=</span> config[<span class="pl-s"><span class="pl-pds">"</span>brightness_url<span class="pl-pds">"</span></span>];
+  <span class="pl-c1">this</span>.<span class="pl-smi">http_method</span> <span class="pl-k">=</span> config[<span class="pl-s"><span class="pl-pds">"</span>http_method<span class="pl-pds">"</span></span>];
+}</pre></div>
+<p>The <code>log</code> object passed is a wrapper for console.log that puts your accessory name in front of the log output you create. So instead of a plain <code>console.log('whatever')</code> you should use <code>this.log('whatever');</code> in your accessory.
+The <code>config</code>object is an array containing data from the <em>config.json</em> file in homebridge's main directory. You can define what's in your accessory's section. Have a look at the <em>config-sample.json</em>, it is pretty straightforward. Some hints for json files:</p>
+<ul>
+<li>in doubt, put both name and value in quotes <code>"myOption":"myValue"</code>
+<ul>
+<li>numeric values, true, false, and arrays to not belong in quotes:</li>
+<li><code>"myPort": 8080,</code></li>
+<li><code>"ofRelevance": false,</code></li>
+<li><code>"myArrayOfThings": ["Apples","Peas","MacMinis","iPhone"],</code></li>
+</ul>
+</li>
+<li>end lines with a comma, not a semicolon</li>
+<li>comments do not really parse on all plattforms, do not try to use <code>//</code>
+</li>
+<li>as always in case sensitive languages, pay attention to CASE!</li>
+</ul>
+<h1>
+<a aria-hidden="true" class="anchor" href="#functionality-in-the-prototype-using-homebridge-and-hap-nodejs-api" id="user-content-functionality-in-the-prototype-using-homebridge-and-hap-nodejs-api"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Functionality in the prototype using homebridge and HAP-NodeJS API</h1>
+<p>The sample introduces some demo helpers in lines 21 to 70, you can have a look at these later.
+The main API usage starts with
+<code>identify:</code>
+This is a function called when the user clicks on "identify device" in the iOS app.
+<code>getServices:</code>
+Here the magic begins. You have to implement a <code>getServices</code> function that returns an array of services. How that is done is shown in the example:</p>
+<div class="highlight highlight-source-js"><pre>  <span class="pl-en">getServices</span><span class="pl-k">:</span> <span class="pl-k">function</span>() {
+
+    <span class="pl-c"><span class="pl-c">//</span> you can OPTIONALLY create an information service if you wish to override</span>
+    <span class="pl-c"><span class="pl-c">//</span> the default values for things like serial number, model, etc.</span>
+    <span class="pl-k">var</span> informationService <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-en">Service.AccessoryInformation</span>();</pre></div>
+<p>Here the new service, an AccessoryInformation service is created using an template. You'll find these templates in <a href="https://github.com/KhaosT/HAP-NodeJS/blob/master/lib/gen/HomeKitTypes.js">https://github.com/KhaosT/HAP-NodeJS/blob/master/lib/gen/HomeKitTypes.js</a> below the characteristics templates.
+(BTW: there must only be one AccessoryInformation service per device)</p>
+<p>The informationService then is filled with properties. The <code>Characteristic.NAME</code> objects are templates again from the file above. HAP-NodeJS creates new objects from these templates for you.</p>
+<div class="highlight highlight-source-js"><pre>    informationService
+      .<span class="pl-en">setCharacteristic</span>(<span class="pl-smi">Characteristic</span>.<span class="pl-smi">Manufacturer</span>, <span class="pl-s"><span class="pl-pds">"</span>HTTP Manufacturer<span class="pl-pds">"</span></span>)
+      .<span class="pl-en">setCharacteristic</span>(<span class="pl-smi">Characteristic</span>.<span class="pl-smi">Model</span>, <span class="pl-s"><span class="pl-pds">"</span>HTTP Model<span class="pl-pds">"</span></span>)
+      .<span class="pl-en">setCharacteristic</span>(<span class="pl-smi">Characteristic</span>.<span class="pl-smi">SerialNumber</span>, <span class="pl-s"><span class="pl-pds">"</span>HTTP Serial Number<span class="pl-pds">"</span></span>);</pre></div>
+<p>Until now, your accessory cannot do anything. So let's add some functionality next:</p>
+<div class="highlight highlight-source-js"><pre>    <span class="pl-k">var</span> lightbulbService <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-en">Service.Lightbulb</span>();</pre></div>
+<p>creates a new service object from a <code>Lightbulb</code> template. Again, have a look at the file above, where all these templates are defined. You'll see there which functionality (called <em>Characteristics</em> here) the service must support and can optionally support.</p>
+<p>The <code>Lightbulb</code> must support an <code>On</code> characteristic for switching the device an and off, so we do not have to add it with <code>new</code>, but as we want to add some code to it, we have to get its reference:</p>
+<div class="highlight highlight-source-js"><pre>    lightbulbService
+      .<span class="pl-en">getCharacteristic</span>(<span class="pl-smi">Characteristic</span>.<span class="pl-smi">On</span>)</pre></div>
+<p>getCharacteristic searches for a name or template to match an existing service and returns it as object. So we can now access its methods and properties:</p>
+<div class="highlight highlight-source-js"><pre>    lightbulbService
+      .<span class="pl-en">getCharacteristic</span>(<span class="pl-smi">Characteristic</span>.<span class="pl-smi">On</span>)
+      .<span class="pl-en">on</span>(<span class="pl-s"><span class="pl-pds">'</span>set<span class="pl-pds">'</span></span>, <span class="pl-c1">this</span>.<span class="pl-smi">setPowerState</span>.<span class="pl-en">bind</span>(<span class="pl-c1">this</span>));</pre></div>
+<p>Here we add an event listener to the <code>set</code> event of the characteristic.
+<img align="absmiddle" alt=":warning:" class="emoji" data-canonical-src="https://assets-cdn.github.com/images/icons/emoji/unicode/26a0.png" height="20" src="https://camo.githubusercontent.com/1473ed5a16261e9d28ea0f8cf6e81e506da8623e/68747470733a2f2f6173736574732d63646e2e6769746875622e636f6d2f696d616765732f69636f6e732f656d6f6a692f756e69636f64652f323661302e706e67" title=":warning:" width="20"/> PLEASE do not get confused with Characteristic.On, which is a template object, and getCharacteristic.on() which is a method for adding a listener to an event! <img align="absmiddle" alt=":warning:" class="emoji" data-canonical-src="https://assets-cdn.github.com/images/icons/emoji/unicode/26a0.png" height="20" src="https://camo.githubusercontent.com/1473ed5a16261e9d28ea0f8cf6e81e506da8623e/68747470733a2f2f6173736574732d63646e2e6769746875622e636f6d2f696d616765732f69636f6e732f656d6f6a692f756e69636f64652f323661302e706e67" title=":warning:" width="20"/>
+This <code>set</code> event is called if iOS wants to set a value, or if a method called setValue is called in homebridge. (More to come on that)
+The callback passed to the event listener is called if the event happens. As it is called from outside this object, we have to ensure that <code>this</code> references to the current <code>this</code> which is the instance of the accessory. To achieve that we <code>bind</code> the function (actually a new copy of the function) to the current <code>this</code>. Debugging is very time consuming if you're bound to the wrong <code>this</code>
+In our example, the callback passed is a method called setPowerState defined further up in the example file. It is pretty straightforward and can be easily adapted to year needs, so we do not elaborate here on it.</p>
+<p>Let's add another characteristics instead: A brightness control (if our light switch device is capable of dimming)</p>
+<div class="highlight highlight-source-js"><pre>    lightbulbService
+      .<span class="pl-en">addCharacteristic</span>(<span class="pl-smi">Characteristic</span>.<span class="pl-smi">Brightness</span>)
+      .<span class="pl-en">on</span>(<span class="pl-s"><span class="pl-pds">'</span>set<span class="pl-pds">'</span></span>, <span class="pl-c1">this</span>.<span class="pl-smi">setBrightness</span>.<span class="pl-en">bind</span>(<span class="pl-c1">this</span>));</pre></div>
+<p>As Brightness is an optional characteristic, it was not included into the template directly, we have to add it.</p>
+<p>Finally return the services to the API as an array:</p>
+<div class="highlight highlight-source-js"><pre>    <span class="pl-k">return</span> [informationService, lightbulbService];</pre></div>
+
+        </div>
+
+    </div>]

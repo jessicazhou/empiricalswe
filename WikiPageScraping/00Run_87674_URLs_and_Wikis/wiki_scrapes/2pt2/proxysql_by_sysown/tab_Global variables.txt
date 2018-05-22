@@ -1,0 +1,2425 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <h1>
+<a aria-hidden="true" class="anchor" href="#global-variables" id="user-content-global-variables"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Global Variables</h1>
+<p>The behaviour of ProxySQL can be tweaked using global variables. These can be configured in 2 ways:</p>
+<ul>
+<li>at runtime, using the admin interface (preferred)</li>
+<li>at startup, using the dedicated section in the configuration file</li>
+</ul>
+<p>ProxySQL supports maximal uptime by allowing most variables to change at runtime and take effect immediately, without having to restart the daemon. There are only 2 variables that cannot be changed at runtime - <code>mysql-threads</code> and <code>mysql-stacksize</code>.</p>
+<p>Also, there are 2 types of global variables, depending on which part of ProxySQL they control:</p>
+<ul>
+<li>admin variables, which control the behaviour of the admin interface. Their names begin with the token "admin-"</li>
+<li>mysql variables, which control the MySQL functionality of the proxy. Their names begin with the token "mysql-"</li>
+</ul>
+<p>These global variables are stored in a per-thread fashion inside of the proxy in order to speed up access to them, as they are used extremely frequently. They control the behaviour of the proxy in terms of memory footprint or the number of connections accepted, and other essential aspects. Whenever a <code>LOAD MYSQL VARIABLES TO RUNTIME</code> or <code>LOAD ADMIN VARIABLES TO RUNTIME</code> command is issued, all the threads using the mysql or admin variables are notified that they have to update their values.</p>
+<p>To change the value of a global variable either use an <code>UPDATE</code> statement:</p>
+<pre><code>UPDATE global_variables SET variable_value=1900 WHERE variable_name='admin-refresh_interval';
+</code></pre>
+<p>or the shorter <code>SET</code> statement, similar to MySQL's:</p>
+<pre><code>SET admin-refresh_interval = 1700;
+SET admin-version = '1.1.1beta8';
+</code></pre>
+<p>Next, we're going to explain each type of variable in detail.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#admin-variables" id="user-content-admin-variables"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Admin Variables</h2>
+<h3>
+<a aria-hidden="true" class="anchor" href="#admin-admin_credentials" id="user-content-admin-admin_credentials"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><code>admin-admin_credentials</code>
+</h3>
+<p>This is a list of semi-colon separated <code>user:password</code> pairs, that can be used to authenticate to the admin interface with read-write rights. For read-only credentials that can be used to connect to the admin, see the variable <code>admin-stats_credentials</code>. Note that the admin interface listens on a separate port from the main ProxySQL thread. This port is controlled through the variable <code>admin-mysql_ifaces</code>.</p>
+<p>It is important to note that:</p>
+<ul>
+<li>the default <code>admin</code> user can only connect locally, in order to connect remotely a secondary user needs to be created by defining this in the <code>admin-admin_credentials</code> variable E.G. <code>admin-admin_credentials="admin:admin;radminuser:radminpass"</code>.</li>
+<li>users in <code>admin-admin_credentials</code> cannot be used also in <code>mysql_users</code> table.</li>
+</ul>
+<table>
+    <tbody><tr>
+        <td rowspan="2" valign="top"><b>System Variable</b></td>
+        <td><b>Name</b></td>
+        <td>admin-admin_credentials</td>
+    </tr>
+    <tr>
+        <td><b>Dynamic</b></td>
+        <td>Yes</td>
+    </tr>
+    <tr>
+        <td rowspan="3" valign="top"><b>Permitted Values</b></td>
+        <td><b>Type</b></td>
+        <td>String</td>
+    </tr>
+    <tr>
+        <td><b>Default</b></td>
+        <td>admin:admin</td>
+    </tr>
+</tbody></table>​
+<h3>
+<a aria-hidden="true" class="anchor" href="#admin-mysql_ifaces" id="user-content-admin-mysql_ifaces"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><code>admin-mysql_ifaces</code>
+</h3>
+<p>Semicolon-separated list of hostname:port entries for interfaces on which the admin interface should listen on. Note that this also supports UNIX domain sockets for the cases where the connection is done from an application on the same machine E.G.: <code>SET admin-mysql_ifaces='127.0.0.1:6032;/tmp/proxysql_admin.sock'</code>. Please note that the default <code>admin</code> user can only connect locally, in order to connect remotely a secondary user needs to be created by defining this in the <code>admin-admin_credentials</code> variable E.G. <code>admin-admin_credentials="admin:admin;radminuser:radminpass"</code>.</p>
+<table>
+    <tbody><tr>
+        <td rowspan="2" valign="top"><b>System Variable</b></td>
+        <td><b>Name</b></td>
+        <td>admin-mysql_ifaces</td>
+    </tr>
+    <tr>
+        <td><b>Dynamic</b></td>
+        <td>No</td>
+    </tr>
+    <tr>
+        <td rowspan="3" valign="top"><b>Permitted Values</b></td>
+        <td><b>Type</b></td>
+        <td>String</td>
+    </tr>
+    <tr>
+        <td><b>Default (up to 1.4.0)</b></td>
+        <td>127.0.0.1:6032</td>
+    </tr>
+    <tr>
+        <td><b>Default (from 1.4.1 onwards)</b></td>
+        <td>0.0.0.0:6032</td>
+    </tr>
+</tbody></table>​
+<h3>
+<a aria-hidden="true" class="anchor" href="#admin-read_only" id="user-content-admin-read_only"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><code>admin-read_only</code>
+</h3>
+<p>When this variable is set to true and loaded at runtime, the Admin module does not accept write anymore. This is useful to ensure that ProxySQL is not reconfigured.
+When <code>admin-read_only=true</code>, the only way to revert it to false at runtime (and make the Admin module writable again) is to run the command <code>PROXYSQL READWRITE</code>.</p>
+<table>
+    <tbody><tr>
+        <td rowspan="2" valign="top"><b>System Variable</b></td>
+        <td><b>Name</b></td>
+        <td>admin-read_only</td>
+    </tr>
+    <tr>
+        <td><b>Dynamic</b></td>
+        <td>Yes</td>
+    </tr>
+    <tr>
+        <td rowspan="3" valign="top"><b>Permitted Values</b></td>
+        <td><b>Type</b></td>
+        <td>Boolean</td>
+    </tr>
+    <tr>
+        <td><b>Default</b></td>
+        <td>false</td>
+    </tr>
+</tbody></table>​
+<h3>
+<a aria-hidden="true" class="anchor" href="#admin-refresh_interval" id="user-content-admin-refresh_interval"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><code>admin-refresh_interval</code>
+</h3>
+<p>The refresh interval (in microseconds) for updates to the query rules statistics and commands counters statistics. Be careful about tweaking this to a value that is:</p>
+<ul>
+<li>too low, because it might affect the overall performance of the proxy</li>
+<li>too high, because it might affect the correctness of the results</li>
+</ul>
+<table>
+    <tbody><tr>
+        <td rowspan="2" valign="top"><b>System Variable</b></td>
+        <td><b>Name</b></td>
+        <td>admin-refresh_interval</td>
+    </tr>
+    <tr>
+        <td><b>Dynamic</b></td>
+        <td>Yes</td>
+    </tr>
+    <tr>
+        <td rowspan="4" valign="top"><b>Permitted Values</b></td>
+        <td><b>Type</b></td>
+        <td>Integer (microseconds)</td>
+    </tr>
+    <tr>
+        <td><b>Default</b></td>
+        <td>2000</td>
+    </tr>
+    <tr>
+        <td><b>Minimum</b></td>
+        <td>100</td>
+    </tr>
+    <tr>
+        <td><b>Maximum</b></td>
+        <td>100000</td>
+    </tr>
+</tbody></table>​
+<h3>
+<a aria-hidden="true" class="anchor" href="#admin-stats_credentials" id="user-content-admin-stats_credentials"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><code>admin-stats_credentials</code>
+</h3>
+<p>This is a list of semi-colon separated <code>user:password</code> pairs that defines the read-only credentials for connecting to the admin interface. These are not allowed updates to internal data structures such as the list of MySQL backend servers (or hostgroups), query rules, etc. They only allow readings from the statistics and monitoring tables (the other tables are not only even visible).
+Note: users in <code>admin-stats_credentials</code> cannot be used also in <code>mysql_users</code> table.</p>
+<table>
+    <tbody><tr>
+        <td rowspan="2" valign="top"><b>System Variable</b></td>
+        <td><b>Name</b></td>
+        <td>admin-stats_credentials</td>
+    </tr>
+    <tr>
+        <td><b>Dynamic</b></td>
+        <td>Yes</td>
+    </tr>
+    <tr>
+        <td rowspan="4" valign="top"><b>Permitted Values</b></td>
+        <td><b>Type</b></td>
+        <td>String</td>
+    </tr>
+    <tr>
+        <td><b>Default</b></td>
+        <td>stats:stats</td>
+    </tr>
+</tbody></table>​
+<h3>
+<a aria-hidden="true" class="anchor" href="#admin-telnet_admin_ifaces" id="user-content-admin-telnet_admin_ifaces"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><code>admin-telnet_admin_ifaces</code>
+</h3>
+<p>Not currently used (planned usage in a future version).</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#admin-telnet_stats_ifaces" id="user-content-admin-telnet_stats_ifaces"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><code>admin-telnet_stats_ifaces</code>
+</h3>
+<p>Not currently used (planned usage in a future version).</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#admin-version" id="user-content-admin-version"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><code>admin-version</code>
+</h3>
+<p>This variable displays ProxySQL version. This variable is read only.</p>
+<table>
+    <tbody><tr>
+        <td rowspan="2" valign="top"><b>System Variable</b></td>
+        <td><b>Name</b></td>
+        <td>admin-version</td>
+    </tr>
+    <tr>
+        <td><b>Dynamic</b></td>
+        <td>No</td>
+    </tr>
+    <tr>
+        <td rowspan="4" valign="top"><b>Permitted Values</b></td>
+        <td><b>Type</b></td>
+        <td>String</td>
+    </tr>
+    <tr>
+        <td><b>Read Only</b></td>
+        <td>true</td>
+    </tr>
+</tbody></table>​
+<h2>
+<a aria-hidden="true" class="anchor" href="#admin-historical-statistics" id="user-content-admin-historical-statistics"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Admin historical statistics</h2>
+<p>Since ProxySQL 1.4.4 Admin stores historical metrics in new database named <code>proxysql_stats.db</code> in the datadir.<br/>
+Tables structures is subject to future changes.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#admin-stats_mysql_connection_pool" id="user-content-admin-stats_mysql_connection_pool"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><code>admin-stats_mysql_connection_pool</code>
+</h3>
+<p>The refresh interval (in seconds) to update the historical statistics of the connection pool.</p>
+<table>
+    <tbody><tr>
+        <td rowspan="2" valign="top"><b>System Variable</b></td>
+        <td><b>Name</b></td>
+        <td>admin-stats_mysql_connection_pool</td>
+    </tr>
+    <tr>
+        <td><b>Dynamic</b></td>
+        <td>Yes</td>
+    </tr>
+    <tr>
+        <td rowspan="4" valign="top"><b>Permitted Values</b></td>
+        <td><b>Type</b></td>
+        <td>Integer (seconds)</td>
+    </tr>
+    <tr>
+        <td><b>Default</b></td>
+        <td>60</td>
+    </tr>
+    <tr>
+        <td><b>Valid values</b></td>
+        <td>5, 10, 30, 60, 120, 300</td>
+    </tr>
+</tbody></table>​
+<h3>
+<a aria-hidden="true" class="anchor" href="#admin-stats_mysql_connections" id="user-content-admin-stats_mysql_connections"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><code>admin-stats_mysql_connections</code>
+</h3>
+<p>The refresh interval (in seconds) to update the historical statistics of MySQL connections, both frontends and backends.</p>
+<table>
+    <tbody><tr>
+        <td rowspan="2" valign="top"><b>System Variable</b></td>
+        <td><b>Name</b></td>
+        <td>admin-stats_mysql_connections</td>
+    </tr>
+    <tr>
+        <td><b>Dynamic</b></td>
+        <td>Yes</td>
+    </tr>
+    <tr>
+        <td rowspan="4" valign="top"><b>Permitted Values</b></td>
+        <td><b>Type</b></td>
+        <td>Integer (seconds)</td>
+    </tr>
+    <tr>
+        <td><b>Default</b></td>
+        <td>60</td>
+    </tr>
+    <tr>
+        <td><b>Valid values</b></td>
+        <td>5, 10, 30, 60, 120, 300</td>
+    </tr>
+</tbody></table>​
+<h3>
+<a aria-hidden="true" class="anchor" href="#admin-stats_mysql_query_cache" id="user-content-admin-stats_mysql_query_cache"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><code>admin-stats_mysql_query_cache</code>
+</h3>
+<p>The refresh interval (in seconds) to update the historical statistics of MySQL Query Cache.</p>
+<table>
+    <tbody><tr>
+        <td rowspan="2" valign="top"><b>System Variable</b></td>
+        <td><b>Name</b></td>
+        <td>admin-stats_mysql_query_cache</td>
+    </tr>
+    <tr>
+        <td><b>Dynamic</b></td>
+        <td>Yes</td>
+    </tr>
+    <tr>
+        <td rowspan="4" valign="top"><b>Permitted Values</b></td>
+        <td><b>Type</b></td>
+        <td>Integer (seconds)</td>
+    </tr>
+    <tr>
+        <td><b>Default</b></td>
+        <td>60</td>
+    </tr>
+    <tr>
+        <td><b>Valid values</b></td>
+        <td>5, 10, 30, 60, 120, 300</td>
+    </tr>
+</tbody></table>​
+<h3>
+<a aria-hidden="true" class="anchor" href="#admin-stats_system_cpu" id="user-content-admin-stats_system_cpu"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><code>admin-stats_system_cpu</code>
+</h3>
+<p>The refresh interval (in seconds) to update the historical statistics of CPU usage.</p>
+<table>
+    <tbody><tr>
+        <td rowspan="2" valign="top"><b>System Variable</b></td>
+        <td><b>Name</b></td>
+        <td>admin-stats_system_cpu</td>
+    </tr>
+    <tr>
+        <td><b>Dynamic</b></td>
+        <td>Yes</td>
+    </tr>
+    <tr>
+        <td rowspan="4" valign="top"><b>Permitted Values</b></td>
+        <td><b>Type</b></td>
+        <td>Integer (seconds)</td>
+    </tr>
+    <tr>
+        <td><b>Default</b></td>
+        <td>60</td>
+    </tr>
+    <tr>
+        <td><b>Valid values</b></td>
+        <td>5, 10, 30, 60, 120, 300</td>
+    </tr>
+</tbody></table>​
+<h3>
+<a aria-hidden="true" class="anchor" href="#admin-stats_system_memory" id="user-content-admin-stats_system_memory"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><code>admin-stats_system_memory</code>
+</h3>
+<p>The refresh interval (in seconds) to update the historical statistics of memory usage.<br/>
+<em>Note</em>: These statistics are not available if ProxySQL is not compiled with jemalloc.  Note that all official packages are compiled with jemalloc.</p>
+<table>
+    <tbody><tr>
+        <td rowspan="2" valign="top"><b>System Variable</b></td>
+        <td><b>Name</b></td>
+        <td>admin-stats_mysql_system_memory</td>
+    </tr>
+    <tr>
+        <td><b>Dynamic</b></td>
+        <td>Yes</td>
+    </tr>
+    <tr>
+        <td rowspan="4" valign="top"><b>Permitted Values</b></td>
+        <td><b>Type</b></td>
+        <td>Integer (seconds)</td>
+    </tr>
+    <tr>
+        <td><b>Default</b></td>
+        <td>60</td>
+    </tr>
+    <tr>
+        <td><b>Valid values</b></td>
+        <td>5, 10, 30, 60, 120, 300</td>
+    </tr>
+</tbody></table>​
+<h2>
+<a aria-hidden="true" class="anchor" href="#admin-web-interface" id="user-content-admin-web-interface"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Admin web interface</h2>
+<p>ProxySQL 1.4.4 embeds an HTTP web server from where is possible to gather certain metrics.<br/>
+Credentials to access the web interfaces are the same defined in <code>admin-stats_credentials</code>.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#admin-web_enabled" id="user-content-admin-web_enabled"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><code>admin-web_enabled</code>
+</h3>
+<p>If <code>admin-web_enabled</code> is set to <code>true</code>, the web server is automatically enabled.</p>
+<table>
+    <tbody><tr>
+        <td rowspan="2" valign="top"><b>System Variable</b></td>
+        <td><b>Name</b></td>
+        <td>admin-web_enabled</td>
+    </tr>
+    <tr>
+        <td><b>Dynamic</b></td>
+        <td>Yes</td>
+    </tr>
+    <tr>
+        <td rowspan="3" valign="top"><b>Permitted Values</b></td>
+        <td><b>Type</b></td>
+        <td>Boolean</td>
+    </tr>
+    <tr>
+        <td><b>Default</b></td>
+        <td>false</td>
+    </tr>
+</tbody></table>​
+<h3>
+<a aria-hidden="true" class="anchor" href="#admin-web_port" id="user-content-admin-web_port"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><code>admin-web_port</code>
+</h3>
+<p>This variable defines on which port the web server is listening.</p>
+<table>
+    <tbody><tr>
+        <td rowspan="2" valign="top"><b>System Variable</b></td>
+        <td><b>Name</b></td>
+        <td>admin-web_port</td>
+    </tr>
+    <tr>
+        <td><b>Dynamic</b></td>
+        <td>Yes</td>
+    </tr>
+    <tr>
+        <td rowspan="4" valign="top"><b>Permitted Values</b></td>
+        <td><b>Type</b></td>
+        <td>Integer</td>
+    </tr>
+    <tr>
+        <td><b>Default</b></td>
+        <td>6080</td>
+    </tr>
+</tbody></table>​
+<h2>
+<a aria-hidden="true" class="anchor" href="#mysql-variables" id="user-content-mysql-variables"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>MySQL Variables</h2>
+<h3>
+<a aria-hidden="true" class="anchor" href="#mysql-client_found_rows" id="user-content-mysql-client_found_rows"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><code>mysql-client_found_rows</code>
+</h3>
+<p>When set to <code>true</code>, client flag <code>CLIENT_FOUND_ROWS</code> is set when connecting to MySQL backends.</p>
+<table>
+    <tbody><tr>
+        <td rowspan="2" valign="top"><b>System Variable</b></td>
+        <td><b>Name</b></td>
+        <td>mysql-client_found_rows</td>
+    </tr>
+    <tr>
+        <td><b>Dynamic</b></td>
+        <td>Yes</td>
+    </tr>
+    <tr>
+        <td rowspan="4" valign="top"><b>Permitted Values</b></td>
+        <td><b>Type</b></td>
+        <td>Boolean</td>
+    </tr>
+    <tr>
+        <td><b>Default</b></td>
+        <td>true</td>
+    </tr>
+</tbody></table>​
+<h3>
+<a aria-hidden="true" class="anchor" href="#mysql-commands_stats" id="user-content-mysql-commands_stats"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><code>mysql-commands_stats</code>
+</h3>
+<p>Enable per-command MySQL query statistics. A command is a type of SQL query that is being executed. Some examples are: SELECT, INSERT or ALTER TABLE.</p>
+<table>
+    <tbody><tr>
+        <td rowspan="2" valign="top"><b>System Variable</b></td>
+        <td><b>Name</b></td>
+        <td>mysql-commands_stats</td>
+    </tr>
+    <tr>
+        <td><b>Dynamic</b></td>
+        <td>Yes</td>
+    </tr>
+    <tr>
+        <td rowspan="4" valign="top"><b>Permitted Values</b></td>
+        <td><b>Type</b></td>
+        <td>Boolean</td>
+    </tr>
+    <tr>
+        <td><b>Default</b></td>
+        <td>true</td>
+    </tr>
+</tbody></table>​
+<h3>
+<a aria-hidden="true" class="anchor" href="#mysql-connect_retries_delay" id="user-content-mysql-connect_retries_delay"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><code>mysql-connect_retries_delay</code>
+</h3>
+<p>The delay (in milliseconds) before trying to reconnect after a failed attempt to a backend MySQL server. Failed attempts can take place due to numerous reasons: too busy, timed out for the current attempt, etc. This will be retried for <code>mysql-connect_retries_on_failure</code> times.</p>
+<table>
+    <tbody><tr>
+        <td rowspan="2" valign="top"><b>System Variable</b></td>
+        <td><b>Name</b></td>
+        <td>mysql-connect_retries_delay</td>
+    </tr>
+    <tr>
+        <td><b>Dynamic</b></td>
+        <td>Yes</td>
+    </tr>
+    <tr>
+        <td rowspan="4" valign="top"><b>Permitted Values</b></td>
+        <td><b>Type</b></td>
+        <td>Integer (milliseconds)</td>
+    </tr>
+    <tr>
+        <td><b>Default</b></td>
+        <td>1</td>
+    </tr>
+    <tr>
+        <td><b>Minimum</b></td>
+        <td>0</td>
+    </tr>
+    <tr>
+        <td><b>Maximum</b></td>
+        <td>10000</td>
+    </tr>
+</tbody></table>​
+<h3>
+<a aria-hidden="true" class="anchor" href="#mysql-connect_retries_on_failure" id="user-content-mysql-connect_retries_on_failure"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><code>mysql-connect_retries_on_failure</code>
+</h3>
+<p>The number of times for which a reconnect should be attempted in case of an error, timeout, or any other event that led to an unsuccessful connection to a backend MySQL server. After the number of attempts is depleted, if a connection still couldn't be established, an error is returned. The error returned is either the last connection attempt error or a generic error ("Max connect failure while reaching hostgroup" with error code 28000).</p>
+<p>Be careful about tweaking this parameter - a value that is too high can significantly increase the latency which with an unresponsive hostgroup is reported to the MySQL client.</p>
+<table>
+    <tbody><tr>
+        <td rowspan="2" valign="top"><b>System Variable</b></td>
+        <td><b>Name</b></td>
+        <td>mysql-connect_retries_on_failure</td>
+    </tr>
+    <tr>
+        <td><b>Dynamic</b></td>
+        <td>Yes</td>
+    </tr>
+    <tr>
+        <td rowspan="4" valign="top"><b>Permitted Values</b></td>
+        <td><b>Type</b></td>
+        <td>Integer</td>
+    </tr>
+    <tr>
+        <td><b>Default</b></td>
+        <td>10</td>
+    </tr>
+    <tr>
+        <td><b>Minimum</b></td>
+        <td>0</td>
+    </tr>
+    <tr>
+        <td><b>Maximum</b></td>
+        <td>1000</td>
+    </tr>
+</tbody></table>​
+<h3>
+<a aria-hidden="true" class="anchor" href="#mysql-connect_timeout_server" id="user-content-mysql-connect_timeout_server"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><code>mysql-connect_timeout_server</code>
+</h3>
+<p>The timeout for a single attempt at connecting to a backend server from the proxy. If this fails, according to the other parameters, the attempt will be retried until too many errors per second are generated (and the server is automatically shunned) or until the final cut-off is reached and an error is returned to the client (see <code>mysql-connect_timeout_server_max</code>).</p>
+<table>
+    <tbody><tr>
+        <td rowspan="2" valign="top"><b>System Variable</b></td>
+        <td><b>Name</b></td>
+        <td>mysql-connect_timeout_server</td>
+    </tr>
+    <tr>
+        <td><b>Dynamic</b></td>
+        <td>Yes</td>
+    </tr>
+    <tr>
+        <td rowspan="4" valign="top"><b>Permitted Values</b></td>
+        <td><b>Type</b></td>
+        <td>Integer (milliseconds)</td>
+    </tr>
+    <tr>
+        <td><b>Default</b></td>
+        <td>1000</td>
+    </tr>
+    <tr>
+        <td><b>Minimum</b></td>
+        <td>10</td>
+    </tr>
+    <tr>
+        <td><b>Maximum</b></td>
+        <td>120000</td>
+    </tr>
+</tbody></table>​
+<h3>
+<a aria-hidden="true" class="anchor" href="#mysql-connect_timeout_server_max" id="user-content-mysql-connect_timeout_server_max"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><code>mysql-connect_timeout_server_max</code>
+</h3>
+<p>The timeout for connecting to a backend server from the proxy. When this timeout is reached, an error is returned to the client with code #28000 and the message "Max connect timeout reached while reaching hostgroup...".</p>
+<p>See also <a href="#mysql-shun_recovery_time_sec">mysql-shun_recovery_time_sec</a></p>
+<table>
+    <tbody><tr>
+        <td rowspan="2" valign="top"><b>System Variable</b></td>
+        <td><b>Name</b></td>
+        <td>mysql-connect_timeout_server_max</td>
+    </tr>
+    <tr>
+        <td><b>Dynamic</b></td>
+        <td>Yes</td>
+    </tr>
+    <tr>
+        <td rowspan="4" valign="top"><b>Permitted Values</b></td>
+        <td><b>Type</b></td>
+        <td>Integer (milliseconds)</td>
+    </tr>
+    <tr>
+        <td><b>Default</b></td>
+        <td>10000</td>
+    </tr>
+    <tr>
+        <td><b>Minimum</b></td>
+        <td>10</td>
+    </tr>
+    <tr>
+        <td><b>Maximum</b></td>
+        <td>3600000</td>
+    </tr>
+</tbody></table>​
+<h3>
+<a aria-hidden="true" class="anchor" href="#mysql-connection_max_age_ms" id="user-content-mysql-connection_max_age_ms"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><code>mysql-connection_max_age_ms</code>
+</h3>
+<p>When <code>mysql-connection_max_age_ms</code> is set to a value greater than 0, inactive connections in the connection pool (therefore not currently used by any session) are closed if they were created more than <code>mysql-connection_max_age_ms</code> milliseconds ago. By default, connections aren't closed based on their age.</p>
+<table>
+    <tbody><tr>
+        <td rowspan="2" valign="top"><b>System Variable</b></td>
+        <td><b>Name</b></td>
+        <td>mysql-connection_max_age_ms</td>
+    </tr>
+    <tr>
+        <td><b>Dynamic</b></td>
+        <td>Yes</td>
+    </tr>
+    <tr>
+        <td rowspan="4" valign="top"><b>Permitted Values</b></td>
+        <td><b>Type</b></td>
+        <td>Integer (milliseconds)</td>
+    </tr>
+    <tr>
+        <td><b>Default</b></td>
+        <td>0</td>
+    </tr>
+    <tr>
+        <td><b>Minimum</b></td>
+        <td>0</td>
+    </tr>
+    <tr>
+        <td><b>Maximum</b></td>
+        <td>86400000</td>
+    </tr>
+</tbody></table>​
+<h3>
+<a aria-hidden="true" class="anchor" href="#mysql-default_charset" id="user-content-mysql-default_charset"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><code>mysql-default_charset</code>
+</h3>
+<p>The default server charset to be used in the communication with the MySQL clients. Note that this is the defult for client connections, not for backend connections.</p>
+<table>
+    <tbody><tr>
+        <td rowspan="2" valign="top"><b>System Variable</b></td>
+        <td><b>Name</b></td>
+        <td>mysql-default_charset</td>
+    </tr>
+    <tr>
+        <td><b>Dynamic</b></td>
+        <td>Yes</td>
+    </tr>
+    <tr>
+        <td rowspan="4" valign="top"><b>Permitted Values</b></td>
+        <td><b>Type</b></td>
+        <td>String</td>
+    </tr>
+    <tr>
+        <td><b>Default</b></td>
+        <td>utf8</td>
+    </tr>
+    <tr>
+        <td><b>Valid Values</b></td>
+        <td>Run "select * from mysql_collations;" in the Admin interface to view the full list</td>
+    </tr>
+</tbody></table>​
+<h3>
+<a aria-hidden="true" class="anchor" href="#mysql-default_max_latency_ms" id="user-content-mysql-default_max_latency_ms"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><code>mysql-default_max_latency_ms</code>
+</h3>
+<p>ProxySQL uses a mechanism to automatically ignore hosts if their latency is excessive. Note that hosts are not disabled, but only ignored: in other words, ProxySQL will prefer hosts with a smaller latency. It is possible to configure the maximum latency for each backend from <code>mysql_servers</code> table, column <code>max_latency_ms</code>. If <code>mysql_servers</code>.<code>max_latency_ms</code> is 0, the default value <code>mysql-default_max_latency_ms</code> applies.</p>
+<table>
+    <tbody><tr>
+        <td rowspan="2" valign="top"><b>System Variable</b></td>
+        <td><b>Name</b></td>
+        <td>mysql-default_max_latency_ms</td>
+    </tr>
+    <tr>
+        <td><b>Dynamic</b></td>
+        <td>Yes</td>
+    </tr>
+    <tr>
+        <td rowspan="4" valign="top"><b>Permitted Values</b></td>
+        <td><b>Type</b></td>
+        <td>Integer (milliseconds)</td>
+    </tr>
+    <tr>
+        <td><b>Default</b></td>
+        <td>1000</td>
+    </tr>
+    <tr>
+        <td><b>Minimum</b></td>
+        <td>0</td>
+    </tr>
+    <tr>
+        <td><b>Maximum</b></td>
+        <td>1728000000</td>
+    </tr>
+</tbody></table>​
+<p>Note: due to a limitation in SSL implementation, it is recommended to increase <code>mysql-default_max_latency_ms</code> if using SSL.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#mysql-default_query_delay" id="user-content-mysql-default_query_delay"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><code>mysql-default_query_delay</code>
+</h3>
+<p>Simple throttling mechanism for queries to the backends. Setting this variable to a non-zero value (in miliseconds) will delay the execution of all queries, globally. There is a more fine-grained throttling mechanism in the admin table <code>mysql_query_rules</code>, where for each rule there can be one delay that is applied to all queries matching the rule. That extra delay is added on top of the default, global one.</p>
+<table>
+    <tbody><tr>
+        <td rowspan="2" valign="top"><b>System Variable</b></td>
+        <td><b>Name</b></td>
+        <td>mysql-default_query_delay</td>
+    </tr>
+    <tr>
+        <td><b>Dynamic</b></td>
+        <td>Yes</td>
+    </tr>
+    <tr>
+        <td rowspan="4" valign="top"><b>Permitted Values</b></td>
+        <td><b>Type</b></td>
+        <td>Integer (milliseconds)</td>
+    </tr>
+    <tr>
+        <td><b>Default</b></td>
+        <td>0</td>
+    </tr>
+    <tr>
+        <td><b>Minimum</b></td>
+        <td>0</td>
+    </tr>
+    <tr>
+        <td><b>Maximum</b></td>
+        <td>3600000</td>
+    </tr>
+</tbody></table>​
+<h3>
+<a aria-hidden="true" class="anchor" href="#mysql-default_query_timeout" id="user-content-mysql-default_query_timeout"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><code>mysql-default_query_timeout</code>
+</h3>
+<p>Mechanism for specifying the maximal duration of queries to the backend MySQL servers until ProxySQL should return an error to the MySQL client. Whenever ProxySQL detects that a query has timed out, it will spawn a separate thread that runs a KILL query against the specific MySQL backend in order to stop the query from running in the backend. Because the query is killed, an error will be returned to the MySQL client.</p>
+<table>
+    <tbody><tr>
+        <td rowspan="2" valign="top"><b>System Variable</b></td>
+        <td><b>Name</b></td>
+        <td>mysql-default_query_timeout</td>
+    </tr>
+    <tr>
+        <td><b>Dynamic</b></td>
+        <td>Yes</td>
+    </tr>
+    <tr>
+        <td rowspan="4" valign="top"><b>Permitted Values</b></td>
+        <td><b>Type</b></td>
+        <td>Integer (milliseconds)</td>
+    </tr>
+    <tr>
+        <td><b>Default</b></td>
+        <td>86400000</td>
+    </tr>
+    <tr>
+        <td><b>Minimum</b></td>
+        <td>1000</td>
+    </tr>
+    <tr>
+        <td><b>Maximum</b></td>
+        <td>1728000000</td>
+    </tr>
+</tbody></table>​
+<h3>
+<a aria-hidden="true" class="anchor" href="#mysql-default_reconnect" id="user-content-mysql-default_reconnect"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><code>mysql-default_reconnect</code>
+</h3>
+<p>Not used for now.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#mysql-default_schema" id="user-content-mysql-default_schema"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><code>mysql-default_schema</code>
+</h3>
+<p>The default schema to be used for incoming MySQL client connections which do not specify a schema name. This is required because ProxySQL doesn't allow connection without a schema.</p>
+<table>
+    <tbody><tr>
+        <td rowspan="2" valign="top"><b>System Variable</b></td>
+        <td><b>Name</b></td>
+        <td>mysql-default_schema</td>
+    </tr>
+    <tr>
+        <td><b>Dynamic</b></td>
+        <td>Yes</td>
+    </tr>
+    <tr>
+        <td rowspan="4" valign="top"><b>Permitted Values</b></td>
+        <td><b>Type</b></td>
+        <td>String</td>
+    </tr>
+    <tr>
+        <td><b>Default</b></td>
+        <td>information_schema</td>
+    </tr>
+    <tr>
+        <td><b>Valid Values</b></td>
+        <td>Any existing schema</td>
+    </tr>
+</tbody></table>​
+<h3>
+<a aria-hidden="true" class="anchor" href="#mysql-enforce_autocommit_on_reads" id="user-content-mysql-enforce_autocommit_on_reads"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><code>mysql-enforce_autocommit_on_reads</code>
+</h3>
+<p>ProxySQL tracks the status of <code>autocommit</code> as specified by the client, and ensures that <code>autocommit</code> is set correct on backend connections. This implementation is problematic if a client starts a transaction using autocommit, and read/write split is implemented via query rules. In fact, if a read is sent to a slave and ProxySQL sets <code>autocommit=0</code> on slave, this will result in 2 transactions (one on master and one on slave). To prevent this to happen, if <code>mysql-enforce_autocommit_on_reads=false</code> (the default), ProxySQL won't change the value of <code>autocommit</code> on backend connections for <code>SELECT</code> stataments.</p>
+<table>
+    <tbody><tr>
+        <td rowspan="2" valign="top"><b>System Variable</b></td>
+        <td><b>Name</b></td>
+        <td>mysql-enforce_autocommit_on_reads</td>
+    </tr>
+    <tr>
+        <td><b>Dynamic</b></td>
+        <td>Yes</td>
+    </tr>
+    <tr>
+        <td rowspan="4" valign="top"><b>Permitted Values</b></td>
+        <td><b>Type</b></td>
+        <td>Boolean</td>
+    </tr>
+    <tr>
+        <td><b>Default</b></td>
+        <td>false</td>
+    </tr>
+</tbody></table>​
+<h3>
+<a aria-hidden="true" class="anchor" href="#mysql-eventslog_filename" id="user-content-mysql-eventslog_filename"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><code>mysql-eventslog_filename</code>
+</h3>
+<p>If this variable is set, ProxySQL will log all traffic to the specified filename. Note that the log file is not a text file, but a binary log with encodided traffic. The value of this variable can be set to an absolute pathname (e.g. "/data/events_log/events_log" or else a filename (e.g. "events_log") will be written to the defined data directory. A sequential number will always be suffixed in the file's extension (e.g. "events_log.00000001").</p>
+<table>
+    <tbody><tr>
+        <td rowspan="2" valign="top"><b>System Variable</b></td>
+        <td><b>Name</b></td>
+        <td>mysql-eventslog_filename</td>
+    </tr>
+    <tr>
+        <td><b>Dynamic</b></td>
+        <td>Yes</td>
+    </tr>
+    <tr>
+        <td rowspan="4" valign="top"><b>Permitted Values</b></td>
+        <td><b>Type</b></td>
+        <td>String</td>
+    </tr>
+    <tr>
+        <td><b>Default</b></td>
+        <td>empty string, not set</td>
+    </tr>
+    <tr>
+        <td><b>Valid Values</b></td>
+        <td>A filename or absolute path</td>
+    </tr>
+</tbody></table>​
+<h3>
+<a aria-hidden="true" class="anchor" href="#mysql-eventslog_filesize" id="user-content-mysql-eventslog_filesize"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><code>mysql-eventslog_filesize</code>
+</h3>
+<p>This variable specifies the maximum size of files created by ProxySQL logger as specified in <code>mysql-eventslog_filename</code>. When the maximum size is reached, the file is rotated.</p>
+<table>
+    <tbody><tr>
+        <td rowspan="2" valign="top"><b>System Variable</b></td>
+        <td><b>Name</b></td>
+        <td>mysql-eventslog_filesize</td>
+    </tr>
+    <tr>
+        <td><b>Dynamic</b></td>
+        <td>Yes</td>
+    </tr>
+    <tr>
+        <td rowspan="4" valign="top"><b>Permitted Values</b></td>
+        <td><b>Type</b></td>
+        <td>Integer (bytes)</td>
+    </tr>
+    <tr>
+        <td><b>Default</b></td>
+        <td>104857600 (100MB)</td>
+    </tr>
+    <tr>
+        <td><b>Minimum</b></td>
+        <td>1048576</td>
+    </tr>
+    <tr>
+        <td><b>Maximum</b></td>
+        <td>1073741824</td>
+    </tr>
+</tbody></table>​
+<h3>
+<a aria-hidden="true" class="anchor" href="#mysql-free_connections_pct" id="user-content-mysql-free_connections_pct"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><code>mysql-free_connections_pct</code>
+</h3>
+<p>ProxySQL uses a connection pool to connect to backend servers.<br/>
+Connections to backend are never pre-allocated if there is no need, so at start up there will 0 connections to the backend.<br/>
+When application starts sending traffic to proxysql, this identifies to which backend if needs to send traffic. If there is a connection in the connection pool for that backend, that connection is used, otherwise a new connection is created.
+When the connection completes serving the client's request, it is sent back to the the Hostgroup Manager. If the Hostgroup Manager determines that the connection is safe to share and the connection pool isn't full, it will place it in the connection pool. Although, not all the unused connections are kept in the connection pool.<br/>
+This variable controls the percentage of open idle connections from the total maximum number of connections for a specific server in a hostgroup.<br/>
+For each hostgroup/backend pair, the Hostgroup Manager will keep in the connection pool up to <code>mysql-free_connections_pct * mysql_servers.max_connections / 100</code> connections . Connections are kept open with periodic pings.</p>
+<p>A connection is idle if it hasn't used since the last round of pings. The time interval between two such rounds of pings for idle connections is controlled by the variable <code>mysql-ping_interval_server_msec</code>.</p>
+<table>
+    <tbody><tr>
+        <td rowspan="2" valign="top"><b>System Variable</b></td>
+        <td><b>Name</b></td>
+        <td>mysql-free_connections_pct</td>
+    </tr>
+    <tr>
+        <td><b>Dynamic</b></td>
+        <td>Yes</td>
+    </tr>
+    <tr>
+        <td rowspan="4" valign="top"><b>Permitted Values</b></td>
+        <td><b>Type</b></td>
+        <td>Integer (percentage)</td>
+    </tr>
+    <tr>
+        <td><b>Default</b></td>
+        <td>10</td>
+    </tr>
+    <tr>
+        <td><b>Minimum</b></td>
+        <td>0</td>
+    </tr>
+    <tr>
+        <td><b>Maximum</b></td>
+        <td>100</td>
+    </tr>
+</tbody></table>​
+<h3>
+<a aria-hidden="true" class="anchor" href="#mysql-have_compress" id="user-content-mysql-have_compress"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><code>mysql-have_compress</code>
+</h3>
+<p>Currently unused.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#mysql-interfaces" id="user-content-mysql-interfaces"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><code>mysql-interfaces</code>
+</h3>
+<p>Semicolon-separated list of hostname:port entries for interfaces for incoming MySQL traffic. Note that this also supports UNIX domain sockets for the cases where the connection is done from an application on the same machine.</p>
+<table>
+    <tbody><tr>
+        <td rowspan="2" valign="top"><b>System Variable</b></td>
+        <td><b>Name</b></td>
+        <td>mysql-interfaces</td>
+    </tr>
+    <tr>
+        <td><b>Dynamic</b></td>
+        <td>No</td>
+    </tr>
+    <tr>
+        <td rowspan="4" valign="top"><b>Permitted Values</b></td>
+        <td><b>Type</b></td>
+        <td>String</td>
+    </tr>
+    <tr>
+        <td><b>Default</b></td>
+        <td>0.0.0.0:6033;/tmp/proxysql.sock</td>
+    </tr>
+    <tr>
+        <td><b>Valid Values</b></td>
+        <td>IP / hostname with ':' seperated port and ';' separated socket filename</td>
+    </tr>
+</tbody></table>​
+<h3>
+<a aria-hidden="true" class="anchor" href="#mysql-long_query_time" id="user-content-mysql-long_query_time"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><code>mysql-long_query_time</code>
+</h3>
+<p>Threshold for counting queries passing through the proxy as 'slow'. The total number of slow queries can be found in the <code>stats_mysql_global</code> table, in the variable named <code>Slow_queries</code> (each row in that table represents one variable).</p>
+<table>
+    <tbody><tr>
+        <td rowspan="2" valign="top"><b>System Variable</b></td>
+        <td><b>Name</b></td>
+        <td>mysql-long_query_time</td>
+    </tr>
+    <tr>
+        <td><b>Dynamic</b></td>
+        <td>Yes</td>
+    </tr>
+    <tr>
+        <td rowspan="4" valign="top"><b>Permitted Values</b></td>
+        <td><b>Type</b></td>
+        <td>Integer (milliseconds)</td>
+    </tr>
+    <tr>
+        <td><b>Default</b></td>
+        <td>1000</td>
+    </tr>
+    <tr>
+        <td><b>Minimum</b></td>
+        <td>0</td>
+    </tr>
+    <tr>
+        <td><b>Maximum</b></td>
+        <td>1728000000</td>
+    </tr>
+</tbody></table>​
+<h3>
+<a aria-hidden="true" class="anchor" href="#mysql-max_allowed_packet" id="user-content-mysql-max_allowed_packet"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><code>mysql-max_allowed_packet</code>
+</h3>
+<p><code>mysql-max_allowed_packet</code> defines the maximum size of a single packet/command received by the client. It mimics the behavior of mysqld's <a href="http://dev.mysql.com/doc/refman/5.7/en/server-system-variables.html#sysvar_max_allowed_packet" rel="nofollow">max_allowed_packet</a></p>
+<table>
+    <tbody><tr>
+        <td rowspan="2" valign="top"><b>System Variable</b></td>
+        <td><b>Name</b></td>
+        <td>mysql-max_allowed_packet</td>
+    </tr>
+    <tr>
+        <td><b>Dynamic</b></td>
+        <td>Yes</td>
+    </tr>
+    <tr>
+        <td rowspan="4" valign="top"><b>Permitted Values</b></td>
+        <td><b>Type</b></td>
+        <td>Integer (bytes)</td>
+    </tr>
+    <tr>
+        <td><b>Default</b></td>
+        <td>4194304 (4MB)</td>
+    </tr>
+    <tr>
+        <td><b>Minimum</b></td>
+        <td>8192 (8KB)</td>
+    </tr>
+    <tr>
+        <td><b>Maximum</b></td>
+        <td>1073741824 (1GB)</td>
+    </tr>
+</tbody></table>​
+<h3>
+<a aria-hidden="true" class="anchor" href="#mysql-max_connections" id="user-content-mysql-max_connections"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><code>mysql-max_connections</code>
+</h3>
+<p>The maximum number of client connections that the proxy can handle. After this number is reached, new connections will be rejected with the <code>#HY000</code> error, and the error message <code>Too many connections</code>.</p>
+<table>
+    <tbody><tr>
+        <td rowspan="2" valign="top"><b>System Variable</b></td>
+        <td><b>Name</b></td>
+        <td>mysql-max_connections</td>
+    </tr>
+    <tr>
+        <td><b>Dynamic</b></td>
+        <td>Yes</td>
+    </tr>
+    <tr>
+        <td rowspan="4" valign="top"><b>Permitted Values</b></td>
+        <td><b>Type</b></td>
+        <td>Integer</td>
+    </tr>
+    <tr>
+        <td><b>Default</b></td>
+        <td>2048</td>
+    </tr>
+    <tr>
+        <td><b>Minimum</b></td>
+        <td>1</td>
+    </tr>
+    <tr>
+        <td><b>Maximum</b></td>
+        <td>1000000</td>
+    </tr>
+</tbody></table>​
+<h3>
+<a aria-hidden="true" class="anchor" href="#mysql-max_stmts_per_connection" id="user-content-mysql-max_stmts_per_connection"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><code>mysql-max_stmts_per_connection</code>
+</h3>
+<p>The threshold for the number of statements that can be prepared on a backend connection before that connection is closed (prior to version 1.4.3) or reset (starting version 1.4.4). This is evaluated when a connection is returned to the connection pool.</p>
+<table>
+    <tbody><tr>
+        <td rowspan="2" valign="top"><b>System Variable</b></td>
+        <td><b>Name</b></td>
+        <td>mysql-max_stmts_per_connection</td>
+    </tr>
+    <tr>
+        <td><b>Dynamic</b></td>
+        <td>Yes</td>
+    </tr>
+    <tr>
+        <td rowspan="4" valign="top"><b>Permitted Values</b></td>
+        <td><b>Type</b></td>
+        <td>Integer</td>
+    </tr>
+    <tr>
+        <td><b>Default</b></td>
+        <td>20</td>
+    </tr>
+    <tr>
+        <td><b>Minimum</b></td>
+        <td>1</td>
+    </tr>
+    <tr>
+        <td><b>Maximum</b></td>
+        <td>1024</td>
+    </tr>
+</tbody></table>​
+<h3>
+<a aria-hidden="true" class="anchor" href="#mysql-max_transaction_time" id="user-content-mysql-max_transaction_time"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><code>mysql-max_transaction_time</code>
+</h3>
+<p>Sessions with active transactions running more than this timeout are killed.</p>
+<table>
+    <tbody><tr>
+        <td rowspan="2" valign="top"><b>System Variable</b></td>
+        <td><b>Name</b></td>
+        <td>mysql-max_transaction_time</td>
+    </tr>
+    <tr>
+        <td><b>Dynamic</b></td>
+        <td>Yes</td>
+    </tr>
+    <tr>
+        <td rowspan="4" valign="top"><b>Permitted Values</b></td>
+        <td><b>Type</b></td>
+        <td>Integer (milliseconds)</td>
+    </tr>
+    <tr>
+        <td><b>Default</b></td>
+        <td>14400000 (4 hours)</td>
+    </tr>
+    <tr>
+        <td><b>Minimum</b></td>
+        <td>1000</td>
+    </tr>
+    <tr>
+        <td><b>Maximum</b></td>
+        <td>1728000000</td>
+    </tr>
+</tbody></table>​
+<h3>
+<a aria-hidden="true" class="anchor" href="#mysql-monitor_connect_interval" id="user-content-mysql-monitor_connect_interval"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><code>mysql-monitor_connect_interval</code>
+</h3>
+<p>The interval at which the Monitor module of the proxy will try to connect to all the MySQL servers in order to check whether they are available or not.</p>
+<table>
+    <tbody><tr>
+        <td rowspan="2" valign="top"><b>System Variable</b></td>
+        <td><b>Name</b></td>
+        <td>mysql-monitor_connect_interval</td>
+    </tr>
+    <tr>
+        <td><b>Dynamic</b></td>
+        <td>Yes</td>
+    </tr>
+    <tr>
+        <td rowspan="4" valign="top"><b>Permitted Values</b></td>
+        <td><b>Type</b></td>
+        <td>Integer (milliseconds)</td>
+    </tr>
+    <tr>
+        <td><b>Default</b></td>
+        <td>120000 (2 mins)</td>
+    </tr>
+    <tr>
+        <td><b>Minimum</b></td>
+        <td>100</td>
+    </tr>
+    <tr>
+        <td><b>Maximum</b></td>
+        <td>604800000</td>
+    </tr>
+</tbody></table>​
+<h3>
+<a aria-hidden="true" class="anchor" href="#mysql-monitor_connect_timeout" id="user-content-mysql-monitor_connect_timeout"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><code>mysql-monitor_connect_timeout</code>
+</h3>
+<p>Connection timeout in milliseconds. The current implementation rounds this value to an integer number of seconds less or equal to the original interval, with 1 second as minimum. This lazy rouding is done because SSL connections are blocking calls.</p>
+<table>
+    <tbody><tr>
+        <td rowspan="2" valign="top"><b>System Variable</b></td>
+        <td><b>Name</b></td>
+        <td>mysql-monitor_connect_timeout</td>
+    </tr>
+    <tr>
+        <td><b>Dynamic</b></td>
+        <td>Yes</td>
+    </tr>
+    <tr>
+        <td rowspan="4" valign="top"><b>Permitted Values</b></td>
+        <td><b>Type</b></td>
+        <td>Integer (milliseconds)</td>
+    </tr>
+    <tr>
+        <td><b>Default</b></td>
+        <td>200</td>
+    </tr>
+    <tr>
+        <td><b>Minimum</b></td>
+        <td>100</td>
+    </tr>
+    <tr>
+        <td><b>Maximum</b></td>
+        <td>600000</td>
+    </tr>
+</tbody></table>​
+<h3>
+<a aria-hidden="true" class="anchor" href="#mysql-monitor_enabled" id="user-content-mysql-monitor_enabled"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><code>mysql-monitor_enabled</code>
+</h3>
+<p>It enables or disables MySQL Monitor.</p>
+<table>
+    <tbody><tr>
+        <td rowspan="2" valign="top"><b>System Variable</b></td>
+        <td><b>Name</b></td>
+        <td>mysql-monitor_enabled</td>
+    </tr>
+    <tr>
+        <td><b>Dynamic</b></td>
+        <td>Yes</td>
+    </tr>
+    <tr>
+        <td rowspan="4" valign="top"><b>Permitted Values</b></td>
+        <td><b>Type</b></td>
+        <td>Boolean</td>
+    </tr>
+    <tr>
+        <td><b>Default</b></td>
+        <td>true</td>
+    </tr>
+</tbody></table>​
+<h3>
+<a aria-hidden="true" class="anchor" href="#mysql-monitor_history" id="user-content-mysql-monitor_history"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><code>mysql-monitor_history</code>
+</h3>
+<p>The duration for which the events for the checks made by the Monitor module are kept. Such events include connecting to backend servers (to check for connectivity issues), querying them with a simple query (in order to check that they are running correctly) or checking their replication lag. These logs are kept in the following admin tables:</p>
+<ul>
+<li><code>mysql_server_connect_log</code></li>
+<li><code>mysql_server_ping_log</code></li>
+<li><code>mysql_server_replication_lag_log</code></li>
+</ul>
+<table>
+    <tbody><tr>
+        <td rowspan="2" valign="top"><b>System Variable</b></td>
+        <td><b>Name</b></td>
+        <td>mysql-monitor_history</td>
+    </tr>
+    <tr>
+        <td><b>Dynamic</b></td>
+        <td>Yes</td>
+    </tr>
+    <tr>
+        <td rowspan="4" valign="top"><b>Permitted Values</b></td>
+        <td><b>Type</b></td>
+        <td>Integer (milliseconds)</td>
+    </tr>
+    <tr>
+        <td><b>Default</b></td>
+        <td>600000 (100 seconds)</td>
+    </tr>
+    <tr>
+        <td><b>Minimum</b></td>
+        <td>1000</td>
+    </tr>
+    <tr>
+        <td><b>Maximum</b></td>
+        <td>604800000</td>
+    </tr>
+</tbody></table>​
+<h3>
+<a aria-hidden="true" class="anchor" href="#mysql-monitor_username" id="user-content-mysql-monitor_username"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><code>mysql-monitor_username</code>
+</h3>
+<p>Specifies the username that the Monitor module will use to connect to the backends. The user needs only <code>USAGE</code> privileges to connect, ping and check read_only. The user needs also <code>REPLICATION CLIENT</code> if it needs to monitor replication lag.</p>
+<table>
+    <tbody><tr>
+        <td rowspan="2" valign="top"><b>System Variable</b></td>
+        <td><b>Name</b></td>
+        <td>mysql-monitor_username</td>
+    </tr>
+    <tr>
+        <td><b>Dynamic</b></td>
+        <td>Yes</td>
+    </tr>
+    <tr>
+        <td rowspan="4" valign="top"><b>Permitted Values</b></td>
+        <td><b>Type</b></td>
+        <td>String</td>
+    </tr>
+    <tr>
+        <td><b>Default</b></td>
+        <td>monitor</td>
+    </tr>
+</tbody></table>​
+<h3>
+<a aria-hidden="true" class="anchor" href="#mysql-monitor_password" id="user-content-mysql-monitor_password"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><code>mysql-monitor_password</code>
+</h3>
+<p>Specifies the password that the Monitor module will use to connect to the backends.</p>
+<table>
+    <tbody><tr>
+        <td rowspan="2" valign="top"><b>System Variable</b></td>
+        <td><b>Name</b></td>
+        <td>mysql-monitor_password</td>
+    </tr>
+    <tr>
+        <td><b>Dynamic</b></td>
+        <td>Yes</td>
+    </tr>
+    <tr>
+        <td rowspan="4" valign="top"><b>Permitted Values</b></td>
+        <td><b>Type</b></td>
+        <td>String</td>
+    </tr>
+    <tr>
+        <td><b>Default</b></td>
+        <td>monitor</td>
+    </tr>
+</tbody></table>​
+<h3>
+<a aria-hidden="true" class="anchor" href="#mysql-monitor_ping_interval" id="user-content-mysql-monitor_ping_interval"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><code>mysql-monitor_ping_interval</code>
+</h3>
+<p>The interval at which the Monitor module should ping the backend servers by using the <a href="https://dev.mysql.com/doc/refman/5.0/en/mysql-ping.html" rel="nofollow">mysql_ping</a> API.</p>
+<table>
+    <tbody><tr>
+        <td rowspan="2" valign="top"><b>System Variable</b></td>
+        <td><b>Name</b></td>
+        <td>mysql-monitor_ping_interval</td>
+    </tr>
+    <tr>
+        <td><b>Dynamic</b></td>
+        <td>Yes</td>
+    </tr>
+    <tr>
+        <td rowspan="4" valign="top"><b>Permitted Values</b></td>
+        <td><b>Type</b></td>
+        <td>Integer (milliseconds)</td>
+    </tr>
+    <tr>
+        <td><b>Default</b></td>
+        <td>60000 (1 min)</td>
+    </tr>
+    <tr>
+        <td><b>Minimum</b></td>
+        <td>100</td>
+    </tr>
+    <tr>
+        <td><b>Maximum</b></td>
+        <td>604800000</td>
+    </tr>
+</tbody></table>​
+<h3>
+<a aria-hidden="true" class="anchor" href="#mysql-monitor_ping_timeout" id="user-content-mysql-monitor_ping_timeout"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><code>mysql-monitor_ping_timeout</code>
+</h3>
+<p>How long the Monitor module will wait for a ping reply.</p>
+<table>
+    <tbody><tr>
+        <td rowspan="2" valign="top"><b>System Variable</b></td>
+        <td><b>Name</b></td>
+        <td>mysql-monitor_ping_timeout</td>
+    </tr>
+    <tr>
+        <td><b>Dynamic</b></td>
+        <td>Yes</td>
+    </tr>
+    <tr>
+        <td rowspan="4" valign="top"><b>Permitted Values</b></td>
+        <td><b>Type</b></td>
+        <td>Integer (milliseconds)</td>
+    </tr>
+    <tr>
+        <td><b>Default</b></td>
+        <td>1000</td>
+    </tr>
+    <tr>
+        <td><b>Minimum</b></td>
+        <td>100</td>
+    </tr>
+    <tr>
+        <td><b>Maximum</b></td>
+        <td>600000</td>
+    </tr>
+</tbody></table>​
+<h3>
+<a aria-hidden="true" class="anchor" href="#mysql-monitor_read_only_max_timeout_count" id="user-content-mysql-monitor_read_only_max_timeout_count"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><code>mysql-monitor_read_only_max_timeout_count</code>
+</h3>
+<p>When the monitor thread performs a read_only check, AND the check exceeds <code>mysql-monitor_read_only_timeout</code>, repeat the read_only check up to <code>mysql-monitor_read_only_max_timeout_count</code> times before setting the slave to OFFLINE HARD.</p>
+<table>
+    <tbody><tr>
+        <td rowspan="2" valign="top"><b>System Variable</b></td>
+        <td><b>Name</b></td>
+        <td>mysql-monitor_read_only_max_timeout_count</td>
+    </tr>
+    <tr>
+        <td><b>Dynamic</b></td>
+        <td>Yes</td>
+    </tr>
+    <tr>
+        <td rowspan="4" valign="top"><b>Permitted Values</b></td>
+        <td><b>Type</b></td>
+        <td>Integer (milliseconds)</td>
+    </tr>
+    <tr>
+        <td><b>Default</b></td>
+        <td>3</td>
+    </tr>
+    <tr>
+        <td><b>Minimum</b></td>
+        <td>1</td>
+    </tr>
+    <tr>
+        <td><b>Maximum</b></td>
+        <td>999999</td>
+    </tr>
+</tbody></table>​
+<h3>
+<a aria-hidden="true" class="anchor" href="#mysql-monitor_query_interval" id="user-content-mysql-monitor_query_interval"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><code>mysql-monitor_query_interval</code>
+</h3>
+<p>Currently unused. Will be used by the Monitor module in order to collect data about the global status of the backend servers.</p>
+<table>
+    <tbody><tr>
+        <td rowspan="2" valign="top"><b>System Variable</b></td>
+        <td><b>Name</b></td>
+        <td>mysql-monitor_query_interval</td>
+    </tr>
+    <tr>
+        <td><b>Dynamic</b></td>
+        <td>Yes</td>
+    </tr>
+    <tr>
+        <td rowspan="4" valign="top"><b>Permitted Values</b></td>
+        <td><b>Type</b></td>
+        <td>Integer (milliseconds)</td>
+    </tr>
+    <tr>
+        <td><b>Default</b></td>
+        <td>60000 (1 min)</td>
+    </tr>
+    <tr>
+        <td><b>Minimum</b></td>
+        <td>100</td>
+    </tr>
+    <tr>
+        <td><b>Maximum</b></td>
+        <td>604800000</td>
+    </tr>
+</tbody></table>​
+<h3>
+<a aria-hidden="true" class="anchor" href="#mysql-monitor_query_status" id="user-content-mysql-monitor_query_status"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><code>mysql-monitor_query_status</code>
+</h3>
+<p>Currently unused. Will be used by the Monitor module in order to collect data about the global status of the backend servers.</p>
+<table>
+    <tbody><tr>
+        <td rowspan="2" valign="top"><b>System Variable</b></td>
+        <td><b>Name</b></td>
+        <td>mysql-monitor_query_status</td>
+    </tr>
+    <tr>
+        <td><b>Dynamic</b></td>
+        <td>Yes</td>
+    </tr>
+    <tr>
+        <td rowspan="4" valign="top"><b>Permitted Values</b></td>
+        <td><b>Type</b></td>
+        <td>String</td>
+    </tr>
+    <tr>
+        <td><b>Default</b></td>
+        <td>SELECT * FROM INFORMATION_SCHEMA.GLOBAL_STATUS</td>
+    </tr>
+</tbody></table>​
+<h3>
+<a aria-hidden="true" class="anchor" href="#mysql-monitor_query_timeout" id="user-content-mysql-monitor_query_timeout"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><code>mysql-monitor_query_timeout</code>
+</h3>
+<p>Currently unused. Will be used by the Monitor module in order to collect data about the global status of the backend servers.</p>
+<table>
+    <tbody><tr>
+        <td rowspan="2" valign="top"><b>System Variable</b></td>
+        <td><b>Name</b></td>
+        <td>mysql-monitor_query_timeout</td>
+    </tr>
+    <tr>
+        <td><b>Dynamic</b></td>
+        <td>Yes</td>
+    </tr>
+    <tr>
+        <td rowspan="4" valign="top"><b>Permitted Values</b></td>
+        <td><b>Type</b></td>
+        <td>Integer (milliseconds)</td>
+    </tr>
+    <tr>
+        <td><b>Default</b></td>
+        <td>100</td>
+    </tr>
+</tbody></table>​
+<h3>
+<a aria-hidden="true" class="anchor" href="#mysql-monitor_query_variables" id="user-content-mysql-monitor_query_variables"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><code>mysql-monitor_query_variables</code>
+</h3>
+<p>Currently unused. Will be used by the Monitor module in order to collect data about the global status of the backend servers.</p>
+<table>
+    <tbody><tr>
+        <td rowspan="2" valign="top"><b>System Variable</b></td>
+        <td><b>Name</b></td>
+        <td>mysql-monitor_query_variables</td>
+    </tr>
+    <tr>
+        <td><b>Dynamic</b></td>
+        <td>Yes</td>
+    </tr>
+    <tr>
+        <td rowspan="4" valign="top"><b>Permitted Values</b></td>
+        <td><b>Type</b></td>
+        <td>String</td>
+    </tr>
+    <tr>
+        <td><b>Default</b></td>
+        <td>SELECT * FROM INFORMATION_SCHEMA.GLOBAL_VARIABLES</td>
+    </tr>
+</tbody></table>​
+<h3>
+<a aria-hidden="true" class="anchor" href="#mysql-monitor_replication_lag_interval" id="user-content-mysql-monitor_replication_lag_interval"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><code>mysql-monitor_replication_lag_interval</code>
+</h3>
+<p>The interval at which the proxy should connect to the backend servers in order to monitor the replication lag between those that are slaves and their masters. Slaves can be temporarily shunned if the replication lag is too large. This setting is controlled by the <code>mysql_servers</code>.<code>max_replication_lag</code> column in the admin interface, at a per-hostgroup level.</p>
+<table>
+    <tbody><tr>
+        <td rowspan="2" valign="top"><b>System Variable</b></td>
+        <td><b>Name</b></td>
+        <td>mysql-monitor_replication_lag_interval</td>
+    </tr>
+    <tr>
+        <td><b>Dynamic</b></td>
+        <td>Yes</td>
+    </tr>
+    <tr>
+        <td rowspan="4" valign="top"><b>Permitted Values</b></td>
+        <td><b>Type</b></td>
+        <td>Integer (milliseconds)</td>
+    </tr>
+    <tr>
+        <td><b>Default</b></td>
+        <td>10000</td>
+    </tr>
+    <tr>
+        <td><b>Minimum</b></td>
+        <td>100</td>
+    </tr>
+    <tr>
+        <td><b>Maximum</b></td>
+        <td>604800000</td>
+    </tr>
+</tbody></table>​
+<h3>
+<a aria-hidden="true" class="anchor" href="#mysql-monitor_replication_lag_timeout" id="user-content-mysql-monitor_replication_lag_timeout"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><code>mysql-monitor_replication_lag_timeout</code>
+</h3>
+<p>How long the Monitor module will wait for the output of <code>SHOW SLAVE STATUS</code> to be returned from the database.</p>
+<table>
+    <tbody><tr>
+        <td rowspan="2" valign="top"><b>System Variable</b></td>
+        <td><b>Name</b></td>
+        <td>mysql-monitor_replication_lag_timeout</td>
+    </tr>
+    <tr>
+        <td><b>Dynamic</b></td>
+        <td>Yes</td>
+    </tr>
+    <tr>
+        <td rowspan="4" valign="top"><b>Permitted Values</b></td>
+        <td><b>Type</b></td>
+        <td>Integer (milliseconds)</td>
+    </tr>
+    <tr>
+        <td><b>Default</b></td>
+        <td>1000</td>
+    </tr>
+    <tr>
+        <td><b>Minimum</b></td>
+        <td>100</td>
+    </tr>
+    <tr>
+        <td><b>Maximum</b></td>
+        <td>600000</td>
+    </tr>
+</tbody></table>​
+<h3>
+<a aria-hidden="true" class="anchor" href="#mysql-monitor_slave_lag_when_null" id="user-content-mysql-monitor_slave_lag_when_null"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><code>mysql-monitor_slave_lag_when_null</code>
+</h3>
+<p>When replication check returns that <code>Seconds_Behind_Master=NULL</code> , the value of <code>mysql-monitor_slave_lag_when_null</code> (in seconds) is assumed to be the current replication lag. This allow to either shun or keep online a server where replication is broken/stopped.</p>
+<table>
+    <tbody><tr>
+        <td rowspan="2" valign="top"><b>System Variable</b></td>
+        <td><b>Name</b></td>
+        <td>mysql-monitor_slave_lag_when_null</td>
+    </tr>
+    <tr>
+        <td><b>Dynamic</b></td>
+        <td>Yes</td>
+    </tr>
+    <tr>
+        <td rowspan="5" valign="top"><b>Permitted Values</b></td>
+        <td><b>Type</b></td>
+        <td>Integer (seconds)</td>
+    </tr>
+    <tr>
+        <td><b>Default</b></td>
+        <td>60</td>
+    </tr>
+    <tr>
+        <td><b>Minimum (up to 1.3.1)</b></td>
+        <td>100</td>
+    </tr>
+    <tr>
+        <td><b>Minimum (from 1.3.2 onwards)</b></td>
+        <td>0</td>
+    </tr>
+    <tr>
+        <td><b>Maximum</b></td>
+        <td>604800 (1 week)</td>
+    </tr>
+</tbody></table>​
+<h3>
+<a aria-hidden="true" class="anchor" href="#mysql-monitor_timer_cached" id="user-content-mysql-monitor_timer_cached"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><code>mysql-monitor_timer_cached</code>
+</h3>
+<p>This variable controls whether ProxySQL should use a cached (and less accurate) value of wall clock time, or not. The actual API used for this is described <a href="http://stuff.onse.fi/man?program=event_base_gettimeofday_cached&amp;section=3" rel="nofollow">here</a>.</p>
+<table>
+    <tbody><tr>
+        <td rowspan="2" valign="top"><b>System Variable</b></td>
+        <td><b>Name</b></td>
+        <td>mysql-monitor_timer_cached</td>
+    </tr>
+    <tr>
+        <td><b>Dynamic</b></td>
+        <td>Yes</td>
+    </tr>
+    <tr>
+        <td rowspan="4" valign="top"><b>Permitted Values</b></td>
+        <td><b>Type</b></td>
+        <td>Boolean</td>
+    </tr>
+    <tr>
+        <td><b>Default</b></td>
+        <td>true</td>
+    </tr>
+</tbody></table>​
+<h3>
+<a aria-hidden="true" class="anchor" href="#mysql-ping_interval_server_msec" id="user-content-mysql-ping_interval_server_msec"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><code>mysql-ping_interval_server_msec</code>
+</h3>
+<p>The interval at which the proxy should ping backend connections in order to maintain them alive, even though there is no outgoing traffic. The purpose here is to keep some connections alive in order to reduce the latency of new queries towards a less frequently used destination backend server.</p>
+<table>
+    <tbody><tr>
+        <td rowspan="2" valign="top"><b>System Variable</b></td>
+        <td><b>Name</b></td>
+        <td>mysql-ping_interval_server_msec</td>
+    </tr>
+    <tr>
+        <td><b>Dynamic</b></td>
+        <td>Yes</td>
+    </tr>
+    <tr>
+        <td rowspan="4" valign="top"><b>Permitted Values</b></td>
+        <td><b>Type</b></td>
+        <td>Integer (milliseconds)</td>
+    </tr>
+    <tr>
+        <td><b>Default</b></td>
+        <td>10000</td>
+    </tr>
+    <tr>
+        <td><b>Minimum</b></td>
+        <td>1000</td>
+    </tr>
+    <tr>
+        <td><b>Maximum</b></td>
+        <td>604800000</td>
+    </tr>
+</tbody></table>​
+<h3>
+<a aria-hidden="true" class="anchor" href="#mysql-ping_timeout_server" id="user-content-mysql-ping_timeout_server"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><code>mysql-ping_timeout_server</code>
+</h3>
+<p>The proxy internally pings the connections it has opened in order to keep them alive. This elliminates the cost of opening a new connection towards a hostgroup when a query needs to be routed, at the cost of additional memory footprint inside the proxy and some extra traffic. This is the timeout allowed for those pings to succeed.</p>
+<table>
+    <tbody><tr>
+        <td rowspan="2" valign="top"><b>System Variable</b></td>
+        <td><b>Name</b></td>
+        <td>mysql-ping_timeout_server</td>
+    </tr>
+    <tr>
+        <td><b>Dynamic</b></td>
+        <td>Yes</td>
+    </tr>
+    <tr>
+        <td rowspan="4" valign="top"><b>Permitted Values</b></td>
+        <td><b>Type</b></td>
+        <td>Integer (milliseconds)</td>
+    </tr>
+    <tr>
+        <td><b>Default</b></td>
+        <td>200</td>
+    </tr>
+    <tr>
+        <td><b>Minimum</b></td>
+        <td>10</td>
+    </tr>
+    <tr>
+        <td><b>Maximum</b></td>
+        <td>600000</td>
+    </tr>
+</tbody></table>​
+<h3>
+<a aria-hidden="true" class="anchor" href="#mysql-poll_timeout" id="user-content-mysql-poll_timeout"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><code>mysql-poll_timeout</code>
+</h3>
+<p>The minimal timeout used by the proxy in order to detect incoming/outgoing traffic via the <code>poll()</code> system call. If the proxy determines that it should stick to a higher timeout because of its internal computations, it will use that one, but it will never use a value less than this one.</p>
+<table>
+    <tbody><tr>
+        <td rowspan="2" valign="top"><b>System Variable</b></td>
+        <td><b>Name</b></td>
+        <td>mysql-poll_timeout</td>
+    </tr>
+    <tr>
+        <td><b>Dynamic</b></td>
+        <td>Yes</td>
+    </tr>
+    <tr>
+        <td rowspan="4" valign="top"><b>Permitted Values</b></td>
+        <td><b>Type</b></td>
+        <td>Integer (milliseconds)</td>
+    </tr>
+    <tr>
+        <td><b>Default</b></td>
+        <td>2000</td>
+    </tr>
+    <tr>
+        <td><b>Minimum</b></td>
+        <td>10</td>
+    </tr>
+    <tr>
+        <td><b>Maximum</b></td>
+        <td>20000</td>
+    </tr>
+</tbody></table>​
+<h3>
+<a aria-hidden="true" class="anchor" href="#mysql-poll_timeout_on_failure" id="user-content-mysql-poll_timeout_on_failure"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><code>mysql-poll_timeout_on_failure</code>
+</h3>
+<p>The timeout used in order to detect incoming/outgoing traffic after a connection error has occured. The proxy automatically tweaks its timeout to a lower value in such an event in order to be able to quickly respond with a valid connection.</p>
+<table>
+    <tbody><tr>
+        <td rowspan="2" valign="top"><b>System Variable</b></td>
+        <td><b>Name</b></td>
+        <td>mysql-poll_timeout_on_failure</td>
+    </tr>
+    <tr>
+        <td><b>Dynamic</b></td>
+        <td>Yes</td>
+    </tr>
+    <tr>
+        <td rowspan="4" valign="top"><b>Permitted Values</b></td>
+        <td><b>Type</b></td>
+        <td>Integer (milliseconds)</td>
+    </tr>
+    <tr>
+        <td><b>Default</b></td>
+        <td>100</td>
+    </tr>
+    <tr>
+        <td><b>Minimum</b></td>
+        <td>10</td>
+    </tr>
+    <tr>
+        <td><b>Maximum</b></td>
+        <td>20000</td>
+    </tr>
+</tbody></table>​
+<h3>
+<a aria-hidden="true" class="anchor" href="#mysql-query_digests" id="user-content-mysql-query_digests"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><code>mysql-query_digests</code>
+</h3>
+<p>When this variable is set to true, the proxy analyzes the queries passing through it and divides them into classes of queries having different values for the same parameters. It computes a couple of metrics for these classes of queries, all found in the <code>stats_mysql_query_digest</code> table. For more details, please refer to the <a href="https://github.com/sysown/proxysql/wiki/Main-(runtime)#mysql_query_rules">admin tables documentation</a>.<br/>
+It is also very important to note that query digest is required to determine when multiplexing needs to be disabled, for example in case of <code>TEMPORARY</code> tables, <code>SQL_CALC_FOUND_ROWS</code> , <code>GET_LOCK</code>, etc.<br/>
+Do not disabled <code>mysql-query_digests</code> unless you are really sure it won't break your application.</p>
+<table>
+    <tbody><tr>
+        <td rowspan="2" valign="top"><b>System Variable</b></td>
+        <td><b>Name</b></td>
+        <td>mysql-query_digests</td>
+    </tr>
+    <tr>
+        <td><b>Dynamic</b></td>
+        <td>Yes</td>
+    </tr>
+    <tr>
+        <td rowspan="4" valign="top"><b>Permitted Values</b></td>
+        <td><b>Type</b></td>
+        <td>Boolean</td>
+    </tr>
+    <tr>
+        <td><b>Default</b></td>
+        <td>true</td>
+    </tr>
+</tbody></table>​
+<h3>
+<a aria-hidden="true" class="anchor" href="#mysql-query_digests_lowercase" id="user-content-mysql-query_digests_lowercase"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><code>mysql-query_digests_lowercase</code>
+</h3>
+<p>When this variable is set to true, query digest is automatically converted to lowercase other when false query digests are case sensitive.</p>
+<table>
+    <tbody><tr>
+        <td rowspan="2" valign="top"><b>System Variable</b></td>
+        <td><b>Name</b></td>
+        <td>mysql-query_digests_lowercase</td>
+    </tr>
+    <tr>
+        <td><b>Dynamic</b></td>
+        <td>Yes</td>
+    </tr>
+    <tr>
+        <td rowspan="4" valign="top"><b>Permitted Values</b></td>
+        <td><b>Type</b></td>
+        <td>Boolean</td>
+    </tr>
+    <tr>
+        <td><b>Default</b></td>
+        <td>false</td>
+    </tr>
+</tbody></table>​
+<h3>
+<a aria-hidden="true" class="anchor" href="#mysql-query_digests_max_digest_length" id="user-content-mysql-query_digests_max_digest_length"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><code>mysql-query_digests_max_digest_length</code>
+</h3>
+<p>Defines the maximum length of <code>digest_text</code> as then reported in <code>stats_mysql_query_digest</code></p>
+<table>
+    <tbody><tr>
+        <td rowspan="2" valign="top"><b>System Variable</b></td>
+        <td><b>Name</b></td>
+        <td>mysql-query_digests_max_digest_length</td>
+    </tr>
+    <tr>
+        <td><b>Dynamic</b></td>
+        <td>Yes</td>
+    </tr>
+    <tr>
+        <td rowspan="5" valign="top"><b>Permitted Values</b></td>
+        <td><b>Type</b></td>
+        <td>Integer</td>
+    </tr>
+    <tr>
+        <td><b>Default</b></td>
+        <td>2048</td>
+    </tr>
+    <tr>
+        <td><b>Minimum</b></td>
+        <td>16</td>
+    </tr>
+    <tr>
+        <td><b>Maximum (up to 1.3.1)</b></td>
+        <td>65000</td>
+    </tr>
+    <tr>
+        <td><b>Maximum (from 1.3.2 onwards)</b></td>
+        <td>1048576</td>
+    </tr>
+</tbody></table>​
+<h3>
+<a aria-hidden="true" class="anchor" href="#mysql-query_digests_max_query_length" id="user-content-mysql-query_digests_max_query_length"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><code>mysql-query_digests_max_query_length</code>
+</h3>
+<p>Defines the maximum query length processed when computing query's <code>digest</code> and <code>digest_text</code></p>
+<table>
+    <tbody><tr>
+        <td rowspan="2" valign="top"><b>System Variable</b></td>
+        <td><b>Name</b></td>
+        <td>mysql-query_digests_max_query_length</td>
+    </tr>
+    <tr>
+        <td><b>Dynamic</b></td>
+        <td>Yes</td>
+    </tr>
+    <tr>
+        <td rowspan="5" valign="top"><b>Permitted Values</b></td>
+        <td><b>Type</b></td>
+        <td>Integer</td>
+    </tr>
+    <tr>
+        <td><b>Default</b></td>
+        <td>65000</td>
+    </tr>
+    <tr>
+        <td><b>Minimum</b></td>
+        <td>16</td>
+    </tr>
+    <tr>
+        <td><b>Maximum (up to 1.3.1)</b></td>
+        <td>65000</td>
+    </tr>
+    <tr>
+        <td><b>Maximum (from 1.3.2 onwards)</b></td>
+        <td>16777216</td>
+    </tr>
+</tbody></table>​
+<h3>
+<a aria-hidden="true" class="anchor" href="#mysql-query_processor_iterations" id="user-content-mysql-query_processor_iterations"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><code>mysql-query_processor_iterations</code>
+</h3>
+<p>If <code>mysql_query_rules</code>.<code>flagOUT</code> is set and <code>mysql-query_processor_iterations</code> is greater than 0, a matching rule will set <code>flagIN</code> and starts processing rules from the beginning up to <code>mysql-query_processor_iterations</code> iterations.<br/>
+Therefore, mysql-query_processor_iterations allows to jump back to previous <code>mysql_query_rules</code>.</p>
+<table>
+    <tbody><tr>
+        <td rowspan="2" valign="top"><b>System Variable</b></td>
+        <td><b>Name</b></td>
+        <td>mysql-query_processor_iterations</td>
+    </tr>
+    <tr>
+        <td><b>Dynamic</b></td>
+        <td>Yes</td>
+    </tr>
+    <tr>
+        <td rowspan="5" valign="top"><b>Permitted Values</b></td>
+        <td><b>Type</b></td>
+        <td>Integer</td>
+    </tr>
+    <tr>
+        <td><b>Default</b></td>
+        <td>0</td>
+    </tr>
+    <tr>
+        <td><b>Minimum</b></td>
+        <td>0</td>
+    </tr>
+    <tr>
+        <td><b>Maximum</b></td>
+        <td>1000000</td>
+    </tr>
+</tbody></table>​
+<h3>
+<a aria-hidden="true" class="anchor" href="#mysql-query_processor_regex" id="user-content-mysql-query_processor_regex"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><code>mysql-query_processor_regex</code>
+</h3>
+<p>This variable defines which regex engine to use:</p>
+<ul>
+<li>1 : <a href="http://www.pcre.org/" rel="nofollow">PCRE</a>
+</li>
+<li>2 : <a href="https://github.com/google/re2">RE2</a>
+</li>
+</ul>
+<p>Before version v1.4.0, only RE2 was available, <em>CASELESS</em> was always enabled, and <em>GLOBAL</em> was always disabled.<br/>
+Starting from v1.4.0, both PCRE and RE2 are available. Now both PCRE and RE2 support <em>CASELESS</em> and <em>GLOBAL</em> using <a href="MySQL-Query-Rules">re_modifiers</a>.<br/>
+Although, RE2 doesn't support both <em>CASELESS</em> and <em>GLOBAL</em> at the same time if they are both configured in <a href="MySQL-Query-Rules">re_modifiers</a>. For this reason, the default regex engine was change to PCRE.</p>
+<table>
+    <tbody><tr>
+        <td rowspan="2" valign="top"><b>System Variable</b></td>
+        <td><b>Name</b></td>
+        <td colspan="2">mysql-query_processor_regex</td>
+    </tr>
+    <tr>
+        <td><b>Dynamic</b></td>
+        <td colspan="2">Yes</td>
+    </tr>
+    <tr>
+        <td rowspan="5" valign="top"><b>Permitted Values</b></td>
+        <td><b>Type</b></td>
+        <td colspan="2">Integer</td>
+    </tr>
+    <tr>
+        <td><b>Default</b></td>
+        <td><b>PCRE</b></td>
+        <td colspan="2">1</td>
+    </tr>
+    <tr>
+        <td rowspan="2" valign="top"><b>Valid Values</b></td>
+        <td><b>PCRE</b></td>
+        <td>1</td>
+    </tr>
+    <tr>
+        <td><b>RE2</b></td>
+        <td>2</td>
+    </tr>
+</tbody></table>​
+<h3>
+<a aria-hidden="true" class="anchor" href="#mysql-query_retries_on_failure" id="user-content-mysql-query_retries_on_failure"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>mysql-query_retries_on_failure</h3>
+<p>In case of failures while running a query, the same can be retries <code>mysql-query_retries_on_failure</code> times.</p>
+<table>
+    <tbody><tr>
+        <td rowspan="2" valign="top"><b>System Variable</b></td>
+        <td><b>Name</b></td>
+        <td>mysql-query_retries_on_failure</td>
+    </tr>
+    <tr>
+        <td><b>Dynamic</b></td>
+        <td>Yes</td>
+    </tr>
+    <tr>
+        <td rowspan="4" valign="top"><b>Permitted Values</b></td>
+        <td><b>Type</b></td>
+        <td>Integer</td>
+    </tr>
+    <tr>
+        <td><b>Default</b></td>
+        <td>1</td>
+    </tr>
+    <tr>
+        <td><b>Minimum</b></td>
+        <td>0</td>
+    </tr>
+    <tr>
+        <td><b>Maximum</b></td>
+        <td>1000</td>
+    </tr>
+</tbody></table>​
+<h3>
+<a aria-hidden="true" class="anchor" href="#mysql-server_capabilities" id="user-content-mysql-server_capabilities"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><code>mysql-server_capabilities</code>
+</h3>
+<p>The bitmask of MySQL capabilities (encoded as bits) with which the proxy will respond to clients connecting to it.<br/>
+This is useful in order to prevent certain features from being used, although it is planned to be deprecated in the future.<br/>
+The default capabilities are:</p>
+<div class="highlight highlight-source-c++"><pre>server_capabilities = CLIENT_FOUND_ROWS | CLIENT_PROTOCOL_41 | CLIENT_IGNORE_SIGPIPE | CLIENT_TRANSACTIONS | CLIENT_SECURE_CONNECTION | CLIENT_CONNECT_WITH_DB | CLIENT_SSL;</pre></div>
+<p>More details about server capabilities in the <a href="https://dev.mysql.com/doc/internals/en/capability-flags.html#packet-Protocol::CapabilityFlags" rel="nofollow">official documentation</a>.</p>
+<table>
+    <tbody><tr>
+        <td rowspan="2" valign="top"><b>System Variable</b></td>
+        <td><b>Name</b></td>
+        <td>mysql-server_capabilities</td>
+    </tr>
+    <tr>
+        <td><b>Dynamic</b></td>
+        <td>Yes</td>
+    </tr>
+    <tr>
+        <td rowspan="4" valign="top"><b>Permitted Values</b></td>
+        <td><b>Type</b></td>
+        <td>Integer</td>
+    </tr>
+    <tr>
+        <td><b>Default</b></td>
+        <td>47626</td>
+    </tr>
+    <tr>
+        <td><b>Minimum</b></td>
+        <td>10</td>
+    </tr>
+    <tr>
+        <td><b>Maximum</b></td>
+        <td>65535</td>
+    </tr>
+</tbody></table>​
+<h3>
+<a aria-hidden="true" class="anchor" href="#mysql-server_version" id="user-content-mysql-server_version"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><code>mysql-server_version</code>
+</h3>
+<p>The server version with which the proxy will respond to the clients. Note that regardless of the versions of the backend servers, the proxy will respond with this.</p>
+<table>
+    <tbody><tr>
+        <td rowspan="2" valign="top"><b>System Variable</b></td>
+        <td><b>Name</b></td>
+        <td>mysql-server_version</td>
+    </tr>
+    <tr>
+        <td><b>Dynamic</b></td>
+        <td>Yes</td>
+    </tr>
+    <tr>
+        <td rowspan="4" valign="top"><b>Permitted Values</b></td>
+        <td><b>Type</b></td>
+        <td>String</td>
+    </tr>
+    <tr>
+        <td><b>Default</b></td>
+        <td>5.5.30</td>
+    </tr>
+</tbody></table>​
+<h3>
+<a aria-hidden="true" class="anchor" href="#mysql-servers_stats" id="user-content-mysql-servers_stats"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><code>mysql-servers_stats</code>
+</h3>
+<p>Currently unused. Will be removed in a future version.</p>
+<table>
+    <tbody><tr>
+        <td rowspan="2" valign="top"><b>System Variable</b></td>
+        <td><b>Name</b></td>
+        <td>mysql-servers_stats</td>
+    </tr>
+    <tr>
+        <td><b>Dynamic</b></td>
+        <td>Yes</td>
+    </tr>
+    <tr>
+        <td rowspan="4" valign="top"><b>Permitted Values</b></td>
+        <td><b>Type</b></td>
+        <td>Boolean</td>
+    </tr>
+    <tr>
+        <td><b>Default</b></td>
+        <td>true</td>
+    </tr>
+</tbody></table>​
+<h3>
+<a aria-hidden="true" class="anchor" href="#mysql-session_debug" id="user-content-mysql-session_debug"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><code>mysql-session_debug</code>
+</h3>
+<p>Currently unused. Will be removed in a future version.</p>
+<table>
+    <tbody><tr>
+        <td rowspan="2" valign="top"><b>System Variable</b></td>
+        <td><b>Name</b></td>
+        <td>mysql-session_debug</td>
+    </tr>
+    <tr>
+        <td><b>Dynamic</b></td>
+        <td>Yes</td>
+    </tr>
+    <tr>
+        <td rowspan="4" valign="top"><b>Permitted Values</b></td>
+        <td><b>Type</b></td>
+        <td>Boolean</td>
+    </tr>
+    <tr>
+        <td><b>Default</b></td>
+        <td>true</td>
+    </tr>
+</tbody></table>​
+<h3>
+<a aria-hidden="true" class="anchor" href="#mysql-session_idle_ms" id="user-content-mysql-session_idle_ms"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><code>mysql-session_idle_ms</code>
+</h3>
+<p>Starting from v1.3.0 , each MySQL_Thread has an auxiliary thread that is responsible to handle idle sessions (client connections). <code>mysql-session_idle_ms</code> defines when a session is idle and passed from the main thread to the auxiliary thread.</p>
+<table>
+    <tbody><tr>
+        <td rowspan="2" valign="top"><b>System Variable</b></td>
+        <td><b>Name</b></td>
+        <td>mysql-session_idle_ms</td>
+    </tr>
+    <tr>
+        <td><b>Dynamic</b></td>
+        <td>Yes</td>
+    </tr>
+    <tr>
+        <td rowspan="4" valign="top"><b>Permitted Values</b></td>
+        <td><b>Type</b></td>
+        <td>Integer (milliseconds)</td>
+    </tr>
+    <tr>
+        <td><b>Default</b></td>
+        <td>1000</td>
+    </tr>
+    <tr>
+        <td><b>Minimum</b></td>
+        <td>100</td>
+    </tr>
+    <tr>
+        <td><b>Maximum</b></td>
+        <td>3600000</td>
+    </tr>
+</tbody></table>​
+<h3>
+<a aria-hidden="true" class="anchor" href="#mysql-session_idle_show_processlist" id="user-content-mysql-session_idle_show_processlist"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><code>mysql-session_idle_show_processlist</code>
+</h3>
+<p><code>mysql-session_idle_show_processlist</code> defines if in idle session (as defined by <code>mysql-session_idle_ms</code>) should be listed in <code>SHOW PROCESSLIST</code> (or in general, in <code>stats_mysql_processlist</code> table). For performance reason, idle sessions are not listed by default.</p>
+<table>
+    <tbody><tr>
+        <td rowspan="2" valign="top"><b>System Variable</b></td>
+        <td><b>Name</b></td>
+        <td>mysql-session_idle_show_processlist</td>
+    </tr>
+    <tr>
+        <td><b>Dynamic</b></td>
+        <td>Yes</td>
+    </tr>
+    <tr>
+        <td rowspan="4" valign="top"><b>Permitted Values</b></td>
+        <td><b>Type</b></td>
+        <td>Boolean</td>
+    </tr>
+    <tr>
+        <td><b>Default</b></td>
+        <td>false</td>
+    </tr>
+</tbody></table>​
+<h3>
+<a aria-hidden="true" class="anchor" href="#mysql-sessions_sort" id="user-content-mysql-sessions_sort"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><code>mysql-sessions_sort</code>
+</h3>
+<p>Sessions are conversations between a MySQL client and a backend server in the proxy. Sessions are generally processed in a stable order but in certain scenarios (like using a transaction workload, which makes sessions bind to certain MySQL connections from the pool), processing them in the same order leads to starvation.</p>
+<p>This variable controls whether sessions should be processed in the order of waiting time, in order to have a more balanced distribution of traffic among sessions.</p>
+<table>
+    <tbody><tr>
+        <td rowspan="2" valign="top"><b>System Variable</b></td>
+        <td><b>Name</b></td>
+        <td>mysql-sessions_sort</td>
+    </tr>
+    <tr>
+        <td><b>Dynamic</b></td>
+        <td>Yes</td>
+    </tr>
+    <tr>
+        <td rowspan="4" valign="top"><b>Permitted Values</b></td>
+        <td><b>Type</b></td>
+        <td>Boolean</td>
+    </tr>
+    <tr>
+        <td><b>Default</b></td>
+        <td>true</td>
+    </tr>
+</tbody></table>​
+<h3>
+<a aria-hidden="true" class="anchor" href="#mysql-shun_on_failures" id="user-content-mysql-shun_on_failures"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><code>mysql-shun_on_failures</code>
+</h3>
+<p>The number of connection errors tolerated to the same server within an interval of 1 second until it is automatically shunned temporarily. For now, this can not be disabled by setting it to a special value, so if you want to do that, you can increase it to a very large value.</p>
+<table>
+    <tbody><tr>
+        <td rowspan="2" valign="top"><b>System Variable</b></td>
+        <td><b>Name</b></td>
+        <td>mysql-shun_on_failures</td>
+    </tr>
+    <tr>
+        <td><b>Dynamic</b></td>
+        <td>Yes</td>
+    </tr>
+    <tr>
+        <td rowspan="4" valign="top"><b>Permitted Values</b></td>
+        <td><b>Type</b></td>
+        <td>Integer</td>
+    </tr>
+    <tr>
+        <td><b>Default</b></td>
+        <td>5</td>
+    </tr>
+    <tr>
+        <td><b>Minimum</b></td>
+        <td>0</td>
+    </tr>
+    <tr>
+        <td><b>Maximum</b></td>
+        <td>10000000</td>
+    </tr>
+</tbody></table>​
+<h3>
+<a aria-hidden="true" class="anchor" href="#mysql-shun_recovery_time_sec" id="user-content-mysql-shun_recovery_time_sec"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><code>mysql-shun_recovery_time_sec</code>
+</h3>
+<p>A backend server that has been automatically shunned will be recovered after at least this amount of time.<br/>
+Note that if ProxySQL isn't handling client traffic, there is no actual hard guarantee of the exact timing, but in practice it shouldn't exceed this value by more than a couple of seconds.</p>
+<p>Self tuning:</p>
+<ul>
+<li>
+<code>mysql-shun_recovery_time_sec</code> should always be less than <code>mysql-connect_timeout_server_max/1000</code> , in order to prevent that a server is taken out for so long that an error is returned to the client. If <code>mysql-shun_recovery_time_sec</code> &gt; <code>mysql-connect_timeout_server_max/1000</code> , the smaller of the two is used. (see #530)</li>
+<li>if only one server is present in a hostgroup and <code>mysql-shun_recovery_time_sec &gt; 1</code> , the server is automatically brought back online after 1 second</li>
+</ul>
+<table>
+    <tbody><tr>
+        <td rowspan="2" valign="top"><b>System Variable</b></td>
+        <td><b>Name</b></td>
+        <td>mysql-shun_recovery_time_sec</td>
+    </tr>
+    <tr>
+        <td><b>Dynamic</b></td>
+        <td>Yes</td>
+    </tr>
+    <tr>
+        <td rowspan="4" valign="top"><b>Permitted Values</b></td>
+        <td><b>Type</b></td>
+        <td>Integer (seconds)</td>
+    </tr>
+    <tr>
+        <td><b>Default</b></td>
+        <td>10</td>
+    </tr>
+    <tr>
+        <td><b>Minimum</b></td>
+        <td>0</td>
+    </tr>
+    <tr>
+        <td><b>Maximum</b></td>
+        <td>31536000</td>
+    </tr>
+</tbody></table>​
+<h3>
+<a aria-hidden="true" class="anchor" href="#mysql-stacksize" id="user-content-mysql-stacksize"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><code>mysql-stacksize</code>
+</h3>
+<p>The stack size to be used with the background threads that the proxy uses to handle MySQL traffic and connect to the backends. Note that changing this value has no effect at runtime, if you need to change it you have to restart the proxy.</p>
+<table>
+    <tbody><tr>
+        <td rowspan="2" valign="top"><b>System Variable</b></td>
+        <td><b>Name</b></td>
+        <td>mysql-stacksize</td>
+    </tr>
+    <tr>
+        <td><b>Dynamic</b></td>
+        <td>Yes</td>
+    </tr>
+    <tr>
+        <td rowspan="4" valign="top"><b>Permitted Values</b></td>
+        <td><b>Type</b></td>
+        <td>Integer (bytes)</td>
+    </tr>
+    <tr>
+        <td><b>Default</b></td>
+        <td>1048576</td>
+    </tr>
+    <tr>
+        <td><b>Minimum</b></td>
+        <td>262144</td>
+    </tr>
+    <tr>
+        <td><b>Maximum</b></td>
+        <td>4194304</td>
+    </tr>
+</tbody></table>​
+<h3>
+<a aria-hidden="true" class="anchor" href="#mysql-stats_time_backend_query" id="user-content-mysql-stats_time_backend_query"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><code>mysql-stats_time_backend_query</code>
+</h3>
+<p>Enables / disables collection of backend query CPU time statistics.</p>
+<table>
+    <tbody><tr>
+        <td rowspan="2" valign="top"><b>System Variable</b></td>
+        <td><b>Name</b></td>
+        <td>mysql-stats_time_backend_query </td>
+    </tr>
+    <tr>
+        <td><b>Dynamic</b></td>
+        <td>Yes</td>
+    </tr>
+    <tr>
+        <td rowspan="4" valign="top"><b>Permitted Values</b></td>
+        <td><b>Type</b></td>
+        <td>Boolean</td>
+    </tr>
+    <tr>
+        <td><b>Default (up to 1.4.3)</b></td>
+        <td>true</td>
+    </tr>
+    <tr>
+        <td><b>Default (from 1.4.4 onwards)</b></td>
+        <td>false</td>
+    </tr>
+</tbody></table>​
+<h3>
+<a aria-hidden="true" class="anchor" href="#mysql-stats_time_query_processor" id="user-content-mysql-stats_time_query_processor"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><code>mysql-stats_time_query_processor</code>
+</h3>
+<p>Enables / disables collection of query processor CPU time statistics.</p>
+<table>
+    <tbody><tr>
+        <td rowspan="2" valign="top"><b>System Variable</b></td>
+        <td><b>Name</b></td>
+        <td>mysql-stats_time_query_processor </td>
+    </tr>
+    <tr>
+        <td><b>Dynamic</b></td>
+        <td>Yes</td>
+    </tr>
+    <tr>
+        <td rowspan="4" valign="top"><b>Permitted Values</b></td>
+        <td><b>Type</b></td>
+        <td>Boolean</td>
+    </tr>
+    <tr>
+        <td><b>Default (up to 1.4.3)</b></td>
+        <td>true</td>
+    </tr>
+    <tr>
+        <td><b>Default (from 1.4.4 onwards)</b></td>
+        <td>false</td>
+    </tr>
+</tbody></table>​
+<h3>
+<a aria-hidden="true" class="anchor" href="#mysql-threads" id="user-content-mysql-threads"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><code>mysql-threads</code>
+</h3>
+<p>The number of background threads that ProxySQL uses in order to process MySQL traffic. Note that there are other "administrative" threads on top of these, such as:</p>
+<ul>
+<li>the admin interface thread</li>
+<li>the monitoring module threads that interact with the backend servers (one for monitoring connectivity, one for pinging the servers and one for monitoring the replication lag)</li>
+<li>occasional temporary threads created in order to kill long running queries that have become unresponsive</li>
+<li>background threads used by the libmariadbclient library in order to make certain interactions with MySQL servers async</li>
+</ul>
+<p>Note that changing this value has no effect at runtime, if you need to change it you have to restart the proxy.</p>
+<table>
+    <tbody><tr>
+        <td rowspan="2" valign="top"><b>System Variable</b></td>
+        <td><b>Name</b></td>
+        <td>mysql-threads</td>
+    </tr>
+    <tr>
+        <td><b>Dynamic</b></td>
+        <td>No</td>
+    </tr>
+    <tr>
+        <td rowspan="4" valign="top"><b>Permitted Values</b></td>
+        <td><b>Type</b></td>
+        <td>Integer</td>
+    </tr>
+    <tr>
+        <td><b>Default</b></td>
+        <td>4</td>
+    </tr>
+    <tr>
+        <td><b>Minimum</b></td>
+        <td>1</td>
+    </tr>
+    <tr>
+        <td><b>Maximum</b></td>
+        <td>255</td>
+    </tr>
+</tbody></table>​
+<h3>
+<a aria-hidden="true" class="anchor" href="#mysql-threshold_query_length" id="user-content-mysql-threshold_query_length"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><code>mysql-threshold_query_length</code>
+</h3>
+<p>The maximal size of an incoming SQL query to the proxy that will mark the background MySQL connection as non-reusable. This will force the proxy to open a new connection to the backend server, in order to make sure that the memory footprint of the server stays within reasonable limits.</p>
+<p>More details about it here: <a href="https://dev.mysql.com/doc/refman/5.6/en/memory-use.html" rel="nofollow">https://dev.mysql.com/doc/refman/5.6/en/memory-use.html</a></p>
+<p>Relevant quote from the mysqld documentation: "The connection buffer and result buffer each begin with a size equal to net_buffer_length bytes, but are dynamically enlarged up to max_allowed_packet bytes as needed. The result buffer shrinks to net_buffer_length bytes after each SQL statement."</p>
+<table>
+    <tbody><tr>
+        <td rowspan="2" valign="top"><b>System Variable</b></td>
+        <td><b>Name</b></td>
+        <td>mysql-threshold_query_length</td>
+    </tr>
+    <tr>
+        <td><b>Dynamic</b></td>
+        <td>Yes</td>
+    </tr>
+    <tr>
+        <td rowspan="4" valign="top"><b>Permitted Values</b></td>
+        <td><b>Type</b></td>
+        <td>Integer (bytes)</td>
+    </tr>
+    <tr>
+        <td><b>Default</b></td>
+        <td>524288</td>
+    </tr>
+    <tr>
+        <td><b>Minimum</b></td>
+        <td>1024</td>
+    </tr>
+    <tr>
+        <td><b>Maximum</b></td>
+        <td>1073741824</td>
+    </tr>
+</tbody></table>​
+<h3>
+<a aria-hidden="true" class="anchor" href="#mysql-threshold_resultset_size" id="user-content-mysql-threshold_resultset_size"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><code>mysql-threshold_resultset_size</code>
+</h3>
+<p>If a resultset returned by a backend server is bigger than this, proxysql will start sending the result to the MySQL client that was requesting the result in order to limit its memory footprint.</p>
+<table>
+    <tbody><tr>
+        <td rowspan="2" valign="top"><b>System Variable</b></td>
+        <td><b>Name</b></td>
+        <td>mysql-threshold_resultset_size</td>
+    </tr>
+    <tr>
+        <td><b>Dynamic</b></td>
+        <td>Yes</td>
+    </tr>
+    <tr>
+        <td rowspan="4" valign="top"><b>Permitted Values</b></td>
+        <td><b>Type</b></td>
+        <td>Integer (bytes)</td>
+    </tr>
+    <tr>
+        <td><b>Default</b></td>
+        <td>4194304 (4MB)</td>
+    </tr>
+    <tr>
+        <td><b>Minimum</b></td>
+        <td>1024</td>
+    </tr>
+    <tr>
+        <td><b>Maximum</b></td>
+        <td>1073741824</td>
+    </tr>
+</tbody></table>​
+<p>Default value: <code>4194304</code> (bytes, the equivalent of 4 MB)</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#mysql-wait_timeout" id="user-content-mysql-wait_timeout"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><code>mysql-wait_timeout</code>
+</h3>
+<p>If a proxy session (which is a conversation between a MySQL client and a backend MySQL server) has been idle for more than this threshold, the proxy will kill the session.</p>
+<table>
+    <tbody><tr>
+        <td rowspan="2" valign="top"><b>System Variable</b></td>
+        <td><b>Name</b></td>
+        <td>mysql-wait_timeout</td>
+    </tr>
+    <tr>
+        <td><b>Dynamic</b></td>
+        <td>Yes</td>
+    </tr>
+    <tr>
+        <td rowspan="4" valign="top"><b>Permitted Values</b></td>
+        <td><b>Type</b></td>
+        <td>Integer (bytes)</td>
+    </tr>
+    <tr>
+        <td><b>Default</b></td>
+        <td>28800000 (8 hours)</td>
+    </tr>
+    <tr>
+        <td><b>Minimum</b></td>
+        <td>0</td>
+    </tr>
+    <tr>
+        <td><b>Maximum</b></td>
+        <td>1728000000</td>
+    </tr>
+</tbody></table>​
+
+        </div>
+
+    </div>]

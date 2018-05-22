@@ -1,0 +1,123 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>(By Gav Wood, 2014)</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#writing-a-contract-in-lll" id="user-content-writing-a-contract-in-lll"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Writing a Contract in LLL</h3>
+<p>We're going to use PoC-3 build of AlethZero to write a simple contract in LLL, the Low-level Lisp-like Language. We'll assume you have a decent supply of ether to pay for this contract to be created. If you don't have so much, then you should mine for a little while to build up your supply.</p>
+<p>First thing to creating a contract is to make sure the <em>To</em> field of the <em>Transact</em> pane is empty, in order that you get a grayed-out <em>(Create Contract)</em> in the box. We'll endow no cash into the contract, so we'll put a zero into the <em>Value</em> box.</p>
+<p>The <em>Data</em> box (i.e. of the two, the top box) contains our contract's source code; the lower box contains the assembly-language corresponding to that source code - when you alter the source code, you can immediately see the assembly changing.</p>
+<p>With the transaction otherwise set up we're ready to actually author it. For this example, we'll make a simple bank. We want people to be able to deposit ether with the contract and be able to withdraw that ether at some time later.</p>
+<p>We're going to need to execute several 'steps' in a sequence (much like in a normal programming language). To do this in LLL, we use the <code>seq</code> operation. In LLL, all operations take the form of an open-parenthesis (i.e. <code>(</code>), the operator (<code>seq</code> in our case), any expressions (here we've yet to decide what these are), and ended by a close-parenthesis (<code>)</code>).</p>
+<p>So we begin with:</p>
+<pre><code>(seq
+)
+</code></pre>
+<p>This does nothing, of course, since we haven't described yet which steps we must execute. When an Ethereum contract executes in the Ethereum virtual machine (EVM), you get a grace period of 16 execution cycles free from fees. This is so you can check whether the transaction sender has sent you enough ether for you to bother running the contract into the fee-paying portion or not.</p>
+<p>So the first step will be to check that the transaction value, <code>(txvalue)</code>, is greater than or equal to the minimum cost of running this contract, twenty times the base fee, <code>(basefee)</code>. As such our program becomes:</p>
+<pre><code>(seq
+  (unless (&gt;= (txvalue) (* 20 (basefee))) (stop))
+)
+</code></pre>
+<p>Once you've typed this in you'll notice assembly code filling up the lower box. We're on our way!</p>
+<p>To make the decision over whether to stop early, we use the <code>unless</code> operator. This takes two operands; firstly an expression for the 'condition', and secondly an expression for the 'body', the latter to be evaluated only if the condition evaluates to zero.</p>
+<p>In this case, our body is the <code>stop</code> operation, which unsurprisingly, immediately halts all execution of the contract. Our condition is a <code>&gt;=</code> operation, and as such only evaluates to one if the first argument to that operation (<code>(txvalue)</code>, the value of all the ether bundled with the transaction) is greater than or equal to the second argument (<code>(* 20 (basefee))</code>, twenty times the basefee for transaction execution).</p>
+<p>We might read the line as "unless <em>txvalue</em> is greater than or equal to 20 times the <em>basefee</em> then stop".</p>
+<p>Right, so we've checked that they've given us at least twenty times the basefee, so the next thing to do is to handle the deposit. Because our memory is (theoretically) 2^256 entries large (each entry able to store a 256 bits worth of data), we can just use it as a massive associative array for our addresses, storing each address's account balance at that place in memory.</p>
+<p>So, to handle deposits, we'll increment the value in our memory corresponding to the transaction sender's address by the amount that they've given us less the cost of transacting with this contract, 20 times the <em>basefee</em>:</p>
+<pre><code>(seq
+  (unless (&gt;= (txvalue) (* 20 (basefee))) (stop))
+  (sstore
+    (txsender)
+    (+
+      (sload (txsender))
+      (- (txvalue) (* 20 (basefee)))
+    )
+  )
+)
+</code></pre>
+<p>So here we subtract our price from the transaction's value, add it to whatever was in the transaction sender's slot before (<code>(sload (txsender))</code>; "load the value from storage at the location given by the transaction sender's hash") and stores the resultant amount back at the same position (<code>(sstore ...</code>).</p>
+<p>So that works fine for depositing ether, but it's a pretty rubbish bank that doesn't let you withdraw from your account! So how can we do that? The trick is to use the transaction data (<code>txdatan</code> and <code>txdata</code> operators) to determine if there's any additional data and, if so, withdraw the amount given from the account. Of course, we'll have to check that they have at least that amount in their account first!</p>
+<p>The first thing to do is to check whether it's purely a depositing transaction or whether they want to issue a withdrawal. For this we use the <code>txdatan</code> to see how many data items were bundled with the transaction; if it's zero then it's just a deposit, however if there's (at least) one, then we've been issued a withdrawal, too:</p>
+<pre><code>(seq
+  (unless (&gt;= (txvalue) (* 20 (basefee))) (stop))
+  (if (txdatan)
+    (seq
+      ;; TODO: Withdraw
+    )
+    ;; Else... Deposit
+    (sstore (txsender) (+ (sload (txsender)) (- (txvalue) (* 20 (basefee))) ) )
+  )
+)
+</code></pre>
+<p>You'll notice we added a few comments. There is also the <code>if</code> operation that evaluates the second operand if the first is non-zero otherwise the third. You might put an imaginary "else" between the second and third operands.</p>
+<p>Now we have to implement the withdraw portion. To conduct a withdrawal, two things need to happen: subtract the withdrawal amount from the account balance and make a transaction to bestow the funds back to the sender.</p>
+<p>The first is easy enough: we use the <code>txdata</code> operator to get the first data item of the transaction (<code>(txdata 0)</code>) and then just <code>sstore</code>, <code>sload</code> and <code>txsender</code> as for depositing.</p>
+<p>The second is quite easy, too. We use the <code>mktx</code> operator to make a new transaction that delivers the required amount of ether (<code>(txdata 0)</code>; the first data item to the transaction) to the sender's account (<code>(txsender)</code>). The final <code>0</code> of the operation is the number of data items for the transaction; none.</p>
+<p>So we end up with:</p>
+<pre><code>(seq
+  (unless (&gt;= (txvalue) (* 20 (basefee))) (stop))
+  (if (txdatan)
+    ;; At least one data item... Withdraw
+    (seq
+      (sstore (txsender) (- (sload (txsender)) (txdata 0)))
+      (mktx (txsender) (txdata 0) 0)
+    )
+    ;; Else... Deposit
+    (sstore (txsender) (+ (sload (txsender)) (- (txvalue) (* 20 (basefee))) ) )
+  )
+)
+</code></pre>
+<h3>
+<a aria-hidden="true" class="anchor" href="#checks-and-balances" id="user-content-checks-and-balances"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Checks and Balances</h3>
+<p>So this is a minimal working implementation, however there are several things missing. First and foremost is that the <code>mktx</code> operation we execute for withdrawal costs us 100 times the <em>basefee</em>, yes when a withdrawal takes place, they can pay only the minimal 20 times; we should really bump up our price accordingly. To do this, we'll add an additional condition for withdrawal - that you must pay at least 135 times the <em>basefee</em> (using the boolean <code>and</code> operator). So <code>(if (txdatan) ...</code> becomes</p>
+<pre><code>(if (and (txdatan) (&gt;= (txvalue) (* 135 (basefee))) )
+  ...
+</code></pre>
+<p>So now they must pay the extra amount for withdrawing funds, however, nothing (aside from the contract running out of funds) is stopping them from withdrawing more than they have. We'll make a third check that ensures they have at least the amount they wish to withdraw in their account with us. We just use the <code>txdata</code> and <code>sload</code> operators to determine this, so our final condition for withdrawal becomes:</p>
+<pre><code>(if (and
+    (txdatan)
+    (&gt;= (txvalue) (* 135 (basefee)))
+    (&gt;= (sload (txsender)) (txdata 0))
+  )
+  ...
+</code></pre>
+<h3>
+<a aria-hidden="true" class="anchor" href="#low-sender" id="user-content-low-sender"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Low Sender</h3>
+<p>The final issue is that we're also storing the program in the lower portion of the memory (approximately the first 256 entries) and we don't want to stomp on our program in the unlikely event of someone with an address evaluating to a number less than 256 depositing cash with us.</p>
+<p>We'll take the quickest way out and deny "low-addresses", by putting in an extra condition at the very start, so the first <code>unless</code> now becomes:</p>
+<pre><code>(unless (and (&gt; (txsender) 0xff) (&gt;= (txvalue) (* 20 (basefee)))) (stop))
+</code></pre>
+<p>Leaving us with the final contract of:</p>
+<pre><code>(seq
+  ;; Stop unless there is at least the fee and the sender has a valid account.
+  (unless (and (&gt; (txsender) 0xff) (&gt;= (txvalue) (* 20 (basefee)))) (stop))
+
+  ;; Check to see if there's at least one argument (i.e. is a withdrawal) and 
+  ;; if the appropriate fees have been paid for withdrawal.
+  (if (and (txdatan)
+        (&gt;= (txvalue) (* 135 (basefee)))
+        (&gt;= (sload (txsender)) (txdata 0)) )
+    ;; At least one data item... Withdraw
+    (seq
+      ;; Subtract the value from the balance of the account
+      (sstore (txsender) (- (sload (txsender)) (txdata 0)))
+      (mktx (txsender) (txdata 0) 0)
+    )
+    ;; Else... Deposit
+    (sstore (txsender) (+ (sload (txsender)) (- (txvalue) (* 20 (basefee)))) )
+  )
+)
+</code></pre>
+<h3>
+<a aria-hidden="true" class="anchor" href="#creating-and-using" id="user-content-creating-and-using"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Creating and Using</h3>
+<p>Now, once this LLL code is in the Data of the transaction, it's time to actually create the contract on the block chain. To do this we simply "send" the transaction.</p>
+<p>You'll see your contract-creation transaction become pending (see the <em>Pending Transactions</em> pane), and after a little time, assuming there are miners on the network, you'll see it become written into the block chain (see the <em>Block Chain</em> pane). Once in the block chain, you can interact with it! We'll make two deposit transactions and a withdrawal. You'll need to know the account address of your new contract. You'll see in initially the pending and then the block chain pane an item corresponding to your transaction; it will have one of your addresses (see <em>Owned Addresses</em> pane; and remember it for later) followed by a "+&gt;", denoting a contract creation transaction and then the new contract's address. Once your contract has been created, look down the list in <em>All Contracts</em> until you find that same address of your new contract and double-click the item, which copies the full address into the clipboard.</p>
+<p>For the first deposit, we'll deposit one ether (minus banking charges) with our newly created bank. Paste the freshly copied contract address into the <em>To</em> box and make sure the <em>Amount</em> reads "1 ether". Clear the <em>Data</em> box as we're not making a withdrawal, then click <em>Send</em> and wait for it to move onto the block chain from the <em>Pending Transactions</em> (or just press the <em>Preview</em> button on the toolbar if you can't wait).</p>
+<p>Let's check that it went through alright; find your contract address in the <em>All Contracts</em> pane and this time select it to inspect its storage. In here you'll see a big dump of EVM code which corresponds to the program we just authored and then one additional entry; this should be your address and it should denote that some considerable sum (a hex number next to your address, denominated in wei, and so it'll be quite big) is deposited for you.</p>
+<p>Let's check that it goes up when we make a second deposit. We'll make the deposit by clicking <em>Send</em> again and wait for the transaction to be mined onto the block chain (or ensure <em>Preview</em> is depressed). Selecting the contract again from the <em>All Contracts</em> pane to inspect it should show you a higher amount next to your address in its state than before. If it doesn't something has gone wrong with your contract and you should check its code.</p>
+<p>Finally, we'll make a withdrawal of fund back to our account. Let's assume we want to take one ether back. All we must do is send a transaction to the contract making sure to pay the charge of 135 times the <em>basefee</em> (100 szabo), and specify the amount to withdraw as a single item in the <em>Data</em>. So change the <em>Amount</em> so it reads "13500 szabo" and write "1ether" (note that there's no space between the "1" and the "ether" - that's important) and click <em>Send</em>. Once that transaction goes through on to the block chain (or if you have <em>Preview</em> down, then immediately) then you should see your account go up by an ether. If you then check your account with the bank (looking at the contract's state in <em>All Contracts</em>, you'll see that the amount associated with your address is reduced to just shy of an ether's worth of wei.</p>
+<p>And so you've just learnt to write, create and interact with a contract in Ethereum PoC. While pointless, the code we've made can be used a base for all sorts of contracts - currencies, lending banks, interest-giving banks, even reputation systems. Your imagination is the limit.</p>
+
+        </div>
+
+    </div>]

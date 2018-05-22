@@ -1,0 +1,124 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <h1>
+<a aria-hidden="true" class="anchor" href="#install-mosquitto" id="user-content-install-mosquitto"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Install Mosquitto</h1>
+<ol>
+<li>
+<p>Download mosquitto</p>
+<p><code>wget http://mosquitto.org/files/source/mosquitto-1.4.3.tar.gz</code></p>
+</li>
+<li>
+<p>Install some packages</p>
+<p><code>sudo apt-get install libwrap0-dev</code></p>
+<p><code>sudo apt-get install libssl-dev</code></p>
+<p><code>sudo apt-get install uuid-dev</code></p>
+</li>
+<li>
+<p>Uncompress  targz</p>
+<p><code>tar zxf mosquitto-1.4.3.tar.gz</code></p>
+</li>
+<li>
+<p>Compile and install</p>
+<p><code>make</code></p>
+<p><code>make install</code></p>
+<p><code>ldconfig</code></p>
+<p><code>make clean</code></p>
+<p><code>iptables -A INPUT -p tcp -m tcp --dport 1883 -j ACCEPT</code></p>
+</li>
+</ol>
+<p>*If there is some error while compiling, go to this webpage:</p>
+<p><a href="https://goochgooch.wordpress.com/2014/08/01/building-mosquitto-1-4/" rel="nofollow">https://goochgooch.wordpress.com/2014/08/01/building-mosquitto-1-4/</a></p>
+<hr/>
+<h1>
+<a aria-hidden="true" class="anchor" href="#start-mosquitto" id="user-content-start-mosquitto"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Start Mosquitto</h1>
+<ol>
+<li>
+<p>Starting mosquitto</p>
+<p>Open a terminal and type:</p>
+<pre><code> mosquitto -p portnumber
+</code></pre>
+</li>
+<li>
+<p>Checking mosquitto is running</p>
+<p>Open a terminal and type:</p>
+<pre><code> ps -ef | grep mosq &amp;&amp; netstat -tln | grep portnumber
+</code></pre>
+</li>
+</ol>
+<h1>
+<a aria-hidden="true" class="anchor" href="#test-application" id="user-content-test-application"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Test Application</h1>
+<p>*You will need to install mqtt through npm install mqtt -g</p>
+<p>example.js:</p>
+<pre><code>var mqtt    = require('mqtt');
+var client  = mqtt.connect('mqtt://localhost:6969');
+ 
+client.on('connect', function () {
+  client.subscribe('presence');
+  console.log("Connected");
+  client.publish('presence', 'Hello mqtt');
+});
+
+client.on('error',function(error) {
+    console.log(error);
+});
+ 
+client.on('message', function (topic, message) {
+  // message is Buffer
+  console.log(message.toString());
+  client.end();
+});
+</code></pre>
+<p>Run:</p>
+<pre><code>node example.js.
+</code></pre>
+<p>You must see in the consolelog “Hello mqtt”</p>
+<hr/>
+<h1>
+<a aria-hidden="true" class="anchor" href="#mosquitto-configuration-file" id="user-content-mosquitto-configuration-file"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Mosquitto Configuration File</h1>
+<p>Full information about configuration file :</p>
+<p><a href="https://eclipse.org/mosquitto/man/mosquitto-conf-5.php" rel="nofollow">https://eclipse.org/mosquitto/man/mosquitto-conf-5.php</a></p>
+<p>You can load a configuration file with -c option. By default mosquitto load mosquito.conf file.</p>
+<p><code>mosquito -c configurationfile</code></p>
+<p>Configuration lines start with a variable name. The variable value is separated from the name by a single space.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#1authentication" id="user-content-1authentication"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>1.Authentication</h2>
+<p>There are a few possibilities of authentication</p>
+<ol>
+<li>
+<p>The simplest option is to have no authentication at all.This is the default if no other options are given.</p>
+</li>
+<li>
+<p>You can use a password file option to define the valid usernames and poasswords. You must be sure to use network encryption if you are using this options otherwise they will be vulnerable to interception.</p>
+</li>
+<li>
+<p>Certificate based encryption.</p>
+</li>
+</ol>
+<p>*You can use all of them at once.</p>
+<hr/>
+<h1>
+<a aria-hidden="true" class="anchor" href="#documentation" id="user-content-documentation"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Documentation</h1>
+<p>Mosquitto: <a href="http://mosquitto.org/documentation/" rel="nofollow">http://mosquitto.org/documentation/</a></p>
+<p>Mqtt:. <a href="https://www.npmjs.com/package/mqtt" rel="nofollow">https://www.npmjs.com/package/mqtt</a></p>
+
+        </div>
+
+        <div class="wiki-footer gollum-markdown-content boxed-group" id="wiki-footer">
+          <div class="boxed-group-inner wiki-auxiliary-content markdown-body">
+            <p># <code>warning</code>: now our docs are being published in our gitbook and available on our website. Visit <a href="http://docs.netbeast.co/" rel="nofollow">http://docs.netbeast.co/</a></p>
+<h1>
+<a aria-hidden="true" class="anchor" href="#contact" id="user-content-contact"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Contact</h1>
+<ul>
+<li>Visit our site <a href="https://netbeast.co" rel="nofollow">https://netbeast.co</a>
+</li>
+<li>Mail us: staff [at] netbeast.co</li>
+<li>Report a bug or enter discussion at <a href="https://github.com/netbeast-co/docs/issues">issues</a>
+</li>
+<li>Other resources: <a href="https://github.com/netbeast-co/dashboard">Dashboard</a>, Netbeast <a href="https://github.com/netbeast-co/API">API</a>
+</li>
+</ul>
+<p><a href="https://gitter.im/netbeast-co/xway?utm_source=badge&amp;utm_medium=badge&amp;utm_campaign=pr-badge" rel="nofollow"><img alt="Gitter" data-canonical-src="https://badges.gitter.im/Join%20Chat.svg" src="https://camo.githubusercontent.com/da2edb525cde1455a622c58c0effc3a90b9a181c/68747470733a2f2f6261646765732e6769747465722e696d2f4a6f696e253230436861742e737667"/></a></p>
+
+          </div>
+        </div>
+    </div>]

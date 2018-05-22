@@ -1,0 +1,31 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>To ensure the framework is extensible and allow for the consumer to override or decorate the behavior of the framework, we require a bit of setup.  We use a thin DI container abstraction with a few implementations out of the box it can be found <a href="https://github.com/G3N7/LAN.Core.DependencyInjection">here</a>.</p>
+<div class="highlight highlight-source-cs"><pre>	<span class="pl-c"><span class="pl-c">//</span> Create your container, here we are using SimpleInjector.</span>
+	<span class="pl-k">var</span> <span class="pl-smi">container</span> <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-en">SimpleInjectorContainer</span>(<span class="pl-k">new</span> <span class="pl-en">Container</span>());
+	<span class="pl-smi">ContainerRegistry</span>.<span class="pl-smi">DefaultContainer</span> <span class="pl-k">=</span> <span class="pl-smi">container</span>;
+
+	<span class="pl-c"><span class="pl-c">//</span> Wire-up the helper services services, here is your opportunity to tweak behavior.</span>
+	<span class="pl-smi">container</span>.<span class="pl-en">Bind</span>&lt;<span class="pl-en">ISignalRSerializer</span>, <span class="pl-en">CamelCaseSignalRSerializer</span>&gt;(<span class="pl-c1">true</span>);
+	<span class="pl-smi">container</span>.<span class="pl-en">Bind</span>&lt;<span class="pl-en">IMessagingContext</span>, <span class="pl-en">SignalRMessagingContext</span>&gt;(<span class="pl-c1">true</span>);
+	<span class="pl-smi">container</span>.<span class="pl-en">Bind</span>&lt;<span class="pl-en">ISignalRConnectionLookupService</span>, <span class="pl-en">SignalRConnectionLookupService</span>&gt;(<span class="pl-c1">true</span>);
+
+	<span class="pl-c"><span class="pl-c">//</span> Groups allow you to target broadcasts at a subset of your users.</span>
+	<span class="pl-k">var</span> <span class="pl-smi">groupService</span> <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-en">SignalRGroupService</span>();
+	<span class="pl-smi">container</span>.<span class="pl-en">RegisterSingleton</span>&lt;<span class="pl-en">IGroupJoinService</span>&gt;(<span class="pl-smi">groupService</span>);
+	<span class="pl-smi">container</span>.<span class="pl-en">RegisterSingleton</span>&lt;<span class="pl-en">IGroupLeaveService</span>&gt;(<span class="pl-smi">groupService</span>);
+	<span class="pl-smi">container</span>.<span class="pl-en">RegisterSingleton</span>&lt;<span class="pl-en">IGroupLookupService</span>&gt;(<span class="pl-smi">groupService</span>);
+
+	<span class="pl-c"><span class="pl-c">//</span> You will need to implement a Group Registrar for the event hub to put your users into groups automatically upon connection.</span>
+	<span class="pl-smi">container</span>.<span class="pl-en">Bind</span>&lt;<span class="pl-en">ISignalRGroupRegistrar</span>, <span class="pl-en">GroupRegistrar</span>&gt;(<span class="pl-c1">true</span>);
+
+	<span class="pl-c"><span class="pl-c">//</span> You will register your handler's in the handler repository so that the Event Hub can invoke them.</span>
+	<span class="pl-k">var</span> <span class="pl-smi">handlerRepository</span> <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-en">DIHandlerRepository</span>(<span class="pl-smi">container</span>);
+	<span class="pl-smi">container</span>.<span class="pl-en">RegisterSingleton</span>&lt;<span class="pl-en">IHandlerRepository</span>&gt;(<span class="pl-smi">handlerRepository</span>);
+
+	<span class="pl-c"><span class="pl-c">//</span> Example Registration</span>
+	<span class="pl-smi">repository</span>.<span class="pl-en">AddHandler</span>&lt;<span class="pl-en">UserListHandler</span>&gt;(<span class="pl-smi">UserEvents</span>.<span class="pl-smi">ListRequest</span>);</pre></div>
+
+        </div>
+
+    </div>]

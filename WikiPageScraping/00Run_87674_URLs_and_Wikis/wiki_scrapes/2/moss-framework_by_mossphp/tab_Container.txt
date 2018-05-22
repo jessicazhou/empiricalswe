@@ -1,0 +1,99 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <h1>
+<a aria-hidden="true" class="anchor" href="#dependency-injection-container" id="user-content-dependency-injection-container"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Dependency Injection Container</h1>
+<p>Sometimes referred to as <em>Service Container</em>. DI Container is something that combines repository and factory into one object.
+Its main task is to create instances of components with all dependencies when they are needed.
+Also, container controls number of instances (one <em>shared instance</em> or multiple) and can hold additional properties.</p>
+<p>It can be said that DI Container replaces singletons and global variables.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#component-represented-as-closure" id="user-content-component-represented-as-closure"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Component represented as closure</h2>
+<p>Just create a function that returns object instance.
+If component depends on other components, just add <code>$container</code> as first argument and call them:</p>
+<div class="highlight highlight-text-html-php"><pre><span class="pl-s1">    <span class="pl-smi">$component</span> <span class="pl-k">=</span> <span class="pl-k">function</span>(<span class="pl-c1">\Moss\Container\</span><span class="pl-c1">ContainerInterface</span> <span class="pl-smi">$container</span>) {</span>
+<span class="pl-s1">        <span class="pl-k">return</span> <span class="pl-smi">$container</span><span class="pl-k">-&gt;</span>get(<span class="pl-s"><span class="pl-pds">'</span>request<span class="pl-pds">'</span></span>)<span class="pl-k">-&gt;</span>isAjax();</span>
+<span class="pl-s1">    }</span></pre></div>
+<h2>
+<a aria-hidden="true" class="anchor" href="#component-represented-as-callable-class" id="user-content-component-represented-as-callable-class"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Component represented as callable class</h2>
+<p>Create component definition for class <code>Foo</code> with array containing constructor arguments <code>arguments</code>.
+Third argument contains all methods that will be called after creating instance.</p>
+<div class="highlight highlight-text-html-php"><pre><span class="pl-s1">    <span class="pl-smi">$calls</span> <span class="pl-k">=</span> [</span>
+<span class="pl-s1">        <span class="pl-s"><span class="pl-pds">'</span>method1<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> [<span class="pl-s"><span class="pl-pds">'</span>array<span class="pl-pds">'</span></span>, <span class="pl-s"><span class="pl-pds">'</span>of<span class="pl-pds">'</span></span>, <span class="pl-s"><span class="pl-pds">'</span>arguments<span class="pl-pds">'</span></span>]</span>
+<span class="pl-s1">        <span class="pl-s"><span class="pl-pds">'</span>method2<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> [<span class="pl-s"><span class="pl-pds">'</span>array<span class="pl-pds">'</span></span>, <span class="pl-s"><span class="pl-pds">'</span>of<span class="pl-pds">'</span></span>, <span class="pl-s"><span class="pl-pds">'</span>arguments<span class="pl-pds">'</span></span>]</span>
+<span class="pl-s1">    ];</span>
+<span class="pl-s1">    <span class="pl-smi">$component</span> <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-c1">\Moss\Container\</span><span class="pl-c1">Component</span>(<span class="pl-s"><span class="pl-pds">'</span>Foo<span class="pl-pds">'</span></span>, <span class="pl-smi">$arguments</span>, <span class="pl-smi">$calls</span>);</span></pre></div>
+<p><strong>Order of elements in argument arrays must correspond to constructor/method arguments.</strong></p>
+<p>To reference other component as argument use prefix <code>@</code>, eg.:</p>
+<div class="highlight highlight-text-html-php"><pre><span class="pl-s1">    <span class="pl-smi">$component</span> <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-c1">\Moss\Container\</span><span class="pl-c1">Component</span>(<span class="pl-s"><span class="pl-pds">'</span>Foo<span class="pl-pds">'</span></span>, [<span class="pl-s"><span class="pl-pds">'</span>@Bar<span class="pl-pds">'</span></span>]);</span></pre></div>
+<p>Component retrieval is performed by calling <code>get()</code> method:</p>
+<div class="highlight highlight-text-html-php"><pre><span class="pl-s1">    <span class="pl-smi">$component</span> <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-c1">\Moss\Container\</span><span class="pl-c1">Component</span>(<span class="pl-s"><span class="pl-pds">'</span>Foo<span class="pl-pds">'</span></span>);</span>
+<span class="pl-s1">    <span class="pl-smi">$Foo</span> <span class="pl-k">=</span> <span class="pl-smi">$component</span><span class="pl-k">-&gt;</span>get(<span class="pl-smi">$container</span>);</span></pre></div>
+<p><strong>Component class is used to handle component creation from textual definitions - see <a class="internal present" href="/mossphp/moss-framework/wiki/Config">Config</a></strong></p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#register-component-closure-value-or-instance" id="user-content-register-component-closure-value-or-instance"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Register component, closure, value or instance</h2>
+<p>Container can register following component types.</p>
+<p><em>callable</em> or <em>closure</em> under <code>componentName</code>:</p>
+<div class="highlight highlight-text-html-php"><pre><span class="pl-s1">    <span class="pl-smi">$container</span> <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-c1">\Moss\Container\</span><span class="pl-c1">Container</span>();</span>
+<span class="pl-s1">    <span class="pl-smi">$container</span><span class="pl-k">-&gt;</span>register(<span class="pl-s"><span class="pl-pds">'</span>closureName<span class="pl-pds">'</span></span>, <span class="pl-smi">$callableInstance</span>);</span>
+<span class="pl-s1"></span>
+<span class="pl-s1">    <span class="pl-smi">$container</span><span class="pl-k">-&gt;</span>register(<span class="pl-s"><span class="pl-pds">'</span>closureName<span class="pl-pds">'</span></span>, <span class="pl-k">function</span>(<span class="pl-c1">\Moss\Container\</span><span class="pl-c1">ContainerInterface</span> <span class="pl-smi">$container</span>) {</span>
+<span class="pl-s1">        <span class="pl-k">return</span> <span class="pl-s"><span class="pl-pds">'</span>closureBody<span class="pl-pds">'</span></span>;</span>
+<span class="pl-s1">    });</span></pre></div>
+<p><em>value</em> under <code>valueName</code>:</p>
+<div class="highlight highlight-text-html-php"><pre><span class="pl-s1">    <span class="pl-smi">$container</span> <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-c1">\Moss\Container\</span><span class="pl-c1">Container</span>();</span>
+<span class="pl-s1">    <span class="pl-smi">$container</span><span class="pl-k">-&gt;</span>register(<span class="pl-s"><span class="pl-pds">'</span>valueName<span class="pl-pds">'</span></span>, <span class="pl-s"><span class="pl-pds">'</span>SomeValue<span class="pl-pds">'</span></span>);</span></pre></div>
+<p>or some <em>instance</em> for later use:</p>
+<div class="highlight highlight-text-html-php"><pre><span class="pl-s1">    <span class="pl-smi">$obj</span> <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-c1">\stdClass</span>();</span>
+<span class="pl-s1"></span>
+<span class="pl-s1">    <span class="pl-smi">$container</span> <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-c1">\Moss\Container\</span><span class="pl-c1">Container</span>();</span>
+<span class="pl-s1">    <span class="pl-smi">$container</span><span class="pl-k">-&gt;</span>register(<span class="pl-s"><span class="pl-pds">'</span>someInstance<span class="pl-pds">'</span></span>, <span class="pl-smi">$obj</span>);</span></pre></div>
+<h2>
+<a aria-hidden="true" class="anchor" href="#shared" id="user-content-shared"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Shared</h2>
+<p>Each component definition can be set as <strong>shared</strong>.</p>
+<div class="highlight highlight-text-html-php"><pre><span class="pl-s1">    <span class="pl-smi">$container</span> <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-c1">\Moss\Container\</span><span class="pl-c1">Container</span>();</span>
+<span class="pl-s1">    <span class="pl-smi">$container</span><span class="pl-k">-&gt;</span>register(<span class="pl-s"><span class="pl-pds">'</span>sharedComponent<span class="pl-pds">'</span></span>, <span class="pl-smi">$component</span>, <span class="pl-c1">true</span>);</span></pre></div>
+<p>If so, after first call their instances are preserved and returned by reference in future calls.
+As a result - there can be only one instance of shared definition (just like singleton but better).
+For example, <code>Config</code>, <code>Router</code> and <code>Request</code> are registered as shared components, but the <code>View</code> may have any number of instances.</p>
+<p><strong>It is important to remember that <em>values</em> and registered <em>instances</em> are always shared</strong>.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#component-retrieval" id="user-content-component-retrieval"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Component retrieval</h2>
+<p>Just call <code>$component = $container-&gt;get('componentIdentifier');</code> and that's it.
+E.g.:</p>
+<div class="highlight highlight-text-html-php"><pre><span class="pl-s1">    <span class="pl-smi">$container</span> <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-c1">\Moss\Container\</span><span class="pl-c1">Container</span>();</span>
+<span class="pl-s1">    <span class="pl-smi">$container</span><span class="pl-k">-&gt;</span>register(<span class="pl-s"><span class="pl-pds">'</span>request<span class="pl-pds">'</span></span>, <span class="pl-k">new</span> <span class="pl-c1">Request</span>());</span>
+<span class="pl-s1">    <span class="pl-smi">$request</span> <span class="pl-k">=</span> <span class="pl-smi">$container</span><span class="pl-k">-&gt;</span>get(<span class="pl-s"><span class="pl-pds">'</span>Request<span class="pl-pds">'</span></span>);</span>
+<span class="pl-s1">    <span class="pl-k">if</span>(<span class="pl-smi">$Request</span><span class="pl-k">-&gt;</span>isAjax()) {</span>
+<span class="pl-s1">        <span class="pl-c1">echo</span> <span class="pl-s"><span class="pl-pds">'</span>Its Ajax request<span class="pl-pds">'</span></span>;</span>
+<span class="pl-s1">    }</span></pre></div>
+<p>To access some values stored in container:</p>
+<div class="highlight highlight-text-html-php"><pre><span class="pl-s1">    <span class="pl-smi">$container</span> <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-c1">\Moss\Container\</span><span class="pl-c1">Container</span>();</span>
+<span class="pl-s1">    <span class="pl-smi">$container</span><span class="pl-k">-&gt;</span>register(<span class="pl-s"><span class="pl-pds">'</span>database<span class="pl-pds">'</span></span>, [<span class="pl-s"><span class="pl-pds">'</span>user<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-s"><span class="pl-pds">'</span>foo<span class="pl-pds">'</span></span>, <span class="pl-s"><span class="pl-pds">'</span>pass<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-s"><span class="pl-pds">'</span>bar<span class="pl-pds">'</span></span>, <span class="pl-s"><span class="pl-pds">'</span>table<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-s"><span class="pl-pds">'</span>yada<span class="pl-pds">'</span></span>]);</span>
+<span class="pl-s1">    <span class="pl-smi">$db</span> <span class="pl-k">=</span> <span class="pl-smi">$container</span><span class="pl-k">-&gt;</span>get(<span class="pl-s"><span class="pl-pds">'</span>database<span class="pl-pds">'</span></span>); <span class="pl-c"><span class="pl-c">//</span> ['user' =&gt; 'foo', 'pass' =&gt; 'bar', 'table' =&gt; 'yada'];</span></span></pre></div>
+<p>Or go even deeper:</p>
+<div class="highlight highlight-text-html-php"><pre><span class="pl-s1">    <span class="pl-smi">$container</span> <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-c1">\Moss\Container\</span><span class="pl-c1">Container</span>();</span>
+<span class="pl-s1">    <span class="pl-smi">$container</span><span class="pl-k">-&gt;</span>register(<span class="pl-s"><span class="pl-pds">'</span>database<span class="pl-pds">'</span></span>, [<span class="pl-s"><span class="pl-pds">'</span>user<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-s"><span class="pl-pds">'</span>foo<span class="pl-pds">'</span></span>, <span class="pl-s"><span class="pl-pds">'</span>pass<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-s"><span class="pl-pds">'</span>bar<span class="pl-pds">'</span></span>, <span class="pl-s"><span class="pl-pds">'</span>table<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-s"><span class="pl-pds">'</span>yada<span class="pl-pds">'</span></span>]);</span>
+<span class="pl-s1">    <span class="pl-smi">$dbUser</span> <span class="pl-k">=</span> <span class="pl-smi">$container</span><span class="pl-k">-&gt;</span>get(<span class="pl-s"><span class="pl-pds">'</span>database.user<span class="pl-pds">'</span></span>); <span class="pl-c"><span class="pl-c">//</span> foo</span></span></pre></div>
+<h2>
+<a aria-hidden="true" class="anchor" href="#framework-components" id="user-content-framework-components"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Framework components</h2>
+<p>Framework by default registers the following components:</p>
+<ul>
+<li>
+<code>Config</code> - configuration instance (<em>shared</em>),</li>
+<li>
+<code>Dispatcher</code> - event dispatcher (<em>shared</em>)</li>
+<li>
+<code>Request</code> - received request (<em>shared</em>)</li>
+<li>
+<code>Router</code> - router instance (<em>shared</em>)</li>
+<li>
+<code>Session</code> - session wrapper instance (<em>shared</em>)</li>
+</ul>
+<p>and of course <code>container</code> itself, all under lowercase names (eg. <code>config</code> for <code>Config</code>)</p>
+<p>Also there is <code>View</code> component (not registered by default) - simple plain php template handler.
+It can be easily changed to Twig view with <code>moss/twig-bridge</code> component.
+Both implement same interface, so changes are limited only to templates.</p>
+
+        </div>
+
+    </div>]

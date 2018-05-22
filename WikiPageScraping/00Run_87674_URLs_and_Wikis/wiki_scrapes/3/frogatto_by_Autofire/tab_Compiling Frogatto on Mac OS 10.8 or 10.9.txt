@@ -1,0 +1,151 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>Assumes unix knowledge, does <strong>not</strong> assume knowledge of mac programming esoterica.</p>
+<p>First, you'll need to <a href="source">download our source tree from git.</a>  Once you have it, it'll have several key folders that need to get put into XCode.  All of the direct resources/etc needed by frogatto are in our source tree, the one category of items that are not provided are our library/framework dependencies.  Instructions on how and where to get these are provided later.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#theory" id="user-content-theory"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Theory:</h2>
+<p>Frogatto is an SDL-based app, and importantly uses SDL to do event handling.  Because carbon is strongly deprecated, Frogatto is a cocoa app.  SDL event handling is designed around creating and running your own event loop. This flies in the face of how cocoa is supposed to work, because cocoa is neither supposed to relinquish event handling to you, nor to work via event loops; rather than running your own event loop (which is generally bad because it's polling, and eats processing time), in cocoa you're supposed to just provide a bunch of handler functions for whichever events you want to process, and not have a loop at all.</p>
+<p>The way we resolve this is that when a cocoa app is launched, it will always fire a method named <code>applicationDidFinishLaunching</code>.  What we do, is hijack the program inside that function; we start our event loop there, and keep that function from exiting until we're done with everything.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#creating-the-xcode-project" id="user-content-creating-the-xcode-project"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Creating the XCode Project:</h2>
+<p>Select the "cocoa application" template, and create a new project.  You probably will want to put this somewhere inside your downloaded git repo; I put it in a folder named "MacOS".</p>
+<p>XCode4 has a side-bar on the left which can be set to several modes, one of which (the one indicated by the folder icon) is a "file management" mode.  If you select that mode, you'll see a folder tree containing the files our XCode project knows about.</p>
+<p>TODO: check naming/list-of-files accuracy on this:
+There are several files in the resulting template that can be safely deleted.  There will be a ProgramNameAppDelegate.m/h pair which we will not be using at all, a main.m file which will be replaced by one provided by SDL (namely <code>SDLMain.m/h</code>), and at least one file in the subfolder "resources", "*info.plist, which should be replaced by ours.  There is also an "xib" file containing UI elements (such as the contents of our menus) that will be replaced by our SDLMain.nib</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#source-code-and-data-files" id="user-content-source-code-and-data-files"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Source code and data files:</h2>
+<p>There are 4 folders of "data files", in our source tree, which XCode does nothing special with other than copying them into your app bundle.  These are <code>data</code>, <code>images</code>, <code>music</code>, and <code>sounds</code>.  Drag these into the aforementioned "file manager" left-hand sidebar in XCode.  You'll be prompted to choose whether these should be added as <code>folder references</code>, or <code>group references</code> in XCode;  the correct choice is <code>folder reference</code>.  The difference between the two is that folders automatically update their contents if you add new things outside of XCode; as a result, they're great for data files, and not so great for source code files, because you cannot remove a source code file from your list of files to be built, without actually removing it from that directory on-disk.  Most makefile-style build systems assume the programmer manually manages which files do and don't get built, and the files which are/aren't to be built are often lumped together in the same directory.  In fact it's possible XCode won't even let you build source files in a folder reference.  I haven't tried.</p>
+<p>The fifth folder to be dragged in is <code>src</code>, which as per the above, should be made a "group reference".</p>
+<p>Lastly, there will be a few files which are only for the mac build;  these should be dragged into <code>Frogatto/Resources</code> in the sidebar.  They are:  <code>Info.plist</code>, <code>icon.icns</code>, and <code>SDLMain.nib</code></p>
+<p>Some of the source code files need to be removed for a regular frogatto build.
+TODO:  list these.</p>
+<ul>
+<li>load_level.cpp has a threaded variant, and a non-threaded; you'll need to pick one.  ATM the threaded one doesn't play nicely on windows.</li>
+</ul>
+<p>The SDLMain.m file needs to be turned from an Objective-C file, into an Objective-C++ file, or it's inclusion of some C++ header files won't work.  There is a right-hand-sidebar that can be activated in XCode which allows this.  Alternatively, the file can be renamed to have the extension "mm" rather than "m", which causes XCode to treat it by default as an Objective-C++ file. (This may be a good idea for our core team to do at some point, and this instruction will probably be preserved even if we do that, because knowing this is a bit obscure).</p>
+<p>Some of the files need special settings changed for them.  At the top of the file-browser tab of the sidebar is a major item: an icon of a blue "XCode" document, named after your project (in this case, presumably "frogatto"), and with a subtext like "1 target, Mac OS X SDK 10.7".  This icon is your access to changing the build settings for the project, including the settings for header search paths, and copying in libraries, which we'll need to set later.  You will need to amend the setting in the "target" section which gives a path to info.plist to point to our particular info.plist file.  All paths like this are relative to the location of the XCode project file on disk, so this particular item will likely be <code>resources/Info.plist</code></p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#acquiring-librariesframeworks-and-setting-header-paths" id="user-content-acquiring-librariesframeworks-and-setting-header-paths"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Acquiring Libraries/Frameworks and Setting Header Paths</h2>
+<p>XCode needs two things for our libraries; it needs the libraries themselves, which are in machine-code form (ending in .dylib, .a, or .framework); we tell XCode about these by dragging them into the project.  It also needs header files, which describe what code is available in said frameworks; we tell XCode about these by supplying a "path" for each set, in the "build settings" (this will be a single line of text, with spaces separating each item.  I will describe this for each item, and give a final result which might need amendments based on where you put your headers).  Because the machine code for these libraries will likely be built by you, to be in the architectures you want, it's probably convenient for you to have both the source and built products of these inside the same folder as your project file.</p>
+<p>Here's a quick list of the libraries we need:</p>
+<ul>
+<li>OpenGL.framework</li>
+<li>SDL.framework</li>
+<li>SDL_mixer.framework</li>
+<li>SDL_ttf.framework</li>
+<li>SDL_image.framework</li>
+<li>libboost_regex.dylib</li>
+<li>libboost_iostreams.dylib</li>
+<li>libboost_system.dylib</li>
+<li>libboost_filesystem.dylib</li>
+<li>libGLEW.1.6.0.dylib</li>
+<li>GLM (OpenGL Mathematics)</li>
+</ul>
+<h3>
+<a aria-hidden="true" class="anchor" href="#openglframework" id="user-content-openglframework"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>OpenGL.framework</h3>
+<p>This file is already on your mac.  Find it in <code>/System/Library/Frameworks</code>, and drag it into your file-browser sidebar in XCode, under Frameworks.  You may wish to group it with AppKit, CoreData, and Foundation, and separate them from the non-apple frameworks;  this can be done by selecting several items, and using the right-click menu item "New Group from Selection".</p>
+<p>As described later, the header search path for this will just be <code>.</code>; i.e. the same folder as the project file.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#sdlframework-sdl_mixerframework-sdl_ttfframework-sdl_imageframework" id="user-content-sdlframework-sdl_mixerframework-sdl_ttfframework-sdl_imageframework"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>SDL.framework, SDL_mixer.framework, SDL_ttf.framework, SDL_image.framework</h3>
+<p>Acquire these files from <a href="http://www.libsdl.org/download-1.2.php" rel="nofollow">http://www.libsdl.org/download-1.2.php</a>
+These will be pre-built by SDL as ready-made frameworks.  At the time of this writing, you want SDL 1.2.14.  Download these, and place them at the directory <code>/Library/Frameworks/</code> (Note: don't confuse this with <code>/System/Library/Frameworks/</code> - anything under <code>/System/</code> should never be modified by a user of a mac system; user-installed drivers/libraries/etc all go in subfolders of <code>/Library/</code>.</p>
+<p>Once there, drag these from your <code>/Library/Frameworks/</code> folder into XCode - into the <code>Frameworks</code> folder in the XCode sidebar.</p>
+<p>The header search paths for SDL et al are: <code>/Library/Frameworks/SDL.framework/Headers</code> <code>/Library/Frameworks/SDL_image.framework/Headers</code> <code>/Library/Frameworks/SDL_mixer.framework/Headers</code> <code>/Library/Frameworks/SDL_ttf.framework/Headers</code></p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#libboost_regexdylib-libboost_iostreamsdylib-libboost_systemdylib-libboost_filesystemdylib" id="user-content-libboost_regexdylib-libboost_iostreamsdylib-libboost_systemdylib-libboost_filesystemdylib"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>libboost_regex.dylib, libboost_iostreams.dylib, libboost_system.dylib, libboost_filesystem.dylib</h3>
+<p>Acquire these files from <a href="http://www.boost.org/" rel="nofollow">http://www.boost.org/</a>  The latest version as of this writing is 1.53.0.
+You will need to build these yourself; boost provides a tool to build dylibs of them, which despite being rather intimidating at first glance is actually very easy to use <a href="http://www.boost.org/doc/libs/1_47_0/more/getting_started/unix-variants.html" rel="nofollow">which they have instructions on how to use.</a>  It's really as simple as running a few commands in sequence; because boost is well-maintained, you can rely on their configuration scripts to actually work.</p>
+<p>Boost is provided as a tarball/zip file containing a single folder full of code.  The short version of the build instructions is to take this unpacked folder, and put it in the same folder as your project file.  <code>cd</code> into that directory in a terminal, and then run <code>./bootstrap.sh --prefix="./boost"</code> to put the resulting headers and dylibs in a new folder named "boost" next to your project file (you might have to manually create this empty folder, first).  It's possible to customize which specific boost sub-libraries get built, but because "everything" takes only ~10-20min and 200mb of disk space, you can safely run <code>./b2 install</code> without changing that.</p>
+<p>Boost has an easy way to build "fat binaries" of your resulting dylibs, btw.  Invoking <code>./b2</code> itself will build your libraries; you can pass specific options to it to choose which libraries get built, by what compiler, and how they get built.  Passing the <code>address-model=32_64</code> option will make it build both 32-bit intel binaries (i.e. <code>i386</code>) and 64-bit intel binaries (<code>x86-64</code>), each merged together into a single file.  One gotcha is that <a href="https://groups.google.com/forum/?fromgroups=#!topic/boost-list/Qgu-3r279No" rel="nofollow">you can't merely pass the <code>address-model</code> argument alone</a>; you must also pass <code>architecture=x86</code> in order for it to build a fat binary rather than just a binary for your system's native architecture (often <code>x86-64</code> these days).  PPC support at this point is likely unimportant, but <code>architecture=combined</code> will <a href="http://stackoverflow.com/questions/4755712/how-to-build-boost-1-45-universal-binaries" rel="nofollow">give you a 4-way fat binary</a> featuring both 32 and 64-bit variants of both PPC and intel code.  An example command, with options for building only specific libraries and with the above architecture options, is: <code>./b2 --with-regex --with-system --with-iostreams architecture=x86 address-model=32_64 install</code></p>
+<p>You'll now have a boost folder with <code>include</code> and <code>lib</code> inside it.  Inside lib, you'll find the 3 boost libraries we currently need.  Drag these into the <code>Frameworks</code> folder in the XCode sidebar.</p>
+<p>The header search path for boost will be that <code>include</code> folder:  <code>./boost/include</code></p>
+<p>To build boost with clang, the i386 and x86_64 binaries need to be built separately.
+<code>./b2 toolset=clang cxxflags="-std=c++11 -stdlib=libc++ -arch i386" linkflags="-stdlib=libc++ -arch i386" --with-filesystem --with-regex --with-system --with-iostreams architecture=x86 install</code>
+<code>./b2 toolset=clang cxxflags="-std=c++11 -stdlib=libc++ -arch x86_64" linkflags="-stdlib=libc++ -arch x86_64" --with-filesystem --with-regex --with-system --with-iostreams architecture=x86 install</code></p>
+<p>Refs:
+<a href="https://trac.lvk.cs.msu.su/boost.build/ticket/230" rel="nofollow">https://trac.lvk.cs.msu.su/boost.build/ticket/230</a>
+<a href="http://stackoverflow.com/questions/8486077/how-to-compile-link-boost-with-clang-libc" rel="nofollow">http://stackoverflow.com/questions/8486077/how-to-compile-link-boost-with-clang-libc</a>
+<a href="http://stackoverflow.com/questions/2887707/how-to-build-boost-with-c0x-support" rel="nofollow">http://stackoverflow.com/questions/2887707/how-to-build-boost-with-c0x-support</a></p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#libglew160dylib" id="user-content-libglew160dylib"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>libGLEW.1.6.0.dylib</h3>
+<p>Acquire the source for this from <a href="http://glew.sourceforge.net/" rel="nofollow">http://glew.sourceforge.net/</a>
+You will need to build this yourself.  The source will come in a zip/tgz file, once unpacked I suggest putting the upacked folder in the same folder, named "glew-1.6.0", into the same folder as your project file.  Building this is just a matter of opening a terminal, changing the working dir to that "glew-1.6.0" folder, and running the command "make", but with one gotcha:  two files in the package ("Makefile" and "config/config.guess") have windows-style line endings, which break their ability to run on a mac/unix system.  These need to have their line endings changed to "unix" style; a one-line command to swap this is:
+sed -e 's/\r$//' inputfile &gt; outputfile    (this does dos to unix; <a href="http://stackoverflow.com/questions/6373888/converting-newline-formatting-from-mac-to-windows" rel="nofollow">more info here</a>)</p>
+<p>The result of that will be a library file at: "./glew-1.6.0/lib/libGLEW.1.6.0.dylib", which you'll want to drag into Xcode's "Frameworks" folder in the sidebar.</p>
+<p>The header path for glew, based on the above, will be "./glew-1.6.0/include"</p>
+<p>Note regarding 32/64-bit versions of e.g. libGLEW, libPNG, and other libraries built with make - <a href="http://blog.omega-prime.co.uk/?p=102" rel="nofollow">make takes darwin/OSX specific arguments</a> to build fat binaries.  Passing the following will do so: <code>make CXXFLAGS="-arch i386 -arch x86_64" CFLAGS="-arch i386 -arch x86_64" LDFLAGS="-arch i386 -arch x86_64"</code> - note that one common failure (which I myself ran into) is this error: <code>gcc-4.2: -E, -S, -save-temps and -M options are not allowed with multiple -arch flags</code>.  This can be fixed with: <code>./configure --disable-dependency-tracking</code></p>
+<ul>
+<li>final notes:
+The final contents of your "Header Search Paths" string will be:</li>
+</ul>
+<blockquote>
+<p>.
+./dependency-headers
+/Library/Frameworks/SDL.framework/Headers
+/Library/Frameworks/SDL_image.framework/Headers
+/Library/Frameworks/SDL_mixer.framework/Headers
+/Library/Frameworks/SDL_ttf.framework/Headers
+./boost/include
+./glew-1.6.0/include</p>
+</blockquote>
+<p>XCode should automatically populate the item next to that, named "Library Search Paths", when you drag in the libs.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#glm---opengl-mathematics" id="user-content-glm---opengl-mathematics"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>GLM - OpenGL Mathematics</h3>
+<p><a href="http://glm.g-truc.net/" rel="nofollow">http://glm.g-truc.net/</a>  OpenGL Mathematics (GLM) is a header only C++ mathematics library for graphics software based on the OpenGL Shading Language (GLSL) specification.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#packaging-libraries-and-frameworks" id="user-content-packaging-libraries-and-frameworks"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Packaging Libraries and Frameworks</h2>
+<ul>
+<li>
+<p>Because macs store opengl in a different place than standard unix systems, one quick-and-dirty hack needs to be done to allow us to still use the #include "GL/gl.h" which is standard on other systems.  Inside the same folder as the project file, make a symlink named GL which points to the header folder inside the apple-provided OpenGL.framework.  This can be done with the following command, assuming you cd into the same folder as your project file, first:
+<code>ln -s /System/Library/Frameworks/OpenGL.framework/Versions/A/Headers GL</code>
+On 10.9 or later:
+<code>ln -s /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.9.sdk/System/Library/Frameworks/OpenGL.framework/Versions/A/Headers/ GL</code></p>
+</li>
+<li>
+<p>Mac applications are expected to include, inside the app bundle, any frameworks which aren't part of the standard OS distribution.  This is very different from software distribution on linux, such as apt-get.  Thus, we'll need to have our boost, glew, and SDL libraries/frameworks copied into our app bundle.  XCode needs to be told that we want these copied in during our building of the program.  Click on the "Frogatto" project icon at the top of XCode's left sidebar to get at the project settings, and inside the "Frogatto" target, you'll see a tab labeled "Build Phases".  You'll need to add a new build phase of the type "Copy Files".  Into this, you want to drag all of our SDL, boost, and GLEW dylibs/frameworks from the sidebar.</p>
+</li>
+<li>
+<p>The dylib frameworks we've built include a path listing inside them, which tell the linker where the program is supposed to look for the dylib, once the program is built .  Even though XCode can find these files just fine, and even knows where the final destination of them inside the packaged app is, this is a case where "the right hand knows not what the left hand does"; this knowledge is not passed on into the packaged app, and without doing this, the app will have the linked files inside it, but won't be able to find them.</p>
+</li>
+</ul>
+<p>To fix these, you'll need to use a few tools;
+"otool -L path" will list the path that the dylib was installed at, and any dependencies</p>
+<p>"install_name_tool -change oldpath newpath currentfile" can be used to modify the path for a dependency; it will need to be applied separately for each dependency.  The currentfile parameter refers to the dylib file that's actually being modified.  An example of a library which has an internal dependency is libboost_filesystem; it depends on libboost_system.  Its dependency to that was changed via: <code>install_name_tool -change "libboost_system.dylib" "@executable_path/../Frameworks/libboost_system.dylib" libboost_filesystem.dylib</code></p>
+<p>"install_name_tool -id path currentfile" can be used to change the individual path for the dylib itself.  Naturally there is only one.  You will want to change this, for each of our four dylibs, to point to the Frameworks folder inside the app bundle we'll create.  With "original_file_name" being replaced by each library's name, the path to change these to is "@executable_path/../Frameworks/original_file_name.dylib"</p>
+<p>For example, one of the commands I ran, after cding into the same folder as my dylibs, was:  install_name_tool -id "@executable_path/../Frameworks/libboost_iostreams.dylib" libboost_iostreams.dylib</p>
+<p>#Custom SDL_Image#
+Anura uses palette-shifting which is keyed on exact RGB values - this is used to recycle art inside the game by displaying it in very different color schemes as you progress through levels.  This runs into a nasty snag with versions of SDL &gt;1.2.14 (including both 1.2.15, and 2.x), because those on macs have started using the built-in ImageIO library as their backend to read PNG images, and nastily, this causes all images in the game to be gamma-shifted (this is going through ICC/Colorsync correction, really).</p>
+<p>To solve this, we're <a href="https://forums.libsdl.org/viewtopic.php?p=42442#42442" rel="nofollow">apparently able to build our own copy of SDL_Image</a>, flagged with <code>-DSDL_IMAGE_USE_COMMON_BACKEND</code>, which will avoid doing this colorshifting.  To do this, we download SDL_Image's source code via <code>hg clone http://hg.libsdl.org/SDL_image/</code> which will give us a directory containing, amongst other things, an XCode file which can build a viable replacement <code>SDL2_Image.framework</code> which we can replace the official prepackaged one with.</p>
+<p>To do this, however, we need copies of three ingredient libraries it depends on: <code>libpng</code>, <code>libtiff</code>, and <code>libjpeg</code> (with libtiff depending on libjpeg).  To get these, we use <a href="http://brew.sh/" rel="nofollow">homebrew</a> to automate downloading the source code, and building dylib files.  Be warned that we want a specific set of options for these, though, or we'll end up building dylibs which are hilariously incompatible and not suitable for distribution.  We need the option <code>--universal</code> to ensure the libraries are both 32 and 64-bit; we also need <code>--build-bottle</code> to ensure that they do not use special processor operations only available on newer intel chips (basically when you build without these options, it tends to use special vector instructions or so-forth that simply won't run on older machines - if you try to deploy with these, it will run fine on your own machine, but when copied to someone else's machine, the game will die with an error like <code>EXEC_BAD_INSTRUCTION (SIGILL)</code>).</p>
+<p>The process for making one of these goes like this:</p>
+<ol>
+<li>run <code>brew install --build-bottle --universal libpng</code>
+</li>
+<li>This will install files at e.g. <code>/usr/local/Cellar/libpng/1.6.10</code>  One of these will be the <code>libpng16.16.dylib</code> that we want.</li>
+<li>Copy this into the SDL_Image XCode project's Frameworks folder in the finder.</li>
+<li>chmod 777 this file, since its default ownership is to some special user/group related to homebrew</li>
+<li>Fix the install paths on this file by first inspecting it via <code>otool -L ./libpng16.16.dylib</code>, and then...</li>
+<li>Change the <code>id</code> linker path via:  <code>install_name_tool -id "@rpath/../Frameworks/libpng16.16.dylib" libpng16.16.dylib</code>
+</li>
+<li>TODO document the XCode project file changes necessary.</li>
+</ol>
+<p>There are a few special notes here:</p>
+<ul>
+<li>the homebrew names of these recipes are: <code>libpng</code> <code>jpeg</code> and <code>libtiff</code>.</li>
+<li>Since libjpeg relies on libtiff, you'll need to build jpeg first.</li>
+<li>Since libjpeg relies on libtiff, you'll also need to correct its relative path using <code>install_name_tool -change "/usr/local/lib/libjpeg.8.dylib" "@rpath/../Frameworks/libjpeg.8.dylib" libtiff.5.dylib</code>
+</li>
+<li>e.g. <code>brew uninstall libpng</code> is a good way to delete a homebrew library which you need to rebuild with different options.  It does not clear homebrew's recipe cache of the source code, though.</li>
+</ul>
+<p>#Addendum#
+(some notes on paths I need to read up on: <a href="http://code.google.com/p/sidelight/wiki/RpathSaver" rel="nofollow">http://code.google.com/p/sidelight/wiki/RpathSaver</a> <a href="http://www.mikeash.com/pyblog/friday-qa-2009-11-06-linking-and-install-names.html" rel="nofollow">http://www.mikeash.com/pyblog/friday-qa-2009-11-06-linking-and-install-names.html</a> <a href="http://www.dribin.org/dave/blog/archives/2009/11/15/rpath/" rel="nofollow">http://www.dribin.org/dave/blog/archives/2009/11/15/rpath/</a> )</p>
+
+        </div>
+
+        <div class="wiki-footer gollum-markdown-content boxed-group" id="wiki-footer">
+          <div class="boxed-group-inner wiki-auxiliary-content markdown-body">
+            <p>More help can be found via IRC, <a href="irc://irc.freenode.net/#frogatto" rel="nofollow">#Frogatto</a> on freenode.net. This wiki is not a complete reference.</p>
+
+          </div>
+        </div>
+    </div>]

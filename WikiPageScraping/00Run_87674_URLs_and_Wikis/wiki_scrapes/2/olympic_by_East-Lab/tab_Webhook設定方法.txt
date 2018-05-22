@@ -1,0 +1,35 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>githubにpushした時に指定したURLにPOSTリクエストしてくれるのがwebhooks。</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#github%E3%81%A7webhooks%E8%A8%AD%E5%AE%9A" id="user-content-githubでwebhooks設定"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>githubでwebhooks設定</h2>
+<p>まずgithubのwebhooks設定からURLを登録する。
+例）<a href="http://example.com/webhooks.php" rel="nofollow">http://example.com/webhooks.php</a></p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#post%E3%83%AA%E3%82%AF%E3%82%A8%E3%82%B9%E3%83%88%E3%82%92%E5%8F%97%E3%81%91%E5%8F%96%E3%82%8Bphp%E3%82%92%E7%94%A8%E6%84%8F" id="user-content-postリクエストを受け取るphpを用意"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>POSTリクエストを受け取るPHPを用意</h2>
+<p>webhooks.php</p>
+<pre><code>&lt;?php
+$cmd = dirname(__FILE__) . '/githook/update.sh';
+$res = system($cmd);
+</code></pre>
+<h2>
+<a aria-hidden="true" class="anchor" href="#%E5%AE%9F%E8%A1%8C%E3%81%99%E3%82%8B%E3%82%B7%E3%82%A7%E3%83%AB%E3%82%B9%E3%82%AF%E3%83%AA%E3%83%97%E3%83%88%E3%82%92%E7%94%A8%E6%84%8F" id="user-content-実行するシェルスクリプトを用意"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>実行するシェルスクリプトを用意</h2>
+<pre><code>#!/bin/sh
+cd /aaa/bbb/ccc #git initされてるフォルダ
+sudo /usr/bin/git --git-dir=.git pull
+</code></pre>
+<p>apacheがスクリプトを実行するので実行ユーザはapacheさんになる。
+apacheさんはgit pullできないのでrootさんがgit pullするようにsudoをつける。
+もちろん、rootさんがgit pullできるようにrootの公開鍵をgithubに登録しておく必要がある。</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#etcsudoers%E3%81%AE%E7%B7%A8%E9%9B%86" id="user-content-etcsudoersの編集"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>/etc/sudoersの編集</h2>
+<p>apacheがsudoすると普通はパスワードが聞かれる。
+スクリプトを実行したときにパスワードを聞かれても答えられないのでパスワードが不要となるように設定。
+→visudoする</p>
+<pre><code># Defaults requiretty←コメントアウトする
+apache  ALL=(ALL) NOPASSWD: /usr/bin/git←追記する
+</code></pre>
+
+        </div>
+
+    </div>]

@@ -1,0 +1,38 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>目录：<br/>
+(1).关于latency<br/>
+(2).code url<br/>
+(3).如何使用脚本<br/>
+(4).关于脚本的执行效率<br/></p>
+<h1>
+<a aria-hidden="true" class="anchor" href="#1%E5%85%B3%E4%BA%8Elatency" id="user-content-1关于latency"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>(1).关于latency</h1>
+<p>latency(延迟率)用来描述请求的响应情况，用来判断应用程序的响应时间是否健康。比如我们说lantency99，意思是说应用程序响应最慢的1%的请求的最小延迟时间。举例如下：
+比如一个应用1天有1W个请求，将这1W个请求的响应时间倒序排列(慢的在前边)，那么第100个值就是lantency99我们始终关心的是最糟糕的请求有多糟糕。</p>
+<p>但是如果应用的访问量非常大，比如说亿+/天，lantency99就变的没有什么意义，量太大了，即使latency99是1ms，也不能说明什么。      这个时候除了latency99以外，还要算具体的数字，如latency-topN了，比如说latency-top100, latency-top1K, latency-top10K, latency-top100K，etc。</p>
+<p><strong>本脚本主要是计算lantency-topN的数值，使用插入排序算法。</strong></p>
+<h1>
+<a aria-hidden="true" class="anchor" href="#2code-url" id="user-content-2code-url"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>(2).code url</h1>
+<p><a href="https://github.com/hepyu/shell-script/tree/master/stat/lantency">lantency stat code url</a></p>
+<h1>
+<a aria-hidden="true" class="anchor" href="#3%E5%A6%82%E4%BD%95%E4%BD%BF%E7%94%A8%E8%84%9A%E6%9C%AC" id="user-content-3如何使用脚本"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>(3).如何使用脚本</h1>
+<p>3.1.在使用本脚本之前，需要注意：<br/>
+3.1.1.对延迟时间的提取的正则修改：<a href="https://github.com/hepyu/shell-script/blob/master/stat/lantency/base_code/lantency-topN.awk.sh">lantency-topN.awk.sh</a>，替换"match($0,""ct":[0-9]+,");"<br/>
+3.1.2.如果想根据日期计算，待处理的日志文件名的格式应该为：user-space-request.log.2014-01-01-00.log，需要精确到小时，或者修改对应code。<br/></p>
+<p>3.2.提供两种计算方式：<br/>
+3.2.1进入code目录：<a href="https://github.com/hepyu/shell-script/tree/master/stat/lantency">lantency stat code url</a><br/>
+根据指定日志文件的完整路径计算，例如：<br/>
+sh manual-cal-lantency-byFile.sh /data/logs/userspace/user-space-request.log.2014-01-01-00.log 6 <br/>
+3.2.2根据指定日期计算，和日志文件的前后缀进行计算，例如：<br/>
+sh manual-cal-lantency-byDay.sh /data/logs/userspace/user-space-request.log 2014-01-01 8<br/></p>
+<h1>
+<a aria-hidden="true" class="anchor" href="#4%E5%85%B3%E4%BA%8E%E8%84%9A%E6%9C%AC%E7%9A%84%E6%89%A7%E8%A1%8C%E6%95%88%E7%8E%87" id="user-content-4关于脚本的执行效率"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>(4).关于脚本的执行效率</h1>
+<p>主要涉及CPU，内存这两方面的资源消耗。</p>
+<p>关于CPU：
+CPU是大头，因为显然这是CPU密集型的程序。因为脚本没有使用多进程/线程，也没有使用管道，脚本全本使用awk顺序处理，所以最多占用1个core。</p>
+<p>关于内存：
+因为使用脚本，只是用数组保存有限个值(lantency-topN)，所以理论上消耗的内存是topN的数据的大小，但是实际上要多很多（因为脚本程序运行要使用一部分），总的来说不会超过MB，除非我们把topN设置为极大。</p>
+
+        </div>
+
+    </div>]

@@ -1,0 +1,41 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>You can easily add support for other receiver hardware, if it has a commandline tool that can output I/Q samples to the standard output.</p>
+<p>If your receiver hardware is not supported yet, you will definitely need to edit <code>config_webrx.py</code>. Take a look at these lines:</p>
+<pre><code>start_rtl_command="rtl_sdr -s {samp_rate} -f {center_freq} -p {ppm} -".format(rf_gain=rf_gain, center_freq=center_freq, samp_rate=samp_rate, ppm=ppm)
+format_conversion="csdr convert_u8_f"
+</code></pre>
+<p>Notice that the command to be run by OpenWebRX is something like:</p>
+<pre><code>rtl_sdr (...) -
+</code></pre>
+<p>The <code>rtl_sdr</code> tool is called with various commandline parameters, which are substituted from other settings (like center frequency, sampling rate, PPM). Then the <code>-</code> at the end says that <code>rtl_sdr</code> should output the samples <strong>to the standard output instead of a file</strong>.</p>
+<p>There is another important setting: <code>format_conversion</code> will tell OpenWebRX that the RTL-SDR outputs 8-bit unsigned samples. We have to convert these to 32-bit floating point samples in order to process them with <code>csdr</code>. The available conversion options are listed on the <a href="https://github.com/simonyiszk/csdr#data-types">csdr project page</a>. As a quick reference, you can use:</p>
+<ul>
+<li>
+<code>csdr convert_s16_f</code> for receivers that output signed 16-bit integer data type (AFEDRI SDR, Softrock, etc.),</li>
+<li>
+<code>csdr convert_s8_f</code> for receivers that output signed 8-bit integer data type (HackRF).</li>
+</ul>
+<p>(To understand how and where does data go within OpenWebRX, and how does it further utilize OS pipes and FIFOs, there is a graph in the <a href="http://openwebrx.org/bsc-thesis.pdf#page=29" rel="nofollow">thesis paper</a>.)</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#testing" id="user-content-testing"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Testing</h2>
+<p>You can confirm that your receiver's commandline tool works like this:</p>
+<pre><code>rtl_sdr - | xxd
+</code></pre>
+<p>It works if you see a bunch of hexadecimal data:</p>
+<pre><code>0009c50: c0a6 a71d 48a3 b711 ac24 4a3e dcbd e951  ....H....$J&gt;...Q
+0009c60: 83df 7498 24da 37e9 34e1 8f24 da82 a80f  ..t.$.7.4..$....
+0009c70: 5538 b926 cefe b76e 9609 4e01 451a 01fc  U8.&amp;...n..N.E...
+</code></pre>
+<p>...and it doesn't work if you do not see anything.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#remember" id="user-content-remember"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Remember</h2>
+<p>...to set receiver parameters correctly. Let's say, you own a brand new product called WhateverSDR, which outputs 16-bit I/Q samples at a fixed rate of 200000 sps, from the 2-meter band (145 MHz). It has a commandline tool called <code>whatever_sdr</code>, but it doesn't let you set the sampling rate from the command line. Then you would do this:</p>
+<pre><code>start_rtl_command="whatever_sdr -"
+format_conversion="csdr convert_s16_f"
+</code></pre>
+<p>Still you have to set the <code>samp_rate = 200000</code> and <code>center_freq = 145000000</code> in <code>config_webrx.py</code>, so that OpenWebRX would know what to write on the frequency scale, and what to expect while processing the I/Q data.</p>
+
+        </div>
+
+    </div>]

@@ -1,0 +1,30 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <h1>
+<a aria-hidden="true" class="anchor" href="#%E3%82%B3%E3%82%B1%E3%81%9F%E3%81%8B%E5%88%A4%E5%AE%9A" id="user-content-コケたか判定"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>コケたか判定</h1>
+<p>現在、勢いよく走るとコケるが、これをゲームに取り入れたい。</p>
+<ul>
+<li>プレイヤーが実際に向いている向きベクトルと、その向きベクトルのYを0にした2つのベクトルを用意する。</li>
+<li>上記の2つのベクトルの為す角を求めれば、キャラクタが地面に対してどういう姿勢かが分かる(0度なら通常状態。90度なら完全にコケている)</li>
+<li>2つのベクトルの為す角は、Unityでは<a href="http://docs.unity3d.com/ScriptReference/Vector3.Angle.html" rel="nofollow">Vector3.Angle</a>で求めることができる。戻り値は0～180の度数(degree)で返る</li>
+<li>また、同様の性質として<a href="http://docs-jp.unity3d.com/Documentation/Manual/UnderstandingVectorArithmetic.html" rel="nofollow">内積</a>がある。Unityでは<a href="http://docs.unity3d.com/ScriptReference/Vector3.Dot.html" rel="nofollow">Vector3.Dot</a>で求める。戻り値は、2つのベクトルが為す角のcosで求まる。この性質を利用して、双方を単位ベクトルにして計算すると、向きが一致する場合は1。90度を為す場合は0。180度の場合は-1が返る。</li>
+</ul>
+<h1>
+<a aria-hidden="true" class="anchor" href="#%E4%BB%8A%E5%9B%9E%E3%81%AE%E6%8C%99%E5%8B%95" id="user-content-今回の挙動"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>今回の挙動</h1>
+<p>次のような方針で作成してみる。</p>
+<ul>
+<li>地面に為す角に応じて、操作の利き具合を変化させる。内積を利用する</li>
+<li>地面との角度が既定の値を越えたら(とりあえず+-45度)、移動操作を無効な状態にする</li>
+<li>キャラクタと地面の角度が+-80度を越えている状態で、ジャンプボタンを押すと角度を0度に戻して飛び起きるアニメ。うつぶせの時はKneelDownToUp。仰向けの時はDownToUp。アニメが終わったら操作を復帰させる</li>
+</ul>
+<h2>
+<a aria-hidden="true" class="anchor" href="#%E3%82%AD%E3%83%A3%E3%83%A9%E3%82%AF%E3%82%BF%E3%81%AE%E5%88%B6%E5%BE%A1%E3%81%AB%E5%BF%85%E8%A6%81%E3%81%AA%E7%8A%B6%E6%85%8B" id="user-content-キャラクタの制御に必要な状態"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>キャラクタの制御に必要な状態</h2>
+<ul>
+<li>通常(移動が可能)</li>
+<li>倒れ(操作不可。ジャンプボタンで飛び起き)</li>
+<li>飛び起き(アニメが完了するまで操作不能。アニメが完了したら通常へ)</li>
+</ul>
+
+        </div>
+
+    </div>]

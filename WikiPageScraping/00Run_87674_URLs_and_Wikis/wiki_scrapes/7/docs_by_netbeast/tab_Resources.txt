@@ -1,0 +1,148 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>Trying to achieve true compatibility is the main objective of this project. We are based on the principles many apps to one piece of hardware and many pieces of hardware to one app. The first makes reference to the fact that a single device can be controlled (through an API or just by running binaries) by different software –which is easy to understand– however not always an app is prepared to handle different devices, even more when they are embedded. That is the purpose of resources. To encapsulate functions of different hardware through abstraction and make it available to different apps so they do not have to worry on the brand or nature of a device in order to demand it a certain task.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#requirements" id="user-content-requirements"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Requirements</h2>
+<p>Instead of establishing a protocol or bold rules for resource discovery (and since almost always it is going to be operated by a human) it has been preferred a database approach, more similar to a programable protocol like MQTT (described in the section 2.7) where actions are performed after the intents or messages there are available. Thus, it has been designed a flexible yet simple mechanism to simplify Remote Procedure Call on different resources that might be on heterogeneous locations. As it can be perceived, it is based on SNMP  methods to manage events and measurements, chaining resources within foreign keys in a database.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#implementation" id="user-content-implementation"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Implementation</h2>
+<p>As always, for modularity, this system will be implemented as an app that can be installed or uninstalled from Netbeast router, allowing developers to create their own solutions and stop or launch them. It consists on a SQLite database with a single table for resources (another table shall be appended for subscription). A resource is the group of actions that can be applied on the same topic and application. The same topic (lighting, for example) may have different resources, thus different apps, all with the same methods –actions– (turn on, turn off, change color).</p>
+<p>### Actions table</p>
+<table>
+<thead>
+<tr>
+<th> id</th>
+<th>app</th>
+<th>location</th>
+<th>topic</th>
+<th>method</th>
+<th>hook</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td> 1</td>
+<td>ABC lights</td>
+<td>Living Room</td>
+<td> Illumination</td>
+<td>set</td>
+<td>/api/illumination</td>
+</tr>
+<tr>
+<td> 2</td>
+<td>Thermostat</td>
+<td>Bedroom</td>
+<td> Temperature</td>
+<td>set</td>
+<td>/temp</td>
+</tr>
+<tr>
+<td> 3</td>
+<td>Thermostat</td>
+<td>Bedroom</td>
+<td> Temperature</td>
+<td>get</td>
+<td>/temp</td>
+</tr>
+<tr>
+<td>5</td>
+<td>SecuritySystems</td>
+<td>Entrance</td>
+<td>Presence</td>
+<td>get</td>
+<td> mqtt://localhost:4444</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li>Id is a sequentially assigned id for interacting with the database.</li>
+<li>App field will be assigned from the dashboard and refers to the application that offers the resource.</li>
+<li>Location is a non-strict field and it is thought to enhance readability, so the user knows where is the resource. An empty location would let the user to think it is applied throughout the building or room he is in. <em>Wild cards and regex are accepted</em> (like *, % or ?)</li>
+<li>Topic is the what of a resource, intends to verbalize the object of an action. It is mandatory. Synonyms will be treated equally in a way to ease interconnection and reduce the learning curve.</li>
+<li>As with topic, methods are mandatory to be specified. Only a subset of actions are allowed (set, get, toggle, update, delete) and their actions are mapped into HTTP verbs.
+<ul>
+<li>get → <code>GET</code>
+</li>
+<li>set → <code>POST</code>
+</li>
+<li>toggle (set the opposite of the current state of a thing), update → <code>UPDATE</code>
+</li>
+<li>delete, remove → <code>DELETE</code>
+</li>
+<li>Hook path is the complete URL (or relative path from an apps root) to invoke a remote procedure. It could be in HTTP but also implemented in MQTT. The actions are used to understand which method should be applied. It is also mandatory.</li>
+</ul>
+</li>
+</ul>
+<p>If somebody wants to turn off the lights in a certain room, an app can check for a resource, show it to the user and let him decide or apply an action to a determined element. Also, other apps can check for resources and ask to perform a task. When a resource is called as an action, the dashboard applies the methods to hook path, always with <strong>application/json</strong> content-type. If an error occurs, the hook must be prepared to show a message explaining why it has failed.</p>
+<p>Also resources may provide useful information. The response from a hook call must be in <em>json</em> mode and will be handled as is to the calling application. The content is non-standardised so for deeper use of a resource developer guidelines should be proposed, but it is not of our intention to make it more difficult to developers to interact.</p>
+<p>As a fact a semantic matching should be applied when querying for a resource and data-fusion will be applied in a non strict way. A <em>node.js</em> wrapper for interacting with resources will be available with custom functions to ask for common resources as temperature, water use, door openings…</p>
+<p>Each app can register as many resources as it asks to. All would be removed if the app is uninstalled. Subscription should be done programatically and with user interaction, to ensure that all resources share the name of a room or the type of information.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#events" id="user-content-events"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Events</h2>
+<p>This model allows subscription to events and actions. Events should be designed as other table that subscribes to topics, locations or ids about other resources, allowing actions to be performed secuentially or programatically as in a smart house is suppose to be done.</p>
+<p>### Events table</p>
+<table>
+<thead>
+<tr>
+<th>resource_id</th>
+<th align="center">target_id</th>
+<th align="right">payload</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>5</td>
+<td align="center">1</td>
+<td align="right"> <em>ON</em>
+</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li>The resource_id field points to an action that has been called subscribing to it.</li>
+<li>Target_id field is the callback and points to</li>
+</ul>
+<p>In the table above, when action 5 (presence is detected by SecuritySystems app in the entrance) action 1 is applied (ABClights are turned on) because the payload is sent and understood from the target.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#api" id="user-content-api"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>API</h2>
+<p>The API will be exposed as HTTP RESTful itself, but it will be offered a node.js wrapper written in a promise mode, since it is stateful, and selection of resources may vary in different ways.</p>
+<blockquote>
+<p>A Promise represents a proxy for a value not necessarily known when the promise is created. It allows you to associate handlers to an asynchronous action's eventual success value or failure reason. This lets asynchronous methods return values like synchronous methods: instead of the final value, the asynchronous method returns a promise of having a value at some point in the future.
+– (developer.mozilla.org n.d.)</p>
+</blockquote>
+<h4>
+<a aria-hidden="true" class="anchor" href="#nodejs-wrapper-for-the-resource--api-example" id="user-content-nodejs-wrapper-for-the-resource--api-example"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Node.js wrapper for the resource  API example</h4>
+<div class="highlight highlight-source-js"><pre><span class="pl-k">var</span> Resource <span class="pl-k">=</span> <span class="pl-c1">require</span>(‘nb<span class="pl-k">-</span>resource’)
+
+<span class="pl-smi">Resource</span>.<span class="pl-c1">get</span>(‘presence’).<span class="pl-en">at</span>(‘Living Room’)
+.<span class="pl-en">success</span>(<span class="pl-k">function</span>(<span class="pl-smi">presence</span>) {
+   <span class="pl-k">if</span>(presence <span class="pl-k">===</span> <span class="pl-c1">true</span>) {
+      <span class="pl-c"><span class="pl-c">//</span>there are people in the room</span>
+      <span class="pl-smi">Resource</span>.<span class="pl-c1">set</span>(‘lightning’).<span class="pl-en">to</span>(‘<span class="pl-c1">ON</span>’).<span class="pl-en">at</span>(‘Living Room’)
+      .<span class="pl-en">error</span>(<span class="pl-k">function</span>(<span class="pl-smi">err</span>) {
+         <span class="pl-en">console</span>.<span class="pl-c1">error</span>(err);
+      })
+   }
+})</pre></div>
+
+        </div>
+
+        <div class="wiki-footer gollum-markdown-content boxed-group" id="wiki-footer">
+          <div class="boxed-group-inner wiki-auxiliary-content markdown-body">
+            <p># <code>warning</code>: now our docs are being published in our gitbook and available on our website. Visit <a href="http://docs.netbeast.co/" rel="nofollow">http://docs.netbeast.co/</a></p>
+<h1>
+<a aria-hidden="true" class="anchor" href="#contact" id="user-content-contact"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Contact</h1>
+<ul>
+<li>Visit our site <a href="https://netbeast.co" rel="nofollow">https://netbeast.co</a>
+</li>
+<li>Mail us: staff [at] netbeast.co</li>
+<li>Report a bug or enter discussion at <a href="https://github.com/netbeast-co/docs/issues">issues</a>
+</li>
+<li>Other resources: <a href="https://github.com/netbeast-co/dashboard">Dashboard</a>, Netbeast <a href="https://github.com/netbeast-co/API">API</a>
+</li>
+</ul>
+<p><a href="https://gitter.im/netbeast-co/xway?utm_source=badge&amp;utm_medium=badge&amp;utm_campaign=pr-badge" rel="nofollow"><img alt="Gitter" data-canonical-src="https://badges.gitter.im/Join%20Chat.svg" src="https://camo.githubusercontent.com/da2edb525cde1455a622c58c0effc3a90b9a181c/68747470733a2f2f6261646765732e6769747465722e696d2f4a6f696e253230436861742e737667"/></a></p>
+
+          </div>
+        </div>
+    </div>]

@@ -1,0 +1,61 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <h2>
+<a aria-hidden="true" class="anchor" href="#%E5%BD%93%E5%89%8D%E8%AE%BE%E8%AE%A1" id="user-content-当前设计"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>当前设计</h2>
+<p><img alt="qd界面" src="https://github.com/QuantFans/quantdigger/raw/master/doc/images/quant.png"/></p>
+<p>上图是目前quantdigger典型的交易主界面图。它有两个子窗口，分别显示股票k线和对应的成交量。底部是一个蓝色按钮的滚动条。
+右下角在光标移动的时候会现实对应那根k线的数据。</p>
+<p>上图界面主要由三个类对象组成：一个<code>TechnicalWidgets</code>对象，2个<code>FrameWidget</code>对象和一个<code>Slider</code>对象组成。
+<code>TechnicalWidgets</code>主窗口是<code>FrameWidget</code>窗口和<code>Slider</code>窗口的容器。滚动条被拖动的时候会让通知它的两个子窗口移动画布。</p>
+<p>绘图的主要操作是由<code>FrameWidget</code>窗口对象完成。一个绘图窗口由三部分组成：画布，绘图操作，交互事件的处理函数。
+matplotlib这个python包主要是用来显示一些科学数据图表。<a href="http://matplotlib.org/api/axes_api.html" rel="nofollow"><code>matplotlib.axes</code></a>可以理解为画布和窗口区域，
+提供了很多绘图函数，用于在该区域绘图。<a href="http://matplotlib.org/api/axes_api.html" rel="nofollow"><code>matplotlib.widgets.AxesWidget</code></a>本质上是一个交互事件处理类，
+用户可以自己添加对鼠标移动，按键等界面事件的处理函数。它创建的时候还接受一个<code>axes</code>画布对象，有了画布对象，<code>AxesWidget</code>就算是一个完整窗口控件。
+此外，<code>matplotlib.widgets</code>下面还有<code>Button</code>等常用的窗口控件，原理和<code>AxesWidget</code>一样，只是内置了一些默认事件的处理函数，比如按钮点击。</p>
+<p><code>TechnicalWidgets</code>是一个经典的技术指标分析界面，同时也是子窗口容器，它会根据用户创建时指定的子窗口的数目n，
+创建n个对应的画布对象。每一个画布对象传给相应的<code>FrameWidget</code>对象，形成一个窗口控件。这种窗口控件的主要作用就是用来显示一些技术图表，
+比如上图中的k线，成交量，平均线等。在系统中，而这些绘图操作则由<code>Plotter</code>的子类对象完成。</p>
+<p><img alt="quant_ui" src="https://github.com/QuantFans/quantdigger/raw/master/doc/images/quant_ui.png"/></p>
+<p>上图是系统的界面相关的类关系图。<code>Ma</code>是一个技术指标类，它之所以继承<code>Plotter</code>，是为了绘图方便。技术指标除了运算作用，
+很多都要求在窗口中显示运算结果，比如线条，文本，圆点等。<code>Plotter</code>定义了很多绘图函数，比如<code>Plotter.plot_line</code>, <code>Plotter.plot_text</code>。
+<code>Plotter</code>对象是<code>FrameWidget</code>对象的属性，绘图时<code>FrameWidget</code>负责调用其所拥有的所有的<code>Plotter</code>对象的绘图接口<code>Plotter.plot</code>完成
+相应的绘制。该绘图接口需要一个画布参数，<code>Plotter</code>会根据画布参数的类型来调用不同的底层绘图对象（<code>AxWidget</code>表matplotlib绘图，<code>QtWidget</code>表Qt绘图）来完成具体的绘图操作。</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#%E5%BD%93%E5%89%8D%E8%AE%BE%E8%AE%A1%E7%9A%84%E7%BC%BA%E7%82%B9" id="user-content-当前设计的缺点"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>当前设计的缺点</h2>
+<ul>
+<li>指标类如果要实现绘制必须实现一个<code>plot</code>接口，这个接口直接依赖画布对象，指标和界面的耦合性太强。</li>
+</ul>
+<h2>
+<a aria-hidden="true" class="anchor" href="#%E6%94%B9%E8%BF%9B%E6%96%B9%E5%90%91" id="user-content-改进方向"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>改进方向</h2>
+<ul>
+<li>修改<code>Plotter</code>类的各绘图接口如<code>plot_line</code>的实现，它的功能应该是把绘图的数据参数存储为结构化的数据。绘图控件负责显示这些结数据。目前系统的<a href="https://github.com/QuantFans/quantdigger/blob/master/quantdigger/engine/context.py"><code>StrategyContext</code></a>`类已经实现了这个设计，它的绘图函数的功能就是结构化的存储绘图参数。<a href="https://github.com/QuantFans/quantdigger/blob/master/demo/plot_strategy.py">这里</a>是实际的绘图例子。这种设计实现数据和UI的解耦，比如可以把它们以json的形式传到web端，用html5绘制。</li>
+</ul>
+<h2>
+<a aria-hidden="true" class="anchor" href="#plotter%E7%BB%98%E5%9B%BE" id="user-content-plotter绘图"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Plotter绘图</h2>
+<h3>
+<a aria-hidden="true" class="anchor" href="#%E5%B1%9E%E6%80%A7" id="user-content-属性"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>属性:</h3>
+<h3>
+<a aria-hidden="true" class="anchor" href="#%E6%96%B9%E6%B3%95" id="user-content-方法"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>方法:</h3>
+<h4>
+<a aria-hidden="true" class="anchor" href="#plot_textx-y-color-size-rotation--%E5%9C%A8%E5%9D%90%E6%A0%87%E8%BD%B4%E7%9A%84%E6%8C%87%E5%AE%9A%E4%BD%8D%E7%BD%AE%E6%98%BE%E7%A4%BA%E6%96%87%E5%AD%97" id="user-content-plot_textx-y-color-size-rotation--在坐标轴的指定位置显示文字"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>plot_text(x, y, color, size, rotation)  在坐标轴的指定位置显示文字。</h4>
+<pre><code>x (int): X轴坐标值。
+y (float): Y轴坐标值。
+color (str): 字体颜色。
+size (int): 字体大小
+rotation (int): 字体旋转角度。
+</code></pre>
+<h4>
+<a aria-hidden="true" class="anchor" href="#plot_linex-y-style-color-lw--%E7%94%BB%E4%B8%8D%E5%90%8C%E9%A3%8E%E6%A0%BC%E7%9A%84%E7%BA%BF" id="user-content-plot_linex-y-style-color-lw--画不同风格的线"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>plot_line(x, y, style, color, lw)  画不同风格的线。</h4>
+<pre><code>x (int): X轴坐标。
+y (float): Y轴坐标。
+style (str): '-': 实线；'--': 虚线；'.': 圆圈
+color (str): 颜色
+lw (int): 线宽
+</code></pre>
+<h2>
+<a aria-hidden="true" class="anchor" href="#%E4%B8%8A%E4%B8%80%E8%8A%82%E7%B3%BB%E7%BB%9F%E4%BA%A4%E4%BA%92---%E4%B8%8B%E4%B8%80%E8%8A%82-%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84" id="user-content-上一节系统交互---下一节-数据结构"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><em>上一节</em> <a class="internal present" href="/QuantFans/quantdigger/wiki/%E7%B3%BB%E7%BB%9F%E4%BA%A4%E4%BA%92">系统交互</a>        <em>下一节</em>  <a class="internal present" href="/QuantFans/quantdigger/wiki/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84">数据结构</a>
+</h2>
+
+        </div>
+
+    </div>]

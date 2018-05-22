@@ -1,0 +1,244 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <h3>
+<a aria-hidden="true" class="anchor" href="#the-stats-database" id="user-content-the-stats-database"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>The <code>stats</code> database</h3>
+<p>This database contains metrics gathered by ProxySQL with respect to its internal functioning. Here you will find information on how often certain counters get triggered and the execution times of the queries that pass through ProxySQL.</p>
+<p>A user that connects to Admin with <code>admin-stats_credentials</code> credentials can only access to this schema.</p>
+<p>Generally, the tables from this database are populated on the fly when the SQL query against them is execute, by examining in-memory data structures.</p>
+<p>Here are the tables from the "stats" database:</p>
+<div class="highlight highlight-source-sql"><pre>Admin<span class="pl-k">&gt;</span> show tables <span class="pl-k">from</span> stats;
+<span class="pl-k">+</span><span class="pl-c"><span class="pl-c">--</span>------------------------------+</span>
+| tables                         |
+<span class="pl-k">+</span><span class="pl-c"><span class="pl-c">--</span>------------------------------+</span>
+| stats_mysql_query_rules        |
+| stats_mysql_commands_counters  |
+| stats_mysql_processlist        |
+| stats_mysql_connection_pool    |
+| stats_mysql_query_digest       |
+| stats_mysql_query_digest_reset |
+| stats_mysql_global             |
+<span class="pl-k">+</span><span class="pl-c"><span class="pl-c">--</span>------------------------------+</span>
+<span class="pl-c1">7</span> rows <span class="pl-k">in</span> <span class="pl-k">set</span> (<span class="pl-c1">0</span>.<span class="pl-c1">00</span> sec)</pre></div>
+<p>The purposes of the tables are as follows:</p>
+<ul>
+<li>
+<code>stats_mysql_query_rules</code> - counts how many times each query rule was matched by queries</li>
+<li>
+<code>stats_mysql_commands_counters</code> - counts how many times each type of SQL command was executed (e.g. <code>UPDATE</code>, <code>DELETE</code>, <code>TRUNCATE</code>, etc.) and how much time those executions took</li>
+<li>
+<code>stats_mysql_processlist</code> - a table that simulates the results of the "SHOW PROCESSLIST" mysqld command. This table will contain similar information aggregated across all backends</li>
+<li>
+<code>stats_mysql_connection_pool</code> - a table that contains the statistics related to the usage of the connection pool for each backend server in each hostgroup</li>
+<li>
+<code>stats_mysql_query_digest</code> - a table that contains statistics related to the queries routed through the ProxySQL server. How many times each query was executed, and the total execution time are just several provided stats. Here the queries are stripped from their numerical and literal parameters, which are replaced with a question mark, in order to be able to group all queries of the same type under the same row.</li>
+<li>
+<code>stats_mysql_query_digest_reset</code> - identical to <code>stats_mysql_query_digest</code>, but querying it also atomically resets the internal statistics to zero. This can be used, for example, before making a change, to be able to compare the statistics before and after the change. This table can also be queried at regular interval to understand how workload change over time. Since ProxySQL has an internal database, it is also possible to save the result into an internal table.</li>
+<li>
+<code>stats_mysql_global</code> - global statistics such as total number of queries, total number of successful connections, etc. The list of variables is expected to grow in future release.</li>
+</ul>
+<h2>
+<a aria-hidden="true" class="anchor" href="#stats_mysql_query_rules" id="user-content-stats_mysql_query_rules"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>stats_mysql_query_rules</h2>
+<p>Here is the statement used to create the <code>stats_mysql_query_rules</code> table:</p>
+<div class="highlight highlight-source-sql"><pre><span class="pl-k">CREATE</span> <span class="pl-k">TABLE</span> <span class="pl-en">stats_mysql_query_rules</span> (
+    rule_id <span class="pl-k">INTEGER</span> <span class="pl-k">PRIMARY KEY</span>,
+    hits <span class="pl-k">INT</span> <span class="pl-k">NOT NULL</span>
+)</pre></div>
+<p>The fields have the following semantics:</p>
+<ul>
+<li>
+<code>rule_id</code> - the id of the rule, can be joined with the <code>main.mysql_query_rules</code> table on the <code>rule_id</code> field.</li>
+<li>
+<code>hits</code> - the total number of hits for this rule. One hit is registered if the current incoming query matches the rule. Each time a new query that matches the rule is processed, the number of hits is increased.</li>
+</ul>
+<h2>
+<a aria-hidden="true" class="anchor" href="#stats_mysql_commands_counters" id="user-content-stats_mysql_commands_counters"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>stats_mysql_commands_counters</h2>
+<p>Here is the statement used to create the <code>stats_mysql_commands_counters</code> table:</p>
+<div class="highlight highlight-source-sql"><pre><span class="pl-k">CREATE</span> <span class="pl-k">TABLE</span> <span class="pl-en">stats_mysql_commands_counters</span> (
+    Command <span class="pl-k">VARCHAR</span> <span class="pl-k">NOT NULL</span> <span class="pl-k">PRIMARY KEY</span>,
+    Total_Time_us <span class="pl-k">INT</span> <span class="pl-k">NOT NULL</span>,
+    Total_cnt <span class="pl-k">INT</span> <span class="pl-k">NOT NULL</span>,
+    cnt_100us <span class="pl-k">INT</span> <span class="pl-k">NOT NULL</span>,
+    cnt_500us <span class="pl-k">INT</span> <span class="pl-k">NOT NULL</span>,
+    cnt_1ms <span class="pl-k">INT</span> <span class="pl-k">NOT NULL</span>,
+    cnt_5ms <span class="pl-k">INT</span> <span class="pl-k">NOT NULL</span>,
+    cnt_10ms <span class="pl-k">INT</span> <span class="pl-k">NOT NULL</span>,
+    cnt_50ms <span class="pl-k">INT</span> <span class="pl-k">NOT NULL</span>,
+    cnt_100ms <span class="pl-k">INT</span> <span class="pl-k">NOT NULL</span>,
+    cnt_500ms <span class="pl-k">INT</span> <span class="pl-k">NOT NULL</span>,
+    cnt_1s <span class="pl-k">INT</span> <span class="pl-k">NOT NULL</span>,
+    cnt_5s <span class="pl-k">INT</span> <span class="pl-k">NOT NULL</span>,
+    cnt_10s <span class="pl-k">INT</span> <span class="pl-k">NOT NULL</span>,
+    cnt_INFs
+)</pre></div>
+<p>The fields have the following semantics:</p>
+<ul>
+<li>
+<code>command</code> - the type of SQL command that has been executed. Examples: <code>FLUSH</code>, <code>INSERT</code>, <code>KILL</code>, <code>SELECT FOR UPDATE</code>, etc.</li>
+<li>
+<code>Total_Time_us</code> - the total time spent executing commands of that type, in microseconds</li>
+<li>total_cnt - the total number of commands of that type executed</li>
+<li>cnt_100us, cnt_500us, ..., cnt_10s, cnt_INFs - the total number of commands of the given type which executed within the specified time limit and the previous one. For example, cnt_500us is the number of commands which executed within 500 microseconds, but more than 100 microseconds (because there's also a cnt_100us field). cnt_INFs is the number of commands whose execution exceeded 10 seconds.</li>
+</ul>
+<p>Note: statistics for table <code>stats_mysql_commands_counters</code> are processed only if global variable <code>mysql-commands_stats</code> is set to <code>true</code> . This is the default, and used for other queries processing. It is recommended to <strong>NOT</strong> disable it.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#stats_mysql_processlist" id="user-content-stats_mysql_processlist"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>stats_mysql_processlist</h2>
+<p>Here is the statement used to create the <code>stats_mysql_processlist</code> table:</p>
+<div class="highlight highlight-source-sql"><pre><span class="pl-k">CREATE</span> <span class="pl-k">TABLE</span> <span class="pl-en">stats_mysql_processlist</span> (
+    ThreadID <span class="pl-k">INT</span> <span class="pl-k">NOT NULL</span>,
+    SessionID <span class="pl-k">INTEGER</span> <span class="pl-k">PRIMARY KEY</span>,
+    user <span class="pl-k">VARCHAR</span>,
+    db <span class="pl-k">VARCHAR</span>,
+    cli_host <span class="pl-k">VARCHAR</span>,
+    cli_port <span class="pl-k">VARCHAR</span>,
+    hostgroup <span class="pl-k">VARCHAR</span>,
+    l_srv_host <span class="pl-k">VARCHAR</span>,
+    l_srv_port <span class="pl-k">VARCHAR</span>,
+    srv_host <span class="pl-k">VARCHAR</span>,
+    srv_port <span class="pl-k">VARCHAR</span>,
+    command <span class="pl-k">VARCHAR</span>,
+    time_ms <span class="pl-k">INT</span> <span class="pl-k">NOT NULL</span>,
+    info <span class="pl-k">VARCHAR</span>
+)</pre></div>
+<p>The fields have the following semantics:</p>
+<ul>
+<li>
+<code>ThreadID</code> - the internal ID of the thread within ProxySQL. This is a 0-based numbering of the threads</li>
+<li>
+<code>SessionID</code> - the internal global numbering of the ProxySQL sessions, or clients' connections (frontend). It's useful to be able to uniquely identify such a session, for example in order to be able to kill it, or monitor a specific session only.</li>
+<li>
+<code>user</code> - the user with which the MySQL client connected to ProxySQL in order to execute this query</li>
+<li>
+<code>db</code> - the schema currently selected</li>
+<li>
+<code>cli_host</code>, <code>cli_port</code> - the (host, port) pair of the TCP connection between the MySQL client and ProxySQL</li>
+<li>
+<code>hostgroup</code> - the current hostgroup. If a query being processed, this is the hostgroup towards which the query was or will be routed, or the default hostgroup. The routing is done by default in terms of the default destination hostgroup for the username with which the MySQL client connected to ProxySQL (based on <code>mysql_users</code> table, but it can be modified on a per-query basis by using the query rules in <code>mysql_query_rules</code>
+</li>
+<li>
+<code>l_srv_host</code>, <code>l_srv_port</code> - the local (host, port) pair of the TCP connection between ProxySQL and the backend MySQL server from the current hostgroup</li>
+<li>
+<code>srv_host</code>, <code>srv_port</code> - the (host, port) pair on which the backend MySQL server is listening for TCP connections</li>
+<li>
+<code>command</code> - the type of MySQL query being executed (the MySQL command verb)</li>
+<li>
+<code>time_ms</code> - the time in millisecond for which the query has been in the specified command state so far</li>
+<li>
+<code>info</code> - the actual query being executed</li>
+</ul>
+<p>Please note that this is just a snapshot in time of the actual MySQL queries being run. There is no guarantee that the same queries will be running a fraction of a second later.
+Here is what the results look like:</p>
+<div class="highlight highlight-source-sql"><pre>mysql<span class="pl-k">&gt;</span> <span class="pl-k">select</span> <span class="pl-k">*</span> <span class="pl-k">from</span> stats_mysql_processlist;
+<span class="pl-k">+</span><span class="pl-c"><span class="pl-c">--</span>--------+-----------+------+------+-----------+----------+-----------+------------+------------+-----------+----------+---------+---------+---------------------------------------+</span>
+| ThreadID | SessionID | user | db   | cli_host  | cli_port | hostgroup | l_srv_host | l_srv_port | srv_host  | srv_port | command | time_ms | info                                  |
+<span class="pl-k">+</span><span class="pl-c"><span class="pl-c">--</span>--------+-----------+------+------+-----------+----------+-----------+------------+------------+-----------+----------+---------+---------+---------------------------------------+</span>
+| <span class="pl-c1">3</span>        | <span class="pl-c1">1</span>         | root | test | <span class="pl-c1">127</span>.<span class="pl-c1">0</span>.<span class="pl-c1">0</span>.<span class="pl-c1">1</span> | <span class="pl-c1">51831</span>    | <span class="pl-c1">0</span>         | <span class="pl-c1">127</span>.<span class="pl-c1">0</span>.<span class="pl-c1">0</span>.<span class="pl-c1">1</span>  | <span class="pl-c1">55310</span>      | <span class="pl-c1">127</span>.<span class="pl-c1">0</span>.<span class="pl-c1">0</span>.<span class="pl-c1">1</span> | <span class="pl-c1">3306</span>     | Query   | <span class="pl-c1">0</span>       | <span class="pl-k">SELECT</span> c <span class="pl-k">FROM</span> sbtest1 <span class="pl-k">WHERE</span> id<span class="pl-k">=</span><span class="pl-c1">198898</span> |
+| <span class="pl-c1">0</span>        | <span class="pl-c1">2</span>         | root | test | <span class="pl-c1">127</span>.<span class="pl-c1">0</span>.<span class="pl-c1">0</span>.<span class="pl-c1">1</span> | <span class="pl-c1">51832</span>    | <span class="pl-c1">0</span>         | <span class="pl-c1">127</span>.<span class="pl-c1">0</span>.<span class="pl-c1">0</span>.<span class="pl-c1">1</span>  | <span class="pl-c1">55309</span>      | <span class="pl-c1">127</span>.<span class="pl-c1">0</span>.<span class="pl-c1">0</span>.<span class="pl-c1">1</span> | <span class="pl-c1">3306</span>     | Query   | <span class="pl-c1">0</span>       | <span class="pl-k">SELECT</span> c <span class="pl-k">FROM</span> sbtest3 <span class="pl-k">WHERE</span> id<span class="pl-k">=</span><span class="pl-c1">182586</span> |
+| <span class="pl-c1">2</span>        | <span class="pl-c1">3</span>         | root | test | <span class="pl-c1">127</span>.<span class="pl-c1">0</span>.<span class="pl-c1">0</span>.<span class="pl-c1">1</span> | <span class="pl-c1">51833</span>    | <span class="pl-c1">0</span>         | <span class="pl-c1">127</span>.<span class="pl-c1">0</span>.<span class="pl-c1">0</span>.<span class="pl-c1">1</span>  | <span class="pl-c1">55308</span>      | <span class="pl-c1">127</span>.<span class="pl-c1">0</span>.<span class="pl-c1">0</span>.<span class="pl-c1">1</span> | <span class="pl-c1">3306</span>     | Query   | <span class="pl-c1">0</span>       | <span class="pl-k">SELECT</span> c <span class="pl-k">FROM</span> sbtest1 <span class="pl-k">WHERE</span> id<span class="pl-k">=</span><span class="pl-c1">199230</span> |
+| <span class="pl-c1">1</span>        | <span class="pl-c1">4</span>         | root | test | <span class="pl-c1">127</span>.<span class="pl-c1">0</span>.<span class="pl-c1">0</span>.<span class="pl-c1">1</span> | <span class="pl-c1">51834</span>    | <span class="pl-c1">0</span>         | <span class="pl-c1">127</span>.<span class="pl-c1">0</span>.<span class="pl-c1">0</span>.<span class="pl-c1">1</span>  | <span class="pl-c1">55307</span>      | <span class="pl-c1">127</span>.<span class="pl-c1">0</span>.<span class="pl-c1">0</span>.<span class="pl-c1">1</span> | <span class="pl-c1">3306</span>     | Query   | <span class="pl-c1">0</span>       | <span class="pl-k">SELECT</span> c <span class="pl-k">FROM</span> sbtest2 <span class="pl-k">WHERE</span> id<span class="pl-k">=</span><span class="pl-c1">201110</span> |
+<span class="pl-k">+</span><span class="pl-c"><span class="pl-c">--</span>--------+-----------+------+------+-----------+----------+-----------+------------+------------+-----------+----------+---------+---------+---------------------------------------+</span>
+<span class="pl-c1">4</span> rows <span class="pl-k">in</span> <span class="pl-k">set</span> (<span class="pl-c1">0</span>.<span class="pl-c1">02</span> sec)</pre></div>
+<p><strong>Note:</strong> ProxySQL also support the commands <strong>SHOW PROCESSLIST</strong> and <strong>SHOW FULL PROCESSLIST</strong> to return information related to current sessions.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#stats_mysql_connection_pool" id="user-content-stats_mysql_connection_pool"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>stats_mysql_connection_pool</h2>
+<p>Here is the statement used to create the <code>stats_mysql_connection_pool</code> table:</p>
+<div class="highlight highlight-source-sql"><pre><span class="pl-k">CREATE</span> <span class="pl-k">TABLE</span> <span class="pl-en">stats_mysql_connection_pool</span> (
+    hostgroup <span class="pl-k">VARCHAR</span>,
+    srv_host <span class="pl-k">VARCHAR</span>,
+    srv_port <span class="pl-k">VARCHAR</span>,
+    status <span class="pl-k">VARCHAR</span>,
+    ConnUsed <span class="pl-k">INT</span>,
+    ConnFree <span class="pl-k">INT</span>,
+    ConnOK <span class="pl-k">INT</span>,
+    ConnERR <span class="pl-k">INT</span>,
+    Queries <span class="pl-k">INT</span>,
+    Bytes_data_sent <span class="pl-k">INT</span>,
+    Bytes_data_recv <span class="pl-k">INT</span>,
+    Latency_us <span class="pl-k">INT</span>)</pre></div>
+<p>Each row represents a backend server within a hostgroup. The fields have the following semantics:</p>
+<ul>
+<li>hostgroup - the hostgroup in which the backend server belongs. Note that a single backend server can belong to more than one hostgroup</li>
+<li>srv_host, srv_port - the TCP endpoint on which the mysqld backend server is listening for connections</li>
+<li>status - the status of the backend server. Can be ONLINE, SHUNNED, OFFLINE_SOFT, OFFLINE_HARD. See the description of the <code>mysql_servers</code> table above for more details about what each status means</li>
+<li>ConnUsed - how many connections are currently used by ProxySQL for sending queries to the backend server</li>
+<li>ConnFree - how many connections are currently free. They are kept open in order to minimize the time cost of sending a query to the backend server</li>
+<li>ConnOK - how many connections were established successfully.</li>
+<li>ConnERR - how many connections weren't established successfully.</li>
+<li>Queries - the number of queries routed towards this particular backend server</li>
+<li>Bytes_data_sent - the amount of data sent to the backend. This does not include metadata (packets' headers)</li>
+<li>Bytes_data_recv - the amount of data received from the backend. This does not include metadata (packets' headers, OK/ERR packets, fields' description, etc)</li>
+<li>Latency_us - the currently ping time in microseconds, as reported from Monitor</li>
+</ul>
+<h2>
+<a aria-hidden="true" class="anchor" href="#stats_mysql_query_digest-and-stats_mysql_query_digest_reset" id="user-content-stats_mysql_query_digest-and-stats_mysql_query_digest_reset"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>stats_mysql_query_digest and stats_mysql_query_digest_reset</h2>
+<p>Here is the statement used to create the <code>stats_mysql_query_digest</code> table:</p>
+<div class="highlight highlight-source-sql"><pre><span class="pl-k">CREATE</span> <span class="pl-k">TABLE</span> <span class="pl-en">stats_mysql_query_digest</span> (
+    hostgroup <span class="pl-k">INT</span>,
+    schemaname <span class="pl-k">VARCHAR</span> <span class="pl-k">NOT NULL</span>,
+    username <span class="pl-k">VARCHAR</span> <span class="pl-k">NOT NULL</span>,
+    digest <span class="pl-k">VARCHAR</span> <span class="pl-k">NOT NULL</span>,
+    digest_text <span class="pl-k">VARCHAR</span> <span class="pl-k">NOT NULL</span>,
+    count_star <span class="pl-k">INTEGER</span> <span class="pl-k">NOT NULL</span>,
+    first_seen <span class="pl-k">INTEGER</span> <span class="pl-k">NOT NULL</span>,
+    last_seen <span class="pl-k">INTEGER</span> <span class="pl-k">NOT NULL</span>,
+    sum_time <span class="pl-k">INTEGER</span> <span class="pl-k">NOT NULL</span>,
+    min_time <span class="pl-k">INTEGER</span> <span class="pl-k">NOT NULL</span>,
+    max_time <span class="pl-k">INTEGER</span> <span class="pl-k">NOT NULL</span>,
+    <span class="pl-k">PRIMARY KEY</span>(schemaname, username, digest)
+)</pre></div>
+<p>Each row represents a class of queries all having the same parameters (but with different values) routed through ProxySQL. Here's how a typical result looks like:</p>
+<div class="highlight highlight-source-shell"><pre>mysql<span class="pl-k">&gt;</span> <span class="pl-k">select</span> <span class="pl-smi">*</span> from stats_mysql_query_digest order by count_star desc limit 2<span class="pl-k">;</span>
++------------+----------+--------------------+----------------------------------+------------+------------+------------+------------+----------+----------+
+<span class="pl-k">|</span> schemaname <span class="pl-k">|</span> username <span class="pl-k">|</span> digest             <span class="pl-k">|</span> digest_text                      <span class="pl-k">|</span> count_star <span class="pl-k">|</span> first_seen <span class="pl-k">|</span> last_seen  <span class="pl-k">|</span> sum_time   <span class="pl-k">|</span> min_time <span class="pl-k">|</span> max_time <span class="pl-k">|</span>
++------------+----------+--------------------+----------------------------------+------------+------------+------------+------------+----------+----------+
+<span class="pl-k">|</span> <span class="pl-c1">test</span>       <span class="pl-k">|</span> root     <span class="pl-k">|</span> 0x7721D69250CB40   <span class="pl-k">|</span> SELECT c FROM sbtest3 WHERE id=<span class="pl-k">?</span> <span class="pl-k">|</span> 8122800    <span class="pl-k">|</span> 1441091306 <span class="pl-k">|</span> 1441101551 <span class="pl-k">|</span> 7032352665 <span class="pl-k">|</span> 1010     <span class="pl-k">|</span> 117541   <span class="pl-k">|</span>
+<span class="pl-k">|</span> <span class="pl-c1">test</span>       <span class="pl-k">|</span> root     <span class="pl-k">|</span> 0x3BC2F7549D058B6F <span class="pl-k">|</span> SELECT c FROM sbtest4 WHERE id=<span class="pl-k">?</span> <span class="pl-k">|</span> 8100134    <span class="pl-k">|</span> 1441091306 <span class="pl-k">|</span> 1441101551 <span class="pl-k">|</span> 7002512958 <span class="pl-k">|</span> 101      <span class="pl-k">|</span> 102285   <span class="pl-k">|</span>
++------------+----------+--------------------+----------------------------------+------------+------------+------------+------------+----------+----------+
+</pre></div>
+<p>The fields have the following semantics:</p>
+<ul>
+<li>hostgroup - the hostgroup where the query was sent. A value of <code>-1</code> represent a query hitting the Query Cache</li>
+<li>schemaname - the schema that is currently being queried</li>
+<li>username - the username with which the MySQL client connected to ProxySQL</li>
+<li>digest - a hexadecimal hash that uniquely represents a query with its parameters stripped</li>
+<li>digest_text - the actual text with its parameters stripped</li>
+<li>count_star - the total number of times the query has been executed (with different values for the parameters)</li>
+<li>first_seen - unix timestamp, the first moment when the query was routed through the proxy</li>
+<li>last_seen - unix timestamp, the last moment (so far) when the query was routed through the proxy</li>
+<li>sum_time - the total time in microseconds spent executing queries of this type. This is particularly useful to figure out where the most time is spent in your application's workload, and provides a good starting point for where to improve</li>
+<li>min_time, max_time - the range of durations to expect when executing such a query. min_time is the minimal execution time seen so far, while max_time represents the maximal execution time, both in microseconds.</li>
+</ul>
+<p>Note that the times in this table refers to the time elapsed between the time in which ProxySQL receives the query from the client, and the time in which ProxySQL is ready to send the query to the client. Therefore these timers represent the elapsted time as close as possible as seen from the client. To be more precise, it is possible that before executing a query, ProxySQL needs to change charset or schema, find a new backend if the current one is not available anymore, run the query on a different backend if the current one fails, or wait a connection to become free because currently all the connection are in use.</p>
+<p><strong>Note:</strong> statistics for table <code>stats_mysql_query_digest</code> are processed only if global variable <code>mysql-query_digests</code> is set to <code>true</code> . This is the default, and used for other queries processing. It is recommended to <strong>NOT</strong> disable it.</p>
+<p>The <code>stats_mysql_query_digest_reset</code> table is identical in content and structure, but querying it also atomically resets the internal statistics to zero.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#stats_mysql_global" id="user-content-stats_mysql_global"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>stats_mysql_global</h2>
+<p>Here is the statement used to create the <code>stats_mysql_global</code> table:</p>
+<div class="highlight highlight-source-sql"><pre><span class="pl-k">CREATE</span> <span class="pl-k">TABLE</span> <span class="pl-en">stats_mysql_global</span> (
+    Variable_Name <span class="pl-k">VARCHAR</span> <span class="pl-k">NOT NULL</span> <span class="pl-k">PRIMARY KEY</span>,
+    Variable_Value <span class="pl-k">VARCHAR</span> <span class="pl-k">NOT NULL</span>
+)</pre></div>
+<p>Each row represents a global statistic at the proxy level related to MySQL. Currently, the available variables are:</p>
+<ul>
+<li>Client_Connections_aborted - number of frontend connections aborted due to invalid credential or max_connections reached</li>
+<li>Client_Connections_connected - number of frontend connections currently connected</li>
+<li>Client_Connections_created - number of frontend connections created so far</li>
+<li>Questions - total number of queries sent from frontends</li>
+<li>Slow_queries - number of queries that ran for longer than the threshold in milliseconds defined in global variable <code>mysql-long_query_time</code>
+</li>
+</ul>
+<p>The same output is available using the <strong>SHOW MYSQL STATUS</strong> command.</p>
+<p>Example:</p>
+<div class="highlight highlight-source-sql"><pre>Admin<span class="pl-k">&gt;</span> <span class="pl-k">select</span> <span class="pl-k">*</span> <span class="pl-k">from</span> <span class="pl-c1">stats</span>.<span class="pl-c1">stats_mysql_global</span>;
+<span class="pl-k">+</span><span class="pl-c"><span class="pl-c">--</span>----------------------------+----------------+</span>
+| Variable_Name                | Variable_Value |
+<span class="pl-k">+</span><span class="pl-c"><span class="pl-c">--</span>----------------------------+----------------+</span>
+| Client_Connections_aborted   | <span class="pl-c1">0</span>              |
+| Client_Connections_connected | <span class="pl-c1">4</span>              |
+| Client_Connections_created   | <span class="pl-c1">4</span>              |
+| Questions                    | <span class="pl-c1">36337716</span>       |
+| Slow_queries                 | <span class="pl-c1">0</span>              |
+<span class="pl-k">+</span><span class="pl-c"><span class="pl-c">--</span>----------------------------+----------------+</span></pre></div>
+
+        </div>
+
+    </div>]

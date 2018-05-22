@@ -1,0 +1,330 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <h1>
+<a aria-hidden="true" class="anchor" href="#open-mhealth-dsu-ri" id="user-content-open-mhealth-dsu-ri"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Open mHealth DSU RI</h1>
+<p>This repository contains a Java reference implementation of an <a href="http://www.openmhealth.org/" rel="nofollow">Open mHealth</a> DSU. This DSU supports the
+1.0.M1 data point API.</p>
+<blockquote>
+<p>This code is in its early stages and requires further work and testing. Please do not use it in production without proper testing.</p>
+</blockquote>
+<h3>
+<a aria-hidden="true" class="anchor" href="#tldr" id="user-content-tldr"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>tl;dr</h3>
+<ul>
+<li>this repository contains a secure endpoint that offers an API for storing and retrieving data points</li>
+<li>data points conform to the Open mHealth <a href="http://www.openmhealth.org/developers/schemas/#data-point" rel="nofollow">data point schema</a>
+</li>
+<li>the code consists of an <a href="http://oauth.net/2/" rel="nofollow">OAuth 2.0</a> authorization server and resource server</li>
+<li>the authorization server manages access tokens</li>
+<li>the resource server implements the data point API documented <a href="docs/raml/API.yml">here</a>
+</li>
+<li>the servers are written in Java using the <a href="http://projects.spring.io/spring-framework/" rel="nofollow">Spring Framework</a>, <a href="http://projects.spring.io/spring-security-oauth/" rel="nofollow">Spring Security OAuth 2.0</a> and <a href="http://projects.spring.io/spring-boot/" rel="nofollow">Spring Boot</a>
+</li>
+<li>the authorization server needs <a href="http://www.postgresql.org/" rel="nofollow">PostgreSQL</a> to store client credentials and access tokens, and <a href="http://www.mongodb.org/" rel="nofollow">MongoDB</a> to store user accounts</li>
+<li>the resource server needs PostgreSQL to read access tokens and MongoDB to store data points</li>
+<li>you can pull Docker containers for both servers from our <a href="https://registry.hub.docker.com/repos/openmhealth/" rel="nofollow">Docker Hub page</a>
+</li>
+<li>you can use a Postman <a href="https://www.getpostman.com/collections/18e6065476d59772c748" rel="nofollow">collection</a> to easily issue API requests</li>
+</ul>
+<h3>
+<a aria-hidden="true" class="anchor" href="#overview" id="user-content-overview"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Overview</h3>
+<p>A <em>data point</em> is a JSON document that represents a piece of data and conforms to
+the <a href="http://www.openmhealth.org/developers/schemas/#data-point" rel="nofollow">data-point</a> schema. The header of a data point conforms to
+the <a href="http://www.openmhealth.org/developers/schemas/#header" rel="nofollow">header</a> schema, and the body can conform to any schema you like.
+The header is designed to contain operational metadata, such as identifiers and provenance, whereas the body contains
+the data being acquired or computed.</p>
+<p>The <em>data point API</em> is a simple RESTful API that supports the creation, retrieval, and deletion of data points. The
+API authorizes access using OAuth 2.0.</p>
+<p>This implementation uses two components that reflect the <a href="http://tools.ietf.org/html/rfc6749" rel="nofollow">OAuth 2.0 specification</a>.
+A <em>resource server</em> manages data point resources and implements the data point API. The resource server authorizes
+requests using OAuth 2.0 access tokens. An <em>authorization server</em> manages the granting of access tokens.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#installation" id="user-content-installation"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Installation</h3>
+<p>There are two ways to build and run the authorization and resource servers.</p>
+<ol>
+<li>You can run a Docker container for each server that executes a pre-built binary.</li>
+</ol>
+<ul>
+<li>This is the fastest way to get up and running and isolates the install from your system.</li>
+</ul>
+<ol>
+<li>You can build all the code from source and run it on your host system.</li>
+</ol>
+<ul>
+<li>This is a quick way to get up and running if you don't need isolation and your system already has MongoDB, PostgreSQL and is prepped to build Java code.</li>
+</ul>
+<h4>
+<a aria-hidden="true" class="anchor" href="#option-1-running-a-pre-built-binary-in-docker" id="user-content-option-1-running-a-pre-built-binary-in-docker"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Option 1. Running a pre-built binary in Docker</h4>
+<p>If you don't have Docker 1.2+ installed, download <a href="https://docs.docker.com/installation/#installation/" rel="nofollow">Docker</a>
+and follow the installation instructions for your platform.</p>
+<p>The rest of the dependencies are handled via Docker. In a terminal,</p>
+<ol>
+<li>If you don't already have a MongoDB image, download one by running
+<ul>
+<li><code>docker pull mongo:latest</code></li>
+<li>This will download up to 400 MB of images.</li>
+</ul>
+</li>
+<li>If a MongoDB container isn't running or if you want a new container, start one by running
+<ul>
+<li><code>docker run --name omh-mongo -d mongo:latest</code></li>
+</ul>
+</li>
+<li>If you don't already have a PostgreSQL image, download one by running
+<ul>
+<li><code>docker pull postgres:latest</code></li>
+<li>This will download up to 200 MB of images.</li>
+</ul>
+</li>
+<li>If a PostgreSQL container isn't running or if you want a new container, start one by running
+<ul>
+<li><code>docker run --name omh-postgres -d postgres:latest</code></li>
+</ul>
+</li>
+<li>To source the Spring Security OAuth schema in the PostgreSQL container
+<ul>
+<li>If you're on Docker 1.3
+<ol>
+<li>Run <code>docker exec -it omh-postgres bash</code> to start a shell on the <code>omh-postgres</code> container</li>
+<li>Run <code>psql -U postgres</code> in the resulting shell to start <code>psql</code>
+</li>
+<li>Copy and paste the contents of the <a href="resources/rdbms/postgresql/oauth2-ddl.sql">setup script</a> to create the schema.</li>
+<li>
+<code>\q</code> to exit <code>psql</code>
+</li>
+<li>
+<code>exit</code> to exit the shell</li>
+</ol>
+</li>
+<li>If you're on an older version of Docker
+<ol>
+<li>Start <code>psql</code> in its own container using <code>docker run -it --link omh-postgres:postgres --rm postgres sh -c 'exec psql -h "$POSTGRES_PORT_5432_TCP_ADDR" -p "$POSTGRES_PORT_5432_TCP_PORT" -U postgres'</code>
+</li>
+<li>Copy and paste the contents of the <a href="resources/rdbms/postgresql/oauth2-ddl.sql">setup script</a> to create the schema.</li>
+<li>
+<code>\q</code> to exit <code>psql</code>
+</li>
+</ol>
+</li>
+</ul>
+</li>
+<li>Download the authorization server image by running
+<ul>
+<li><code>docker pull openmhealth/omh-dsu-authorization-server:latest</code></li>
+<li>This will download up to 300 MB of Docker images, 25 MB of which is the application.</li>
+</ul>
+</li>
+<li>Download the resource server image by running
+<ul>
+<li><code>docker pull openmhealth/omh-dsu-resource-server:latest</code></li>
+<li>This will download up to 300 MB of Docker images, 25 MB of which is the application.</li>
+</ul>
+</li>
+<li>Start the authorization server by running
+<ul>
+<li><code>docker run --name omh-dsu-authorization-server --link omh-postgres:omh-postgres --link omh-mongo:omh-mongo -d -p 8082:8082 'openmhealth/omh-dsu-authorization-server:latest'</code></li>
+</ul>
+</li>
+<li>Start the resource server by running
+<ul>
+<li><code>docker run --name omh-dsu-resource-server --link omh-postgres:omh-postgres --link omh-mongo:omh-mongo -d -p 8083:8083 'openmhealth/omh-dsu-resource-server:latest'</code></li>
+</ul>
+</li>
+</ol>
+<h4>
+<a aria-hidden="true" class="anchor" href="#option-2-building-from-source-and-running-on-your-host-system" id="user-content-option-2-building-from-source-and-running-on-your-host-system"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Option 2. Building from source and running on your host system</h4>
+<p>We will add documentation on running the servers on your host system shortly.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#configuring-the-authorization-server" id="user-content-configuring-the-authorization-server"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Configuring the authorization server</h3>
+<p>The authorization and resource servers are configured in YAML using <a href="http://docs.spring.io/spring-boot/docs/current/reference/htmlsingle/#boot-features-external-config" rel="nofollow">Spring Boot conventions</a>.
+You can see the authorization server's configuration <a href="authorization-server/src/main/resources/application.yml">here</a> and the
+resource server's configuration <a href="resource-server/src/main/resources/application.yml">here</a>.</p>
+<p>If you want to override the default configuration and you're running the servers on your host system, you can either</p>
+<ul>
+<li>Add an environment variable with <code>-e</code>to the Docker <code>run</code> command corresponding to the property you want to set.
+<ul>
+<li>e.g. <code>docker run --name omh-dsu-authorization-server -e logging.level.org.springframework=DEBUG ...</code>
+</li>
+<li>e.g. <code>docker run --name omh-dsu-resource-server -e spring.data.mongodb.database=bar ...</code>
+</li>
+</ul>
+</li>
+<li>Create an <code>application.yml</code> file in the <code>/opt/omh-dsu-ri/*-server</code> directory with the overriding YAML properties.
+<ul>
+<li>This is particularly useful because you can change the configuration without running new containers.</li>
+<li>You may need to install an editor, e.g. using <code>apt-get install vim</code>.</li>
+</ul>
+</li>
+</ul>
+<p>It is possible to use multiple resource servers with the same authorization server.</p>
+<h4>
+<a aria-hidden="true" class="anchor" href="#adding-clients" id="user-content-adding-clients"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Adding clients</h4>
+<p>The authorization server manages the granting of access tokens to clients according to the OAuth 2.0 specification. Since it is
+good practice to not roll your own security infrastructure, we leverage <a href="http://projects.spring.io/spring-security-oauth/" rel="nofollow">Spring Security OAuth 2.0</a>
+in this implementation. You can find the Spring Security OAuth 2.0 developer guide <a href="http://projects.spring.io/spring-security-oauth/docs/oauth2.html" rel="nofollow">here</a>.</p>
+<blockquote>
+<p>It is beyond the scope of this document to explain the workings of OAuth 2.0, Spring Security and Spring Security OAuth.
+The configuration information in this document is meant to help you get started, but is in no way a replacement
+for reading the documentation of the respective standards and projects.</p>
+</blockquote>
+<p>The authorization server uses Spring Security OAuth 2.0's <code>JdbcClientDetailsService</code> to store OAuth 2.0 client credentials.
+This necessitates access to a PostgreSQL database, although we intend to release a MongoDB service down the road to
+make this dependency optional.</p>
+<p>The client details in the <code>oauth_client_details</code> table controls the identity and authentication of clients, the grant
+types they can use to show they have been granted authorization, and the resources they can access and actions they
+can take once they have an access token. Specifically, the client details table contains</p>
+<ul>
+<li>the identity of the client (column <code>client_id</code>)</li>
+<li>the resource identifiers (column <code>resource_ids</code>) the client can access , <code>dataPoints</code> in our case</li>
+<li>the client secret, if any (column <code>client_secret</code>)</li>
+<li>the scope (column <code>scope</code>) to which the client is limited, in our case some comma-separated combination of
+<ul>
+<li>
+<code>read_data_points</code> if the client is allowed to read data points</li>
+<li>
+<code>write_data_points</code> if the client is allowed to write data points</li>
+<li>
+<code>delete_data_points</code> if the client is allowed to delete data points</li>
+</ul>
+</li>
+<li>the authorization grant types (column <code>authorized_grant_types</code>) the client is limited to, some comma-separated combination of
+<ul>
+<li>
+<code>authorization_code</code>, documented in the <a href="http://tools.ietf.org/html/rfc6749#section-1.3.1" rel="nofollow">Authorization Code</a> section of the OAuth 2.0 spec</li>
+<li>
+<code>implicit</code>, documented in the <a href="http://tools.ietf.org/html/rfc6749#section-1.3.2" rel="nofollow">Implicit</a> section</li>
+<li>
+<code>password</code>, documented in the <a href="http://tools.ietf.org/html/rfc6749#section-1.3.3" rel="nofollow">Resource Owner Password Credentials</a> section of the OAuth 2.0 spec</li>
+<li>
+<code>refresh_token</code>, documented in the <a href="http://tools.ietf.org/html/rfc6749#section-1.5" rel="nofollow">Refresh Token</a> section</li>
+<li>N.B. the <code>client_credentials</code> grant type in the <a href="http://tools.ietf.org/html/rfc6749#section-1.3.4" rel="nofollow">Client Credentials</a> section is not yet supported, but slated to be</li>
+</ul>
+</li>
+<li>the Spring Security authorities (column <code>authorities</code>) the token bearer has, in our case <code>ROLE_CLIENT</code>
+</li>
+</ul>
+<p>To create a client,</p>
+<ol>
+<li>Connect to the <code>omh</code> PostgreSQL database using the same mechanism you used during the installation.</li>
+<li>Add a row to the <code>oauth_client_details</code> table. You can find a script with a sample <code>INSERT</code> statement <a href="resources/rdbms/common/oauth2-sample-data.sql">here</a>.</li>
+</ol>
+<blockquote>
+<p>The remainder of this documentation is actively being worked on.</p>
+</blockquote>
+<h4>
+<a aria-hidden="true" class="anchor" href="#adding-end-users" id="user-content-adding-end-users"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Adding end users</h4>
+<p>The data points accessible over the data point API belong to a user. In OAuth 2.0, this user is called the <em>resource owner</em> or <em>end-user</em>.
+A client requests authorization from the authorization server to access the data points of one or more users.</p>
+<p>The authorization server includes a simple RESTful endpoint to create users. To create a user, execute the following command</p>
+<div class="highlight highlight-source-shell"><pre>curl -H <span class="pl-s"><span class="pl-pds">"</span>Content-Type:application/json<span class="pl-pds">"</span></span> --data <span class="pl-s"><span class="pl-pds">'</span>{"username": "testUser", "password": "testUserPassword"}<span class="pl-pds">'</span></span> http://<span class="pl-smi">${DOCKER_IP}</span>:8082/users</pre></div>
+<p>or use the Postman collection discussed <a href="#issuing-requests-with-postman">below</a>.</p>
+<p>The user creation endpoint is primitive by design; it is only meant as a way to bootstrap a couple users
+when first starting out. In general, the creation of users is typically the concern of a user management component,
+not the authorization server. And it's quite common
+for integrators to already have a user management system complete with its own user account database before introducing the
+authorization server.</p>
+<p>To integrate a user management system with the authorization server, you would</p>
+<ol>
+<li>Disable the <code>org.openmhealth.dsu.controller.EndUserController</code>, usually by commenting out the <code>@Controller</code> annotation.</li>
+<li>Provide your own implementation of either the <code>org.openmhealth.dsu.service.EndUserService</code> or the
+<code>org.openmhealth.dsu.repository.EndUserRepository</code>, populating <code>org.openmhealth.dsu.domain.EndUser</code> instances with data read from your own data stores or APIs.</li>
+</ol>
+<h3>
+<a aria-hidden="true" class="anchor" href="#issuing-requests-with-postman" id="user-content-issuing-requests-with-postman"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Issuing requests with Postman</h3>
+<p>Your code interacts with the authorization and resource servers by sending them HTTP
+requests. To make learning about those requests easier, we've created a <a href="http://www.getpostman.com/" rel="nofollow">Postman</a> collection
+that contains a predefined set of requests for different actions and outcomes. Postman is a Chrome
+packaged application whose UI lets you craft and send HTTP requests.</p>
+<blockquote>
+<p>These instructions are written for Postman 1.0.1. If you're using a newer version and they don't work,
+<a href="https://github.com/openmhealth/omh-dsu-ri/issues">let us know</a> and we'll fix them.</p>
+</blockquote>
+<p>To set up the collection,</p>
+<ol>
+<li>
+<a href="https://chrome.google.com/webstore/detail/postman-rest-client-packa/fhbjgbiflinjbdggehcddcbncdddomop" rel="nofollow">Download</a> Postman.</li>
+<li>
+<a href="http://www.getpostman.com/docs/launch" rel="nofollow">Start it</a>.</li>
+<li>Click the <em>Import</em> button, choose the <em>Download from link</em> tab and paste <code>https://www.getpostman.com/collections/18e6065476d59772c748</code>
+</li>
+<li>The collection should now be available. The folder names describe the requests, and the request names describe the expected outcome.</li>
+<li>Create an <a href="https://www.getpostman.com/docs/environments" rel="nofollow">environment</a>. Environments provide values for the <code>{{...}}</code> placeholders in the collection.
+Add the following environment keys and values, possibly changing the values if you've customised the installation.
+<ul>
+<li>
+<code>authorizationServer.host</code> - IP address of your Docker host (on Mac OS X, <code>boot2docker ip</code> will print this IP to the console)</li>
+<li>
+<code>authorizationServer.port</code> -  <code>8082</code>
+</li>
+<li>
+<code>resourceServer.host</code> -  IP address of your Docker host</li>
+<li>
+<code>resourceServer.port</code> -  <code>8083</code>
+</li>
+<li>
+<code>accessToken</code> - issue the <em>get access token using RO password grant/success</em> request and copy the <code>access_token</code> value from the response here, without quotes</li>
+<li>
+<code>apiVersion</code> -  <code>1.0.M1</code>
+</li>
+</ul>
+</li>
+</ol>
+<p>To send a request, pick the request and click its <em>Send</em> button. The different requests should be self-explanatory,
+and correspond to the verbs and resources in the <a href="docs/raml/API.yml">data point API</a>.</p>
+<p>The folders also have descriptions,
+which you can currently only see by clicking the corresponding <em>Edit folder</em> button (but Postman are
+<a href="https://github.com/a85/POSTMan-Chrome-Extension/issues/816">working on that</a>). You can see the request descriptions by
+selecting the request.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#using-the-authorization-server" id="user-content-using-the-authorization-server"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Using the authorization server</h3>
+<p>We may add documentation here if we find that the Postman collection isn't sufficient.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#using-the-resource-server" id="user-content-using-the-resource-server"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Using the resource server</h3>
+<p>The data point API is documented in a <a href="docs/raml/API.yml">RAML file</a> to avoid ambiguity.</p>
+<p>A data point looks something like this</p>
+<div class="highlight highlight-source-json"><pre>{
+    <span class="pl-s"><span class="pl-pds">"</span>header<span class="pl-pds">"</span></span>: {
+        <span class="pl-s"><span class="pl-pds">"</span>id<span class="pl-pds">"</span></span>: <span class="pl-s"><span class="pl-pds">"</span>123e4567-e89b-12d3-a456-426655440000<span class="pl-pds">"</span></span>,
+        <span class="pl-s"><span class="pl-pds">"</span>creation_date_time<span class="pl-pds">"</span></span>: <span class="pl-s"><span class="pl-pds">"</span>2013-02-05T07:25:00Z<span class="pl-pds">"</span></span>,
+        <span class="pl-s"><span class="pl-pds">"</span>schema_id<span class="pl-pds">"</span></span>: {
+            <span class="pl-s"><span class="pl-pds">"</span>namespace<span class="pl-pds">"</span></span>: <span class="pl-s"><span class="pl-pds">"</span>omh<span class="pl-pds">"</span></span>,
+            <span class="pl-s"><span class="pl-pds">"</span>name<span class="pl-pds">"</span></span>: <span class="pl-s"><span class="pl-pds">"</span>physical-activity<span class="pl-pds">"</span></span>,
+            <span class="pl-s"><span class="pl-pds">"</span>version<span class="pl-pds">"</span></span>: <span class="pl-s"><span class="pl-pds">"</span>1.0<span class="pl-pds">"</span></span>
+        },
+        <span class="pl-s"><span class="pl-pds">"</span>acquisition_provenance<span class="pl-pds">"</span></span>: {
+            <span class="pl-s"><span class="pl-pds">"</span>source_name<span class="pl-pds">"</span></span>: <span class="pl-s"><span class="pl-pds">"</span>RunKeeper<span class="pl-pds">"</span></span>,
+            <span class="pl-s"><span class="pl-pds">"</span>modality<span class="pl-pds">"</span></span>: <span class="pl-s"><span class="pl-pds">"</span>sensed<span class="pl-pds">"</span></span>
+        }
+    },
+    <span class="pl-s"><span class="pl-pds">"</span>body<span class="pl-pds">"</span></span>: {
+        <span class="pl-s"><span class="pl-pds">"</span>activity_name<span class="pl-pds">"</span></span>: <span class="pl-s"><span class="pl-pds">"</span>walking<span class="pl-pds">"</span></span>,
+        <span class="pl-s"><span class="pl-pds">"</span>distance<span class="pl-pds">"</span></span>: {
+            <span class="pl-s"><span class="pl-pds">"</span>value<span class="pl-pds">"</span></span>: <span class="pl-c1">1.5</span>,
+            <span class="pl-s"><span class="pl-pds">"</span>unit<span class="pl-pds">"</span></span>: <span class="pl-s"><span class="pl-pds">"</span>mi<span class="pl-pds">"</span></span>
+        },
+        <span class="pl-s"><span class="pl-pds">"</span>reported_activity_intensity<span class="pl-pds">"</span></span>: <span class="pl-s"><span class="pl-pds">"</span>moderate<span class="pl-pds">"</span></span>,
+        <span class="pl-s"><span class="pl-pds">"</span>effective_time_frame<span class="pl-pds">"</span></span>: {
+            <span class="pl-s"><span class="pl-pds">"</span>time_interval<span class="pl-pds">"</span></span>: {
+                <span class="pl-s"><span class="pl-pds">"</span>date<span class="pl-pds">"</span></span>: <span class="pl-s"><span class="pl-pds">"</span>2013-02-05<span class="pl-pds">"</span></span>,
+                <span class="pl-s"><span class="pl-pds">"</span>part_of_day<span class="pl-pds">"</span></span>: <span class="pl-s"><span class="pl-pds">"</span>morning<span class="pl-pds">"</span></span>
+            }
+        }
+    }
+}</pre></div>
+<p>We may add documentation here if we find that the Postman collection isn't sufficient.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#roadmap" id="user-content-roadmap"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Roadmap</h3>
+<p>The following features are scheduled for future milestones</p>
+<ul>
+<li>improve test coverage</li>
+<li>support refresh tokens</li>
+<li>support the client credentials grant type</li>
+<li>make it easier to customise the authorization code and implicit grant forms</li>
+<li>support SSL out of the box</li>
+<li>filter data points based on their bodies</li>
+</ul>
+<p>If you have other feature requests, <a href="https://github.com/openmhealth/omh-dsu-ri/issues">create an issue for each</a> and we'll figure out how to prioritise them. Or better yet, send us
+a pull request. And if you want to work on any of the above features, just let us know by submitting an issue.</p>
+
+        </div>
+
+    </div>]

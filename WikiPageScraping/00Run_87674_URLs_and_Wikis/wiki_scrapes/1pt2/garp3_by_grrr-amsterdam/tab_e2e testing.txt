@@ -1,0 +1,46 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>End to end tests are tests that simulate a user going through your application or site. This allows <strong>high level</strong> tests which closely reflect the expected experience a real user will have.</p>
+<p>However because of the complexity and time involved in running these tests, e2e tests should not be expected to make unit tests obsolete. E2e tests should serve as a <strong>final guard</strong> making sure a few pieces of key functionality are always working in the system when all the parts are working together like on the production server.</p>
+<p>The testing team at Google has written a good, although somewhat harsh <a href="http://googletesting.blogspot.nl/2015/04/just-say-no-to-more-end-to-end-tests.html" rel="nofollow">article</a> on the often broken promises of e2e testing. Their conclusion is that e2e tests should make up around <strong>10% of your total tests</strong>.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#running-tests-locally" id="user-content-running-tests-locally"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Running tests locally</h2>
+<p>When writing code and therefore breaking tests, it's useful (necessary) to be able to run the tests locally. For this purpose a shell script (bash) was created. Opening a terminal in your product root folder and executing <code>bash tests/run-e2e.sh</code> performs the same steps as what happens on travis. When running this, make sure you are able to connect to the integration database as defined in <code>db.ini</code>. What actually happens in this script and on travis in general is explained below.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#running-tests" id="user-content-running-tests"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Running tests</h2>
+<p>The <strong>environment requirements</strong> to execute a test are pretty simple: The tests require CasperJS and PhantomJS. CasperJS can be installed using <code>npm i -g casperjs</code>. Locally you can just run this in any old terminal window. For Travis CI it's best to leave this in a <code>before_install</code> block in your travis.yml config. NPM and PhantomJS should already be installed on Travis CI. If PhantomJS is not yet available it will be installed as a dependency of CasperJS.</p>
+<p><strong>Executing the tests</strong> is done by calling <code>casperjs test tests/e2e/</code>, either from a terminal in the root of your app or in the <code>script</code> block in your Travis CI config. This will execute all the scripts in the <code>/tests/e2e</code> folder of your app.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#running-an-app-to-test" id="user-content-running-an-app-to-test"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Running an app to test</h2>
+<p>Most of the time you will want to test the code that was added most recently. This means you will need to <strong>run a full version</strong> of the app to test based on the latest commit. For garp projects this comes down to initializing the database, reading in snippets, compiling assets and booting a web server. Luckily this can all be done in your Travis CI configuration.</p>
+<p>As a database we choose to use the integration version of the database. The connection info is simply entered in the integration section of garp's <code>db.ini</code> This database should ideally be set up to contain data that closely resembles the actual data on the production data. A possible strategy would be having a cronjob keeping the integration database synced with the production database. For now just sync the data between production and integration manually, using Navicat or something. Because we do want to test the most recent version of the code, including possible changes to the data model, a <code>garp spawn</code> should always be run before running e2e test s.</p>
+<p>Example Travis CI <code>before_script</code>:</p>
+<pre><code># Initialize database (not required when using an external db)
+- mysql -e "create database IF NOT EXISTS schoolwijzer_i;" -uroot
+- mysql -e "create user 'garp-integration'@'localhost' identified by 'NEUNvBUjA4tdVCZfh$RJGG:=BXvmRatsPyyF-G1P;jjZTQYpWD';" -uroot
+- mysql -e "grant all privileges on *.* to 'garp-integration'@'localhost';" -uroot
+
+# Update data model and snippets
+- php garp/scripts/garp.php spawn -b --e=integration
+- php garp/scripts/garp.php snippet create --e=integration
+
+# Boot php server at 127.0.0.1:8027 and the correct ENV
+- APPLICATION_ENV=integration php -S 127.0.0.1:8027 -t public/ &gt; /dev/null 2&gt;&amp;1 &amp;
+</code></pre>
+<p>Please note that using php's built in web server requires a version of <strong>php 5.4 or later</strong>. You can define this in the Travis CI config. Also make sure the base href and asset urls for the integration configs are pointing to the local versions at the same address as where you run the web server (e.g. <code>127.0.0.1:8027</code>).</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#writing-tests" id="user-content-writing-tests"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Writing tests:</h2>
+<p>Although many high level testing languages and frameworks exist, <strong>CasperJS</strong> should be enough for now. It allows you to control a headless browser directly and intuitively and define tests using a handful of assert functions. Their <a href="http://casperjs.readthedocs.org/en/latest/testing.html" rel="nofollow">documentation</a> is also pretty decent.</p>
+<p>There are a couple of caveats to take into account when writing e2e tests:</p>
+<p>Watch out for single pagey stuff. Make sure to wait for the creation and appearance of the expected dom elements before asserting anything on them. CasperJS can wait automatically for classic browser page requests but by itself knows little of <strong>asynchronous data</strong> being filled in by javascript. You'll have to manually define what you are waiting for using CasperJS's <code>waitForX</code> functions.</p>
+<p>Watch out for <strong>media queries</strong>. By default CasperJS sets the viewport to 400x300, this means a mobile version for most sites. When testing visual aspects this would mean mobile styling. With Angular or other javascript involved, this might even result in different DOM from the desktop version. The viewport can be defined easily using CasperJS:</p>
+<pre><code>casper.options.viewportSize = {
+  width: 1024,
+  height: 600
+};
+</code></pre>
+<p>A challenge when writing tests is to avoid <strong>strong coupling</strong> between your tests and the technical implementation in your app. Because of the time involved in writing and fixing tests, tests should be made as general as possible. You should not have to rewrite the tests every time you rewrite the code of the app. Ideally your e2e tests are so general they last for years. Testing details which are closely tied to the technical approach taken within the code should be left to unit tests.</p>
+
+        </div>
+
+    </div>]

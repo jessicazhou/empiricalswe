@@ -1,0 +1,132 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <h5>
+<a aria-hidden="true" class="anchor" href="#note-updated-11-dec-2015-so-that-usersme-works-for-both-get-and-options-requests" id="user-content-note-updated-11-dec-2015-so-that-usersme-works-for-both-get-and-options-requests"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>(Note: Updated 11 Dec 2015, so that <code>users/me</code> works for both GET <em>and</em> OPTIONS requests.)</h5>
+<p>It might sometimes be necessary to retrieve information about the currently authenticated user. This is not provided by RESTful out-of-the-box, but can be achieved by extending the <code>users</code> resource to respond to the special ID <code>me</code>. This will allow requests to the following example endpoints:</p>
+<ul>
+<li><code>api/v1.1/users/me</code></li>
+<li>
+<code>api/users/me</code> (if you have no later API version of the <code>users</code> resource.)</li>
+<li><code>api/users/27,me,5</code></li>
+</ul>
+<p>Note that RESTful will see the <code>me</code> user as the user which is authenticated via any of the restful authentication methods. The <code>users</code> resource by default allows any of the authentication methods (cookie, token etc).</p>
+<p>To implement the <code>/me</code> special case, we will create version 1.1 of the <code>users</code> resource.</p>
+<ul>
+<li>copy <code>restful/src/Plugin/resource/Users__1_0.php</code> to <code>mymodule/src/Plugin/resource/entity/user/user/Users__1_1.php</code>
+</li>
+<li>make sure your module's <code>.info</code> file contains <code>registry_autoload[] = PSR-4</code>
+</li>
+<li>edit <code>Users__1_1.php</code> and modify as follows (replacing all instances of <code>my module</code> with the name of your module):</li>
+</ul>
+<div class="highlight highlight-text-html-php"><pre><span class="pl-pse">&lt;?php</span><span class="pl-s1"></span>
+<span class="pl-s1"></span>
+<span class="pl-s1"><span class="pl-c"><span class="pl-c">/**</span></span></span>
+<span class="pl-s1"><span class="pl-c"> * @file</span></span>
+<span class="pl-s1"><span class="pl-c"> * Contains \Drupal\mymodule\Plugin\resource\entity\user\user\Users__1_1.</span></span>
+<span class="pl-s1"><span class="pl-c"> <span class="pl-c">*/</span></span></span>
+<span class="pl-s1"></span>
+<span class="pl-s1"><span class="pl-k">namespace</span> <span class="pl-en">Drupal\mymodule\Plugin\resource\entity\user\user</span>;</span>
+<span class="pl-s1"></span>
+<span class="pl-s1"><span class="pl-k">use</span> <span class="pl-c1">Drupal\restful\Plugin\resource\ResourceInterface</span>;</span>
+<span class="pl-s1"></span>
+<span class="pl-s1"><span class="pl-c"><span class="pl-c">/**</span></span></span>
+<span class="pl-s1"><span class="pl-c"> * Class Users</span></span>
+<span class="pl-s1"><span class="pl-c"> * <span class="pl-k">@package</span> Drupal\mymodule\Plugin\resource\entity\user\user</span></span>
+<span class="pl-s1"><span class="pl-c"> *</span></span>
+<span class="pl-s1"><span class="pl-c"> * @Resource(</span></span>
+<span class="pl-s1"><span class="pl-c"> *   name = "users:1.1",</span></span>
+<span class="pl-s1"><span class="pl-c"> *   resource = "users",</span></span>
+<span class="pl-s1"><span class="pl-c"> *   label = "Users",</span></span>
+<span class="pl-s1"><span class="pl-c"> *   description = "Export the user entity.",</span></span>
+<span class="pl-s1"><span class="pl-c"> *   authenticationTypes = TRUE,</span></span>
+<span class="pl-s1"><span class="pl-c"> *   authenticationOptional = TRUE,</span></span>
+<span class="pl-s1"><span class="pl-c"> *   dataProvider = {</span></span>
+<span class="pl-s1"><span class="pl-c"> *     "entityType": "user",</span></span>
+<span class="pl-s1"><span class="pl-c"> *     "bundles": {</span></span>
+<span class="pl-s1"><span class="pl-c"> *       "user"</span></span>
+<span class="pl-s1"><span class="pl-c"> *     },</span></span>
+<span class="pl-s1"><span class="pl-c"> *   },</span></span>
+<span class="pl-s1"><span class="pl-c"> *   majorVersion = 1,</span></span>
+<span class="pl-s1"><span class="pl-c"> *   minorVersion = 1</span></span>
+<span class="pl-s1"><span class="pl-c"> * )</span></span>
+<span class="pl-s1"><span class="pl-c"> <span class="pl-c">*/</span></span></span>
+<span class="pl-s1"><span class="pl-k">class</span> <span class="pl-en">Users__1_1</span> <span class="pl-k">extends</span> <span class="pl-e">Users__1_0</span> <span class="pl-k">implements</span> <span class="pl-e">ResourceInterface</span> {</span>
+<span class="pl-s1">  <span class="pl-c"><span class="pl-c">/**</span></span></span>
+<span class="pl-s1"><span class="pl-c">   * {@inheritdoc}</span></span>
+<span class="pl-s1"><span class="pl-c">   <span class="pl-c">*/</span></span></span>
+<span class="pl-s1">  <span class="pl-k">public</span> <span class="pl-k">function</span> <span class="pl-en">process</span>() {</span>
+<span class="pl-s1">    <span class="pl-smi">$this</span><span class="pl-k">-&gt;</span>convertMeInPath();</span>
+<span class="pl-s1"></span>
+<span class="pl-s1">    <span class="pl-k">return</span> <span class="pl-k">parent</span><span class="pl-k">::</span>process();</span>
+<span class="pl-s1">  }</span>
+<span class="pl-s1"></span>
+<span class="pl-s1">  <span class="pl-c"><span class="pl-c">/**</span></span></span>
+<span class="pl-s1"><span class="pl-c">   * Replace any instances of 'me' in the $path with the authenticated user's</span></span>
+<span class="pl-s1"><span class="pl-c">   * UID.</span></span>
+<span class="pl-s1"><span class="pl-c">   *</span></span>
+<span class="pl-s1"><span class="pl-c">   * See Drupal\restful\Plugin\resource\Resource::view()</span></span>
+<span class="pl-s1"><span class="pl-c">   <span class="pl-c">*/</span></span></span>
+<span class="pl-s1">  <span class="pl-k">public</span> <span class="pl-k">function</span> <span class="pl-en">convertMeInPath</span>() {</span>
+<span class="pl-s1">    <span class="pl-smi">$path</span> <span class="pl-k">=</span> <span class="pl-smi">$this</span><span class="pl-k">-&gt;</span>getPath();</span>
+<span class="pl-s1">    <span class="pl-smi">$ids</span> <span class="pl-k">=</span> <span class="pl-c1">explode</span>(<span class="pl-k">static</span><span class="pl-k">::</span><span class="pl-c1">IDS_SEPARATOR</span>, <span class="pl-smi">$path</span>);</span>
+<span class="pl-s1">    <span class="pl-k">if</span> (<span class="pl-c1">in_array</span>(<span class="pl-s"><span class="pl-pds">'</span>me<span class="pl-pds">'</span></span>, <span class="pl-smi">$ids</span>)) {</span>
+<span class="pl-s1">      <span class="pl-smi">$account</span> <span class="pl-k">=</span> <span class="pl-smi">$this</span><span class="pl-k">-&gt;</span>getAccount();</span>
+<span class="pl-s1"></span>
+<span class="pl-s1">      <span class="pl-k">foreach</span> (<span class="pl-smi">$ids</span> <span class="pl-k">as</span> <span class="pl-k">&amp;</span><span class="pl-smi">$id</span>) {</span>
+<span class="pl-s1">        <span class="pl-k">if</span> (<span class="pl-smi">$id</span> <span class="pl-k">===</span> <span class="pl-s"><span class="pl-pds">'</span>me<span class="pl-pds">'</span></span>) {</span>
+<span class="pl-s1">          <span class="pl-smi">$id</span> <span class="pl-k">=</span> <span class="pl-smi">$account</span><span class="pl-k">-&gt;</span><span class="pl-smi">uid</span>;</span>
+<span class="pl-s1">        }</span>
+<span class="pl-s1">      }</span>
+<span class="pl-s1"></span>
+<span class="pl-s1">      <span class="pl-smi">$this</span><span class="pl-k">-&gt;</span>setPath(<span class="pl-c1">implode</span>(<span class="pl-k">static</span><span class="pl-k">::</span><span class="pl-c1">IDS_SEPARATOR</span>, <span class="pl-smi">$ids</span>));</span>
+<span class="pl-s1">    }</span>
+<span class="pl-s1">  }</span>
+<span class="pl-s1">}</span></pre></div>
+<p>In essence, it's a straight "photocopy" of the Users__1_0 resource provided by RESTful, except that we override the <code>process()</code> function where we replace any instances of <code>me</code> with the appropriate user UID.</p>
+<p>Note that we cannot use <code>global $user;</code> since this user may not have authenticated using cookie-based authentication, but rather one of the other auth methods provided by RESTful. The <code>getAccount()</code> method is provided by RESTful so we can obtain the user object which was authenticated from the REST request no matter which of the available authentication methods was used.</p>
+<p>If the user hasn't authenticated, user 0 (i.e. anon) will be returned.</p>
+<h6>
+<a aria-hidden="true" class="anchor" href="#sample-request" id="user-content-sample-request"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>SAMPLE REQUEST</h6>
+<p><code>http://drupalsite.local/api/users/me</code></p>
+<p>If the request also contains basic auth (containing a valid Drupal username and password), or an auth cookie or token, then RESTful will attempt to authenticate this user, but will otherwise return results for anon.</p>
+<h6>
+<a aria-hidden="true" class="anchor" href="#response" id="user-content-response"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>RESPONSE</h6>
+<p>Non-authenticated user:</p>
+<div class="highlight highlight-source-json"><pre>{
+  <span class="pl-s"><span class="pl-pds">"</span>data<span class="pl-pds">"</span></span>: {
+    <span class="pl-s"><span class="pl-pds">"</span>type<span class="pl-pds">"</span></span>: <span class="pl-s"><span class="pl-pds">"</span>users<span class="pl-pds">"</span></span>,
+    <span class="pl-s"><span class="pl-pds">"</span>attributes<span class="pl-pds">"</span></span>: {
+      <span class="pl-s"><span class="pl-pds">"</span>label<span class="pl-pds">"</span></span>: <span class="pl-c1">null</span>,
+      <span class="pl-s"><span class="pl-pds">"</span>self<span class="pl-pds">"</span></span>: <span class="pl-s"><span class="pl-pds">"</span>http://drupalsite.local/api/v1.1/users/0<span class="pl-pds">"</span></span>
+    },
+    <span class="pl-s"><span class="pl-pds">"</span>links<span class="pl-pds">"</span></span>: {
+      <span class="pl-s"><span class="pl-pds">"</span>self<span class="pl-pds">"</span></span>: <span class="pl-s"><span class="pl-pds">"</span>http://drupalsite.local/api/v1.1/users<span class="pl-pds">"</span></span>
+    }
+  },
+  <span class="pl-s"><span class="pl-pds">"</span>links<span class="pl-pds">"</span></span>: {
+    <span class="pl-s"><span class="pl-pds">"</span>self<span class="pl-pds">"</span></span>: <span class="pl-s"><span class="pl-pds">"</span>http://drupalsite.local/api/v1.1/users/me<span class="pl-pds">"</span></span>
+  }
+}</pre></div>
+<p>Sample authenticated user:</p>
+<div class="highlight highlight-source-json"><pre>{
+  <span class="pl-s"><span class="pl-pds">"</span>data<span class="pl-pds">"</span></span>: {
+    <span class="pl-s"><span class="pl-pds">"</span>type<span class="pl-pds">"</span></span>: <span class="pl-s"><span class="pl-pds">"</span>users<span class="pl-pds">"</span></span>,
+    <span class="pl-s"><span class="pl-pds">"</span>id<span class="pl-pds">"</span></span>: <span class="pl-s"><span class="pl-pds">"</span>1<span class="pl-pds">"</span></span>,
+    <span class="pl-s"><span class="pl-pds">"</span>attributes<span class="pl-pds">"</span></span>: {
+      <span class="pl-s"><span class="pl-pds">"</span>id<span class="pl-pds">"</span></span>: <span class="pl-s"><span class="pl-pds">"</span>1<span class="pl-pds">"</span></span>,
+      <span class="pl-s"><span class="pl-pds">"</span>label<span class="pl-pds">"</span></span>: <span class="pl-s"><span class="pl-pds">"</span>Barry<span class="pl-pds">"</span></span>,
+      <span class="pl-s"><span class="pl-pds">"</span>self<span class="pl-pds">"</span></span>: <span class="pl-s"><span class="pl-pds">"</span>http://drupalsite.local/api/v1.1/users/1<span class="pl-pds">"</span></span>,
+      <span class="pl-s"><span class="pl-pds">"</span>mail<span class="pl-pds">"</span></span>: <span class="pl-s"><span class="pl-pds">"</span>barry@drupalsite.local<span class="pl-pds">"</span></span>
+    },
+    <span class="pl-s"><span class="pl-pds">"</span>links<span class="pl-pds">"</span></span>: {
+      <span class="pl-s"><span class="pl-pds">"</span>self<span class="pl-pds">"</span></span>: <span class="pl-s"><span class="pl-pds">"</span>http://drupalsite.local/api/v1.1/users/1<span class="pl-pds">"</span></span>
+    }
+  },
+  <span class="pl-s"><span class="pl-pds">"</span>links<span class="pl-pds">"</span></span>: {
+    <span class="pl-s"><span class="pl-pds">"</span>self<span class="pl-pds">"</span></span>: <span class="pl-s"><span class="pl-pds">"</span>http://drupalsite.local/api/v1.1/users/me<span class="pl-pds">"</span></span>
+  }
+}```</pre></div>
+
+        </div>
+
+    </div>]

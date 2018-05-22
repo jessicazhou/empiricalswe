@@ -1,0 +1,92 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>The code below successfully completes all challenges, though sometimes a couple of attempts is required.</p>
+<p>When button is pressed on a floor:</p>
+<ul>
+<li>All elevators are checked to see if any are already headed to that floor as their only destination (i.e. a rider is headed to that floor); if so, no changes are made; otherwise...</li>
+<li>All elevators are checked to see if any are currently unused. The first one found in that state is dispatched to the floor. If none are unused...</li>
+<li>The floor number is added to a queue of floors where someone is waiting.</li>
+</ul>
+<p>If an elevator becomes idle, it looks at the waiting queue and dispatches to the longest-waiting floor on the list.</p>
+<p>As elevators pass each floor, they check the waiting queue to see if there is someone waiting who hasn't already been taken care of by another elevator. If so, they stop at the floor.</p>
+<p>And that's it!</p>
+<pre><code>{
+    init: function(elevators, floors) {
+        for(var e = 0; e &lt; elevators.length; e++) {
+            var elevator = elevators[e];
+            elevator.on("idle", function() {
+                if(floors[0].waiting.length &gt; 0) {
+                    this.goToFloor(floors[0].waiting.shift());
+                }
+            });
+            elevator.on('floor_button_pressed', function(floorNum) {
+                if(this.destinationQueue.indexOf(floorNum) == -1) {
+                    this.goToFloor(floorNum);
+                }
+            });
+            elevator.on('passing_floor', function(floorNum, direction) {
+                var switched = false;
+                var idx = this.destinationQueue.indexOf(floorNum);
+                if(idx != -1) {
+                    this.destinationQueue.splice(idx, 1); // remove the floor from the list
+                    this.destinationQueue.unshift(floorNum); // put it at the front
+                    this.checkDestinationQueue(); // oh, we've changed things.
+                    switched = true;
+                }
+                if(switched &amp;&amp; floors[0].waiting.indexOf(floorNum) != -1) {
+                    // remove from here too, because we're stopping already...
+                    floors[0].waiting.splice(floors[0].waiting.indexOf(floorNum), 1);
+                }
+                if(!switched &amp;&amp; (floors[0].waiting.indexOf(floorNum) != -1)) {
+                    // Add to this list from that list...
+                    console.log('picking up waiters from '+floorNum);
+                    floors[0].waiting.splice(floors[0].waiting.indexOf(floorNum), 1);
+                    this.destinationQueue.unshift(floorNum);
+                    this.checkDestinationQueue();
+                    console.log('people waiting on '+floors[0].waiting);
+                }
+            });
+            elevator.on('stopped_at_floor', function(floorNum) {
+            });
+        }
+        floors[0].waiting = []; // Storage for all floors that have things going on...
+        floors[0].respondToButton = function(floor) {
+            // First, look to see if any elevators are going there already, or if not, if someone is free...
+            for(var e = 0; e &lt; elevators.length &amp;&amp; searching; e++) {
+                if(elevators[e].destinationQueue.length == 1 &amp;&amp; elevators[e].destinationQueue[0] == floor.floorNum()) {
+                    // we're already going here, never mind...
+                    return;
+                }
+                if(elevators[e].destinationQueue.length == 0) {
+                    elevators[e].goToFloor(floor.floorNum());
+                    //searching = false;
+                    return;
+                }
+            }
+            // Regardless, add it to the list of places to visit soon.
+            if(floors[0].waiting.indexOf(floor.floorNum()) == -1) {
+                floors[0].waiting.push(floor.floorNum());
+            }
+            console.log('people waiting on ' + floors[0].waiting);
+        };
+        for(var f = 0; f &lt; floors.length; f++) {
+            var floor = floors[f];
+            floor.on('up_button_pressed', function() {
+                floors[0].respondToButton(this);
+            });
+            floor.on('down_button_pressed', function() {
+                floors[0].respondToButton(this);
+            });
+        }
+    },
+    update: function(dt, elevators, floors) {
+        // We normally don't need to do anything here
+    }
+},
+</code></pre>
+<hr/>
+<p><a href="https://github.com/magwo/elevatorsaga/wiki/Solution-by-Bisqwit">Bisqwit</a>: I like simple solutions! However, your code fails to compile. First, there's an unnecessary comma in the end that prevents compilation. Secondly, "searching" is undefined. Removing "&amp;&amp; searching" made it work. Did you notice that the puzzles have changed? #10 and #17 are different since versions 1.3.x.</p>
+
+        </div>
+
+    </div>]

@@ -1,0 +1,89 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>OpenWebRX should work out of the box on your RPi, if you set it up by <a href="http://ha5kfu.sch.bme.hu/openwebrx-quick-setup" rel="nofollow">going through this guide</a>.</p>
+<p>You will need at least a <strong>Raspberry Pi 2</strong>.</p>
+<p><strong>Raspberry Pi 1 won't work</strong> as its CPU just doesn't have enough processing capability to make it.</p>
+<p>(<code>csdr</code> can make use of both NEON and the multiple cores on the RPi2).</p>
+<blockquote>
+<p>As noted by Zsolt, HG2ECZ the Raspberry Pi 3 can limit the CPU frequency if the maximum available current of the power supply is too low, which may result in decreased signal processing speed. Having a correct power supply is required for running OpenWebRX. An <strong>5V, 2A</strong> unit (or better) should do.</p>
+</blockquote>
+<h2>
+<a aria-hidden="true" class="anchor" href="#common-issues-with-the-rpi-2" id="user-content-common-issues-with-the-rpi-2"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Common issues with the RPi 2</h2>
+<p>It is not sure that you will run into any of these, but anyway:</p>
+<ul>
+<li><a href="https://github.com/simonyiszk/openwebrx/issues/9">Audio underruns and <code>csdr flowcontrol</code> issue</a></li>
+<li>Port 8888 is already in use on your system:
+<ul>
+<li>Edit <code>config_rtl.py</code> and <code>config_webrx.py</code> and replace this port number with another).</li>
+</ul>
+</li>
+<li>The Pi doesn't start with RTL-SDR is plugged in / restarts when plugging in RTL-SDR / fails to recongize RTL-SDR:
+<ul>
+<li>Maybe your power supply cannot provide enough current. You should try a dedicated 5V / 2A power supply <a href="http://www.adafruit.com/product/1995" rel="nofollow">like this</a>. I wasn't able to use the RPi from a laptop USB port, needed a dedicated PSU.</li>
+</ul>
+</li>
+</ul>
+<h2>
+<a aria-hidden="true" class="anchor" href="#compromise-between-performance-and-the-maximum-number-of-clients" id="user-content-compromise-between-performance-and-the-maximum-number-of-clients"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Compromise between performance and the maximum number of clients</h2>
+<p>The Raspberry Pi 2 should be able to handle about 5-10 clients simultaneously at the sampling rate of 250 ksps.</p>
+<p><img alt="" data-canonical-src="http://ha5kfu.sch.bme.hu/up/levlista/top-all-proc.png" src="https://camo.githubusercontent.com/66b5220a129a9856dd9020ca18dc58ca00fd431b/687474703a2f2f6861356b66752e7363682e626d652e68752f75702f6c65766c697374612f746f702d616c6c2d70726f632e706e67"/></p>
+<p>It is quite good from an embedded ARM board, but your PC would do of course better than that.</p>
+<p>I'm constantly working on getting OpenWebRX faster on the Pi (in the <code>dev</code> branch I've already done some manual assembly optimizations for NEON).</p>
+<p>You will have to set the <code>max_clients</code> and the <code>samp_rate</code> correctly.
+If you allow too much clients to connect, audio will lag for all of them (will get audio underruns), as the CPU just can't make it.</p>
+<p>The higher the sampling rate is:</p>
+<ul>
+<li>the higher bandwidth will be seen on the waterfall diagram,</li>
+<li>the higher the CPU usage gets (per client as well),</li>
+<li>the less clients can connect without lags.</li>
+</ul>
+<p>You should try to open many browser windows and see at how many clients will the audio start to lag.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#some-general-advice-to-increase-reliability-and-security" id="user-content-some-general-advice-to-increase-reliability-and-security"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Some general advice to increase reliability and security</h2>
+<h3>
+<a aria-hidden="true" class="anchor" href="#use-a-firewall" id="user-content-use-a-firewall"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Use a firewall</h3>
+<p>If you don't want to learn <code>iptables</code>, you can use <code>ufw</code> on Debian/Ubuntu based systems. <code>ufw</code> stands for Uncomplicated Firewall. After <code>ufw</code> has been started, it will block any incoming TCP connections / UDP packets unless specifically enabled.</p>
+<p>(This part is to be finished.)</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#put-sshd-away-from-tcp-port-22" id="user-content-put-sshd-away-from-tcp-port-22"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Put <code>sshd</code> away from TCP port 22</h3>
+<p>(This part is to be done.)</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#avoid-possible-file-system-corruption-on-power-off" id="user-content-avoid-possible-file-system-corruption-on-power-off"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Avoid possible file system corruption on power-off</h3>
+<p>If you just pull the plug from your Raspberry without properly shutting it down, it may or may not boot the next time.</p>
+<h4>
+<a aria-hidden="true" class="anchor" href="#1-shutdown-the-rpi-with-halt-every-time" id="user-content-1-shutdown-the-rpi-with-halt-every-time"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>1. Shutdown the RPi with <code>halt</code> every time</h4>
+<p>Use the proper command to halt the operating system:</p>
+<pre><code>sudo halt
+</code></pre>
+<p>You will see one of the LEDs blinking at a given time interval, and then both LEDs switch off.</p>
+<h4>
+<a aria-hidden="true" class="anchor" href="#2-start-your-system-in-read-only-mode-and-switch-to-read-write-only-if-required" id="user-content-2-start-your-system-in-read-only-mode-and-switch-to-read-write-only-if-required"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>2. Start your system in read-only mode, and switch to read-write only if required.</h4>
+<p>In my article about <a href="http://ha5kfu.sch.bme.hu/node/160" rel="nofollow">pi-rw</a> you will find advice on doing that.</p>
+<h4>
+<a aria-hidden="true" class="anchor" href="#3-what-if-my-file-system-has-already-corrupted" id="user-content-3-what-if-my-file-system-has-already-corrupted"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>3. What if my file system has already corrupted?</h4>
+<p><code>fsck</code> is a Linux tool meant for repairing corrupted file systems.</p>
+<p>You can:</p>
+<ul>
+<li>Run <code>fsck</code> from a laptop running Linux, having the SD card attached.</li>
+<li>Run <code>fsck</code> from a <a href="http://ubuntu.com" rel="nofollow">Ubuntu Live CD</a>.</li>
+<li>Run <code>fsck</code> from the shell over the <a href="http://elinux.org/RPi_Serial_Connection" rel="nofollow">RPi serial port</a> (but you will need a serial adapter).</li>
+<li>Run <code>fsck</code> with a keyboard and HDMI screen attached to the RPi.</li>
+</ul>
+<p>You cannot however run <code>fsck</code> from <code>ssh</code> remotely, as the OS hasn't booted properly yet.</p>
+<p>First take a look at which device corresponds to your SD card. You can list the block devices with <code>lsblk</code>:</p>
+<pre><code>ha7ilm@pc ~ $ lsblk
+NAME        MAJ:MIN RM   SIZE RO TYPE MOUNTPOINT
+sda           8:0    0 123,4G  0 disk 
+├─sda1        8:1    0 120,0G  0 part /
+└─sda2        8:2    0   3,4G  0 part [SWAP]
+mmcblk0     179:0    0   7,4G  0 disk 
+├─mmcblk0p1 179:1    0    56M  0 part /media/ha7ilm/boot
+└─mmcblk0p2 179:2    0   7,4G  0 part /media/ha7ilm/18b2d310-8421-01f9-a0e0-1001b0d00173
+</code></pre>
+<p>Over here, the corresponding device is <code>mmcblk0p2</code>. To run <code>fsck</code> on it:</p>
+<pre><code>sudo fsck /dev/mmcblk0p2
+</code></pre>
+
+        </div>
+
+    </div>]

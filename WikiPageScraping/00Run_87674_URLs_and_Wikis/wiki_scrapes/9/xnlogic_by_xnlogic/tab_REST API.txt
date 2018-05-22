@@ -1,0 +1,278 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>xnlogic automatically creates a REST API that allows you to access and manipulate the graph.
+The API allows you to utilize the power and flexibility of the underlying <a href="https://github.com/pangloss/pacer">Pacer</a> library, from a remote HTTP client.</p>
+<p>In this section, we will present different Ruby commands, and their equivalent API calls.</p>
+<p>In addition to this page, see our <a href="https://lightmesh.zendesk.com/forums/22153896-Tips-Tricks" rel="nofollow">API docs on zenDesk</a>.</p>
+<p>OK, let's start ...</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#getting-vertices" id="user-content-getting-vertices"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Getting Vertices</h2>
+<p>The most basic operation you might want to do is query the graph.
+Specifically, you would like to query for model objects (i.e. vertices).</p>
+<p>You can query for vertices by model, by part, or by multiple parts.</p>
+<table>
+<thead>
+<tr>
+<th>Query by</th>
+<th>Pacer</th>
+<th>xnlogic REST API</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Model</td>
+<td><code>g.v(M::iPhone)</code></td>
+<td><code>GET /model/iphone</code></td>
+</tr>
+<tr>
+<td>Part</td>
+<td><code>g.v(TouchScreen)</code></td>
+<td><code>GET /is/touch_screen</code></td>
+</tr>
+<tr>
+<td>Parts</td>
+<td><code>g.v(TouchScreen,Speaker)</code></td>
+<td><code>GET /is/touch_screen,Speaker</code></td>
+</tr>
+</tbody>
+</table>
+<p>All of the queries above return a route of model objects (i.e. collection of vertices).</p>
+<ul>
+<li>We use URL's that start with <code>/model/</code> to filter by model, and <code>/is/</code> to filter by part(s).
+<ul>
+<li>
+<code>GET /model/iphone</code> returns all <code>iPhone</code> model objects (i.e. vertices).</li>
+<li>
+<code>GET /is/touch_screen</code> returns all model objects that have a <code>TouchScreen</code> part.
+The objects could be of different models (e.g. <code>Tablet</code> or <code>SmartWatch</code>).</li>
+<li>
+<code>GET /is/touch_screen,Speaker</code> returns all model objects that have both a <code>TouchScreen</code> and <code>Speaker</code> parts.</li>
+</ul>
+</li>
+<li>The vertices in the result are extended with functionality from the various parts.
+<ul>
+<li>
+<code>GET /model/iphone</code> returns vertices extended with all the parts that make up an <code>iPhone</code> model.</li>
+<li>
+<code>GET /is/touch_screen</code> returns vertices extended with the <code>TouchScreen</code> part only.</li>
+<li>
+<code>GET /is/touch_screen,speaker</code> returns vertices extended with the <code>TouchScreen</code> and <code>Speaker</code> parts.</li>
+</ul>
+</li>
+<li>Notice the naming convention - In Ruby, parts and module names use <a href="http://en.wikipedia.org/wiki/CamelCase" rel="nofollow">CamelCase</a>. In the REST API, we use lower-case letters only, and separate words with underscore.</li>
+</ul>
+<h2>
+<a aria-hidden="true" class="anchor" href="#vertices-vs-routes" id="user-content-vertices-vs-routes"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Vertices vs. Routes</h2>
+<p>Remember that graph queries return a route (i.e. a collection of graph elements).
+You can get a single vertex (or a range of vertices) out of the result.</p>
+<table>
+<thead>
+<tr>
+<th>Pacer</th>
+<th>xnlogic REST API</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>g.v(M::SomeModel).first</code></td>
+<td><code>GET /model/some_model/first</code></td>
+</tr>
+<tr>
+<td><code>g.v(M::SomeModel)[2..7]</code></td>
+<td><code>GET /model/some_model?offset=2&amp;limit=6</code></td>
+</tr>
+<tr>
+<td><code>g.v(M::SomeModel)[2..7].first</code></td>
+<td><code>GET /model/some_model/first?offset=2&amp;limit=6</code></td>
+</tr>
+</tbody>
+</table>
+<h2>
+<a aria-hidden="true" class="anchor" href="#properties" id="user-content-properties"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Properties</h2>
+<p>Get all properties (can be applied to both vertices and routes).</p>
+<table>
+<thead>
+<tr>
+<th>Pacer</th>
+<th>xnlogic REST API</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>g.v(M::SomeModel).properties</code></td>
+<td><code>GET /model/some_model/properties</code></td>
+</tr>
+</tbody>
+</table>
+<p>Get a single property (can be applied to both vertices and routes).</p>
+<table>
+<thead>
+<tr>
+<th>Pacer</th>
+<th>xnlogic REST API</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>g.v(M::SomeModel)[:prop_name]</code></td>
+<td><code>GET /model/some_model/property/prop_name</code></td>
+</tr>
+</tbody>
+</table>
+<p>Filter result by property value.</p>
+<table>
+<thead>
+<tr>
+<th>Pacer</th>
+<th>xnlogic REST API</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>g.v(M::SomeModel, name: 'Ben')</code></td>
+<td><code>GET /model/some_model/filter/name?name=Ben</code></td>
+</tr>
+</tbody>
+</table>
+<h2>
+<a aria-hidden="true" class="anchor" href="#creating-data" id="user-content-creating-data"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Creating Data</h2>
+<p>You can create model objects using <code>PUT</code> requests. The properties of the model object are sent as a JSON object.</p>
+<p>To create a <code>M::Person</code> model object with the name <code>Charlie</code> and gender <code>Male</code>, you can make the following request.</p>
+<pre><code>PUT /model/person
+  {"name"   : "Charlie", 
+   "gender" : "Male"}
+</code></pre>
+<p>Notice that you can only create models, not parts (makes sense ... you cannot create a part of a vertex in a graph).</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#deleting-a-model-object" id="user-content-deleting-a-model-object"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Deleting A Model Object</h2>
+<p>You can issue a <code>DELETE</code> request, in order to delete a model object.</p>
+<pre><code>DELETE '/model/person/first'
+</code></pre>
+<p>Notice that you can only delete a model, not a part (makes sense ... you cannot delete a part of a vertex in a graph).</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#updating-objects" id="user-content-updating-objects"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Updating Objects</h2>
+<p>Updates are done by sending a JSON object (containing properties to update), using <code>PATCH</code> request.</p>
+<p>You can update the properties of a model object.</p>
+<pre><code>PATCH /model/person/first
+  {"name" : "John Doe"}
+</code></pre>
+<p>You can update the properties of a model object.</p>
+<pre><code>PATCH /is/some_part/first
+  {"prop_name" : "prop_value", "some_other_property" : null}
+</code></pre>
+<h2>
+<a aria-hidden="true" class="anchor" href="#traversing-edgesrelations" id="user-content-traversing-edgesrelations"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Traversing Edges/Relations</h2>
+<p>Say we have the following XN parts defined.</p>
+<pre><code>module User
+    pacer_vertex
+    # ...
+    to_many :Message
+end
+
+module Message
+    pacer_vertex
+    # ...
+    from_one :User
+end
+</code></pre>
+<p>We can get messages that belong to some user.</p>
+<pre><code>GET /is/user/first/rel/messages
+</code></pre>
+<p>Because the relation between User and Message is one-to-many, we must use the plural <code>messages</code>, instead of <code>message</code>. (<a href="Relationship-definitions#plural-inflection">read more</a>)</p>
+<p>We can also get the author of a message.</p>
+<pre><code>GET /is/message/first/rel/user
+</code></pre>
+<h2>
+<a aria-hidden="true" class="anchor" href="#custom-traversals" id="user-content-custom-traversals"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Custom Traversals</h2>
+<p>XN allows you to expose <a href="DSL-intro#traversals">custom traversal</a> via the REST API.</p>
+<p>If the <code>User</code> part defines a <code>traversal</code> called <code>suggested_messages</code>, we could make the following API call.</p>
+<pre><code>GET /is/user/first/traversal/suggested_messages
+</code></pre>
+<p>If the <code>User</code> part defines a <code>route_traversal</code> with the same name, we could get get all suggested messages (across all users) with the following API call.</p>
+<pre><code>GET /is/user/to/suggested_messages
+</code></pre>
+<p>And, we probably want to get a unique set of messages (i.e. no repetitions).</p>
+<pre><code>GET /is/user/to/suggested_messages/unique
+</code></pre>
+<h2>
+<a aria-hidden="true" class="anchor" href="#getting-metadata" id="user-content-getting-metadata"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Getting Metadata</h2>
+<p>Since your domain might be large and complex, it's important that its structure is easily discoverable.<br/>
+The REST API provides this discoverability through two forms of inline metadata.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#simple-autocomplete-style-metadata" id="user-content-simple-autocomplete-style-metadata"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Simple autocomplete-style metadata</h3>
+<p>If you perform a get request against an incomplete URL, the API will return the options you have available:</p>
+<pre><code>get /is/networked/rel              #=&gt; list of all relationships from the networked type
+[ 'clones', 'external_records', 'import_records', 'cloned_from', 'cluster', 'systems', 'interfaces', 'physical_zone' ]
+
+get /is                            #=&gt; list of all available parts
+...
+get /is/networked,asset/rel        #=&gt; list of all relationships from the asset or networked types
+...
+</code></pre>
+<p>In addition to <code>/rel</code> and <code>/is</code>, any of the following request types will return a list of available options: <code>/model</code>, <code>/filters</code>, <code>/to</code>, <code>/traversal</code>, <code>/action</code>, <code>/job</code>, <code>/document</code>, <code>/report</code>.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#full-metadata" id="user-content-full-metadata"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Full metadata</h3>
+<p>The full metadata request returns detailed information about the type or model the request resolves to. The response consists of a map of the following keys:</p>
+<pre><code>  doc:
+    A short description of the purpose of each part.
+
+  properties:
+    All properties with type, unit, part defined in, and label.
+
+  relationships:
+    All relationships with direction, cardinality, edge label, part defined in,
+    type of related data, name of reverse relationship from the other type back
+    to this, cloning rule, and validations.
+    
+  displays:
+    A list of calculated (display only) properties, with which part they are
+    defined in and documentation about them.
+
+  filters:
+    All available filters, with their available arguments, documentation, filter
+    type, and which part they are defined in
+
+  methods: 
+    All traversals, actions, jobs, documents and reports defined. Includes type,
+    result type, arguments, documentation, and part defined in.
+
+  models:
+    A list of other models that this combination of parts could describe.
+
+  parts: All parts this type has.
+
+  non_descriptive_parts:
+    Parts this type has whose presence does not give any information about what
+    this type is for.
+
+  descriptive_parts: Opposite of non-descriptive parts
+
+  sibling_parts:
+    Parts which this type does not have, but similar models do have.
+
+  categorical_parts:
+    Parts which don't have any properties. They are used for categorizing
+    records of this type.
+
+  category_parts:
+    The parts in this type mapped to which category they fall in.
+
+  create_access: Do you have create access?
+
+  delete_access: Do you have delete access?
+
+  update_access: Do you have update access?
+</code></pre>
+<h4>
+<a aria-hidden="true" class="anchor" href="#metadata-for-models" id="user-content-metadata-for-models"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Metadata for models</h4>
+<pre><code>get /model/cloud_vm/metadata
+</code></pre>
+<h4>
+<a aria-hidden="true" class="anchor" href="#metadata-for-parts" id="user-content-metadata-for-parts"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Metadata for parts</h4>
+<pre><code>get /is/networked/metadata
+get /is/asset,networked/metadata
+</code></pre>
+
+        </div>
+
+    </div>]

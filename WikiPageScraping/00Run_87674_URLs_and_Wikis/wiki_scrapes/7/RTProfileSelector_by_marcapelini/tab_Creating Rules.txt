@@ -1,0 +1,141 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>If you have correctly installed RTProfileSelector and configured RawTherapee, you can now proceed to creating your own rules.</p>
+<p>Rules are defined in a file named <strong>RTProfileSelectorRules.ini</strong>. RTProfileSelectorRules.ini is a simple INI-style file where each section must be named for one of your custom profiles, and the entries are the Exif keys and respective values which you want to match the particular profile.</p>
+<p>Besides simply matching the keys to the exact values from the Exif information, as of RTPS 1.0.2 you can also define more complex rules: you can <em>negate</em> a value, compare <em>numeric ranges</em>, and <em>lists of values</em>.  See notes at the bottom of this page.</p>
+<p>There can be as many sections in <strong>RTProfileSelectorRules.ini</strong> as you wish, and you can have more than one section with the same name, but with a different set of Exif fields (that is, different rules), if you want to apply the same profile for different combinations of Exif fields.</p>
+<p>There can be as many fields in a single rule section as you wish. If there are different rules which match a particular image file, RTPS will pick up the <strong>most restrictive</strong> one, that is, the one with the <strong>largest number of fields</strong>.</p>
+<hr/>
+<h3>
+<a aria-hidden="true" class="anchor" href="#creating-a-rule" id="user-content-creating-a-rule"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Creating a rule</h3>
+<p>The principle is simple:</p>
+<ul>
+<li>You enable RTPS's "view Exif info" mode</li>
+<li>Run RPTS (from within RawTherapee) on a photo for which you want to create a rule, that is, automatically assign a profile based on Exif information</li>
+<li>Look for any Exif keys that might be useful for the rule you want to create</li>
+<li>Create a rule in RPPS's rules file, associating a given custom profile to a set of Exif keys and values, so that any of your photos whose Exif matches the same criterion will be assigned the same processing profile</li>
+</ul>
+<p>Let's go through all this one step at a time. To better follow this part of the tutorial, I suggest you use the sample photo (<em>P1090268.RW2</em>) which I have provided in the project's "<strong>samples</strong>" folder. Though nothing of artistic value, it was taken with my Panasonic GM1 set to monochrome, and that's the base for the rule we will be creating.</p>
+<hr/>
+<ul>
+<li>In RTPS's installation folder, open the file <strong>RTProfileSelector.ini</strong> with a text editor and enable the <strong>ViewExifKeys</strong> entry (be sure to save it before next step). Note: you only need this to have access to the Exif fields for the particular image you want to create the rule for, so you will probably want to <strong>disable</strong> it again once you're done with creating the rule.<br/>
+<img alt="" src="images/rtps_viewexif.png"/>
+</li>
+</ul>
+<hr/>
+<ul>
+<li>Open the <strong>provided sample</strong> raw file with RawTherapee.  If everything went right, a text editor window should open with the contents of a text file showing the Exif keys and values extracted from the photo:</li>
+</ul>
+<p><img alt="" src="images/exif_fields.png"/></p>
+<hr/>
+<ul>
+<li>Each camera model, even from the same maker, will mark differently photos taken in their monochrome/B&amp;W modes.  So for our rule we need to locate the "<strong>Camera Model Name</strong>" and some other key that might convey the information that the picture was taken in B&amp;W. In the case of the GM1, this proved to be the "<strong>Photo Style</strong>" key. Since we want photos taken in B&amp;W with this camera to be shown in black and white in RT, our simple rule includes both the GM1 "camera model" and the monochrome "photo style":</li>
+</ul>
+<p><img alt="" src="images/rules_ini.png"/></p>
+<p>Note: There can be any number of rules pointing to the same processing profile. In my case, I also have B&amp;W photos from two other cameras that I want to be given the same "Generic BW" profile, so my actual rules file looks something like this:</p>
+<pre><code>[Generic BW.pp3]
+Camera Model Name=DMC-GM1
+Photo Style=Monochrome
+
+[Generic BW.pp3]
+Camera Model Name=DMC-LX5
+Film Mode=Dynamic (B&amp;W)
+
+[Generic BW.pp3]
+Camera Model Name=DMC-GF1
+Color Effect=Black &amp; White
+</code></pre>
+<p>All three cameras are from the same maker (Panasonic), and mark their "black and white" modes quite differently, so I needed three different rules to use the same profile. That's why you will have to look at the Exif fields from you own camera and see which fields might correspond to a particular rule that you want to create.</p>
+<p>Just to illustrate one more point about rules: RTPS will select the <strong>most restrictive</strong> match, that is, the matching rule with the greater number of fields.  With this in mind, I was able to create one more rule for my GF1, which at one point I converted to infrared: I wanted the B&amp;W photos taken with the GF1 <strong>before</strong> the conversion to use the "Generic BW" and the ones taken <strong>after</strong> the conversion to be assigned <strong>another profile</strong> (which I call "Infrared BW").  Since the camera still puts out the same Exif information as before, I had to use the fact that, after the conversion to infrared, I set a custom white balance in the camera, so here's the extra rule that I have for the GF1:</p>
+<pre><code>[Infrared BW.pp3]
+Camera Model Name=DMC-GF1
+Color Effect=Black &amp; White
+White Balance=Manual
+Color Temp Kelvin=5300
+</code></pre>
+<p>Simple and yet flexible!</p>
+<hr/>
+<p>Of course, our rule will only work if we have a matching profile, but chances are you don't have one named "Generic BW", so in the steps above you must have seen the colour version of the sample photo. So, let's now go through the process of making the custom profile needed for the rule we've just created:</p>
+<ul>
+<li>Open the provided raw file and manually assign one of the bundled BW profiles:</li>
+</ul>
+<p><img alt="" src="images/br_prof_sel.png"/></p>
+<ul>
+<li>Now click the "<strong>Save current profile</strong>" button and name it _exactly _"<strong>Generic BW.pp3</strong>" (for the purpose of this exercise):</li>
+</ul>
+<p><img alt="" src="images/br_prof_save.png"/></p>
+<hr/>
+<p>Now that you have a "<strong>Generic BW</strong>" custom profile, we can check that our rule is working.</p>
+<ul>
+<li>Clear the BW profile that we have manually assigned. Right-click on the image thumbnail and select "Processing profile operations|Clear":</li>
+</ul>
+<p><img alt="" src="images/clear_profile.png"/></p>
+<ul>
+<li>The photo should be shown in colour once again:</li>
+</ul>
+<p><img alt="" src="images/colour_version.png"/></p>
+<ul>
+<li>Now you can force RTPS run on the image again, by right-clicking on the thumbnail and selecting "Processing profile operations|Custom Profile Builder":</li>
+</ul>
+<p><img alt="" src="images/call_rtps.png"/></p>
+<p>Voilà! It should be B&amp;W again.</p>
+<p><img alt="" src="images/bw_version.png"/></p>
+<p>If you really want to make sure our rule is working, you may close RawTherapee, delete the sidecar <strong>P1090268.RW2.pp3</strong> file from the folder, run RT once again and see that the image opens in black and white.</p>
+<hr/>
+<h3>
+<a aria-hidden="true" class="anchor" href="#complex-rules" id="user-content-complex-rules"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Complex Rules</h3>
+<p>The basic rule format (<em>KEY</em>=<em>VALUE</em>) provides for comparison of the <strong>exact</strong> value declared to the corresponding value taken from an image file.  When you declare several lines in a rule, they are evaluated one by one, and the rule is considered as a match if <strong>all entries</strong> (that is, an <strong>AND</strong> logical operation) are matched. To alow for sightly more flexible rules, as of release 1.0.2 RTPS also supports the following extensions:</p>
+<ul>
+<li>
+<p><strong>Negating</strong>: If the value is preceded by an "<strong>!</strong>" (exclamation sign), the expression is TRUE if the Exif value is different from the one declared.</p>
+</li>
+<li>
+<p>Matches any camera except the <strong>DMC-GM1</strong>:</p>
+<p>Camera Model Name=!DMC-GM1</p>
+</li>
+<li>
+<p>Matches any white balance setting different from "Auto":</p>
+<p>White Balance=!Auto</p>
+</li>
+<li>
+<p><strong>Numeric range</strong>: If a particular field is convertible to a number (e.g.: "Focal Lengh", "ISO", "Aperture", "Exposure Time"), you can use the "<del>" (tilde) character to define a range of values to be matched. The lower value for the range must be on the left side of the "</del>", and the greater on the right side.</p>
+</li>
+<li>
+<p>Matches any aperture value between (and including) 3.0 and 4.5:</p>
+<p>Aperture=3.0~4.5</p>
+</li>
+<li>
+<p>Matches any focal length value between (and including) 22 mm and 40 mm:</p>
+<p>Focal Length=22 mm ~ 40 mm</p>
+</li>
+<li>
+<p>Matches any exposure time between (and including) 1/1000s and 1/500 (remember 1/1000 is less than 1/500!):</p>
+<p>Exposure Time=1/1000 ~ 1/500</p>
+</li>
+<li>
+<p>Matches any ISO value <strong>not between</strong> (notice the <em>!</em> operator) 400 and 640:</p>
+<p>ISO=!400~640</p>
+</li>
+<li>
+<p>Matches any aperture less than or equal to 3.0:</p>
+<p>Aperture= * ~ 3.0</p>
+</li>
+<li>
+<p>Matches any focal length greater than or equal to 40 mm:</p>
+<p>Focal Length= 40 mm ~ *</p>
+</li>
+<li>
+<p><strong>Value list</strong>: Defines a list of possible values to be matched for a field.  Each values must be separated by a "|" (pipe) character. The items themselves can be simple values or any combination the above negation or range operators.</p>
+</li>
+<li>
+<p>Matches cameras DMC-GM1 or DMC-GX1 or DMC-GX7:</p>
+<p>Camera Model Name=DMC-GM1|DMC-GX1|DMC-GX7</p>
+</li>
+</ul>
+<hr/>
+<p>Previous page: <a class="internal present" href="/marcapelini/RTProfileSelector/wiki/Integrating-with-RawTherapee">Integrating with RawTherapee</a></p>
+<p>Next page: <a class="internal present" href="/marcapelini/RTProfileSelector/wiki/Partial-Profile-Rules">Partial-Profile-Rules</a></p>
+
+        </div>
+
+    </div>]

@@ -1,0 +1,76 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>This is how to make a simple bash script that detects memory leak -- memory that the application has allocated, but has been lost and cannot be freed -- using any debugger tool that requires installation.</p>
+<p><strong>Requirement:</strong> The program from which you want to detect memory leak need to be running at least <strong>15 consecutive seconds</strong>, enough time for it to generate memory leak (or not) and to let the bash script making its job at the same time.</p>
+<hr/>
+<h3>
+<a aria-hidden="true" class="anchor" href="#sample-code" id="user-content-sample-code"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><a name="user-content-code"></a>Sample Code</h3>
+<div class="highlight highlight-source-shell"><pre><span class="pl-k">function</span> <span class="pl-en">detect_memory_leaks</span>
+{
+    <span class="pl-k">local</span> PROG_PATH=<span class="pl-smi">$1</span>       <span class="pl-c"><span class="pl-c">#</span> 1st argument: The path to the executable to test</span>
+
+    <span class="pl-c"><span class="pl-c">#</span> run the executable silently and send it to background using '&amp;'</span>
+    (<span class="pl-smi">$PROG_PATH</span> <span class="pl-k">&gt;</span>/dev/null <span class="pl-k">2&gt;&amp;1</span>) <span class="pl-k">&amp;</span>
+
+    <span class="pl-c"><span class="pl-c">#</span> get its process ID with '$!' and save it in a variable PID</span>
+    <span class="pl-k">local</span> PID=<span class="pl-smi">$!</span>
+
+    <span class="pl-c"><span class="pl-c">#</span> wait for 5 seconds to let the executable generating memory leak (or not)</span>
+    sleep 5
+
+    <span class="pl-c"><span class="pl-c">#</span> check if the process is still running in background</span>
+    <span class="pl-c"><span class="pl-c">#</span> if not, we cannot detect memory leak and we must stop the test</span>
+    <span class="pl-k">if</span> [ <span class="pl-k">-z</span> <span class="pl-s"><span class="pl-pds">"</span><span class="pl-s"><span class="pl-pds">$(</span>ps a <span class="pl-k">|</span> awk -v PID=<span class="pl-smi">$PID</span> <span class="pl-s"><span class="pl-pds">'</span>$1 == PID {print}<span class="pl-pds">'</span></span><span class="pl-pds">)</span></span><span class="pl-pds">"</span></span> ]
+    <span class="pl-k">then</span>
+        <span class="pl-c1">echo</span> <span class="pl-s"><span class="pl-pds">"</span>An error occurred: The program has terminated too quickly<span class="pl-pds">"</span></span>
+        <span class="pl-k">return</span>
+    <span class="pl-k">fi</span>
+
+    <span class="pl-c"><span class="pl-c">#</span> run the 'leaks' command with the process ID as argument,</span>
+    <span class="pl-c"><span class="pl-c">#</span> and save the outputted line where total leaked bytes appears</span>
+    <span class="pl-k">local</span> RESULT=<span class="pl-s"><span class="pl-pds">$(</span>leaks <span class="pl-smi">$PID</span> <span class="pl-k">2&gt;</span>/dev/null <span class="pl-k">|</span> grep <span class="pl-s"><span class="pl-pds">'</span>total leaked bytes<span class="pl-pds">'</span></span><span class="pl-pds">)</span></span>
+
+    <span class="pl-c"><span class="pl-c">#</span> note: the user may be asked for his administrator password</span>
+    <span class="pl-c"><span class="pl-c">#</span> that's why we need the executable to be running 15 seconds at least</span>
+    <span class="pl-c"><span class="pl-c">#</span> letting the user entering his password if necessary</span>
+
+    <span class="pl-c"><span class="pl-c">#</span> kill the executable, as we do not need it to be running anymore</span>
+    <span class="pl-c1">kill</span> -9 <span class="pl-smi">$PID</span> <span class="pl-k">&gt;</span>/dev/null <span class="pl-k">2&gt;&amp;1</span>
+
+    <span class="pl-c"><span class="pl-c">#</span> test if RESULT is empty</span>
+    <span class="pl-k">if</span> [ <span class="pl-k">-z</span> <span class="pl-s"><span class="pl-pds">"</span><span class="pl-smi">$RESULT</span><span class="pl-pds">"</span></span> ]
+    <span class="pl-k">then</span>
+        <span class="pl-c"><span class="pl-c">#</span> if yes, that means the command 'leaks' has failed</span>
+        <span class="pl-c1">echo</span> <span class="pl-s"><span class="pl-pds">"</span>An error occurred: Unable to detect memory leak<span class="pl-pds">"</span></span>
+    <span class="pl-k">else</span>
+        <span class="pl-c"><span class="pl-c">#</span> otherwise, display the total leaked bytes</span>
+        <span class="pl-c1">echo</span> <span class="pl-smi">$RESULT</span>
+    <span class="pl-k">fi</span>
+}
+
+detect_memory_leaks <span class="pl-s"><span class="pl-pds">"</span>./ft_ls -R /Users<span class="pl-pds">"</span></span></pre></div>
+<hr/>
+<h3>
+<a aria-hidden="true" class="anchor" href="#tips" id="user-content-tips"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Tips</h3>
+<hr/>
+<h5>
+<a aria-hidden="true" class="anchor" href="#execute-a-program-in-background-and-get-its-process-id" id="user-content-execute-a-program-in-background-and-get-its-process-id"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><a name="user-content-tip1"></a>Execute a program in background and get its process ID</h5>
+<p><em>(to be written)</em></p>
+<hr/>
+<h5>
+<a aria-hidden="true" class="anchor" href="#difference-between-kill--9-and-kill--15" id="user-content-difference-between-kill--9-and-kill--15"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><a name="user-content-tip2"></a>Difference between kill -9 and kill -15</h5>
+<p><em>(to be written)</em></p>
+<hr/>
+<h5>
+<a aria-hidden="true" class="anchor" href="#why-using-process-id-instead-of-program-name" id="user-content-why-using-process-id-instead-of-program-name"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><a name="user-content-tip3"></a>Why using process ID instead of program name</h5>
+<p><em>(to be written)</em></p>
+
+        </div>
+
+        <div class="wiki-footer gollum-markdown-content boxed-group" id="wiki-footer">
+          <div class="boxed-group-inner wiki-auxiliary-content markdown-body">
+            <p><a href="https://github.com/jgigault/42FileChecker/wiki/"><strong>Back to summary</strong></a> - <a href="#"><strong>Back to top</strong></a></p>
+
+          </div>
+        </div>
+    </div>]

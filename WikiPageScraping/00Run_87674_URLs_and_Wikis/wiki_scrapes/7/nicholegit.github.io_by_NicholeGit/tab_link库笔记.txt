@@ -1,0 +1,103 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <ul>
+<li><a href="https://github.com/funny/link">link地址</a></li>
+</ul>
+<h4>
+<a aria-hidden="true" class="anchor" href="#channel%E5%BA%94%E7%94%A8%E6%8A%80%E5%B7%A7" id="user-content-channel应用技巧"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>channel应用技巧</h4>
+<ul>
+<li>channel出现满时的处理</li>
+</ul>
+<div class="highlight highlight-source-go"><pre>    <span class="pl-k">func</span> (<span class="pl-v">session</span> *<span class="pl-v">Session</span>) <span class="pl-v">AsyncSend</span>(message Message, timeout time.Duration) AsyncWork {
+        <span class="pl-smi">c</span> <span class="pl-k">:=</span> <span class="pl-c1">make</span>(<span class="pl-k">chan</span> <span class="pl-k">error</span>, <span class="pl-c1">1</span>)
+        <span class="pl-k">if</span> session.<span class="pl-c1">IsClosed</span>() {
+            c <span class="pl-k">&lt;-</span> SendToClosedError
+        } <span class="pl-k">else</span> {
+            <span class="pl-k">select</span> {
+            <span class="pl-k">case</span> session.<span class="pl-smi">asyncSendChan</span> <span class="pl-k">&lt;-</span> asyncMessage{c, message}: 	<span class="pl-c"><span class="pl-c">//</span>发信息到异步发送队列</span>
+            <span class="pl-k">default</span>:
+                <span class="pl-k">if</span> timeout == <span class="pl-c1">0</span> {
+                    session.<span class="pl-c1">Close</span>()
+                    c <span class="pl-k">&lt;-</span> AsyncSendTimeoutError
+                } <span class="pl-k">else</span> {
+                    <span class="pl-k">go</span> <span class="pl-k">func</span>() {<span class="pl-c"><span class="pl-c">//</span>在发送channel堵塞的时候调用，在另外一个goroutine中五秒中等待，如果asyncSendBufferChan还是满的就报错退出</span>
+                        <span class="pl-k">select</span> {
+                        <span class="pl-k">case</span> session.<span class="pl-smi">asyncSendChan</span> <span class="pl-k">&lt;-</span> asyncMessage{c, message}:
+                        <span class="pl-k">case</span> <span class="pl-k">&lt;-</span>session.<span class="pl-smi">closeChan</span>:
+                            c <span class="pl-k">&lt;-</span> SendToClosedError
+                        <span class="pl-k">case</span> <span class="pl-k">&lt;-</span>time.<span class="pl-c1">After</span>(timeout):
+                            session.<span class="pl-c1">Close</span>()
+                            c <span class="pl-k">&lt;-</span> AsyncSendTimeoutError
+                        }
+                    }()
+                }
+            }
+        }
+        <span class="pl-k">return</span> AsyncWork{c}
+    }</pre></div>
+<h4>
+<a aria-hidden="true" class="anchor" href="#%E7%BB%99netconn%E5%A2%9E%E5%8A%A0%E8%AF%BB%E7%BC%93%E5%AD%98" id="user-content-给netconn增加读缓存"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>给net.Conn增加读缓存</h4>
+<p>使用golang的封装特性来模拟继承的效果</p>
+<div class="highlight highlight-source-go"><pre>    <span class="pl-k">type</span> bufferConn <span class="pl-k">struct</span> {
+        net.<span class="pl-smi">Conn</span>
+        reader *bufio.<span class="pl-smi">Reader</span>
+    }
+    <span class="pl-k">func</span> <span class="pl-en">newBufferConn</span>(<span class="pl-v">conn</span> <span class="pl-v">net</span>.<span class="pl-v">Conn</span>, <span class="pl-v">readBufferSize</span> <span class="pl-v">int</span>) *<span class="pl-v">bufferConn</span> {
+        <span class="pl-k">return</span> &amp;bufferConn{
+            conn,
+            <span class="pl-c"><span class="pl-c">//</span>bufio.NewReaderSize使用包装模式给conn增加个缓存（reader）</span>
+            bufio.<span class="pl-c1">NewReaderSize</span>(conn, readBufferSize),
+        }
+    }
+	<span class="pl-c"><span class="pl-c">//</span>覆盖net.Conn中的read，使用reader的read这样就增加了缓存</span>
+    <span class="pl-k">func</span> (<span class="pl-v">conn</span> *<span class="pl-v">bufferConn</span>) <span class="pl-v">Read</span>(d []byte) (int, error) {
+        <span class="pl-k">return</span> conn.<span class="pl-smi">reader</span>.<span class="pl-c1">Read</span>(d)
+    }</pre></div>
+<h4>
+<a aria-hidden="true" class="anchor" href="#%E5%AF%B9%E5%B0%81%E8%A3%85%E7%9A%84%E7%81%B5%E6%B4%BB%E5%BA%94%E7%94%A8" id="user-content-对封装的灵活应用"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>对封装的灵活应用</h4>
+<ul>
+<li>封装channle来控制流向，确保安全。例如：asyncBuffer，asyncMessage，AsyncWork</li>
+</ul>
+<div class="highlight highlight-source-go"><pre>    <span class="pl-k">type</span> t1 <span class="pl-k">struct</span> {
+        <span class="pl-v">C</span> <span class="pl-k">&lt;-</span><span class="pl-k">chan</span> <span class="pl-k">error</span> <span class="pl-c"><span class="pl-c">//</span>只读</span>
+    }
+
+    <span class="pl-k">type</span> t2 <span class="pl-k">struct</span> {
+        <span class="pl-v">C</span> <span class="pl-k">chan</span> <span class="pl-k">error</span> <span class="pl-c"><span class="pl-c">//</span>正常</span>
+    }
+
+    <span class="pl-k">type</span> t3 <span class="pl-k">struct</span> {
+        <span class="pl-v">C</span> <span class="pl-k">chan</span><span class="pl-k">&lt;-</span> <span class="pl-k">error</span> <span class="pl-c"><span class="pl-c">//</span>只写</span>
+    }
+
+    <span class="pl-k">func</span> <span class="pl-en">main</span>() {
+        <span class="pl-smi">c</span> <span class="pl-k">:=</span> <span class="pl-c1">make</span>(<span class="pl-k">chan</span> <span class="pl-k">error</span>, <span class="pl-c1">1</span>)
+        <span class="pl-k">var</span> <span class="pl-smi">C1</span> <span class="pl-k">&lt;-</span><span class="pl-k">chan</span> <span class="pl-k">error</span>
+        <span class="pl-k">var</span> <span class="pl-smi">C3</span> <span class="pl-k">chan</span><span class="pl-k">&lt;-</span> <span class="pl-k">error</span>
+        C1 = c
+        C3 = c
+        <span class="pl-smi">s</span> <span class="pl-k">:=</span> <span class="pl-k">&lt;-</span>C1
+        <span class="pl-c1">println</span>(s)
+        <span class="pl-c"><span class="pl-c">//</span>    h := &lt;-C3 //invalid operation: &lt;-C3 (receive from send-only type chan&lt;- error)</span>
+        C3 <span class="pl-k">&lt;-</span> errors.<span class="pl-c1">New</span>(<span class="pl-s"><span class="pl-pds">"</span>fdsaf<span class="pl-pds">"</span></span>)
+    }</pre></div>
+<h4>
+<a aria-hidden="true" class="anchor" href="#bufferpool%E5%86%85%E5%AD%98%E6%B1%A0" id="user-content-bufferpool内存池"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>bufferPool内存池</h4>
+<ul>
+<li>里面大量使用atomic方法。</li>
+<li>还带了统计pool使用情况功能PoolState。（这个习惯值得学习）</li>
+</ul>
+<h1>
+<a aria-hidden="true" class="anchor" href="#%E6%80%BB%E7%BB%93" id="user-content-总结"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>总结</h1>
+<ul>
+<li>对channel的应用</li>
+<li>对封装的灵活应用
+<ul>
+<li>asyncBuffer</li>
+</ul>
+</li>
+</ul>
+
+        </div>
+
+    </div>]

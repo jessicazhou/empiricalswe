@@ -1,0 +1,62 @@
+[<div class="wiki-body gollum-rest-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <table frame="void" rules="none">
+<colgroup><col/>
+<col/>
+</colgroup><tbody valign="top">
+<tr>
+<th>Fecha:</th>
+<td>2014-12-01 a 2014-12-08</td>
+</tr>
+<tr>
+<th>Participantes:</th>
+<td>@Juanlu001, @AlexS12, @newlawrence, @AunSiro y Carlos Dorado</td>
+</tr>
+<tr>
+<th>Tareas:</th>
+<td><a href="https://github.com/AeroPython/ISA/issues?q=milestone%3A%22Sprint+1%22">Hito "Sprint 1"</a></td>
+</tr>
+</tbody>
+</table>
+<p>En esta primera reunión se decidió implementar una función para calcular algunas propiedades termodinámicas básicas a partir de la altura en las tres primeras capas de la Atmósfera Estándar Internacional. Para ello se establecieron la interfaz y los requisitos de la función de forma que se pudiesen traducir en pruebas unitarias:</p>
+
+<pre lang=""><code>def atm(h, deltaT=0.0):
+    """Standard atmosphere.
+
+    """
+    pass
+</code></pre>
+
+<ul>
+<li>Debe dar el resultado correcto, tabulado en la Atmósfera Estándar de los Estados Unidos (COESA) <a href="http://hdl.handle.net/2060/19770009539" rel="nofollow">http://hdl.handle.net/2060/19770009539</a> (idéntica a ISA hasta 50 kilómetros)</li>
+<li>Las unidades son las del Sistema Internacional, es decir: altura en metros, temperatura en Kelvin, presión en Pascal, densidad en kilogramos por metro cúbico</li>
+<li>La entrada es <strong>altura geopotencial</strong>, es decir, normalizada con g0 = 9.80665 m / s2.</li>
+<li>Debe aceptar arrays de alturas y devolver arrays de propiedades, para integrarse de forma transparente con otras funciones de NumPy y matplotlib</li>
+<li>En cambio, si el argumento de entrada es un escalar entonces debe devolver escalares también</li>
+<li>Para alturas fuera del rango de validez de la función, se debe emitir un <cite>warning</cite> y rellenar las posiciones correspondientes con <cite>NaN</cite>
+</li>
+</ul>
+<p>Aquí están detalladas las <a class="internal present" href="/AeroPython/aeropy/wiki/Instrucciones-para-subir-el-c%C3%B3digo">Instrucciones para subir el código</a>.</p>
+<img alt="Imagen de la definición de requisitos" data-canonical-src="https://pbs.twimg.com/media/B4MCFYECIAA0W3x.jpg" src="https://camo.githubusercontent.com/6a76974f42bd4f5a48a9406e7f66dc53c400a14d/68747470733a2f2f7062732e7477696d672e636f6d2f6d656469612f42344d4346594543494141305733782e6a7067"/>
+<a name="user-content-alturas-fuera-de-rango"></a>
+<h2>
+<a aria-hidden="true" class="anchor" href="#alturas-fuera-de-rango" id="user-content-alturas-fuera-de-rango"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Alturas fuera de rango</h2>
+<p>Había tres opciones para el manejo de alturas fuera de rango:</p>
+<ol>
+<li>Continuar con el cálculo sin hacer comprobaciones.</li>
+<li>Emitir un error si alguna altura estaba fuera de rango.</li>
+<li>Emitir una advertencia y continuar el cálculo para los valores válidos.</li>
+</ol>
+<p>Se consideró adecuado dar algún tipo de <em>feedback</em> al usuario (esto descartaba la opción 1), pero interrumpir el cálculo sobre un array de alturas cuando uno de los valores es inválido parecía exagerado y posiblemente poco operativo (opción 2), así que al final se optó por la tercera posibilidad.</p>
+<a name="user-content-otras-discusiones"></a>
+<h2>
+<a aria-hidden="true" class="anchor" href="#otras-discusiones" id="user-content-otras-discusiones"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Otras discusiones</h2>
+<ul>
+<li>Se comentó la posibilidad de diseñar la implementación para permitir modelos arbitrarios de temperatura, es decir, que pudieran ser no lineales. Puesto que esto complicaría el código y no estaba clara la utilidad real, se abrió la tarea <a href="https://github.com/AeroPython/ISA/issues/2">#2</a> para investigarlo.</li>
+<li>Se propuso vectorizar el argumento ΔT para contemplar algunos casos de uso particulares, pero daba lugar a confusión y complicación en el código así que se descartó.</li>
+</ul>
+
+
+        </div>
+
+    </div>]

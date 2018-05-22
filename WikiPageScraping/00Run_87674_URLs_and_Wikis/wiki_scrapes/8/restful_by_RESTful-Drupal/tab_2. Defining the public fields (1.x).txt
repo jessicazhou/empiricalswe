@@ -1,0 +1,142 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>RESTful defines several resource kinds through <strong>data providers</strong>, for example <strong>db table resources</strong>, <strong>entity resources</strong> and more.</p>
+<p><strong>Resources</strong> will usually want to provide <strong>public fields</strong>, which are the fields that the API makes available for requests to that endpoint.</p>
+<p>Your resource plugin will need to implement the method <code>publicFieldsInfo</code> which returns an array describing the fields you wish to make public.</p>
+<p>These fields are either Drupal fields, Drupal entity properties (such as nid, status, created etc) or completely arbitrary API fields that return anything you want. A simple example array for the latter would look like:</p>
+<div class="highlight highlight-text-html-php"><pre><span class="pl-s1"><span class="pl-smi">$public_fields</span>[<span class="pl-s"><span class="pl-pds">'</span>myField<span class="pl-pds">'</span></span>] <span class="pl-k">=</span> <span class="pl-c1">array</span>(</span>
+<span class="pl-s1">  <span class="pl-s"><span class="pl-pds">'</span>callback<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-c1">array</span>(<span class="pl-smi">$this</span>, <span class="pl-s"><span class="pl-pds">'</span>myFieldDataProviderCallbackWithALongName<span class="pl-pds">'</span></span>),</span>
+<span class="pl-s1">);</span></pre></div>
+<p>which will call the specified function on the resource class your <code>publicFieldsInfo</code> is defined in:</p>
+<div class="highlight highlight-text-html-php"><pre><span class="pl-s1"><span class="pl-k">protected</span> <span class="pl-k">function</span> <span class="pl-en">myFieldDataProviderCallbackWithALongName</span>() {</span>
+<span class="pl-s1">  <span class="pl-k">return</span> <span class="pl-s"><span class="pl-pds">'</span>barry<span class="pl-pds">'</span></span>;</span>
+<span class="pl-s1">}</span>
+<span class="pl-s1"></span></pre></div>
+<p>A more typical case would be returning a field or property of the entity you're exposing on this resource. The following example exposes the author user ID:</p>
+<div class="highlight highlight-text-html-php"><pre><span class="pl-s1"><span class="pl-smi">$public_fields</span>[<span class="pl-s"><span class="pl-pds">'</span>uid<span class="pl-pds">'</span></span>] <span class="pl-k">=</span> <span class="pl-c1">array</span>(</span>
+<span class="pl-s1">  <span class="pl-s"><span class="pl-pds">'</span>property<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-s"><span class="pl-pds">'</span>author<span class="pl-pds">'</span></span>,</span>
+<span class="pl-s1">  <span class="pl-s"><span class="pl-pds">'</span>sub_property<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-s"><span class="pl-pds">'</span>uid<span class="pl-pds">'</span></span>,</span>
+<span class="pl-s1">);</span></pre></div>
+<h2>
+<a aria-hidden="true" class="anchor" href="#available-public-field-properties" id="user-content-available-public-field-properties"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Available public field properties</h2>
+<p>The available properties depend on what class your resource inherits from. The basic properties, defined in the <code>restfulBase</code> class, are as follows:</p>
+<ul>
+<li>"process_callbacks": An array of callbacks to perform on the returned value, or an array with the object and method. Defaults To empty array.</li>
+<li>"callback": A callable callback to get a computed value. The wrapped entity is passed as argument. Defaults To FALSE. The callback function receive as first argument the entity EntityMetadataWrapper object.</li>
+<li>"create_or_update_passthrough": Determines if a public field that isn't mapped to any property or field, may be passed upon create or update of an entity. Defaults to FALSE.</li>
+</ul>
+<h3>
+<a aria-hidden="true" class="anchor" href="#entity-based-resources" id="user-content-entity-based-resources"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Entity-based resources</h3>
+<p>Entity-based resources, which extend the <code>RestfulEntityBase</code> class (either directly or via a parent class) have the following properties (defined in the class <code>RestfulEntityBase</code>, where you can find the following documentation):</p>
+<ul>
+<li>
+<p><strong>"access_callbacks"</strong>: An array of callbacks to determine if user has access
+to the property. Note that this callback is on top of the access provided by
+entity API, and is used for convenience, where for example write
+operation on a property should be denied only on certain request
+conditions. The Passed arguments are:</p>
+<ul>
+<li>
+<strong>op</strong>: The operation that access should be checked for. Can be "view" or
+"edit".</li>
+<li>
+<strong>public_field_name</strong>: The name of the public field.</li>
+<li>
+<strong>property_wrapper</strong>: The wrapped property.</li>
+<li>
+<strong>wrapper</strong>: The wrapped entity.</li>
+</ul>
+<p>The access callback must return one of the following constants (as per Drupal's node access rules):</p>
+<ul>
+<li>\RestfulInterface::ACCESS_ALLOW</li>
+<li>\RestfulInterface::ACCESS_DENY</li>
+<li>\RestfulInterface::ACCESS_IGNORE</li>
+</ul>
+<p>An example access_callback may be found <a href="Custom-field-access-control">here</a>.</p>
+</li>
+<li>
+<p><strong>"property"</strong>: The entity property (e.g. "title", "nid").</p>
+</li>
+<li>
+<p><strong>"sub_property"</strong>: A sub property name of a property to take from it the
+content. This can be used for example on a text field with filtered text
+input format where we would need to do $wrapper-&gt;body-&gt;value-&gt;value().
+Defaults to FALSE.</p>
+</li>
+<li>
+<p><strong>"formatter"</strong>: Used for rendering the value of a configurable field using
+Drupal field API's formatter. The value is the $display value that is
+passed to field_view_field().</p>
+</li>
+<li>
+<p><strong>"wrapper_method"</strong>: The wrapper's method name to perform on the field.
+This can be used for example to get the entity label, by setting the
+value to "label". Defaults to "value".</p>
+</li>
+<li>
+<p><strong>"wrapper_method_on_entity"</strong>: A Boolean to indicate on what to perform
+the wrapper method. If TRUE the method will perform on the entity (e.g.
+$wrapper-&gt;label()) and FALSE on the property or sub property
+(e.g. $wrapper-&gt;field_reference-&gt;label()). Defaults to FALSE.</p>
+</li>
+<li>
+<p><strong>"column"</strong>: If the property is a field, set the column that would be used
+in queries. For example, the default column for a text field would be
+"value". Defaults to the first column returned by field_info_field(),
+otherwise FALSE.</p>
+</li>
+<li>
+<p><strong>"callback"</strong>: A callable callback to get a computed value. The wrapped
+entity is passed as argument. Defaults To FALSE.
+The callback function receive as first argument the entity
+EntityMetadataWrapper object.</p>
+</li>
+<li>
+<p><strong>"process_callbacks"</strong>: An array of callbacks to perform on the returned
+value, or an array with the object and method. Defaults To empty array.</p>
+</li>
+<li>
+<p><strong>"resource"</strong>: This property can be assigned only to an entity reference
+field. Array of restful resources keyed by the target bundle. For
+example, if the field is referencing a node entity, with "Article" and
+"Page" bundles, we are able to map those bundles to their related
+resource. Items with bundles that were not explicitly set would be
+ignored.
+It is also possible to pass an array as the value, with:</p>
+<ul>
+<li>
+<strong>"name"</strong>: The resource name.</li>
+<li>
+<strong>"full_view"</strong>: Determines if the referenced resource should be rendered,
+or just the referenced ID(s) to appear. Defaults to TRUE.</li>
+</ul>
+</li>
+</ul>
+<div class="highlight highlight-text-html-php"><pre><span class="pl-s1">  <span class="pl-c1">array</span>(</span>
+<span class="pl-s1">    <span class="pl-c"><span class="pl-c">//</span> Shorthand.</span></span>
+<span class="pl-s1">    <span class="pl-s"><span class="pl-pds">'</span>article<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-s"><span class="pl-pds">'</span>articles<span class="pl-pds">'</span></span>,</span>
+<span class="pl-s1">    <span class="pl-c"><span class="pl-c">//</span> Verbose</span></span>
+<span class="pl-s1">    <span class="pl-s"><span class="pl-pds">'</span>page<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-c1">array</span>(</span>
+<span class="pl-s1">      <span class="pl-s"><span class="pl-pds">'</span>name<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-s"><span class="pl-pds">'</span>pages<span class="pl-pds">'</span></span>,</span>
+<span class="pl-s1">      <span class="pl-s"><span class="pl-pds">'</span>full_view<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-c1">FALSE</span>,</span>
+<span class="pl-s1">    ),</span>
+<span class="pl-s1">  );</span></pre></div>
+<ul>
+<li>
+<p><strong>"create_or_update_passthrough"</strong>: Determines if a public field that isn't
+mapped to any property or field, may be passed upon create or update
+of an entity. Defaults to FALSE.</p>
+<p>If TRUE, the public field is a dummy one, meant only for passing data upon create or update; it will not appear in read requests.</p>
+</li>
+</ul>
+<h3>
+<a aria-hidden="true" class="anchor" href="#examining-a-sample-entity" id="user-content-examining-a-sample-entity"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Examining a sample entity</h3>
+<p>With the Devel and Entity API modules turned on, you can use the following to find the fields available in a given entity on your site:</p>
+<div class="highlight highlight-text-html-php"><pre><span class="pl-s1"><span class="pl-smi">$node</span> <span class="pl-k">=</span> node_load( <span class="pl-c1">51242382</span> );</span>
+<span class="pl-s1"><span class="pl-smi">$node_wrapper</span> <span class="pl-k">=</span> entity_metadata_wrapper(<span class="pl-s"><span class="pl-pds">'</span>node<span class="pl-pds">'</span></span>, <span class="pl-smi">$node</span>);</span>
+<span class="pl-s1">dpm(<span class="pl-smi">$node_wrapper</span><span class="pl-k">-&gt;</span>getPropertyInfo());</span></pre></div>
+<p>...where <code>51242382</code> is the node id of your sample node.</p>
+
+        </div>
+
+    </div>]

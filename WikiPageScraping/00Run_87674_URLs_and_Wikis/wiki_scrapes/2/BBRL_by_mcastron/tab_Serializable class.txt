@@ -1,0 +1,301 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>In order to save your objects in files, we implemented a serialisation scheme. A class that can be serialised inherits from class <code>Serializable</code>.</p>
+<p>To serialise an object <code>x</code>, you will open a file in a <code>ofstream</code> and call its <code>serialize(...)</code> method.</p>
+<div class="highlight highlight-source-c++"><pre>ofstream <span class="pl-en">os</span>(...); <span class="pl-c"><span class="pl-c">//</span> load your file</span>
+
+X* x = ...;
+x-&gt;<span class="pl-en">serialize</span>(os);</pre></div>
+<p>To deserialise an object <code>x</code>, you will load a file in a <code>ifstream</code> and call its <code>deserialize(...)</code> method.</p>
+<div class="highlight highlight-source-c++"><pre>ifstream <span class="pl-en">is</span>(...); <span class="pl-c"><span class="pl-c">//</span> open your file</span>
+
+X* x = ...;
+x-&gt;<span class="pl-en">deserialize</span>(is);</pre></div>
+<h1>
+<a aria-hidden="true" class="anchor" href="#create-a-serialisable-class" id="user-content-create-a-serialisable-class"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Create a serialisable class</h1>
+<p>In this section, we will explain to you how to create a serialisable class <code>B</code>. We consider the more general case where <code>B</code> is derived from class <code>A</code>, which is derived from class <code>Serializable</code>.</p>
+<div class="highlight highlight-source-c++"><pre><span class="pl-k">class</span> <span class="pl-en">A</span> : <span class="pl-k">public</span> <span class="pl-en">Serializable</span>;
+<span class="pl-k">class</span> <span class="pl-en">B</span> : <span class="pl-k">public</span> <span class="pl-en">A</span>;</pre></div>
+<p>If you inherit from class <code>Serializable</code> directly, you can simply replace <code>A</code> by <code>Serializable</code> in the latter sections.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#step-1---implement-static-string-tostring" id="user-content-step-1---implement-static-string-tostring"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Step 1 - Implement <code>static string toString()</code>
+</h2>
+<p>This method is used to provide a string representation of class <code>B</code>, accessible from <em>class</em> <code>B</code>.</p>
+<div class="highlight highlight-source-c++"><pre><span class="pl-c"><span class="pl-c">//</span> in 'B.h'</span>
+...
+<span class="pl-k">class</span> <span class="pl-en">B</span> : <span class="pl-k">public</span> <span class="pl-en">A</span>
+{
+     ...
+     <span class="pl-k">static</span> string <span class="pl-en">toString</span>() { <span class="pl-k">return</span> <span class="pl-s"><span class="pl-pds">"</span>B<span class="pl-pds">"</span></span>; }
+     ...
+};</pre></div>
+<h2>
+<a aria-hidden="true" class="anchor" href="#step-2---overload-string-getclassname-const" id="user-content-step-2---overload-string-getclassname-const"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Step 2 - Overload <code>string getClassName(...) const</code>
+</h2>
+<p>This method is used to provide a string representation of class <code>B</code>, accessible from an <em>instance</em> of class <code>B</code>.</p>
+<div class="highlight highlight-source-c++"><pre><span class="pl-c"><span class="pl-c">//</span> in 'B.h'</span>
+...
+<span class="pl-k">class</span> <span class="pl-en">B</span> : <span class="pl-k">public</span> <span class="pl-en">A</span>
+{
+     ...
+     <span class="pl-k">virtual</span> string <span class="pl-en">getClassName</span>() <span class="pl-k">const</span> { <span class="pl-k">return</span> <span class="pl-c1">B::toString</span>(); }
+     ...
+};</pre></div>
+<h2>
+<a aria-hidden="true" class="anchor" href="#step-3---overload-void-serialize-const" id="user-content-step-3---overload-void-serialize-const"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Step 3 - Overload <code>void serialize(...) const</code>
+</h2>
+<p>This method is used to serialise an instance of class <code>B</code>.</p>
+<div class="highlight highlight-source-c++"><pre><span class="pl-c"><span class="pl-c">//</span> in 'B.h'</span>
+...
+<span class="pl-k">class</span> <span class="pl-en">B</span> : <span class="pl-k">public</span> <span class="pl-en">A</span>
+{
+     ...
+     <span class="pl-k">virtual</span> <span class="pl-k">void</span> <span class="pl-en">serialize</span>(std::ostream&amp; os) <span class="pl-k">const</span>;
+     ...
+};</pre></div>
+<div class="highlight highlight-source-c++"><pre><span class="pl-c"><span class="pl-c">//</span> in 'B.cpp'</span>
+...
+<span class="pl-k">void</span> <span class="pl-en">B::serialize</span>(ostream&amp; os) <span class="pl-k">const</span>
+{
+     <span class="pl-c1">A::serialize</span>(os);
+	
+	
+     os &lt;&lt; <span class="pl-c1">B::toString</span>() &lt;&lt; <span class="pl-s"><span class="pl-pds">"</span><span class="pl-cce">\n</span><span class="pl-pds">"</span></span>;
+     os &lt;&lt; n &lt;&lt; <span class="pl-s"><span class="pl-pds">"</span><span class="pl-cce">\n</span><span class="pl-pds">"</span></span>;
+	
+     <span class="pl-c"><span class="pl-c">/*</span> insert your variables in 'os' here <span class="pl-c">*/</span></span>
+}
+...</pre></div>
+<p>where <code>n</code> is the number of parameters to store.</p>
+<p>We present to you different schemes to help you to store your data in <code>os</code>.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#storing-a-bool" id="user-content-storing-a-bool"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Storing a <code>bool</code>
+</h3>
+<div class="highlight highlight-source-c++"><pre><span class="pl-k">bool</span> b = ...;
+os &lt;&lt; (b ? <span class="pl-c1">1</span> : <span class="pl-c1">0</span>) &lt;&lt; <span class="pl-s"><span class="pl-pds">"</span><span class="pl-cce">\n</span><span class="pl-pds">"</span></span>;</pre></div>
+<h3>
+<a aria-hidden="true" class="anchor" href="#storing-an-int" id="user-content-storing-an-int"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Storing an <code>int</code>
+</h3>
+<div class="highlight highlight-source-c++"><pre><span class="pl-k">int</span> a = ...;
+os &lt;&lt; a &lt;&lt; <span class="pl-s"><span class="pl-pds">"</span><span class="pl-cce">\n</span><span class="pl-pds">"</span></span>;</pre></div>
+<h3>
+<a aria-hidden="true" class="anchor" href="#storing-a-double" id="user-content-storing-a-double"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Storing a <code>double</code>
+</h3>
+<div class="highlight highlight-source-c++"><pre><span class="pl-k">double</span> f = ...;
+os &lt;&lt; f &lt;&lt; <span class="pl-s"><span class="pl-pds">"</span><span class="pl-cce">\n</span><span class="pl-pds">"</span></span>;</pre></div>
+<h3>
+<a aria-hidden="true" class="anchor" href="#storing-a-string" id="user-content-storing-a-string"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Storing a <code>string</code>
+</h3>
+<div class="highlight highlight-source-c++"><pre>string str = ...;
+os &lt;&lt; str &lt;&lt; <span class="pl-s"><span class="pl-pds">"</span><span class="pl-cce">\n</span><span class="pl-pds">"</span></span>;</pre></div>
+<h3>
+<a aria-hidden="true" class="anchor" href="#storing-a-vectort" id="user-content-storing-a-vectort"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Storing a <code>vector&lt;T&gt;</code>
+</h3>
+<div class="highlight highlight-source-c++"><pre>vector&lt;T&gt; v = ...;
+os &lt;&lt; v.size() &lt;&lt; <span class="pl-s"><span class="pl-pds">"</span><span class="pl-cce">\n</span><span class="pl-pds">"</span></span>;
+<span class="pl-k">for</span> (<span class="pl-k">unsigned</span> <span class="pl-k">int</span> i = <span class="pl-c1">0</span>; i &lt; v.size(); ++i) { <span class="pl-c"><span class="pl-c">/*</span> store v[i] in 'os' <span class="pl-c">*/</span></span> }</pre></div>
+<h3>
+<a aria-hidden="true" class="anchor" href="#storing-a-x" id="user-content-storing-a-x"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Storing a <code>X*</code>
+</h3>
+<p>Class <code>X</code> must inherit from class <code>Serializable</code> or a class derived from it.</p>
+<div class="highlight highlight-source-c++"><pre>X* x = ...;
+
+<span class="pl-k">if</span> (!x) { os &lt;&lt; <span class="pl-c1">0</span> &lt;&lt; <span class="pl-s"><span class="pl-pds">"</span><span class="pl-cce">\n</span><span class="pl-pds">"</span></span>; }
+<span class="pl-k">else</span>
+{
+     os &lt;&lt; <span class="pl-c1">1</span> &lt;&lt; <span class="pl-s"><span class="pl-pds">"</span><span class="pl-cce">\n</span><span class="pl-pds">"</span></span>;
+
+     stringstream sstr;
+     x-&gt;<span class="pl-c1">serialize</span>(sstr);
+
+     os &lt;&lt; sstr.<span class="pl-c1">str</span>().<span class="pl-c1">length</span>() &lt;&lt; <span class="pl-s"><span class="pl-pds">"</span><span class="pl-cce">\n</span><span class="pl-pds">"</span></span>;
+     <span class="pl-c1">copy</span>(istreambuf_iterator&lt;<span class="pl-k">char</span>&gt;(sstr),
+          istreambuf_iterator&lt;<span class="pl-k">char</span>&gt;(),
+          ostreambuf_iterator&lt;<span class="pl-k">char</span>&gt;(os));
+}</pre></div>
+<h2>
+<a aria-hidden="true" class="anchor" href="#step-4---overload-void-deserialize" id="user-content-step-4---overload-void-deserialize"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Step 4 - Overload <code>void deserialize(...)</code>
+</h2>
+<p>This method is used to deserialise an instance of class <code>B</code> from a file.</p>
+<div class="highlight highlight-source-c++"><pre><span class="pl-c"><span class="pl-c">//</span> in 'B.h'</span>
+...
+<span class="pl-k">class</span> <span class="pl-en">B</span> : <span class="pl-k">public</span> <span class="pl-en">A</span>
+{
+     ...
+     <span class="pl-k">virtual</span> <span class="pl-k">void</span> <span class="pl-en">deserialize</span>(std::istream&amp; is)
+                         throw (SerializableException);
+     ...
+};</pre></div>
+<div class="highlight highlight-source-c++"><pre><span class="pl-c"><span class="pl-c">//</span> in 'B.cpp'</span>
+...
+<span class="pl-k">void</span> <span class="pl-en">B::deserialize</span>(istream&amp; is) throw (SerializableException)
+{
+     <span class="pl-c1">B::deserialize</span>(is);
+     
+     string tmp; <span class="pl-c"><span class="pl-c">//</span> used to call 'getline(...)'</span>
+	
+	
+     <span class="pl-c"><span class="pl-c">//</span> Class name check</span>
+     <span class="pl-k">if</span> (!<span class="pl-c1">getline</span>(is, tmp)) { <span class="pl-c1">throwEOFMsg</span>(<span class="pl-s"><span class="pl-pds">"</span>class name<span class="pl-pds">"</span></span>); }
+     string className = tmp;
+     <span class="pl-k">if</span> (className != <span class="pl-c1">B::toString</span>())
+     {
+          string msg = <span class="pl-s"><span class="pl-pds">"</span>Error with 'class name'.<span class="pl-cce">\n</span><span class="pl-pds">"</span></span>;
+          <span class="pl-k">throw</span> <span class="pl-smi">SerializableException</span>(msg);
+     }
+	
+	
+     <span class="pl-c"><span class="pl-c">//</span> Number of parameters</span>
+     <span class="pl-k">if</span> (!<span class="pl-c1">getline</span>(is, tmp)) { <span class="pl-c1">throwEOFMsg</span>(<span class="pl-s"><span class="pl-pds">"</span>number of parameters<span class="pl-pds">"</span></span>); }
+     <span class="pl-k">int</span> n = <span class="pl-c1">atoi</span>(tmp.<span class="pl-c1">c_str</span>());
+
+     <span class="pl-k">int</span> i = <span class="pl-c1">0</span>; <span class="pl-c"><span class="pl-c">//</span> used to retain the number of parameters read</span>
+     
+     
+     <span class="pl-c"><span class="pl-c">/*</span> retrieve your variables from 'is' here <span class="pl-c">*/</span></span>
+     
+     
+     <span class="pl-c"><span class="pl-c">//</span> Number of parameters check</span>
+     <span class="pl-k">if</span> (n != i)
+     {
+          string msg = <span class="pl-s"><span class="pl-pds">"</span>Error with 'number of parameters'.<span class="pl-cce">\n</span><span class="pl-pds">"</span></span>;
+          <span class="pl-k">throw</span> <span class="pl-smi">SerializableException</span>(msg);
+     }
+
+
+     <span class="pl-c"><span class="pl-c">//</span> Check integrity (if 'checkIntegrity()' is implemented)</span>
+     #<span class="pl-k">ifndef</span> NDEBUG
+     <span class="pl-c1">checkIntegrity</span>();
+     #<span class="pl-k">endif</span>
+}
+...</pre></div>
+<p>At this point, we ensured that the file represented by <code>is</code> is a file representing an object of class <code>B</code>. We also retrieved <code>n</code>, which is the number of parameters to be read. Variable <code>i</code> is used to retain the number of variables that has been read.</p>
+<p>This function throws a <code>SerializableException</code> whenever an error occurred. Besides, we implemented the method <code>static void throwEOFMsg(...)</code> in <code>Serializable</code> class. This method throws an exception and notifies the user that an error has occurred when reading the specified variable.</p>
+<p>We present to you different schemes to help you retrieve your data in <code>os</code>.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#retrieving-a-bool" id="user-content-retrieving-a-bool"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Retrieving a <code>bool</code>
+</h3>
+<div class="highlight highlight-source-c++"><pre><span class="pl-k">if</span> (!getline(is, tmp)) { <span class="pl-c1">throwEOFMsg</span>(<span class="pl-s"><span class="pl-pds">"</span>b<span class="pl-pds">"</span></span>); }
+<span class="pl-k">bool</span> b = (atoi(tmp.c_str()) != <span class="pl-c1">0</span>);
+++i;</pre></div>
+<h3>
+<a aria-hidden="true" class="anchor" href="#retrieving-an-int" id="user-content-retrieving-an-int"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Retrieving an <code>int</code>
+</h3>
+<div class="highlight highlight-source-c++"><pre><span class="pl-k">if</span> (!getline(is, tmp)) { <span class="pl-c1">throwEOFMsg</span>(<span class="pl-s"><span class="pl-pds">"</span>a<span class="pl-pds">"</span></span>); }
+<span class="pl-k">int</span> a = atoi(tmp.c_str());
+++i;</pre></div>
+<h3>
+<a aria-hidden="true" class="anchor" href="#retrieving-a-double" id="user-content-retrieving-a-double"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Retrieving a <code>double</code>
+</h3>
+<div class="highlight highlight-source-c++"><pre><span class="pl-k">if</span> (!getline(is, tmp)) { <span class="pl-c1">throwEOFMsg</span>(<span class="pl-s"><span class="pl-pds">"</span>f<span class="pl-pds">"</span></span>); }
+<span class="pl-k">double</span> f = atof(tmp.c_str());
+++i;</pre></div>
+<h3>
+<a aria-hidden="true" class="anchor" href="#retrieving-a-string" id="user-content-retrieving-a-string"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Retrieving a <code>string</code>
+</h3>
+<div class="highlight highlight-source-c++"><pre>string str;
+<span class="pl-k">if</span> (!getline(is, str)) { <span class="pl-c1">throwEOFMsg</span>(<span class="pl-s"><span class="pl-pds">"</span>str<span class="pl-pds">"</span></span>); }
+++i;</pre></div>
+<h3>
+<a aria-hidden="true" class="anchor" href="#retrieving-a-vectort" id="user-content-retrieving-a-vectort"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Retrieving a <code>vector&lt;T&gt;</code>
+</h3>
+<div class="highlight highlight-source-c++"><pre><span class="pl-k">if</span> (!getline(is, tmp)) { <span class="pl-c1">throwEOFMsg</span>(<span class="pl-s"><span class="pl-pds">"</span>v<span class="pl-pds">"</span></span>); }
+<span class="pl-k">int</span> vSize = atoi(tmp.c_str());
+
+vector&lt;T&gt; v;
+<span class="pl-k">for</span> (<span class="pl-k">unsigned</span> <span class="pl-k">int</span> i = <span class="pl-c1">0</span>; i &lt; vSize; ++i)
+{
+     <span class="pl-k">if</span> (!<span class="pl-c1">getline</span>(is, tmp)) { <span class="pl-c1">throwEOFMsg</span>(<span class="pl-s"><span class="pl-pds">"</span>v<span class="pl-pds">"</span></span>); }
+     T vi = ... <span class="pl-c"><span class="pl-c">//</span> retrieve 'v[i]'</span>
+     v.<span class="pl-c1">push_back</span>(vi);
+}
+++i;</pre></div>
+<h3>
+<a aria-hidden="true" class="anchor" href="#retrieving-a-x" id="user-content-retrieving-a-x"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Retrieving a 'X*'</h3>
+<p>Class <code>X</code> must inherit from class <code>Serializable</code> or a class derived from it.</p>
+<div class="highlight highlight-source-c++"><pre><span class="pl-k">if</span> (!getline(is, tmp)) { <span class="pl-c1">throwEOFMsg</span>(<span class="pl-s"><span class="pl-pds">"</span>x<span class="pl-pds">"</span></span>); }
+<span class="pl-k">int</span> hasX = (atoi(tmp.c_str()) != <span class="pl-c1">0</span>);
+
+X* x;
+<span class="pl-k">if</span> (!hasX) { x = <span class="pl-c1">0</span>; }
+<span class="pl-k">else</span>
+{
+     <span class="pl-k">if</span> (!<span class="pl-c1">getline</span>(is, tmp)) { <span class="pl-c1">throwEOFMsg</span>(<span class="pl-s"><span class="pl-pds">"</span>x<span class="pl-pds">"</span></span>); }
+     <span class="pl-k">unsigned</span> <span class="pl-k">int</span> sstrLength = <span class="pl-c1">atoi</span>(tmp.<span class="pl-c1">c_str</span>());
+
+     stringstream sstr;
+     tmp.<span class="pl-c1">resize</span>(sstrLength);
+     is.<span class="pl-c1">read</span>(&amp;tmp[<span class="pl-c1">0</span>], sstrLength);
+     sstr &lt;&lt; tmp;
+
+     x = <span class="pl-k">dynamic_cast</span>&lt;X*&gt;(Serializable::createInstance&lt;X&gt;(sstr));
+}
+++i;</pre></div>
+<p>This code is correct if, and only if, class <code>X</code> is a concrete class.</p>
+<p>If class <code>X</code> is abstract, you need to add a few modifications. For example, imagine that class <code>Y</code> is a concrete class derived from <code>X</code>. The file <code>is</code> stores an object of class <code>Y</code>, but class <code>B</code> stores a pointer to an object of class <code>X</code>.</p>
+<div class="highlight highlight-source-c++"><pre><span class="pl-c"><span class="pl-c">//</span> in 'Y.h'</span>
+...
+<span class="pl-k">class</span> <span class="pl-en">Y</span> : <span class="pl-k">public</span> <span class="pl-en">X</span> { ... };</pre></div>
+<div class="highlight highlight-source-c++"><pre><span class="pl-c"><span class="pl-c">//</span> in 'B.h'</span>
+...
+<span class="pl-k">class</span> <span class="pl-en">B</span> : <span class="pl-k">public</span> <span class="pl-en">A</span>
+{
+     ...
+     X* x; <span class="pl-c"><span class="pl-c">//</span> stores an instance of class 'Y'</span>
+};</pre></div>
+<p>First, you will need to retain the base class of Variable <code>x</code> to be class <code>Y</code>. To this end, when serialising an instance of <code>B</code>, you will need to store a string representing the base class of <code>X</code>.</p>
+<div class="highlight highlight-source-c++"><pre>string xClassStr = x-&gt;<span class="pl-en">getClassName</span>();</pre></div>
+<p>Finally, when retrieving <code>x</code> from file <code>is</code>, you will call a non-templated version of <code>createInstance(...)</code>.</p>
+<div class="highlight highlight-source-c++"><pre><span class="pl-k">if</span> (!getline(is, tmp)) { <span class="pl-c1">throwEOFMsg</span>(<span class="pl-s"><span class="pl-pds">"</span>x<span class="pl-pds">"</span></span>); }
+<span class="pl-k">int</span> hasX = (atoi(tmp.c_str()) != <span class="pl-c1">0</span>);
+
+X* x;
+<span class="pl-k">if</span> (!hasX) { x = <span class="pl-c1">0</span>; }
+<span class="pl-k">else</span>
+{
+     <span class="pl-k">if</span> (!<span class="pl-c1">getline</span>(is, tmp)) { <span class="pl-c1">throwEOFMsg</span>(<span class="pl-s"><span class="pl-pds">"</span>x<span class="pl-pds">"</span></span>); }
+     <span class="pl-k">unsigned</span> <span class="pl-k">int</span> sstrLength = <span class="pl-c1">atoi</span>(tmp.<span class="pl-c1">c_str</span>());
+
+     stringstream sstr;
+     tmp.<span class="pl-c1">resize</span>(sstrLength);
+     is.<span class="pl-c1">read</span>(&amp;tmp[<span class="pl-c1">0</span>], sstrLength);
+     sstr &lt;&lt; tmp;
+
+     <span class="pl-c"><span class="pl-c">//</span>x = dynamic_cast&lt;X*&gt;(Serializable::createInstance&lt;X&gt;(sstr));       // class 'X' is concrete</span>
+     x = <span class="pl-k">dynamic_cast</span>&lt;X*&gt;(<span class="pl-c1">Serializable::createInstance</span>(xClassStr, sstr)); <span class="pl-c"><span class="pl-c">//</span> class 'X' is abstract</span>
+}
+++i;</pre></div>
+<p>In order to be able to call the non-templated version of <code>createInstance(...)</code>, <code>Serializable::checkIn(...)</code> must have been called previously for class <code>X</code> (see the next section for more details).</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#optional-step-5---call-serializablecheckin-method-before-using-class-b" id="user-content-optional-step-5---call-serializablecheckin-method-before-using-class-b"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>(optional) Step 5 - Call <code>Serializable::checkIn(...)</code> method before using class <code>B</code>
+</h2>
+<p>This step is necessary if you need to call the non-templated version of <code>createInstance(…)</code>.</p>
+<p>This method links a class name to a constructor. Class <code>B</code> must fulfil those conditions:</p>
+<ul>
+<li>Class <code>B</code> must admit a public constructor <code>B(std::istream)</code>.</li>
+<li>Function <code>static string B::toString()</code> must exist.</li>
+</ul>
+<p>The constructor can easily be written as follows:</p>
+<div class="highlight highlight-source-c++"><pre><span class="pl-c"><span class="pl-c">//</span> in 'B.h'</span>
+...
+<span class="pl-k">class</span> <span class="pl-en">B</span> : <span class="pl-k">public</span> <span class="pl-en">A</span>
+{
+     ...
+     <span class="pl-en">B</span>(std::istream&amp; is);
+     ...
+};</pre></div>
+<div class="highlight highlight-source-c++"><pre><span class="pl-c"><span class="pl-c">//</span> in 'B.cpp'</span>
+...
+<span class="pl-en">B::B</span>(std::istream&amp; is) : ... <span class="pl-c"><span class="pl-c">//</span> call parent class constructor</span>
+{
+     <span class="pl-c"><span class="pl-c">//</span> Handle the case of a compressed file</span>
+     <span class="pl-k">try</span>                             { <span class="pl-c1">dDeserialize</span>(is); }
+     <span class="pl-k">catch</span> (SerializableException e) { <span class="pl-c1">deserialize</span>(is);  }
+}
+...</pre></div>
+<p>The call to the <code>Serializable::checkIn(...)</code> method for class <code>B</code> is:</p>
+<div class="highlight highlight-source-c++"><pre>Serializable::checkIn&lt;B&gt;(&amp;Serializable::createInstance&lt;B&gt;);</pre></div>
+
+        </div>
+
+    </div>]

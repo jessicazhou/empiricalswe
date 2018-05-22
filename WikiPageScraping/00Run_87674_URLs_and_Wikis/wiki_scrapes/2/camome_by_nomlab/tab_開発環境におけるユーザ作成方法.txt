@@ -1,0 +1,69 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>メールによる招待制度を用いて，Googleアカウントで認証する方法について説明する．</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#admin%E3%83%A6%E3%83%BC%E3%82%B6%E3%81%AE%E4%BD%9C%E6%88%90" id="user-content-adminユーザの作成"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>adminユーザの作成</h3>
+<p>以下のコマンドを実行し，Googleアカウントで認証するユーザを招待するための adminユーザを作成する．</p>
+<pre><code>bundle exec rake db:seed
+</code></pre>
+<h3>
+<a aria-hidden="true" class="anchor" href="#%E3%82%A2%E3%83%97%E3%83%AA%E3%82%B1%E3%83%BC%E3%82%B7%E3%83%A7%E3%83%B3%E3%81%AE%E7%99%BB%E9%8C%B2" id="user-content-アプリケーションの登録"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>アプリケーションの登録</h3>
+<p>まず，自身のGoogleアカウントにローカルで立ち上げる camome の登録を行い，クライアントID とクライアントシークレットを取得する．</p>
+<ol>
+<li>
+<a href="https://console.developers.google.com/" rel="nofollow">Google Developers Console</a>にアクセス</li>
+<li>プロジェクトを作成(既に存在する場合は，そのプロジェクトを選択)</li>
+<li>API Managerにてライブラリを選択し，「Google+ API」を有効化</li>
+<li>API Managerにて認証情報を選択し，「OAuth同意画面」タブを選択</li>
+<li>ユーザーに表示するサービス名に「camome」と入力し，設定を保存</li>
+<li>API Managerにて認証情報を選択し，「認証情報」タブを選択</li>
+<li>「認証情報を作成」から「OAuthクライアントID」を選択し，認証情報を作成</li>
+<li>「ウェブアプリケーション」を選択し，アプリケーション名を入力</li>
+<li>「承認済みのリダイレクト URI」に <code>http://localhost:3000/users/auth/google_oauth2/callback</code>と入力し，設定を保存</li>
+<li>表示される「クライアントID」と「クライアントシークレット」を控えておく</li>
+</ol>
+<p>次に，<code>config/application_settings.yml</code>を開き，<code>application_id</code>にクライアントIDを<code>application_secret</code>にクライアントシークレットを入力する．</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#smtp%E3%82%B5%E3%83%BC%E3%83%90%E3%81%AE%E8%A8%AD%E5%AE%9A" id="user-content-smtpサーバの設定"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>smtpサーバの設定</h3>
+<p>Gmail を smtp サーバとして利用するために，<code>config/environments/development.rb</code>に以下の設定を追記する．
+(別途 smtp サーバを立ち上げる場合は，その設定を記述)</p>
+<pre><code>config.action_mailer.default_url_options = { host: 'localhost', port:3000 }
+config.action_mailer.delivery_method = :smtp
+config.action_mailer.smtp_settings = {
+  address: 'smtp.gmail.com',
+  port: 587,
+  user_name: 'your_google_account@gmail.com',
+  password: 'your_google_account_password',
+  authentication: :plain,
+  enable_starttls_auto: true
+}
+</code></pre>
+<h3>
+<a aria-hidden="true" class="anchor" href="#%E3%82%A2%E3%82%AB%E3%82%A6%E3%83%B3%E3%83%88%E3%81%AE%E6%8B%9B%E5%BE%85" id="user-content-アカウントの招待"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>アカウントの招待</h3>
+<p>Sign in リンクから以下の adminユーザで camome にログインし，アカウントを招待する．</p>
+<table>
+<thead>
+<tr>
+<th align="left">Email</th>
+<th align="left">Password</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="left"><a href="mailto:admin@camome.com">admin@camome.com</a></td>
+<td align="left">adminadmin</td>
+</tr>
+</tbody>
+</table>
+<ol>
+<li>
+<code>http://localhost:3000/users/invitation/new</code>にアクセスし，ユーザを招待</li>
+<li>camome から Sign out し，セッションを切る</li>
+<li>招待メールを確認し，Accept をクリック</li>
+<li>Googleアカウントの認証に飛ばされるため，認証を行う</li>
+<li>camome のプロフィール編集ページに飛ばされるため，Nick name と password の設定を行う</li>
+</ol>
+
+        </div>
+
+    </div>]

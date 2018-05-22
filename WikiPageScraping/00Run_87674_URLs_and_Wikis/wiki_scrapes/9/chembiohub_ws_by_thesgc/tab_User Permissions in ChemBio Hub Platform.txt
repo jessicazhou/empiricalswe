@@ -1,0 +1,119 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>The permission system in ChemBio Hub Platform works using the standard <a href="https://docs.djangoproject.com/es/1.9/topics/auth/default/#programmatically-creating-permissions" rel="nofollow">django admin permissions system</a>.</p>
+<p>In order to be allowed to add a project a user must have the "add_project" permission. Currrently, this has to be added to every new user in the django admin.</p>
+<p>In the "add a user" or "add a group" forms, the part to add permissions is located towards the bottom. The ChemBio Hub permissions are against the project object. For example, to give a user permission to edit a given project and to add projects, do this:</p>
+<p><img alt="" src="https://raw.githubusercontent.com/thesgc/chembiohub_ws/master/scripts/archive/Screenshot%20from%202016-04-13%2009%3A17%3A43.png"/></p>
+<p>3 new django permission objects are created every time that a project is created on the system. This is done by using a <a href="https://docs.djangoproject.com/en/1.9/topics/signals/" rel="nofollow">django signal</a>. The code to initiate this signal can be found in the <a href="https://github.com/thesgc/cbh_core_model/blob/master/cbh_core_model/models.py#L423">cbh_core_model project</a>. The reason that signals are used rather than say a hook on the projectresource is so that projects can be created either with the django admin or with the user interface.</p>
+<p>This table describes what a user with each of these permission types should be able to do as far as project administration goes.</p>
+<table>
+<thead>
+<tr>
+<th align="center">Permission</th>
+<th align="center">Add a project</th>
+<th align="center">Use the admin site</th>
+<th align="center">Edit fields on project</th>
+<th align="center">Edit permissions on project</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="center">Is Superuser checkbox</td>
+<td align="center">Yes</td>
+<td align="center">Yes</td>
+<td align="center">Yes for any project</td>
+<td align="center">Yes for any project</td>
+</tr>
+<tr>
+<td align="center">Can add project</td>
+<td align="center">Yes for any project</td>
+<td align="center">No</td>
+<td align="center">No</td>
+<td align="center">No</td>
+</tr>
+<tr>
+<td align="center">Project Owner</td>
+<td align="center">No</td>
+<td align="center">No</td>
+<td align="center">Yes</td>
+<td align="center">Yes</td>
+</tr>
+<tr>
+<td align="center">Project Editor</td>
+<td align="center">No</td>
+<td align="center">No</td>
+<td align="center">No</td>
+<td align="center">No</td>
+</tr>
+<tr>
+<td align="center">Project Viewer</td>
+<td align="center">No</td>
+<td align="center">No</td>
+<td align="center">No</td>
+<td align="center">No</td>
+</tr>
+</tbody>
+</table>
+<p>This table shows what a user should be able to do as far as adding and editing compound batches and inventory items goes.</p>
+<table>
+<thead>
+<tr>
+<th align="center">Permission</th>
+<th>View compound batches/inventory items</th>
+<th align="center">View restricted fields on a compound batch or inventory item</th>
+<th align="center">Add or Edit a compound batch / Inventory item</th>
+<th align="center">Archive / restore compound batches / inventory items</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="center">Is Superuser checkbox</td>
+<td>Yes</td>
+<td align="center">Yes</td>
+<td align="center">Yes</td>
+<td align="center">Yes for any project</td>
+</tr>
+<tr>
+<td align="center">Can add project</td>
+<td>No</td>
+<td align="center">No</td>
+<td align="center">No</td>
+<td align="center">No</td>
+</tr>
+<tr>
+<td align="center">Project Owner</td>
+<td>Yes</td>
+<td align="center">Yes</td>
+<td align="center">Yes</td>
+<td align="center">Yes</td>
+</tr>
+<tr>
+<td align="center">Project Editor</td>
+<td>Yes</td>
+<td align="center">Yes</td>
+<td align="center">Yes</td>
+<td align="center">No</td>
+</tr>
+<tr>
+<td align="center">Project Viewer</td>
+<td>Yes</td>
+<td align="center">No</td>
+<td align="center">No</td>
+<td align="center">No</td>
+</tr>
+</tbody>
+</table>
+<h4>
+<a aria-hidden="true" class="anchor" href="#implementation-details" id="user-content-implementation-details"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Implementation details</h4>
+<p>The permissions system is implemented as part of the tastypie request flow. Tastypie <a href="http://django-tastypie.readthedocs.org/en/latest/authorization.html" rel="nofollow">calls a chain of functions leading to to the authorization class</a> each time that you add, update, list or delete an item.</p>
+<p>This means that we need to write different functions in our authorization class to decide whether the user can update, list or add.</p>
+<p>In the case of CBHCompoundBatch and some other models, they are linked directly to the project model by foreign key. This means that the "ProjectAuthorization" class is used which <a href="https://github.com/thesgc/chembiohub_ws/blob/master/cbh_core_api/authorization.py#L176">checks for authorization to update or add an item</a>.</p>
+<p>For the listing of compound batches, this needs to work slightly differently as the data comes form Elasticsearch. Therefore the list of viewer projects are retrieved and this is used to specify which indices (projects) can be used for the Elasticsearch query.</p>
+<p>For the project object itself, then there is a slightly different authorization implementation class. This checks for the global add project permission when adding a project and checks for the user top have owner permissions when updating the project.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#security-flaw" id="user-content-security-flaw"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Security Flaw:</h3>
+<p>It is currently possible to update the fields of a project via Firebug or similar using the custom field config API without  having permissions checked.</p>
+
+        </div>
+
+    </div>]

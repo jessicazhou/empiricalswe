@@ -1,0 +1,109 @@
+[<div class="wiki-body gollum-asciidoc-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <div>
+<p>Rebases are done weekly, usually on Monday.</p>
+</div>
+<div>
+<h2 id="user-content-code-camel-2-21-x-code-branch">
+<a aria-hidden="true" class="anchor" href="#camel-221x-branch" id="user-content-camel-221x-branch"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><code>camel-2.21.x</code> branch</h2>
+<div>
+<div>
+<div>
+<div class="highlight highlight-source-shell"><pre><span class="pl-c"><span class="pl-c">#</span> Build Camel master branch</span>
+<span class="pl-c1">cd</span> camel
+git fetch upstream <span class="pl-c"><span class="pl-c">#</span> upstream is git@github.com:apache/camel.git</span>
+git checkout master
+git reset --hard upstream/master
+mvn clean install -DskipTests
+
+<span class="pl-c"><span class="pl-c">#</span> Push Camel to your fork to mark which revision you used</span>
+git push origin master <span class="pl-c"><span class="pl-c">#</span> origin is git@github.com:${your_github_username}/camel.git</span>
+
+<span class="pl-c"><span class="pl-c">#</span> Rebase WildFly Camel</span>
+<span class="pl-c1">cd</span> ../wildfly-camel
+git fetch upstream <span class="pl-c"><span class="pl-c">#</span> upstream is git@github.com:wildfly-extras/wildfly-camel.git</span>
+git checkout camel-2.21.x
+git reset --hard upstream/camel-2.21.x
+git rebase upstream/master
+mvn clean install -Dts.all
+
+git push upstream camel-2.21.x -f</pre></div>
+</div>
+</div>
+</div>
+</div>
+<div>
+<h2 id="user-content-code-wildfly-11-x-code">
+<a aria-hidden="true" class="anchor" href="#wildfly-11x" id="user-content-wildfly-11x"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><code>wildfly-11.x</code>
+</h2>
+<div>
+<div>
+<div>
+<div class="highlight highlight-source-shell"><pre><span class="pl-c1">cd</span> wildfly
+git fetch upstream <span class="pl-c"><span class="pl-c">#</span> upstream is git@github.com:wildfly/wildfly.git</span>
+git checkout 11.x <span class="pl-c"><span class="pl-c">#</span> or git checkout -b 11.x upstream/11.x # if done for the first time</span>
+git reset --hard upstream/11.x
+mvn clean install -DskipTests -Prelease
+<span class="pl-c"><span class="pl-c">#</span> Push wildfly to your fork to mark which revision you used</span>
+git push origin 11.x <span class="pl-c"><span class="pl-c">#</span> origin is git@github.com:${your_github_username}/wildfly.git</span>
+
+<span class="pl-c"><span class="pl-c">#</span> Note that fuse-patch depends on wildfly</span>
+<span class="pl-c1">cd</span> ../fuse-patch
+git fetch upstream <span class="pl-c"><span class="pl-c">#</span> upstream is git@github.com:wildfly-extras/fuse-patch.git</span>
+git checkout wildfly-11.1.x
+git reset --hard upstream/wildfly-11.1.x
+mvn clean install -DskipTests
+<span class="pl-c"><span class="pl-c">#</span> Push fuse-patch to your fork to mark which revision you used</span>
+git push origin wildfly-11.1.x <span class="pl-c"><span class="pl-c">#</span> origin is git@github.com:${your_github_username}/wildfly.git</span>
+
+<span class="pl-c"><span class="pl-c">#</span> wildfly-camel depends on both wildfly and fuse-patch</span>
+<span class="pl-c1">cd</span> ../wildfly-camel
+git checkout wildfly-11.x
+git reset --hard upstream/wildfly-11.x
+<span class="pl-c"><span class="pl-c">#</span> make sure upstream/master is at the same revision as when you rebased camel-2.21.x above</span>
+git rebase upstream/master
+mvn clean install -Dts.all
+git push upstream wildfly-11.x -f</pre></div>
+</div>
+</div>
+</div>
+</div>
+<div>
+<h2 id="user-content-code-wildfly-12-x-code">
+<a aria-hidden="true" class="anchor" href="#wildfly-12x" id="user-content-wildfly-12x"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><code>wildfly-12.x</code>
+</h2>
+<div>
+<div>
+<div>
+<div class="highlight highlight-source-shell"><pre><span class="pl-c1">cd</span> wildfly
+git fetch upstream <span class="pl-c"><span class="pl-c">#</span> upstream is git@github.com:wildfly/wildfly.git</span>
+git checkout master
+git reset --hard upstream/master
+mvn clean install -DskipTests -Prelease
+<span class="pl-c"><span class="pl-c">#</span> Push wildfly to your fork to mark which revision you used</span>
+git push origin master <span class="pl-c"><span class="pl-c">#</span> origin is git@github.com:${your_github_username}/wildfly.git</span>
+
+<span class="pl-c"><span class="pl-c">#</span> Note that fuse-patch depends on wildfly</span>
+<span class="pl-c1">cd</span> ../fuse-patch
+git fetch upstream <span class="pl-c"><span class="pl-c">#</span> upstream is git@github.com:wildfly-extras/fuse-patch.git</span>
+git checkout wildfly-12.x
+git reset --hard upstream/wildfly-12.x
+mvn clean install -DskipTests
+<span class="pl-c"><span class="pl-c">#</span> Push fuse-patch to your fork to mark which revision you used</span>
+git push origin wildfly-12.x <span class="pl-c"><span class="pl-c">#</span> origin is git@github.com:${your_github_username}/wildfly.git</span>
+
+<span class="pl-c"><span class="pl-c">#</span> wildfly-camel depends on both wildfly and fuse-patch</span>
+<span class="pl-c1">cd</span> ../wildfly-camel
+git fetch upstream <span class="pl-c"><span class="pl-c">#</span> upstream is git@github.com:wildfly-extras/wildfly-camel.git</span>
+git checkout wildfly-12.x
+git reset --hard upstream/wildfly-12.x
+git rebase upstream/master
+mvn clean install -Dts.all
+git push upstream wildfly-12.x -f</pre></div>
+</div>
+</div>
+</div>
+</div>
+        </div>
+
+    </div>]

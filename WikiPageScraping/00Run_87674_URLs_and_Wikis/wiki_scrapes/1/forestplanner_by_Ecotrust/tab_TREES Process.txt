@@ -1,0 +1,79 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>The previous semi-automated-but-mostly-manual process for running timber land scenarios was called the TREES process</p>
+<p>Here's a brief technical outline...</p>
+<p>Trees process
+Developed by Mike Mertens, et. al. in 2009?
+Docs by Matthew Perry
+Overview</p>
+<p>The TREES process takes standard forestry inventory information, runs several scenarios in a growth and yield model and schedules harvesting activity to optimize for a maximum steady flow of merchantable timber at the property level.</p>
+<p>Current Process Outline</p>
+<ol>
+<li>Data in tabular FPS-like format (initially txt files but will eventually come from postgres)
+<ol>
+<li>Stand attributes table</li>
+<li>Tree inventory</li>
+</ol>
+</li>
+<li>Data translated to FVS input files using StandProcessor.py
+<ol>
+<li>single .slf file for stands attributes</li>
+<li>one .fvs file per stand with tree inventory</li>
+</ol>
+</li>
+<li>FVS Key files developed for each prescription scenario.
+<ol>
+<li>assumption: They all use a XX_YY.key format where XX is the perscription and YY is the offset. Base keys, therefore must be named XX_01.key</li>
+<li>assumption: Must have a COMPUTE … Offset = 0 … END section and use that Offset variable in the equations</li>
+<li>Careful about hardcoded include files .. look for G:* after Open keywords.. convert to relative paths with unix file seperators</li>
+</ol>
+</li>
+<li>Create offsets using "analysis\scheduling\create_offsets.pl"
+<ol>
+<li>reads in base Rxs</li>
+<li>outputs directory (“offsets”) with multiple key files offset, as well as .bat files to run them</li>
+<li>must manually add a “Grow-only” key as the final step (?)</li>
+</ol>
+</li>
+<li>Run all the .bat files in the offsets dir using analysis\scheduling\offsets\proc_gy.php</li>
+<li>Run the gy_*_extract.pl scripts
+<ol>
+<li>parses FVS outputs into csvs for use in the scheduler</li>
+<li>data must be moved manually from the offsets directory to *_treelists (?)</li>
+<li>outputs several *.txt files to *_treelists directory</li>
+<li>must be run separately for both “alt” and “bus” (and other?) Rxs</li>
+<li>.txt files moved to ./data</li>
+</ol>
+</li>
+<li>Run the adjacency AML at "analysis\scheduling\stand_delin\sch_inputs.aml"
+<ol>
+<li>outputs adj.txt file which defined adjacency</li>
+</ol>
+</li>
+<li>Run the scheduler executable
+<ol>
+<li>reads *.txt from the ./data directory</li>
+<li>outputs *_sch.txt and *_summary.txt</li>
+</ol>
+</li>
+<li>Join _sch with shapefile</li>
+<li>Copy ? into carbon calc spreadsheet and do (?)</li>
+</ol>
+<p>Required scripts</p>
+<pre><code>StandProcessor.py
+create_offsets.pl
+proc_gy.php
+gy_age_extract.pl
+    gy_carbon_extract.pl
+    gy_carbon_extract_agl.pl
+    gy_cut_extract.pl
+    gy_cut_extract_cubic.pl
+    gy_cut_extract_lutwork.pl
+    gy_live_extract.pl
+    schedule.c
+sch_inputs.aml
+</code></pre>
+
+        </div>
+
+    </div>]

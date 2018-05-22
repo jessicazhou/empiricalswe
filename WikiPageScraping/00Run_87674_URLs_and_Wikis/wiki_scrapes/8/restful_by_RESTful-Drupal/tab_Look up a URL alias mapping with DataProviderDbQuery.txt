@@ -1,0 +1,149 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>(The following is also covered in a blog post at <a href="http://www.smgaweb.com/blog/creating-restful-api-url-alias-lookup-drupal" rel="nofollow">Creating a RESTful API URL Alias Lookup in Drupal</a>)</p>
+<p>As detailed <a href="https://github.com/RESTful-Drupal/restful/wiki/7.4.-Creating-a-custom-data-provider">here</a>, you can create custom data providers as API endpoints. A perfect example of this is the standard url alias mapping that is provided in Drupal core with the Path module; the entity is accessed via a clean URL (e.g. /blogs/my/blog/title), the mapping to the base node/nid value is obtained by querying the url_alias table, and the base URL is used to load the entity itself. This is a functionality not made available in RESTful out of the box, so it has to be created.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#annotation" id="user-content-annotation"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Annotation</h2>
+<p>As with any 7.x-2.x RESTful plugin, the plugin is defined in the annotation. Here is the annotation for our URLAlias__1_0 class:</p>
+<pre><code>/**
+ * Class URLAlias__1_0
+ * @package Drupal\restful_tutorial\Plugin\resource\url_alias
+ *
+ * @Resource(
+ *   name = "urlalias:1.0",
+ *   resource = "urlalias",
+ *   label = "URL Alias",
+ *   description = "Gets the entity id from a URL alias.",
+ *   authenticationTypes = TRUE,
+ *   authenticationOptional = TRUE,
+ *   dataProvider = {
+ *     "tableName": "url_alias",
+ *     "idColumn": "alias",
+ *     "primary": "pid",
+ *     "idField": "pid",
+ *   },
+ *   majorVersion = 1,
+ *   minorVersion = 0,
+ *   class = "URLAlias__1_0"
+ * )
+ */
+</code></pre>
+<p>The main difference between this annotation and one for an entity endpoint is the <code>dataProvider</code> key. The two most important items are:</p>
+<ul>
+<li>tableName - As the name implies, the name of the table you are querying.</li>
+<li>idColumn - The column to which the values passed in the URL will be compared.</li>
+</ul>
+<p>In this case, we need to pass the clean URL and get the base URL, so we will be querying the <code>alias</code> column.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#class" id="user-content-class"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Class</h2>
+<p>Next is the class itself.</p>
+<pre><code>class URLAlias__1_0 extends ResourceDbQuery implements ResourceInterface {
+
+  /**
+   * {@inheritdoc}
+   */
+  protected function publicFields() {
+    $public_fields['pid'] = array(
+      'property' =&gt; 'pid'
+    );
+
+    $public_fields['source'] = array(
+      'property' =&gt; 'source'
+    );
+
+    $public_fields['alias'] = array(
+      'property' =&gt; 'alias'
+    );
+
+    return $public_fields;
+  }
+}
+</code></pre>
+<p>As with any other endpoint, we need to declare our public fields. Also the names that we give need to match the values in the dataProvider in the annotation.</p>
+<p>One slight difference between the use of the <code>publicFields</code> method for this data provider is that you don't use this line at the beginning:</p>
+<pre><code>$public_fields = parent::publicFields();
+</code></pre>
+<p>This is because you extend the ResourceDbQuery class, which is an abstract class that does not have a publicFields() method. If you do include that line, you will get an error saying <code>Cannot call abstract method publicFields()</code>.</p>
+<p>Here is the final code:</p>
+<pre><code>/**
+ * Contains \Drupal\restful_tutorial\Plugin\resource\url_alias
+ */
+
+namespace Drupal\restful_tutorial\Plugin\resource\url_alias;
+
+use Drupal\restful\Plugin\resource\ResourceDbQuery;
+use Drupal\restful\Plugin\resource\ResourceInterface;
+
+/**
+ * Class URLAlias__1_0
+ * @package Drupal\restful_tutorial\Plugin\resource\url_alias
+ *
+ * @Resource(
+ *   name = "urlalias:1.0",
+ *   resource = "urlalias",
+ *   label = "URL Alias",
+ *   description = "Gets the entity id from a URL alias.",
+ *   authenticationTypes = TRUE,
+ *   authenticationOptional = TRUE,
+ *   dataProvider = {
+ *     "tableName": "url_alias",
+ *     "idColumn": "alias",
+ *     "primary": "pid",
+ *     "idField": "pid",
+ *   },
+ *   majorVersion = 1,
+ *   minorVersion = 0,
+ *   class = "URLAlias__1_0"
+ * )
+ */
+
+class URLAlias__1_0 extends ResourceDbQuery implements ResourceInterface {
+
+  /**
+   * {@inheritdoc}
+   */
+  protected function publicFields() {
+    $public_fields['pid'] = array(
+      'property' =&gt; 'pid'
+    );
+
+    $public_fields['source'] = array(
+      'property' =&gt; 'source'
+    );
+
+    $public_fields['alias'] = array(
+      'property' =&gt; 'alias'
+    );
+
+    return $public_fields;
+  }
+}
+</code></pre>
+<h2>
+<a aria-hidden="true" class="anchor" href="#querying-and-final-output" id="user-content-querying-and-final-output"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Querying and Final Output</h2>
+<p>Querying the new <code>urlalias</code> endpoint with the following URL:</p>
+<pre><code>http://mysite/api/urlalias/my-blog-title
+</code></pre>
+<p>will generate the following JSON output:</p>
+<pre><code>{
+  "data": {
+    "type": "urlalias",
+    "id": "154177",
+    "attributes": {
+      "pid": "154177",
+      "source": "node/97783",
+      "alias": "blogs/my-blog-title"
+    },
+    "links": {
+      "self": "http://mysite/api/v1.0/urlalias/154177"
+    }
+  },
+  "links": {
+    "self": "http://mysite/blogs/my-blog-title"
+  }
+}
+</code></pre>
+
+        </div>
+
+    </div>]

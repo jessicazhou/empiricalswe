@@ -1,0 +1,78 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <h3>
+<a aria-hidden="true" class="anchor" href="#in-the-access-db" id="user-content-in-the-access-db"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>In the Access DB</h3>
+<p><code>data\Processed\veg\IDB_Version2\IDB_version_2.mdb</code>
+The final <strong>IdbSummary</strong> table (one row per condition)</p>
+<pre><code>MAKE_Qry_MP_BASE &gt; Tbl_MP_Base &gt;
+MAKE_Qry_MP_BASE_TREESUMMARY &gt; Tbl_MP_BASE_TREESUMMARY
+</code></pre>
+<p>The final <strong>TreeliveSummary</strong> table (multiple rows for each species-size class in each condition)</p>
+<pre><code>MAKE_TREELIVE_SUMMARY_STEP1 &gt; Tbl_MP_TREELIVE_SUMMARY_SPECIESSIZECLS
+MAKE_TREELIVE_SUMMARY_STEP2 &gt; Tbl_MP_FINAL_TREELIVE_SUMMARY
+</code></pre>
+<h3>
+<a aria-hidden="true" class="anchor" href="#once-in-postgres-fix-stand_age-code" id="user-content-once-in-postgres-fix-stand_age-code"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Once in postgres, fix stand_age code</h3>
+<pre><code>    UPDATE idb_summary
+    SET stand_age = Null 
+    WHERE stand_age &gt;= 99;
+
+    UPDATE idb_summary
+    SET stand_age = (stand_age * 10) - 5
+    WHERE stand_age &lt;= 20;
+
+    UPDATE idb_summary
+    SET stand_age = 250
+    WHERE stand_age = 21;
+
+    UPDATE idb_summary
+    SET stand_age = 350
+    WHERE stand_age = 22;
+</code></pre>
+<h2>
+<a aria-hidden="true" class="anchor" href="#create-fixtures-as-tab-separated-files" id="user-content-create-fixtures-as-tab-separated-files"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>create fixtures as tab separated files</h2>
+<p>export from access and/or</p>
+<pre><code>COPY idb_summary TO '/home/vagrant/test/idb_summary.tsv' WITH NULL AS '';
+</code></pre>
+<h2>
+<a aria-hidden="true" class="anchor" href="#potential-check_integrity-errors" id="user-content-potential-check_integrity-errors"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Potential check_integrity errors</h2>
+<pre><code>* trees_conditionvariantlookup has 507 cond_id that are NOT in treelive_summary.
+  [2057, 2061, 32788, 32789, '...']
+* trees_fvsaggregate has 507 cond that are NOT in treelive_summary.
+  [115101, 99301, '...']
+</code></pre>
+<p>The implication is that we are growing 507 more conditions than necessary (not in treelive == never matched). <code>Tbl_MP_BASE_TREESUMMARY</code> contains 507 records that have AvgOfTpa = 0, etc.
+These records don't exist in the idb tree_live database BUT they do exist in
+the gnn sppsz_attr_all table. Hmm.</p>
+<p>Solution is to remove them from conditionvariantlookup and from the fvsbatch runs, If not worst that can happen is <strong>extra plots got run</strong> that will never get matched.</p>
+<p>TODO: Confirm that this doesn't affect anything that Dave is doing. There shouldn't be any way to generate treelists from them unless Dave is using some other database or not using the lookups.</p>
+<p>TODO: cross reference WC file names with lookup</p>
+<pre><code>* trees_conditionvariantlookup is missing 6532 cond_id that are found in treelive_summary.
+   [3174, 3762, 36762, 36764, '...']
+
+* trees_fvsaggregate is missing 6532 cond that are found in treelive_summary.
+  [1, 3, 7, 8, '...']
+
+</code></pre>
+<p>Might not big deal... nearest neighbor match does a join with the lookup anyway so there is no chance of a condition showing up as a match without a corresponding fvs run. Still, it raises the issue of how the <code>Tbl_MP_BASE_TREESUMMARY</code> can be so far off the tree_live table. Might indicate that <strong>we didn't grow all the possible plots</strong></p>
+<pre><code>* trees_fvsaggregate has X cond that are NOT in trees_conditionvariantlookup.
+  [115101, 99301, '...']
+* trees_fvsaggregate is missing X cond that are found in trees_conditionvariantlookup.
+  [32768, 32769, 32770, 32771, '...']
+* trees_fvsaggregate has 2 cond that are NOT in idb_summary.
+  [115101, 99301, '...']
+* trees_fvsaggregate is missing X cond that are found in idb_summary.
+  [32768, 32769, 32770, 32771, '...']
+</code></pre>
+<p><strong>Error</strong> We should always grow exactly the same conditions as defined by the condition lookup (idbsummary also being used to create the condition lookup).</p>
+<pre><code>Rx PN1 is not referenced in any variant's decision_tree_xml
+</code></pre>
+<p>The grow only rx is assumed to be __1 and grow only doesn't show up in the decision tree as it is <strong>created automatically</strong> by default.</p>
+<pre><code>Rx with type CI (Conventional, Even-aged, Short rotation) doesn't exist in Inland California and 
+Southern Cascades (CA) but should according to RX_TYPE_CHOICES
+</code></pre>
+<p><code>RX_TYPE_CHOICES</code> defines the typed rxs created by default. This one will just be <strong>ignored</strong> when myrxs are automatically created.</p>
+
+        </div>
+
+    </div>]

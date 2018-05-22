@@ -1,0 +1,92 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <h1>
+<a aria-hidden="true" class="anchor" href="#m3-python-api" id="user-content-m3-python-api"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>M3 Python API</h1>
+<p>First, make sure your favorite python editor loads the M3 python environment (i.e Launch it <strong>from a terminal</strong>, not the icon shortcut).</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#ide" id="user-content-ide"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>IDE</h2>
+<p>I recommend to use <a href="https://code.google.com/p/spyderlib/" rel="nofollow">spyder</a> and ipython, there're pretty great (more flexible than eclipse+pydev).</p>
+<div class="highlight highlight-source-shell"><pre>sudo apt-get install spyder ipython</pre></div>
+<h3>
+<a aria-hidden="true" class="anchor" href="#getting-started-with-meka-python" id="user-content-getting-started-with-meka-python"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Getting started with Meka python</h3>
+<p>Get the robot class in the m3 python</p>
+<div class="highlight highlight-source-python"><pre><span class="pl-k">import</span> m3.humanoid <span class="pl-k">as</span> m3h
+
+meka <span class="pl-k">=</span> m3h.M3Humanoid()</pre></div>
+<p>Now we have to tell the realtime pc (mega-mob) that we ant to send commands to it
+First let’s connect to the m3rt_server</p>
+<div class="highlight highlight-source-python"><pre><span class="pl-c"><span class="pl-c">#</span>## Connect to the m3rt_server</span>
+<span class="pl-k">import</span> m3.rt_proxy <span class="pl-k">as</span> m3p
+
+proxy <span class="pl-k">=</span> m3p.M3RtProxy()
+
+<span class="pl-c"><span class="pl-c">#</span>start the proxy (i.e. connect)</span>
+proxy.start()</pre></div>
+<div class="highlight highlight-source-python"><pre><span class="pl-c"><span class="pl-c">#</span> Now that we are connected to the m3rt_server</span>
+<span class="pl-c"><span class="pl-c">#</span> We need to say we want to get status/cmd</span>
+
+<span class="pl-c"><span class="pl-c">#</span> Get status</span>
+proxy.subscribe_status(meka)
+
+<span class="pl-c"><span class="pl-c">#</span> Send command</span>
+proxy.publish_command(meka)
+
+<span class="pl-c"><span class="pl-c">#</span> (Optional) Get param (allow to modify parameters in realtime)</span>
+proxy.publish_param(meka)
+<span class="pl-c"><span class="pl-c">#</span># Please note that if you publish parameters, you local version of robot_config will be issued to the server.</span>
+<span class="pl-c"><span class="pl-c">#</span># So make sure first that the m3ens folder (that contains robot_config) is the same on the realtime pc, otherwise the remote config will be overridden by your local config.</span>
+
+<span class="pl-c"><span class="pl-c">#</span> Now meka is ready to receive some commands</span></pre></div>
+<h1>
+<a aria-hidden="true" class="anchor" href="#command-modes" id="user-content-command-modes"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Command Modes</h1>
+<h3>
+<a aria-hidden="true" class="anchor" href="#joint-command-position" id="user-content-joint-command-position"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Joint command (position)</h3>
+<p>Mode <strong>Theta</strong> and <strong>Theta_gc</strong> (with gravity compensation):</p>
+<div class="highlight highlight-source-python"><pre><span class="pl-c"><span class="pl-c">#</span># Set the mode Theta with gravity compensation</span>
+meka.set_mode_theta_gc(<span class="pl-s"><span class="pl-pds">'</span>right_arm<span class="pl-pds">'</span></span>)
+<span class="pl-c"><span class="pl-c">#</span># Set the desired value in degrees for each joint</span>
+meka.set_theta_deg(<span class="pl-s"><span class="pl-pds">'</span>right_arm<span class="pl-pds">'</span></span>, [<span class="pl-c1">0</span> <span class="pl-c1">0</span> <span class="pl-c1">0</span> <span class="pl-c1">30</span> <span class="pl-c1">0</span> <span class="pl-c1">0</span> <span class="pl-c1">0</span>])
+<span class="pl-c"><span class="pl-c">#</span># Set the desired velocity [0;1]</span>
+meka.set_slew_rate_proportional(<span class="pl-s"><span class="pl-pds">'</span>right_arm<span class="pl-pds">'</span></span>,[<span class="pl-c1">1.0</span>]<span class="pl-k">*</span>meka.get_num_dof(<span class="pl-s"><span class="pl-pds">'</span>right_arm<span class="pl-pds">'</span></span>))
+<span class="pl-c"><span class="pl-c">#</span># Set the desired rigidity of the join [0;1]</span>
+meka.set_stiffness(<span class="pl-s"><span class="pl-pds">'</span>right_arm<span class="pl-pds">'</span></span>, [<span class="pl-c1">1.0</span>]<span class="pl-k">*</span>meka.get_num_dof(<span class="pl-s"><span class="pl-pds">'</span>right_arm<span class="pl-pds">'</span></span>))</pre></div>
+<h3>
+<a aria-hidden="true" class="anchor" href="#torque-command" id="user-content-torque-command"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Torque command</h3>
+<p>Mode <strong>Torque</strong> and <strong>Torque_gc</strong>:</p>
+<div class="highlight highlight-source-python"><pre><span class="pl-c"><span class="pl-c">#</span># Set the mode torque</span>
+meka.set_mode_torque(<span class="pl-s"><span class="pl-pds">'</span>right_arm<span class="pl-pds">'</span></span>)
+<span class="pl-c"><span class="pl-c">#</span># Set the desired value in mNm for each joint</span>
+meka.set_torque(<span class="pl-s"><span class="pl-pds">'</span>right_arm<span class="pl-pds">'</span></span>, [<span class="pl-c1">0</span> <span class="pl-c1">0</span> <span class="pl-c1">0</span> <span class="pl-c1">800</span> <span class="pl-c1">0</span> <span class="pl-c1">0</span> <span class="pl-c1">0</span>]) <span class="pl-c"><span class="pl-c">#</span> 7 values for the 7 joints</span>
+<span class="pl-c"><span class="pl-c">#</span># Set the desired rigidity of the join [0;1]</span>
+meka.set_stiffness(<span class="pl-s"><span class="pl-pds">'</span>right_arm<span class="pl-pds">'</span></span>, [<span class="pl-c1">1.0</span>]<span class="pl-k">*</span>meka.get_num_dof(<span class="pl-s"><span class="pl-pds">'</span>right_arm<span class="pl-pds">'</span></span>))</pre></div>
+<h3>
+<a aria-hidden="true" class="anchor" href="#experimental-velocity-command" id="user-content-experimental-velocity-command"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><em><strong>EXPERIMENTAL</strong></em> Velocity command</h3>
+<p>Mode <strong>thetadot</strong> and <strong>thetadot_gc</strong>:</p>
+<div class="highlight highlight-source-python"><pre>meka.set_mode_thetadot_gc(<span class="pl-s"><span class="pl-pds">'</span>right_arm<span class="pl-pds">'</span></span>)
+<span class="pl-c"><span class="pl-c">#</span># Set the desired value in degrees/s for each joint</span>
+meka.set_thetadot(<span class="pl-s"><span class="pl-pds">'</span>right_arm<span class="pl-pds">'</span></span>, [<span class="pl-c1">0</span> <span class="pl-c1">0</span> <span class="pl-c1">0</span> <span class="pl-c1">0</span> <span class="pl-c1">0</span> <span class="pl-c1">0</span> <span class="pl-c1">0</span>]) <span class="pl-c"><span class="pl-c">#</span> Stay immobile</span>
+<span class="pl-c"><span class="pl-c">#</span># Set the desired rigidity of the join [0;1]</span>
+meka.set_stiffness(<span class="pl-s"><span class="pl-pds">'</span>right_arm<span class="pl-pds">'</span></span>, [<span class="pl-c1">1.0</span>]<span class="pl-k">*</span>meka.get_num_dof(<span class="pl-s"><span class="pl-pds">'</span>right_arm<span class="pl-pds">'</span></span>))</pre></div>
+<h3>
+<a aria-hidden="true" class="anchor" href="#sendreceive-commands" id="user-content-sendreceive-commands"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Send/Receive commands</h3>
+<div class="highlight highlight-source-python"><pre><span class="pl-c"><span class="pl-c">#</span> Send command/ receive status for all the subscribed components</span>
+proxy.step()</pre></div>
+<h3>
+<a aria-hidden="true" class="anchor" href="#stop-the-connection" id="user-content-stop-the-connection"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Stop the connection</h3>
+<div class="highlight highlight-source-python"><pre><span class="pl-c"><span class="pl-c">#</span> Stop the connection</span>
+proxy.stop()</pre></div>
+<h1>
+<a aria-hidden="true" class="anchor" href="#moveit-python-api" id="user-content-moveit-python-api"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Moveit! Python API</h1>
+<p><a href="http://moveit.ros.org/wiki/MoveIt_Commander" rel="nofollow">http://moveit.ros.org/wiki/MoveIt_Commander</a></p>
+
+        </div>
+
+        <div class="wiki-footer gollum-markdown-content boxed-group" id="wiki-footer">
+          <div class="boxed-group-inner wiki-auxiliary-content markdown-body">
+            <blockquote>
+<p>Author: <a href="mailto:plueckin@techfak.uni-bielefeld.de">plueckin@techfak.uni-bielefeld.de</a></p>
+</blockquote>
+
+          </div>
+        </div>
+    </div>]

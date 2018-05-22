@@ -1,0 +1,61 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>Record-level permissions provide more granularity than role-based permissions.</p>
+<p>For example, consider the following scenario (in some hypothetical application) - An author should <em>not</em> be allowed to update/delete someone else's articles.</p>
+<p>The scenario above cannot be supported by role-based permission - An author may or may not have <code>:update</code> and <code>:delete</code> permissions to an article. The permission is determined based on the article's properties and relations (not just its type).</p>
+<h4>
+<a aria-hidden="true" class="anchor" href="#example" id="user-content-example"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Example</h4>
+<div class="highlight highlight-source-ruby"><pre><span class="pl-c"><span class="pl-c">#</span> ...</span>
+<span class="pl-k">module</span> <span class="pl-en">FullArticle</span>
+    <span class="pl-c"><span class="pl-c">#</span> ...</span>
+
+    api_security_routes <span class="pl-c1">:only_my_articles</span>
+
+    <span class="pl-c"><span class="pl-c">#</span> ...</span>
+
+    <span class="pl-k">module</span> <span class="pl-en">Route</span>
+
+      <span class="pl-k">def</span> <span class="pl-en">only_my_articles</span>(<span class="pl-smi">context</span>)
+        <span class="pl-k">if</span> context.method <span class="pl-k">==</span> <span class="pl-c1">:update</span> <span class="pl-k">or</span> context.method <span class="pl-k">==</span> <span class="pl-c1">:delete</span>
+            <span class="pl-c1">self</span>.lookahead {|<span class="pl-smi">article</span>| article.author.is(context.current_user) }
+        <span class="pl-k">else</span>
+            <span class="pl-c1">self</span>
+        <span class="pl-k">end</span>
+      <span class="pl-k">end</span>
+
+    <span class="pl-c"><span class="pl-c">#</span> ...</span></pre></div>
+<p>Let's break it down:</p>
+<ul>
+<li>The code is written in the <code>FullArticle</code> part definition.</li>
+<li>
+<code>api_security_routes :only_my_articles</code> indicates that we want to apply record-level permissions to results containing <code>FullArticle</code> parts.
+<ul>
+<li>We will filter results using a method called <code>only_my_articles</code>.</li>
+<li>The API will call <code>only_my_articles</code> on a route, before returning it to the user.</li>
+</ul>
+</li>
+<li>
+<code>only_my_articles</code> is a route-extension method (i.e. defined in the <code>Route</code> module).
+<ul>
+<li>Takes one argument, a context object</li>
+<li>
+<code>self</code> is a route (of <code>FullArticle</code> items)</li>
+<li>Returns a route (of <code>FullArticle</code> items)</li>
+</ul>
+</li>
+<li>If you look into the <code>only_my_articles</code> method, you can see that:
+<ul>
+<li>It uses <code>context.method</code>, since we are interested in filtering only <code>:update</code> and <code>:delete</code> requests.</li>
+<li>We then filter each article using a lookahead:
+<ul>
+<li>Follow the <code>author</code> relationship (for the sake of this example, let's assume it exists)</li>
+<li>Keep only those articles whose author is <code>context.current_user</code>.</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+        </div>
+
+    </div>]

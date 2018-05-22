@@ -1,0 +1,198 @@
+[<div class="wiki-body gollum-asciidoc-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <div>
+<div>Table of Contents</div>
+<ul>
+<li>
+<a href="#database-migration">Database Migration</a>
+<ul>
+<li><a href="#organizational-advice">Organizational Advice</a></li>
+<li><a href="#technical-configuration">Technical Configuration</a></li>
+<li><a href="#naming-conventions">Naming Conventions</a></li>
+</ul>
+</li>
+<li>
+<a href="#database-integration">Database Integration</a>
+<ul>
+<li><a href="#database-integration-with-microsoft-sql-server">Database Integration with Microsoft SQL Server</a></li>
+<li><a href="#database-integration-with-postgres">Database Integration with PostGres</a></li>
+<li><a href="#database-integration-with-oracle">Database Integration with Oracle</a></li>
+<li><a href="#database-integration-with-mariadb">Database Integration with MariaDB</a></li>
+</ul>
+</li>
+</ul>
+</div>
+<h1 id="user-content-database-migration">
+<a aria-hidden="true" class="anchor" href="#database-migration" id="user-content-database-migration"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Database Migration</h1>
+<div>
+<p>For database migrations we use <a href="http://flywaydb.org/" rel="nofollow">Flyway</a>.
+As illustrated <a href="https://flywaydb.org/getstarted/why" rel="nofollow">here</a> database migrations have three advantages:</p>
+</div>
+<div>
+<ol>
+<li>
+<p>Recreate a database from scratch</p>
+</li>
+<li>
+<p>Make it clear at all times what state a database is in</p>
+</li>
+<li>
+<p>Migrate in a deterministic way from your current version of the database to a newer one</p>
+</li>
+</ol>
+</div>
+<div>
+<p>Flyway can be used standalone or can be integrated via its <a href="https://flywaydb.org/documentation/api/javadoc/index.html?org/flywaydb/core/Flyway.html" rel="nofollow">API</a> to make sure the database migration takes place on startup.</p>
+</div>
+<div>
+<h2 id="user-content-organizational-advice">
+<a aria-hidden="true" class="anchor" href="#organizational-advice" id="user-content-organizational-advice"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Organizational Advice</h2>
+<div>
+<div>
+<p>A few considerations with respect to project organization will help to implement maintainable Flyway migrations.</p>
+</div>
+<div>
+<p>At first, testing and production environments must be clearly and consistently distinguished. Use the following directory structure to achieve this distinction:</p>
+</div>
+<div>
+<div>
+<pre lang="text"><code>  src/main/resources/db
+  src/test/resources/db</code></pre>
+</div>
+</div>
+<div>
+<p>Although this structure introduces redundancies, the benefit overweights this disadvantage.
+An even more fine-grained production directory structure which contains one subfolder per release should be implemented:</p>
+</div>
+<div>
+<div>
+<pre lang="text"><code>  src/main/resources/db/migration/releases/X.Y/x.sql</code></pre>
+</div>
+</div>
+<div>
+<p>Emphasizing that migration scripts below the current version must never be changed will aid the second advantage of migrations: it will always be clearly reproducible in which state the database currently is.
+Here, it is important to mention that, if test data is required, it must be managed separately from the migration data in the following directory:</p>
+</div>
+<div>
+<div>
+<pre lang="text"><code>  src/test/resources/db/migration/</code></pre>
+</div>
+</div>
+<div>
+<p>The <code>migration</code> directory is added to aid easy usage of Flyway defaults.
+Of course, test data should also be managed per release as like production data.</p>
+</div>
+<div>
+<p>With regard to content, separation of concerns (SoC) is an important goal. SoC can be achieved by distinguishing and writing multiple scripts with respect to business components/use cases (or database tables in case of large volumes of master data <sup>[<a href="#_footnote_1" id="user-content-_footnoteref_1" title="View footnote.">1</a>]</sup>. Comprehensible file names aid this separation.</p>
+</div>
+<div>
+<p>It is important to have clear responsibilities regarding the database, the persistence layer (JPA), and migrations. Therefore a dedicated database expert should be in charge of any migrations performed or she should at least be informed before any change to any of the mentioned parts is applied.</p>
+</div>
+</div>
+</div>
+<div>
+<h2 id="user-content-technical-configuration">
+<a aria-hidden="true" class="anchor" href="#technical-configuration" id="user-content-technical-configuration"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Technical Configuration</h2>
+<div>
+<div>
+<p>Database migrations can be <a href="http://flywaydb.org/documentation/migration/sql.html" rel="nofollow">SQL</a> based or <a href="http://flywaydb.org/documentation/migration/java.html" rel="nofollow">Java</a> based.</p>
+</div>
+<div>
+<p>To enable auto migration on startup (not recommended for productive environment) set the following property in the <code>application.properties</code> file for an environment.</p>
+</div>
+<div>
+<div>
+<div class="highlight highlight-source-ini"><pre><span class="pl-k">flyway.enabled</span>=true
+<span class="pl-k">flyway.clean-on-validation-error</span>=false</pre></div>
+</div>
+</div>
+<div>
+<p>For development environment it is helpful to set both properties to <code>true</code> in order to simplify development. For regular environments <code>flyway.clean-on-validation-error</code> should be <code>false</code>.</p>
+</div>
+<div>
+<p>If you want to use Flyway set the following property in any case to prevent Hibernate from doing changes on the database (pre-configured by default in OASP):</p>
+</div>
+<div>
+<div>
+<div class="highlight highlight-source-ini"><pre><span class="pl-k">spring.jpa.hibernate.ddl-auto</span>=validate</pre></div>
+</div>
+</div>
+<div>
+<p>The setting must be communicated to and coordinated with the customer and her needs.
+In acceptance testing the same configuration as for the production environment should be enabled.</p>
+</div>
+<div>
+<p>Since migration scripts will also be versioned the end-of-line (EOL) style must be fixated according to <a href="https://github.com/flyway/flyway/issues/253">this issue</a>. This is however solved in flyway 4.0+ and the latest OASP release.
+Also, the version numbers of migration scripts should not consist of simple ascending integer numbers like <code>V0001<em>…​</em></code>, <code>V0002…​</code>, …​ This naming may lead to problems when merging branches. Instead the usage of timestamps as version numbers will help to avoid such problems.</p>
+</div>
+</div>
+</div>
+<div>
+<h2 id="user-content-naming-conventions">
+<a aria-hidden="true" class="anchor" href="#naming-conventions" id="user-content-naming-conventions"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Naming Conventions</h2>
+<div>
+<div>
+<p>Database migrations should follow this naming convention:
+V&lt;version&gt;__&lt;description&gt; (e.g.: V12345__Add_new_table.sql).</p>
+</div>
+<div>
+<p>It is also possible to use Flyway for test data. To do so place your test data migrations in src/main/resources/db/testdata/ and set property</p>
+</div>
+<div>
+<div>
+<div class="highlight highlight-source-ini"><pre><span class="pl-k">flyway.locations</span>=classpath:db/migration/releases,classpath:db/migration/testdata</pre></div>
+</div>
+</div>
+<div>
+<p>Then Flyway scans the additional location for migrations and applies all in the order specified by their version. If migrations V0001__... and V0002__... exist and a test data migration should be applied in between you can name it V0001_1__....</p>
+</div>
+</div>
+</div>
+<h1 id="user-content-database-integration">
+<a aria-hidden="true" class="anchor" href="#database-integration" id="user-content-database-integration"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Database Integration</h1>
+<div>
+<p>To integrate OASP4J with various databases namely Microsoft SQL Server 2008, PostGres 9.5.4 , Oracle 11g and MariaDB 10.0.27 , refer the following sections</p>
+</div>
+<div>
+<h3 id="user-content-database-integration-with-microsoft-sql-server">
+<a aria-hidden="true" class="anchor" href="#database-integration-with-microsoft-sql-server" id="user-content-database-integration-with-microsoft-sql-server"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Database Integration with Microsoft SQL Server</h3>
+<div>
+<p>To integrate OASP4J with Microsoft SQL Server 2008 , please refer instructions <a href="https://github.com/oasp-forge/oasp4j-wiki/wiki/DB-Integration-MSSQL-Server-2008">here</a></p>
+</div>
+</div>
+<div>
+<h3 id="user-content-database-integration-with-postgres">
+<a aria-hidden="true" class="anchor" href="#database-integration-with-postgres" id="user-content-database-integration-with-postgres"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Database Integration with PostGres</h3>
+<div>
+<p>To integrate OASP4J with PostGres 9.5.4, please refer instructions <a href="https://github.com/oasp-forge/oasp4j-wiki/wiki/DB-Integration-PostGres-Server-9.5.4">here</a></p>
+</div>
+</div>
+<div>
+<h3 id="user-content-database-integration-with-oracle">
+<a aria-hidden="true" class="anchor" href="#database-integration-with-oracle" id="user-content-database-integration-with-oracle"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Database Integration with Oracle</h3>
+<div>
+<p>To integrate OASP4J with Oracle 11g, please refer instructions <a href="https://github.com/oasp-forge/oasp4j-wiki/wiki/DB-Integration-Oracle11G">here</a></p>
+</div>
+</div>
+<div>
+<h3 id="user-content-database-integration-with-mariadb">
+<a aria-hidden="true" class="anchor" href="#database-integration-with-mariadb" id="user-content-database-integration-with-mariadb"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Database Integration with MariaDB</h3>
+<div>
+<p>To integrate OASP4J with MariaDB 10.0.27, please refer instructions <a href="https://github.com/oasp-forge/oasp4j-wiki/wiki/DB-Integration-MariaDB-10.0.27">here</a></p>
+</div>
+</div>
+<div>
+<hr/>
+<div>
+<a href="#_footnoteref_1">1</a>. "Stammdaten" in German.
+</div>
+</div>
+        </div>
+
+        <div class="wiki-footer gollum-markdown-content boxed-group" id="wiki-footer">
+          <div class="boxed-group-inner wiki-auxiliary-content markdown-body">
+            <p><a href="http://creativecommons.org/licenses/by-nd/4.0/" rel="nofollow"><img alt="Creative Commons License Agreement" data-canonical-src="http://i.creativecommons.org/l/by-nd/4.0/88x31.png" src="https://camo.githubusercontent.com/171d004f9ccb9199e35ac8ec3d99ede916037a9f/687474703a2f2f692e6372656174697665636f6d6d6f6e732e6f72672f6c2f62792d6e642f342e302f38387833312e706e67"/></a><br/><span>This documentation</span> is licensed under the <a href="http://creativecommons.org/licenses/by-nd/4.0/" rel="nofollow">Creative Commons License (Attribution-NoDerivatives 4.0 International)</a>.</p>
+
+          </div>
+        </div>
+    </div>]

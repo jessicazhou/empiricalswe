@@ -1,0 +1,88 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <h1>
+<a aria-hidden="true" class="anchor" href="#rest-api" id="user-content-rest-api"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>REST API</h1>
+<p>Garp has a REST API you can use to bolt a single-page-application frontend on top of, or to attach a custom CMS, or whatever else you like.</p>
+<p>This is a succinct guide showing its various capabilities.<br/>
+In general:</p>
+<ul>
+<li>All responses are in JSON.</li>
+<li>Authorization should be handled by the implementing app.</li>
+<li>Model data is almost entirely read from the <a href="spawn">Spawner</a>. If something is amiss, see if your model definition is correct.</li>
+<li>HTTP statuscode semantics are respected. Generally: anything in the <code>200</code> range is OK, the <code>400</code> range means you're doing it wrong, <code>500</code> means we're doing it wrong (or didn't anticipate whatever you're trying).</li>
+</ul>
+<h2>
+<a aria-hidden="true" class="anchor" href="#reading" id="user-content-reading"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Reading</h2>
+<pre><code>OPTIONS /g/content/api/v1/
+</code></pre>
+<p>This can be your starting point: it will return paths for all editable models.</p>
+<pre><code>OPTIONS /g/content/api/v1/Event
+</code></pre>
+<p>Returns information about a single model. Its relations, but also a complete list of inputs and their configuration.<br/>
+From this, you should have everything you need to scaffold out a CMS.</p>
+<pre><code>GET /g/content/api/v1/Event
+</code></pre>
+<p>Returns records from a single model. A single parameter, <code>options</code> may be given in JSON format, for example:</p>
+<pre><code>GET /g/content/api/v1/Event?options={"sort":"name ASC"}
+</code></pre>
+<p>(URL encoding omitted)</p>
+<p><code>options</code> can contain the following keys:</p>
+<ul>
+<li><code>sort</code></li>
+<li><code>start</code></li>
+<li><code>limit</code></li>
+<li><code>fields</code></li>
+<li><code>query</code></li>
+<li><code>group</code></li>
+</ul>
+<p>Example <code>options</code> object:</p>
+<pre><code>{
+  "query": {
+    "created &gt;": "2016-05-01",
+    "name LIKE": "%Foobar%",
+    "status": 200
+  },
+  "start": 20,
+  "limit": 20,
+  "fields": ["name", "created", "id", "status"],
+  "sort": "name ASC",
+  "group": "id"
+}
+</code></pre>
+<p>These correspond to SQL terminology you're probably familiar with.</p>
+<pre><code>GET /g/content/api/v1/Event/12345
+</code></pre>
+<p>Reads a single record.</p>
+<pre><code>GET /g/content/api/v1/Event/12345/Theme
+</code></pre>
+<p>Returns a collection of related records. Note that this takes the same <code>options</code> parameter as a regular <code>GET</code> on an index.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#writing" id="user-content-writing"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Writing</h2>
+<pre><code>POST /g/content/api/v1/Event
+</code></pre>
+<p>Create a new record. The record data should be the raw post body in JSON format.</p>
+<pre><code>PUT /g/content/api/v1/Event/12345
+PATCH /g/content/api/v1/Event/12345
+</code></pre>
+<p>Update record by id. The record data should be the raw post body in JSON format.<br/>
+Note: at the time of writing partial updates are allowed, you do not have to provide the entire record. Only the given columns are updated.<br/>
+This essentially makes <code>PUT</code> behave the same as <code>PATCH</code>.</p>
+<pre><code>DELETE /g/content/api/v1/Event/12345
+</code></pre>
+<p>Remove record by id.</p>
+<pre><code>PUT /g/content/api/v1/Event/12345/Theme/12345
+</code></pre>
+<p>Add a new related record. In the example, event with id <code>12345</code> is related to theme with id <code>12345</code>.<br/>
+Note that any additional columns to be stored in the pivot table record may be given as raw post body in JSON format — same as regular <code>POST</code> and <code>PUT</code>.</p>
+<pre><code>DELETE /g/content/api/v1/Event/12345/Theme/12345
+</code></pre>
+<p>Destroy a relation between two records.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#special-requests" id="user-content-special-requests"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Special requests</h2>
+<p>Get a dictionary of translatable strings from:</p>
+<pre><code>GET /g/content/api/v1/dictionary 
+</code></pre>
+
+        </div>
+
+    </div>]

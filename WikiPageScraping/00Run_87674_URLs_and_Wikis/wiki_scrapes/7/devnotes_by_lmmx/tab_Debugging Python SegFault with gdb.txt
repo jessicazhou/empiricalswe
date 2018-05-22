@@ -1,0 +1,73 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <h2>
+<a aria-hidden="true" class="anchor" href="#resources" id="user-content-resources"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Resources</h2>
+<ul>
+<li>
+<a href="https://www.cs.umd.edu/%7Esrhuang/teaching/cmsc212/gdb-tutorial-handout.pdf" rel="nofollow">here's a tutorial</a> (PDF, 21 pages) via <a href="https://www.cs.umd.edu/%7Esrhuang/" rel="nofollow">U. Maryland ⠶ Samuel Huang</a> — <a href="https://www.cs.umd.edu/%7Esrhuang/teaching/" rel="nofollow">CMSC212: Introduction to Low-Level Programming Concepts
+</a>
+<ul>
+<li>gives an idea of the program [but more intended toward use with C rather than Python]</li>
+</ul>
+</li>
+<li>"<a href="https://stackoverflow.com/questions/10859452/how-to-interpret-a-gdb-backtrace#10859505" rel="nofollow">How to interpret a gdb backtrace</a>
+<ul>
+<li>StackOverflow question (about C++, not Python[/Cython])</li>
+</ul>
+</li>
+<li>Official Python dev guide: <a href="https://docs.python.org/devguide/gdb.html" rel="nofollow">gdb Support</a>
+</li>
+<li>wiki.python.org ⠶ <a href="https://wiki.python.org/moin/DebuggingWithGdb" rel="nofollow">DebuggingWithGdb</a>
+</li>
+</ul>
+<h2>
+<a aria-hidden="true" class="anchor" href="#brief-workflow" id="user-content-brief-workflow"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Brief workflow</h2>
+<ul>
+<li>make a python file e.g. <code>segger.py</code> which causes the segfault</li>
+<li>[in a terminal] run <code>gdb python</code>
+<ul>
+<li>N.B. - this just worked for me, there's mention online of needing to recompile with gdb support on some systems</li>
+</ul>
+</li>
+<li>in the interactive gdb session, type <code>run segger.py</code> [or whatever you called your script], to give something like:</li>
+</ul>
+<div class="highlight highlight-source-gdb"><pre>Starting <span class="pl-k">program</span>: /home/myusername/anaconda3/bin/python segger.py
+[Thread debugging using libthread_db enabled]
+Using host libthread_db library <span class="pl-s"><span class="pl-pds">"</span>/lib/x86_64-linux-gnu/libthread_db.so.1<span class="pl-pds">"</span></span>.
+[New Thread <span class="pl-c1">0x7ffff12ab700</span> (LWP <span class="pl-c1">12345</span>)]
+[New Thread 0x7ffff89yz700 (LWP <span class="pl-c1">12346</span>)]
+…
+[New Thread 0x7ffff89yz700 (LWP <span class="pl-c1">12350</span>)]
+Program received signal SIGSEGV, Segmentation fault.
+Capitalised_Snake_Case_Ref_1 (a=<span class="pl-c1">0x123f4567890a1b23</span>, b=<span class="pl-c1">0x7fffabfcdf00</span> &lt;sipVoidPtr_Type&gt;) at Path/to.c:<span class="pl-c1">1343</span>
+<span class="pl-c1">1234</span>    Path/to.c: {Error message goes here}.
+(gdb) </pre></div>
+<ul>
+<li>where:
+<ul>
+<li>
+<code>anaconda3</code> may differ if you're not using an anaconda3 installation</li>
+<li>number of threads may vary based on your system</li>
+<li>
+<code>Capitalised_Snake_Case_Ref_1</code> and <code>sipVoidPtr_Type</code> refer to a function in cpython and variable in C respectively
+<ul>
+<li>you can search for the function in <a href="https://github.com/python/cpython/">github.com/python/cpython/</a>
+e.g. <code>PyType_IsSubtype</code> at <a href="https://github.com/python/cpython/blob/8c663fd60ecba9c82aa4c404dbfb1aae69fe8553/Objects/typeobject.c#L1386">Objects/typeobject.c ⠶ line 1386</a>
+though note that line numbers on the repo may differ since your installation was released [releases are <a href="https://github.com/python/cpython/releases">tagged</a>]</li>
+<li>N.B. the "sip" refers to "Sessions Initiation Protocol" (SIP), see <a href="https://www.riverbankcomputing.com/software/sip/intro" rel="nofollow">riverbankcomputing.com ⠶ intro</a> and <a href="https://wiki.python.org/moin/SIP" rel="nofollow">wiki.python.org ⠶ SIP</a>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+        </div>
+
+        <div class="wiki-footer gollum-markdown-content boxed-group" id="wiki-footer">
+          <div class="boxed-group-inner wiki-auxiliary-content markdown-body">
+            <p><a href="https://github.com/lmmx/devnotes/wiki">Main page</a></p>
+
+          </div>
+        </div>
+    </div>]

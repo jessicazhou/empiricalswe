@@ -1,0 +1,102 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>I've continued to read a bit more about RxJS and reactive functional programming in general. ie:</p>
+<ul>
+<li><a href="https://gist.github.com/staltz/868e7e9bc2a7b8c1f754">https://gist.github.com/staltz/868e7e9bc2a7b8c1f754</a></li>
+<li><a href="http://stackoverflow.com/questions/24107599/how-to-define-cycles-with-observables" rel="nofollow">http://stackoverflow.com/questions/24107599/how-to-define-cycles-with-observables</a></li>
+<li><a href="http://reactivex.io/tutorials.html" rel="nofollow">http://reactivex.io/tutorials.html</a></li>
+</ul>
+<p>One method to handle the situation that leads me to a cycle, trying to speed up hater based on points in coin collision, may be to have my general tick for spaces also bound to a scoreboard event stream. A new event would be generated every time a score is made, or a life is lost, and that generates a new observable along with the tick/space stream.  This avoids cyclical observables through reliance on a separate async event stream.</p>
+<p>I believe the way to think about this is the BehaviorModel and BehaviorSubjects, or Notifications. If I could broadcast messages to all my streams, that's what I'm looking for. Time is doing that, so I need to do that for score..</p>
+<p>Oh, uh:</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#rxreplaysubject-class" id="user-content-rxreplaysubject-class"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><a href="https://github.com/Reactive-Extensions/RxJS/blob/master/doc/api/subjects/replaysubject.md">Rx.ReplaySubject</a> class</h2>
+<blockquote>
+<p>Represents an object that is both an observable sequence as well as an observer. Each notification is broadcasted to all subscribed and future observers, subject to buffer trimming policies.</p>
+<p>This class inherits both from the Rx.Observable and Rx.Observer classes.</p>
+</blockquote>
+<p>That looks right.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#rxjs-is-not-frp" id="user-content-rxjs-is-not-frp"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>RxJS is not FRP</h2>
+<p>At this stage, interesting to note a portion of one of the comments on that first link:</p>
+<blockquote>
+<blockquote>
+<p>FRP is programming with asynchronous data streams.</p>
+</blockquote>
+<p>No it's not. FRP is programming with Behaviours (pure continuous-time dependent values); please read the links you yourself provide, especially what Conal Elliott writes (since he's the one who coined the term).</p>
+<p>If you only have discrete stuff, i.e. events, streams, or whatever you want to call it, you have stream-based/data-flow/reactive programming.</p>
+</blockquote>
+<p>And:</p>
+<blockquote>
+<p>@bbirand, if you want to handle streams of continuous (mathematical continuous) nature, then you're looking for "Behaviors" in <a href="http://stackoverflow.com/questions/1028250/what-is-functional-reactive-programming" rel="nofollow">Classical Functional Reactive Programming</a>. As far as I know, Rx and other reactive libraries don't support continuous 'behaviors'.</p>
+</blockquote>
+<h2>
+<a aria-hidden="true" class="anchor" href="#extra-promises-api" id="user-content-extra-promises-api"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Extra: Promises API</h2>
+<p>Cool site also found for Promises API standard:</p>
+<ul>
+<li><a href="https://promisesaplus.com/" rel="nofollow">https://promisesaplus.com/</a></li>
+</ul>
+<h2>
+<a aria-hidden="true" class="anchor" href="#update-followup-on-rxjs-basics" id="user-content-update-followup-on-rxjs-basics"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>UPDATE: Followup on RxJS basics</h2>
+<p>Went through the tutorial from Staltz: <a href="https://gist.github.com/staltz/868e7e9bc2a7b8c1f754">https://gist.github.com/staltz/868e7e9bc2a7b8c1f754</a></p>
+<p>Updating to this github under staltzSuggestions</p>
+
+        </div>
+
+        <div class="wiki-footer gollum-markdown-content boxed-group" id="wiki-footer">
+          <div class="boxed-group-inner wiki-auxiliary-content markdown-body">
+            <ul>
+<li>
+<p><a class="internal present" href="/cycle23/cycle23.github.io/wiki/0.-History-leadup">History, Lead Up</a></p>
+</li>
+<li>
+<p><a class="internal present" href="/cycle23/cycle23.github.io/wiki/1.-First-steps%2C-purescript-is-magic">Purescript is Magic</a></p>
+</li>
+<li>
+<p><a class="internal present" href="/cycle23/cycle23.github.io/wiki/Z.1.-ReactiveJS-Sections">ReactiveJS</a>
+&lt;- Click here for breakdown of sections within these parts.</p>
+<ul>
+<li><a class="internal present" href="/cycle23/cycle23.github.io/wiki/2.-Initial-ReactiveJS-Port">ReactiveJS Part 1: Reactive Donkey</a></li>
+<li><a class="internal present" href="/cycle23/cycle23.github.io/wiki/B.-ReactiveJS-Part-2%3A-Completed-LearnRX">ReactiveJS Part 2: Learn RX</a></li>
+<li><a class="internal present" href="/cycle23/cycle23.github.io/wiki/F.-RXJs-Design-Principles">ReactiveJs Part 3: Design Guidelines and Examples</a></li>
+<li><a class="internal present" href="/cycle23/cycle23.github.io/wiki/G.-RxJS-Donkey-Refactor">ReactiveJs Part 4: Refactor Donkey</a></li>
+</ul>
+</li>
+<li>
+<p><a class="internal present" href="/cycle23/cycle23.github.io/wiki/A.-Audio-Break">Audio Break</a></p>
+<ul>
+<li><a class="internal present" href="/cycle23/cycle23.github.io/wiki/A.1.-WebAudioX">WebAudioX</a></li>
+<li><a class="internal present" href="/cycle23/cycle23.github.io/wiki/A.2.-iOS-Audio-Combined-with-RXJs-Issues">iOS Issues</a></li>
+<li><a class="internal present" href="/cycle23/cycle23.github.io/wiki/A.3.-Debugging-jquery.mb.audio">Debugging jquery.mb.audio</a></li>
+<li><a class="internal present" href="/cycle23/cycle23.github.io/wiki/A.4.-HowlerJS---WebAudio-with-HTML5-Audio-fallback">HowlerJS for WebAudio</a></li>
+</ul>
+</li>
+<li>
+<p><a class="internal present" href="/cycle23/cycle23.github.io/wiki/C.-Video-Editing-and-Game-Modding">Video Editing and Game Modding</a></p>
+<ul>
+<li><a class="internal present" href="/cycle23/cycle23.github.io/wiki/C.1.-Sims4-Modding">Sims 4 Python</a></li>
+</ul>
+</li>
+<li>
+<p><a class="internal present" href="/cycle23/cycle23.github.io/wiki/D.-Ramda">Ramda Functional Javascript</a></p>
+</li>
+<li>
+<p><a class="internal present" href="/cycle23/cycle23.github.io/wiki/E.-Javascript-Testing">Javascript Testing</a></p>
+<ul>
+<li><a class="internal present" href="/cycle23/cycle23.github.io/wiki/E.1.-Testing-with-QUnit">Testing with QUnit</a></li>
+</ul>
+</li>
+<li>
+<p><a class="internal present" href="/cycle23/cycle23.github.io/wiki/H.-Angular-Donkey">AngularJs Part 1: Angular Donkey</a></p>
+</li>
+<li>
+<p><a class="internal present" href="/cycle23/cycle23.github.io/wiki/I.-Android-Development">Android Development</a></p>
+</li>
+<li>
+<p><a class="internal present" href="/cycle23/cycle23.github.io/wiki/Z.-Appendix">Appendix, references</a></p>
+</li>
+</ul>
+
+          </div>
+        </div>
+    </div>]

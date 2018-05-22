@@ -1,0 +1,21 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>While the goal of the <code>UHH2</code> framework is to be able to run the same code (the same <code>AnalysisModule</code>) both within SFrame and within CMSSW, some restrictions exist.</p>
+<h1>
+<a aria-hidden="true" class="anchor" href="#event-content" id="user-content-event-content"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Event content</h1>
+<p>The available event content is different:</p>
+<ul>
+<li>jet constituent information is only available when running in CMSSW, in order to save space for the SFrame ntuple format</li>
+<li>A SFrame ntuple output file (e.g. selected events) can be created by both CMSSW and SFrame; in both cases only events for which the top-level <code>AnalysisModule::process</code> method returns <code>true</code> are saved in the output file. In both cases, it is possible for an <code>AnalysisModule</code> to define additional event output via <code>Context::declare_event_output</code>.</li>
+<li>For CMSSW, it is also possible to write a CMSSW output file (in addition or instead of saving the SFrame ntuple). However, only CMSSW-level content can be saved (such as miniAOD products), i.e. and no additional event data created by <code>AnalysisModules</code> is saved.</li>
+</ul>
+<p>This suggests the following workflow: In a first step, run CMSSW to run all special clustering algorithms and write a CMSSW output (an 'extended miniAOD' with some additional jet collections). The same cmsRun job also produces SFrame ntuples. In a second step, analyses can either run standalone SFrame on the ntuples or (if they study new top taggers) run CMSSW on miniAOD directly and run the top-taggers (assumed to be CMSSW modules) before running the NtupleWriter.</p>
+<p>An implementation of the first step is available as grid-control configuration in <code>scripts/gc-conf</code>.</p>
+<h1>
+<a aria-hidden="true" class="anchor" href="#event-weight" id="user-content-event-weight"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Event weight</h1>
+<p>The event weight (stored in <code>Event::weight</code>) is handled differently per default: If running via SFrame, the event weight as calculated by SFrame is set per default (by <code>AnalysisModuleRunner</code>). This default can be changed by setting "use_sframe_weight" to "false" in the configuration; this will set the event weight to 1.0. To perform the lumi reweighting, one can use the module <code>MCLumiWeight</code> (see <code>common/src/MCWeight.cxx</code>), which is also run as part of <code>CommonModules</code>. <code>MCLumiWeight</code> uses the ratio of "dataset_lumi" and "target_lumi" from the configuration to set the weight. These configuration settings are automatically set to the according values from the SFrame xml file, such that running <code>MCLumiWeight</code> works "out-of-the-box" after setting "use_sframe_weight" to "false" (as a precaution, <code>MCLumiWeight</code> will not change the weight, unless "use_sframe_weight" is set to "false" explicitly).</p>
+<p>To use event weights in CMSSW, you can use <code>MCLumiWeight</code>. However, the settings "use_sframe_weight", "target_lumi", and "dataset_lumi" have to be set explicitly in the CMSSW configuration.</p>
+
+        </div>
+
+    </div>]

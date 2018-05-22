@@ -1,0 +1,73 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <h3>
+<a aria-hidden="true" class="anchor" href="#general-apis-structure" id="user-content-general-apis-structure"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>General APIs structure</h3>
+<p>The GovOps framework exposes APIs which have the following  general form:</p>
+<pre><code>GET http://HOST_ADDRESS:8080/APIManager/mapper/invoke/{deviceId}/{capabilityId}/{methodName}/{arguments}?arg1={first-argument}&amp;arg2={second-argument}&amp;...
+</code></pre>
+<ul>
+<li>
+<p>The HOST_ADDRESS is the IP address where the rtGovOps framework is deployed (This part is omitted in the examples below, but should be added when sending requests :)).</p>
+</li>
+<li>
+<p><em>deviceId</em> - The Id of the managed device (as specified when the device first registers with rtGovOps). For example, in our cloud-based test bed the deviceId is the combination of the host machine IP and the port mapping to Docker container, e.g., 10.99.0.102:9080 (here 9080 maps to container's 80). The meta-information about the all available devices can be accessed via:
+<code>GET.../APIManager/governanceScope/globalScope/</code> <em>NOTE: Due to some encoding issues, always put the trailing "/".</em></p>
+</li>
+<li>
+<p><em>capabilityId</em> - The Id of capability that needs to be invoked. The list of available capabilities in a device can be retrieved via: <code>GET.../APIManager/mapper/invoke/{deviceId}/cManager/list/</code></p>
+</li>
+<li>
+<p><em>methodName</em> - Since some of the capabilities expose multiple functions such as
+<code>GET.../APIManager/mapper/{deviceId}/cStartStopSensor/[start|stop])</code>, the exact function (method) that needs to be invoked is specified with the methodName.</p>
+</li>
+<li>
+<p><em>arguments</em> - These are the HTTP request parameter and it is used for the capabilities which expect some input arguments such as <code>GET.../APIManager/mapper/invoke/{deviceId}/cChangeSensorRate/update?interval=100</code></p>
+</li>
+<li>
+<p>Currently all the API calls return application/json.</p>
+</li>
+</ul>
+<p>The GovOps framework also supports working with generic <em>governance scopes</em> in order to enable flexible definitions within the governance processes without referencing individual devices. The general API call will have the following structure:</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#working-with-generic-governance-scopes" id="user-content-working-with-generic-governance-scopes"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Working with generic governance scopes</h3>
+<pre><code>GET http://HOST_ADDRESS:8080/APIManager/governanceScope/invokeScope/{predicates}/{capabilityId}/{methodName}/{arguments}?arg1={first-argument}&amp;arg2={second-argument}&amp;...
+</code></pre>
+<ul>
+<li>
+<em>predicats</em> - The predicates are specified by supplying key/value pairs that need to be present in devices meta-data. As shown in the following example multiple key/value pair can be provided, by concatenating them with "&amp;"<br/>
+<code>type=FM5300&amp;location=golfcourse-1</code>.</li>
+<li>The rest of the path parameters have the same meaning as described in the previous section.</li>
+</ul>
+<h3>
+<a aria-hidden="true" class="anchor" href="#working-with-uncertainty-aware-govops-apis" id="user-content-working-with-uncertainty-aware-govops-apis"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Working with uncertainty-aware GovOps APIs</h3>
+<p>GovOps supports configuring API invocations (to the underlying gateways) with uncertainty information.
+To configure a specific governance process with uncertainty considerations, you can do the following:</p>
+<pre><code>POST ... /APIManager/governanceScope/setProcessProps/{procId}
+and pass the configuration parameters in body as JSON.
+</code></pre>
+<p>This should be called at the begging of each governance process and it will create a statefull configuration for the process with <code>pocId</code>, so that it can be reused for the subsequent requests by that process (See below how to pass the process ID).</p>
+<p>The configuration should be passed in the body as JSON and the following options are available:</p>
+<pre><code>casheEnabled = "false";
+tolerate_fault_percentage  = "50";
+volume_per_circuit = "20";
+run_in_isolation = "true";
+fallback = "0";
+time_before_fallback = "1000";
+degree_parallelism = "200";
+keep_alive = "5";
+</code></pre>
+<p>If the parameter is not specified a default value will be used.</p>
+<p>Rough governance scopes are used to support working with governance scopes under uncertainty (e.g., missing data). GovOps implements a custom algorithm to handle the data-related uncertainty. The most important configuration options are:</p>
+<pre><code>missing_data = "arrtName1=[?|*|-] &amp; arrtName2=[?|*|-] [&amp;] ..."
+selection_strategy = "pessimistic|optimistic"
+</code></pre>
+<p>which should be passed for each request that needs to calculate a governance scope. For example, one can invoke</p>
+<pre><code>POST ... APIManager/governanceScope/invokeScope/{procId}/{query}/{capaId}/{method}
+passing the above config parameters in body as JSON  e.g.,
+{"missing_data":"location=*&amp;owner=?", "selection_strategy":"optimistic"}
+</code></pre>
+<p>The procId is the aforementioned process ID and the other parameters are the same as described in the previous section.</p>
+
+        </div>
+
+    </div>]

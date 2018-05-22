@@ -1,0 +1,152 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>You can mix variables into the markdown cells of Jupyter notebooks</p>
+<p>I had 2 locations for <code>jupyter_nbconvert_config.py</code> :</p>
+<ul>
+<li><code>~/anaconda3/lib/python3.5/site-packages/nbconvert/tests/files/jupyter_nbconvert_config.py</code></li>
+<li><code>~/anaconda3/pkgs/nbconvert-4.0.0-py35_0/lib/python3.5/site-packages/nbconvert/tests/files/jupyter_nbconvert_config.py</code></li>
+</ul>
+<p>I chose the former, although <strong>this is very clearly going to break when I next update Python</strong>. <img align="absmiddle" alt=":sweat:" class="emoji" data-canonical-src="https://assets-cdn.github.com/images/icons/emoji/unicode/1f613.png" height="20" src="https://camo.githubusercontent.com/47152084489f92d138856a3f3c4c670870cf7ddc/68747470733a2f2f6173736574732d63646e2e6769746875622e636f6d2f696d616765732f69636f6e732f656d6f6a692f756e69636f64652f31663631332e706e67" title=":sweat:" width="20"/></p>
+<p>I added:</p>
+<div class="highlight highlight-source-python"><pre><span class="pl-c"><span class="pl-c">#</span>python markdown extension</span>
+<span class="pl-c"><span class="pl-c">#</span>see https://github.com/ipython-contrib/IPython-notebook-extensions/wiki/python-markdown</span>
+c.Exporter.preprocessors <span class="pl-k">=</span> [ <span class="pl-s"><span class="pl-pds">'</span>pymdpreprocessor.PyMarkdownPreprocessor<span class="pl-pds">'</span></span> ]</pre></div>
+<p>to the end of the file</p>
+<p>...but later noticed the rename in a recent <code>nbextensions</code> repo update and changed the last line to</p>
+<div class="highlight highlight-source-python"><pre>c.Exporter.preprocessors <span class="pl-k">=</span> [ <span class="pl-s"><span class="pl-pds">'</span>pre_pymarkdown.PyMarkdownPreprocessor<span class="pl-pds">'</span></span> ]</pre></div>
+<p>Note this warning:</p>
+<blockquote>
+<p>Caution: There is no restriction in the expression you can embed in <code>{{ }}</code>. Be careful as you might crash your browser if you return too large datasets.</p>
+</blockquote>
+<p>I then downloaded zip [defaulting to master branch, for IPython 4.x] of <a href="https://github.com/ipython-contrib/IPython-notebook-extensions">the <code>ipython-contrib/IPython-notebook-extensions</code> repo</a> and extracted to <code>~/.ipython/nbextensions/IPython-notebook-extensions</code></p>
+<p>...ended in</p>
+<pre><code>Package: nbextensions-master-py35_0
+source tree in: /home/louis/anaconda3/conda-bld/work
++ python setup.py install
+Traceback (most recent call last):
+  File "setup.py", line 10, in &lt;module&gt;
+    import IPython
+  File "/home/louis/anaconda3/envs/_build/lib/python3.5/site-packages/IPython/__init__.py", line 47, in &lt;module&gt;
+    from .core.application import Application
+  File "/home/louis/anaconda3/envs/_build/lib/python3.5/site-packages/IPython/core/application.py", line 24, in &lt;module&gt;
+    from IPython.core import release, crashhandler
+  File "/home/louis/anaconda3/envs/_build/lib/python3.5/site-packages/IPython/core/crashhandler.py", line 28, in &lt;module&gt;
+    from IPython.core import ultratb
+  File "/home/louis/anaconda3/envs/_build/lib/python3.5/site-packages/IPython/core/ultratb.py", line 116, in &lt;module&gt;
+    from IPython.utils import path as util_path
+  File "/home/louis/anaconda3/envs/_build/lib/python3.5/site-packages/IPython/utils/path.py", line 19, in &lt;module&gt;
+    from IPython.utils.process import system
+  File "/home/louis/anaconda3/envs/_build/lib/python3.5/site-packages/IPython/utils/process.py", line 19, in &lt;module&gt;
+    from ._process_posix import system, getoutput, arg_split, check_pid
+  File "/home/louis/anaconda3/envs/_build/lib/python3.5/site-packages/IPython/utils/_process_posix.py", line 24, in &lt;module&gt;
+    import pexpect
+  File "/home/louis/anaconda3/envs/_build/lib/python3.5/site-packages/pexpect/__init__.py", line 69, in &lt;module&gt;
+    from .exceptions import ExceptionPexpect, EOF, TIMEOUT
+ImportError: No module named 'pexpect.exceptions'
+Command failed: /bin/bash -x -e /home/louis/anaconda3/conda-bld/work/conda_build.sh
+</code></pre>
+<p>(<code>pexpect</code> is installed with pip3 in anaconda3 environment)</p>
+<p><img align="absmiddle" alt=":disappointed:" class="emoji" data-canonical-src="https://assets-cdn.github.com/images/icons/emoji/unicode/1f61e.png" height="20" src="https://camo.githubusercontent.com/84a9aa7233e1997d96d7fc096ca83dd70b421997/68747470733a2f2f6173736574732d63646e2e6769746875622e636f6d2f696d616765732f69636f6e732f656d6f6a692f756e69636f64652f31663631652e706e67" title=":disappointed:" width="20"/></p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#alternative-approach-to-conda" id="user-content-alternative-approach-to-conda"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Alternative approach to Conda</h2>
+<p><code>./setup.py install</code></p>
+<pre><code>./setup.py: line 2: $'\r': command not found
+from: can't read /var/mail/jupyter_core.paths
+from: can't read /var/mail/traitlets.config.loader
+</code></pre>
+<p>...maybe not then</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#without-trying-to-install-any-other-extensions" id="user-content-without-trying-to-install-any-other-extensions"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>...without trying to install any other extensions</h2>
+<p>Copied the <code>IPython-notebook-extensions/extensions/pre_pymarkdown.py</code> file into <code>$PYTHONPATH</code> as recommended</p>
+<blockquote>
+<p>In order to have <code>nbconvert</code> show the preprocessed output, copy the <code>pymdpreprocessor.py</code> file to a location in your <code>PYTHONPATH</code></p>
+</blockquote>
+<p>(it must have been renamed to <code>pre_pymarkdown.py</code> to indicate preprocessor)</p>
+<ul>
+<li>
+<code>PYTHONPATH</code> is <code>~/lib/root</code> for me</li>
+</ul>
+<div class="highlight highlight-source-shell"><pre>chmod +x pre_pymarkdown.py
+cp pre_pymarkdown.py <span class="pl-k">~</span>/lib/root/</pre></div>
+<h3>
+<a aria-hidden="true" class="anchor" href="#tada-installed-tada" id="user-content-tada-installed-tada"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><img align="absmiddle" alt=":tada:" class="emoji" data-canonical-src="https://assets-cdn.github.com/images/icons/emoji/unicode/1f389.png" height="20" src="https://camo.githubusercontent.com/ce30a052daa7777afd0c1cd589dfbbde03862d56/68747470733a2f2f6173736574732d63646e2e6769746875622e636f6d2f696d616765732f69636f6e732f656d6f6a692f756e69636f64652f31663338392e706e67" title=":tada:" width="20"/> <em>Installed</em> <img align="absmiddle" alt=":tada:" class="emoji" data-canonical-src="https://assets-cdn.github.com/images/icons/emoji/unicode/1f389.png" height="20" src="https://camo.githubusercontent.com/ce30a052daa7777afd0c1cd589dfbbde03862d56/68747470733a2f2f6173736574732d63646e2e6769746875622e636f6d2f696d616765732f69636f6e732f656d6f6a692f756e69636f64652f31663338392e706e67" title=":tada:" width="20"/>
+</h3>
+<pre><code>&gt;&gt;&gt; import pre_pymarkdown
+&gt;&gt;&gt; pre_pymarkdown.
+pre_pymarkdown.CSSHTMLHeaderPreprocessor(    pre_pymarkdown.__lt__(
+pre_pymarkdown.ClearOutputPreprocessor(      pre_pymarkdown.__name__
+pre_pymarkdown.ConvertFiguresPreprocessor(   pre_pymarkdown.__ne__(
+pre_pymarkdown.ExecutePreprocessor(          pre_pymarkdown.__new__(
+pre_pymarkdown.ExtractOutputPreprocessor(    pre_pymarkdown.__package__
+pre_pymarkdown.HighlightMagicsPreprocessor(  pre_pymarkdown.__reduce__(
+pre_pymarkdown.LatexPreprocessor(            pre_pymarkdown.__reduce_ex__(
+pre_pymarkdown.Preprocessor(                 pre_pymarkdown.__repr__(
+pre_pymarkdown.PyMarkdownPreprocessor(       pre_pymarkdown.__setattr__(
+pre_pymarkdown.RevealHelpPreprocessor(       pre_pymarkdown.__sizeof__(
+pre_pymarkdown.SVG2PDFPreprocessor(          pre_pymarkdown.__spec__
+pre_pymarkdown.__cached__                    pre_pymarkdown.__str__(
+pre_pymarkdown.__class__(                    pre_pymarkdown.__subclasshook__(
+pre_pymarkdown.__delattr__(                  pre_pymarkdown.base
+pre_pymarkdown.__dict__                      pre_pymarkdown.clearoutput
+pre_pymarkdown.__dir__(                      pre_pymarkdown.coalesce_streams(
+pre_pymarkdown.__doc__                       pre_pymarkdown.coalescestreams
+pre_pymarkdown.__eq__(                       pre_pymarkdown.convertfigures
+pre_pymarkdown.__file__                      pre_pymarkdown.csshtmlheader
+pre_pymarkdown.__format__(                   pre_pymarkdown.execute
+pre_pymarkdown.__ge__(                       pre_pymarkdown.extractoutput
+pre_pymarkdown.__getattribute__(             pre_pymarkdown.highlightmagics
+pre_pymarkdown.__gt__(                       pre_pymarkdown.latex
+pre_pymarkdown.__hash__(                     pre_pymarkdown.re
+pre_pymarkdown.__init__(                     pre_pymarkdown.revealhelp
+pre_pymarkdown.__le__(                       pre_pymarkdown.svg2pdf
+pre_pymarkdown.__loader__ 
+</code></pre>
+<p>...I stumbled upon <a href="https://github.com/ipython-contrib/IPython-notebook-extensions/issues/381#issuecomment-152864086">this issue</a> comment from 1st Nov 2015, not recommending Conda installation, just simply python installation (my <code>python</code> is actually in the <code>anaconda3</code> environment...)</p>
+<blockquote>
+<p>The easiest way is to install all extensions using <code>python setup.py install</code>, start the jupyter notebook and then go to <a href="http://localhost:8888/nbextensions" rel="nofollow">http://localhost:8888/nbextensions</a> where you should see this:</p>
+<p><img alt="" src="https://github.com/ipython-contrib/IPython-notebook-extensions/raw/master/nbextensions/config/icon.png"/></p>
+<p>Now you can activate/deactivate all available extensions. Using jupyter nbextensions enable  leads to the difficulties you encountered, i.e. you specify an extension name that is not the name of the actual file.</p>
+</blockquote>
+<ul>
+<li>I'd already downloaded the master branch and unzipped to <code>~/.ipython/nbextensions/IPython-notebook-extensions</code>
+</li>
+<li>it installed without problem</li>
+<li>ticking the Python Markdown option at the link above enabled the config (in <code>~/.jupyter/nbconfig/notebook.json</code>) :</li>
+</ul>
+<div class="highlight highlight-source-json"><pre>{
+  <span class="pl-s"><span class="pl-pds">"</span>load_extensions<span class="pl-pds">"</span></span>: {
+    <span class="pl-s"><span class="pl-pds">"</span>usability/python-markdown/main<span class="pl-pds">"</span></span>: <span class="pl-c1">true</span>,
+    <span class="pl-s"><span class="pl-pds">"</span>python-markdown/main<span class="pl-pds">"</span></span>: <span class="pl-c1">true</span>
+  }
+}</pre></div>
+<p>plus added a <code>jupyter_notebook_config.json</code> directly under `~/.jupyter</p>
+<div class="highlight highlight-source-json"><pre>{
+  <span class="pl-s"><span class="pl-pds">"</span>Exporter<span class="pl-pds">"</span></span>: {
+    <span class="pl-s"><span class="pl-pds">"</span>preprocessors<span class="pl-pds">"</span></span>: [
+      <span class="pl-s"><span class="pl-pds">"</span>pre_codefolding.CodeFoldingPreprocessor<span class="pl-pds">"</span></span>,
+      <span class="pl-s"><span class="pl-pds">"</span>pre_pymarkdown.PyMarkdownPreprocessor<span class="pl-pds">"</span></span>
+    ],
+    <span class="pl-s"><span class="pl-pds">"</span>template_path<span class="pl-pds">"</span></span>: [
+      <span class="pl-s"><span class="pl-pds">"</span>/home/louis/.local/share/jupyter/templates<span class="pl-pds">"</span></span>
+    ]
+  },
+  <span class="pl-s"><span class="pl-pds">"</span>NbConvertApp<span class="pl-pds">"</span></span>: {
+    <span class="pl-s"><span class="pl-pds">"</span>postprocessor_class<span class="pl-pds">"</span></span>: <span class="pl-s"><span class="pl-pds">"</span>post_embedhtml.EmbedPostProcessor<span class="pl-pds">"</span></span>
+  },
+  <span class="pl-s"><span class="pl-pds">"</span>NotebookApp<span class="pl-pds">"</span></span>: {
+    <span class="pl-s"><span class="pl-pds">"</span>server_extensions<span class="pl-pds">"</span></span>: [
+      <span class="pl-s"><span class="pl-pds">"</span>nbextensions<span class="pl-pds">"</span></span>
+    ]
+  },
+  <span class="pl-s"><span class="pl-pds">"</span>version<span class="pl-pds">"</span></span>: <span class="pl-c1">1</span>
+}</pre></div>
+
+        </div>
+
+        <div class="wiki-footer gollum-markdown-content boxed-group" id="wiki-footer">
+          <div class="boxed-group-inner wiki-auxiliary-content markdown-body">
+            <p><a href="https://github.com/lmmx/devnotes/wiki">Main page</a></p>
+
+          </div>
+        </div>
+    </div>]

@@ -1,0 +1,103 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <h1>
+<a aria-hidden="true" class="anchor" href="#introduction" id="user-content-introduction"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Introduction</h1>
+<p>NEERCService is our own jabber server component (see <a href="http://xmpp.org/extensions/xep-0114.html" rel="nofollow">Jabber Component Protocol</a>), to which clients communicate independently of MUC (chat) service.</p>
+<p>Similar to MUC, it has fixed JID (neerc.%hostname%), known by client.</p>
+<h1>
+<a aria-hidden="true" class="anchor" href="#use-cases" id="user-content-use-cases"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Use cases</h1>
+<p>Clients can send following queries via iq stanzas:</p>
+<ul>
+<li>Query user list with group and power flag</li>
+<li>Query current task list (including task status for current user or all users)</li>
+<li>Change task status for a task for sending user</li>
+<li>Add new task (admin only)</li>
+<li>Remove task (admin only)</li>
+<li>Assign task to user/group (admin only)</li>
+</ul>
+<p>Groups and admin list are extracted from MUC service.
+On any task change, component should notify all users.</p>
+<h1>
+<a aria-hidden="true" class="anchor" href="#protocol" id="user-content-protocol"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Protocol</h1>
+<h2>
+<a aria-hidden="true" class="anchor" href="#querying-user-list" id="user-content-querying-user-list"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Querying user list</h2>
+<p>Request:</p>
+<pre><code>&lt;iq type="get" to="neerc.localhost"&gt;
+    &lt;query xmlns="http://neerc.ifmo.ru/protocol/neerc#users" /&gt;
+&lt;/iq&gt;
+</code></pre>
+<p>Response:</p>
+<pre><code>&lt;iq type="result" from="neerc.localhost" to="hall2@localhost/Miranda"&gt;
+  &lt;query xmlns="http://neerc.ifmo.ru/protocol/neerc#users"&gt;
+    &lt;user name="admin" group="Admins" power="yes" /&gt;
+    &lt;user name="hall1" group="Halls" power="no" /&gt;
+...
+    &lt;user name="hall7" group="Halls" power="no" /&gt;
+  &lt;/query&gt;
+&lt;/iq&gt;
+</code></pre>
+<h2>
+<a aria-hidden="true" class="anchor" href="#querying-task-list" id="user-content-querying-task-list"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Querying task list</h2>
+<p>Request:</p>
+<pre><code>&lt;iq type="get" to="neerc.localhost"&gt;
+  &lt;query xmlns="http://neerc.ifmo.ru/protocol/neerc#tasks" /&gt;
+&lt;/iq&gt;
+</code></pre>
+<p>Response:</p>
+<pre><code>&lt;iq from="neerc.localhost" type="result" to="admin@localhost/Kopete" &gt;
+  &lt;query xmlns="http://neerc.ifmo.ru/protocol/neerc#tasks"&gt;
+    &lt;task title="Do some work" type="todo" id="12345"&gt;
+      &lt;status for="hall1" type="none" /&gt;
+      &lt;status for="hall2" type="running" /&gt;
+      &lt;status for="hall3" type="success" /&gt;
+    &lt;/task&gt;
+    &lt;task title="You here?" type="confirm" id="12346"&gt;
+      &lt;status for="hall1" type="none" /&gt;
+      &lt;status for="hall2" type="success" /&gt;
+    &lt;/task&gt;
+    &lt;task title="Wallpapers set?" type="okfail" id="12347"&gt;
+      &lt;status for="hall1" type="none" /&gt;
+      &lt;status for="hall2" type="success" /&gt;
+      &lt;status for="hall3" type="fail" value="none of 'em" /&gt;
+    &lt;/task&gt;
+    &lt;task title="???" type="question" id="12348"&gt;
+      &lt;status for="hall1" type="none" /&gt;
+      &lt;status for="hall2" type="success" value="42" /&gt;
+    &lt;/task&gt;
+    ...
+  &lt;/query&gt;
+&lt;/iq&gt;
+</code></pre>
+<h2>
+<a aria-hidden="true" class="anchor" href="#creatingupdating-task-admin-only" id="user-content-creatingupdating-task-admin-only"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Creating/updating task (admin only)</h2>
+<p>Request:</p>
+<pre><code>&lt;iq type="set" to="neerc.localhost"&gt;
+   &lt;!-- absent id attribute means new task --&gt;
+   &lt;task xmlns="http://neerc.ifmo.ru/protocol/neerc#task" title="Do some work" type="todo"&gt;
+     &lt;status for="hall1" type="none" /&gt;
+     &lt;status for="hall2" type="running" /&gt;
+     &lt;status for="hall3" type="success" /&gt;
+   &lt;/task&gt;
+&lt;/iq&gt;
+</code></pre>
+<p>To delete an existing task, specify "remove" as its type:</p>
+<pre><code>&lt;iq type="set" to="neerc.localhost"&gt;
+   &lt;task xmlns="http://neerc.ifmo.ru/protocol/neerc#task" id="12346" type="remove" /&gt;
+&lt;/iq&gt;
+</code></pre>
+<p>Response:</p>
+<p>Error 403 if not admin, otherwise irrelevant.</p>
+<p>Server also should notify everyone of this change using messages with same packet attached as extension.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#updating-task-status" id="user-content-updating-task-status"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Updating task status</h2>
+<p>Request:</p>
+<pre><code>&lt;iq type="set" to="neerc.localhost" from="hall2"&gt;
+   &lt;taskstatus xmlns="http://neerc.ifmo.ru/protocol/neerc#taskstatus" id="12345" type="success" value="done" /&gt;
+&lt;/iq&gt;
+</code></pre>
+<p>Response:</p>
+<p>Irrelevant, server also should notify everyone of this change using task packet (see above)</p>
+
+        </div>
+
+    </div>]

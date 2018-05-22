@@ -1,0 +1,91 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>Welcome to the liftweb_basic_squeryl_record wiki!</p>
+<p>Following configuraion steps are performed to include the Squeryl-Record module into the lift_basic template. Configuration involves setting up the H2 database, configuring Squeryl and Record and setting up a JNDI datasource</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#configuring-h2-db" id="user-content-configuring-h2-db"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Configuring H2 DB</h2>
+<p>Add the following to libraryDependencies ++= { section of the build.sbt</p>
+<p><code>"com.h2database" % "h2" % "1.3.167",</code></p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#configuring-squeryl-and-record" id="user-content-configuring-squeryl-and-record"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Configuring Squeryl and Record</h2>
+<p>Include Squeryl-Record depencencies in build.sbt by adding the following to libraryDependencies ++= { section of the build.sbt
+<code>"net.liftweb" %% "lift-record" % liftVersion,</code><br/>
+<code>"net.liftweb" %% "lift-squeryl-record" % liftVersion,</code></p>
+<p>Need to use some api from mapper, so added the following libraryDependencies ++= { section of the build.sbt
+<code>"net.liftweb" %% "lift-mapper" % liftVersion % "compile",</code></p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#using-a-jndi-datasource" id="user-content-using-a-jndi-datasource"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Using a JNDI Datasource</h2>
+<p>We have to use a Java Naming and Directory Interface (JNDI) data source for our Record-Squeryl Lift application. To setup JNDI with Jetty add the following to libraryDependencies ++= { section of the build.sbt
+<code>"org.eclipse.jetty" % "jetty-plus" % "8.1.7.v20120910" % "container,test"</code></p>
+<p>Add the following to <strong>Boot.scala</strong></p>
+<div class="highlight highlight-source-scala"><pre><span class="pl-en">DefaultConnectionIdentifier</span>.jndiName <span class="pl-k">=</span> <span class="pl-en">Props</span>.get(<span class="pl-s"><span class="pl-pds">"</span>jndi.name<span class="pl-pds">"</span></span>) openOr <span class="pl-s"><span class="pl-pds">"</span>jdbc/bookstoredb<span class="pl-pds">"</span></span>
+<span class="pl-k">val</span> <span class="pl-smi">ds</span> <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-en">InitialContext</span>().lookup(<span class="pl-s"><span class="pl-pds">"</span>java:comp/env/jdbc/bookstoredb<span class="pl-pds">"</span></span>).<span class="pl-c1">asInstanceOf</span>[<span class="pl-en">DataSource</span>]
+<span class="pl-en">SquerylRecord</span>.initWithSquerylSession(<span class="pl-en">Session</span>.create(ds.getConnection(), <span class="pl-k">new</span> <span class="pl-en">H2Adapter</span>))
+
+<span class="pl-c"><span class="pl-c">//</span>in dev mode print schema</span>
+inTransaction {
+  <span class="pl-c"><span class="pl-c">//</span>uncomment following 2 lines to drop schema and create a new one.</span>
+  <span class="pl-c"><span class="pl-c">//</span>if you run the application for the first you want to create the schema by uncommenting these lines,</span>
+  <span class="pl-c"><span class="pl-c">//</span>after that comment them so the schema is drop and created again.</span>
+  <span class="pl-en">DemoSchema</span>.drop
+  <span class="pl-en">DemoSchema</span>.create
+
+  <span class="pl-c"><span class="pl-c">//</span>this statement prints the schema</span>
+  <span class="pl-en">DemoSchema</span> printDdl
+}
+
+<span class="pl-c"><span class="pl-c">//</span>All Squeryl queries need to run in the context of a transaction</span>
+<span class="pl-c"><span class="pl-c">//</span>Configure a transaction around all HTTP requests</span>
+<span class="pl-en">S</span>.addAround(<span class="pl-k">new</span> <span class="pl-en">LoanWrapper</span> {
+  <span class="pl-k">override</span> <span class="pl-k">def</span> <span class="pl-en">apply</span>[<span class="pl-en">T</span>](<span class="pl-v">f</span>: <span class="pl-k">=&gt;</span> <span class="pl-en">T</span>)<span class="pl-k">:</span> <span class="pl-en">T</span> <span class="pl-k">=</span> {
+    <span class="pl-k">val</span> <span class="pl-smi">result</span> <span class="pl-k">=</span> inTransaction {
+      <span class="pl-k">try</span> {
+        <span class="pl-en">Right</span>(f)
+      } <span class="pl-k">catch</span> {
+        <span class="pl-k">case</span> <span class="pl-v">e</span>: <span class="pl-en">LiftFlowOfControlException</span> <span class="pl-k">=&gt;</span> <span class="pl-en">Left</span>(e)
+      }
+    }
+
+    result <span class="pl-k">match</span> {
+      <span class="pl-k">case</span> <span class="pl-en">Right</span>(r) <span class="pl-k">=&gt;</span> r
+      <span class="pl-k">case</span> <span class="pl-en">Left</span>(exception) <span class="pl-k">=&gt;</span> <span class="pl-k">throw</span> exception
+      }
+    }
+})</pre></div>
+<p>Setup the JNDI datasource,</p>
+<ul>
+<li>Create a jetty-env.xml in WEB-INF containing the following,</li>
+</ul>
+<div class="highlight highlight-text-xml"><pre>&lt;!<span class="pl-k">DOCTYPE</span> <span class="pl-c1">Configure</span> PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure.dtd"&gt;
+&lt;<span class="pl-ent">Configure</span> <span class="pl-e">class</span>=<span class="pl-s"><span class="pl-pds">"</span>org.eclipse.jetty.webapp.WebAppContext<span class="pl-pds">"</span></span>&gt;
+    &lt;<span class="pl-ent">New</span> <span class="pl-e">id</span>=<span class="pl-s"><span class="pl-pds">"</span>demodb<span class="pl-pds">"</span></span> <span class="pl-e">class</span>=<span class="pl-s"><span class="pl-pds">"</span>org.eclipse.jetty.plus.jndi.Resource<span class="pl-pds">"</span></span>&gt;
+        &lt;<span class="pl-ent">Arg</span>&gt;&lt;/<span class="pl-ent">Arg</span>&gt;
+        &lt;<span class="pl-ent">Arg</span>&gt;jdbc/demodb&lt;/<span class="pl-ent">Arg</span>&gt;
+        &lt;<span class="pl-ent">Arg</span>&gt;
+            &lt;<span class="pl-ent">New</span> <span class="pl-e">class</span>=<span class="pl-s"><span class="pl-pds">"</span>org.h2.jdbcx.JdbcDataSource<span class="pl-pds">"</span></span>&gt;
+                <span class="pl-c"><span class="pl-c">&lt;!--</span>Set name="driverClass"&gt;org.h2.Driver&lt;/Set<span class="pl-c">--&gt;</span></span>
+                &lt;<span class="pl-ent">Set</span> <span class="pl-e">name</span>=<span class="pl-s"><span class="pl-pds">"</span>URL<span class="pl-pds">"</span></span>&gt;jdbc:h2:lift_proto.db&lt;/<span class="pl-ent">Set</span>&gt;
+                &lt;<span class="pl-ent">Set</span> <span class="pl-e">name</span>=<span class="pl-s"><span class="pl-pds">"</span>user<span class="pl-pds">"</span></span>&gt;""&lt;/<span class="pl-ent">Set</span>&gt;
+                &lt;<span class="pl-ent">Set</span> <span class="pl-e">name</span>=<span class="pl-s"><span class="pl-pds">"</span>password<span class="pl-pds">"</span></span>&gt;""&lt;/<span class="pl-ent">Set</span>&gt;
+            &lt;/<span class="pl-ent">New</span>&gt;
+        &lt;/<span class="pl-ent">Arg</span>&gt;
+    &lt;/<span class="pl-ent">New</span>&gt;
+&lt;/<span class="pl-ent">Configure</span>&gt;</pre></div>
+<ul>
+<li>Add the following to web.xml</li>
+</ul>
+<div class="highlight highlight-text-xml"><pre>&lt;<span class="pl-ent">resource-ref</span>&gt;
+  &lt;<span class="pl-ent">description</span>&gt;My DataSource Reference&lt;/<span class="pl-ent">description</span>&gt;
+  &lt;<span class="pl-ent">res-ref-name</span>&gt;jdbc/demodb&lt;/<span class="pl-ent">res-ref-name</span>&gt;
+  &lt;<span class="pl-ent">res-type</span>&gt;javax.sql.DataSource&lt;/<span class="pl-ent">res-type</span>&gt;
+  &lt;<span class="pl-ent">res-auth</span>&gt;Container&lt;/<span class="pl-ent">res-auth</span>&gt;
+&lt;/<span class="pl-ent">resource-ref</span>&gt;</pre></div>
+<ul>
+<li>Add the following line to build.sbt to make jetty-env accessible to jetty.</li>
+</ul>
+<div class="highlight highlight-source-scala"><pre>env in <span class="pl-en">Compile</span> <span class="pl-k">:</span><span class="pl-k">=</span> <span class="pl-en">Some</span>(file(<span class="pl-s"><span class="pl-pds">"</span>./src/main/webapp/WEB-INF/jetty-env.xml<span class="pl-pds">"</span></span>) asFile)</pre></div>
+<p>Thats it. Configuration is done.</p>
+
+        </div>
+
+    </div>]

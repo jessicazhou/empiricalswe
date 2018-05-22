@@ -1,0 +1,99 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>This tutorial will show you how to adapt the base application created with the netbeast package manager. We are going to create a Python server that works as a netbeast application. We need to create the app base with <a href="https://github.com/netbeast-co/docs/wiki/Dashboard-Starting-Guide"><strong>netbeast package manager</strong></a> and make some changes.</p>
+<p>- Delete <strong>node_modules</strong> folder (not required but recommended).</p>
+<p>- Adapt <strong>package.json</strong> file.</p>
+<pre><code>json{
+
+"name": "pythonServer",
+"version": "0.0.1",
+"description": "A sample app for you to start building!",
+"main": "server.py",                     //change
+"devDependencies": {},
+"scripts": {
+"test": "python server.py 31416",        //change
+"start": "python server.py"              //change
+},
+"keywords": [
+"netbeast",
+"iot",
+"netbeast"
+],
+"author": "netbeast",
+"license": "Apache V2"
+}
+
+</code></pre>
+<ul>
+<li>Create the server.</li>
+</ul>
+<div class="highlight highlight-source-python"><pre><span class="pl-c"><span class="pl-c">#</span>!/usr/bin/env python</span>
+
+<span class="pl-c"><span class="pl-c">#</span> server.py</span>
+
+<span class="pl-k">import</span> BaseHTTPServer
+<span class="pl-k">from</span> SimpleHTTPServer <span class="pl-k">import</span> SimpleHTTPRequestHandler
+<span class="pl-k">from</span> optparse <span class="pl-k">import</span> OptionParser
+HandlerClass <span class="pl-k">=</span> SimpleHTTPRequestHandler
+ServerClass <span class="pl-k">=</span> BaseHTTPServer.HTTPServer
+Protocol <span class="pl-k">=</span> <span class="pl-s"><span class="pl-pds">"</span>HTTP/1.0<span class="pl-pds">"</span></span>
+parser <span class="pl-k">=</span> OptionParser()
+
+parser.add_option(<span class="pl-s"><span class="pl-pds">"</span>--port<span class="pl-pds">"</span></span>,
+<span class="pl-v">action</span><span class="pl-k">=</span><span class="pl-s"><span class="pl-pds">"</span>store<span class="pl-pds">"</span></span>, <span class="pl-v">type</span><span class="pl-k">=</span><span class="pl-s"><span class="pl-pds">"</span>int<span class="pl-pds">"</span></span>, <span class="pl-v">dest</span><span class="pl-k">=</span><span class="pl-s"><span class="pl-pds">"</span>port<span class="pl-pds">"</span></span>, <span class="pl-v">default</span><span class="pl-k">=</span><span class="pl-c1">50052</span>,
+<span class="pl-v">help</span><span class="pl-k">=</span><span class="pl-s"><span class="pl-pds">"</span>set server port<span class="pl-pds">"</span></span>)
+(options, args) <span class="pl-k">=</span> parser.parse_args()
+server_address <span class="pl-k">=</span> (<span class="pl-s"><span class="pl-pds">'</span>0.0.0.0<span class="pl-pds">'</span></span>, options.port)
+
+HandlerClass.protocol_version <span class="pl-k">=</span> Protocol
+httpd <span class="pl-k">=</span> ServerClass(server_address, HandlerClass)
+
+sa <span class="pl-k">=</span> httpd.socket.getsockname()
+<span class="pl-c1">print</span> <span class="pl-s"><span class="pl-pds">"</span>Serving HTTP on<span class="pl-pds">"</span></span>, sa[<span class="pl-c1">0</span>], <span class="pl-s"><span class="pl-pds">"</span>port<span class="pl-pds">"</span></span>, sa[<span class="pl-c1">1</span>], <span class="pl-s"><span class="pl-pds">"</span>...<span class="pl-pds">"</span></span>
+httpd.serve_forever()
+</pre></div>
+<p>There are two major changes:</p>
+<ul>
+<li>Shebang has changed.</li>
+</ul>
+<pre><code>#!/usr/bin/env node    //before
+
+#!/usr/bin/env python  //after
+</code></pre>
+<ul>
+<li>Netbeast´s apps need to be able to receive a port number from command line, so in this case, we included a parser.</li>
+</ul>
+<pre><code>from optparse import OptionParser
+
+[...]
+
+parser = OptionParser()
+
+parser.add_option("--port",
+action="store", type="int", dest="port", default=50052,
+help="set server port")
+(options, args) = parser.parse_args()
+</code></pre>
+<p>Any doubt reach us at @netbeast_co (twitter) or staff [at] netbeast.co.</p>
+
+        </div>
+
+        <div class="wiki-footer gollum-markdown-content boxed-group" id="wiki-footer">
+          <div class="boxed-group-inner wiki-auxiliary-content markdown-body">
+            <p># <code>warning</code>: now our docs are being published in our gitbook and available on our website. Visit <a href="http://docs.netbeast.co/" rel="nofollow">http://docs.netbeast.co/</a></p>
+<h1>
+<a aria-hidden="true" class="anchor" href="#contact" id="user-content-contact"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Contact</h1>
+<ul>
+<li>Visit our site <a href="https://netbeast.co" rel="nofollow">https://netbeast.co</a>
+</li>
+<li>Mail us: staff [at] netbeast.co</li>
+<li>Report a bug or enter discussion at <a href="https://github.com/netbeast-co/docs/issues">issues</a>
+</li>
+<li>Other resources: <a href="https://github.com/netbeast-co/dashboard">Dashboard</a>, Netbeast <a href="https://github.com/netbeast-co/API">API</a>
+</li>
+</ul>
+<p><a href="https://gitter.im/netbeast-co/xway?utm_source=badge&amp;utm_medium=badge&amp;utm_campaign=pr-badge" rel="nofollow"><img alt="Gitter" data-canonical-src="https://badges.gitter.im/Join%20Chat.svg" src="https://camo.githubusercontent.com/da2edb525cde1455a622c58c0effc3a90b9a181c/68747470733a2f2f6261646765732e6769747465722e696d2f4a6f696e253230436861742e737667"/></a></p>
+
+          </div>
+        </div>
+    </div>]

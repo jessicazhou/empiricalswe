@@ -1,0 +1,165 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>This version of Open mHealth DSU allows users to sign-in using their Google account, and allows an app, authenticated through OAuth, to upload or query data. This wiki page goes through the necessary process for a mobile app (referred to as "app" below) to integrate with the DSU. A mobile app will need an OAuth Client ID and Secret to interact with the DSU. Please consult the DSU admin if you haven't got one already. A running DSU instance is available at <a href="https://lifestreams.smalldata.io/dsu/" rel="nofollow">https://lifestreams.smalldata.io/dsu/</a> for testing.</p>
+<h1>
+<a aria-hidden="true" class="anchor" href="#mobile-user-sign-in-and-oauth-procedure" id="user-content-mobile-user-sign-in-and-oauth-procedure"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Mobile User Sign-In and OAuth Procedure</h1>
+<ul>
+<li>Once the app is installed, the app should prompt the user with a view containing a "Sign in with Google" button (you can choose the style/size that fit the app at <a href="https://developers.google.com/+/branding-guidelines" rel="nofollow">Google Branding Guide</a>):
+<img alt="Google Sign-In Button" data-canonical-src="https://developers.google.com/+/images/branding/sign-in-buttons/Red-signin_Long_base_44dp.png" src="https://camo.githubusercontent.com/ca94b0a5f1c9baddd5299ef1e942085052a58843/68747470733a2f2f646576656c6f706572732e676f6f676c652e636f6d2f2b2f696d616765732f6272616e64696e672f7369676e2d696e2d627574746f6e732f5265642d7369676e696e5f4c6f6e675f626173655f343464702e706e67"/>
+</li>
+<li>When user clicks the button, sign the user into DSU. There are two ways to implement DSU sign-in:
+<ul>
+<li>
+<ol>
+<li>Using <strong>Google Access Token</strong>
+</li>
+</ol>
+</li>
+<li>
+<ol start="2">
+<li>Using <strong>One-time Authorization Code</strong>
+</li>
+</ol>
+</li>
+<li>
+<ol start="3">
+<li>Using <strong>WebView-based</strong> Sign-In.</li>
+</ol>
+</li>
+</ul>
+</li>
+</ul>
+<p>The first approach is usually preferred for its simplicity. All three approaches are described below:</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#sign-in-using-google-access-token-recommended" id="user-content-sign-in-using-google-access-token-recommended"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Sign-In Using Google Access Token (<strong>recommended</strong>)</h2>
+<ul>
+<li>The following guide describes the procedure of signing in the DSU using the <strong>Google Access Token</strong> returned by Google API.</li>
+<li>The app should connect to the Google API and obtain the access token for the <em><strong>"email profile"</strong></em> scope. Please follow the instructions of your platform: <a href="https://developers.google.com/+/mobile/ios/sign-in" rel="nofollow">iOS</a>, <a href="https://developers.google.com/+/mobile/android/sign-in" rel="nofollow">Android</a>
+</li>
+<li>Send a POST request to the following endpoint on DSU (relative to the root url of the DSU):</li>
+</ul>
+<div class="highlight highlight-source-httpspec"><pre>/social-signin/google</pre></div>
+<ul>
+<li>
+<p><strong>with the form parameters:</strong></p>
+<ul>
+<li>
+<strong>client_id</strong>:  Your DSU Client ID</li>
+<li>
+<strong>client_secret</strong>: Your DSU Client Secret</li>
+<li>
+<strong>access_token</strong>: Google access token</li>
+</ul>
+</li>
+<li>
+<p>Note that the client ID here is the app's DSU client ID/secret <strong>granted by the DSU</strong>, not the app's google client id.</p>
+</li>
+<li>
+<p>The DSU will return the access token in JSON as follows:</p>
+</li>
+</ul>
+<div class="highlight highlight-source-json"><pre>{
+    <span class="pl-s"><span class="pl-pds">"</span>access_token<span class="pl-pds">"</span></span>: <span class="pl-s"><span class="pl-pds">"</span>ceb1c6de-ab22-473e-8e3f-65879fa5053b<span class="pl-pds">"</span></span>,
+    <span class="pl-s"><span class="pl-pds">"</span>token_type<span class="pl-pds">"</span></span>: <span class="pl-s"><span class="pl-pds">"</span>bearer<span class="pl-pds">"</span></span>,
+    <span class="pl-s"><span class="pl-pds">"</span>refresh_token<span class="pl-pds">"</span></span>: <span class="pl-s"><span class="pl-pds">"</span>72ef37d2-0220-4579-b675-539b8fd90297<span class="pl-pds">"</span></span>,
+    <span class="pl-s"><span class="pl-pds">"</span>expires_in<span class="pl-pds">"</span></span>: <span class="pl-c1">43199</span>,
+    <span class="pl-s"><span class="pl-pds">"</span>scope<span class="pl-pds">"</span></span>: <span class="pl-s"><span class="pl-pds">"</span>write_data_points<span class="pl-pds">"</span></span>
+}</pre></div>
+<ul>
+<li>Store the access token and refresh token at somewhere as it is needed in query/uploading data to DSU.</li>
+</ul>
+<h2>
+<a aria-hidden="true" class="anchor" href="#sign-in-using-one-time-authorization-code" id="user-content-sign-in-using-one-time-authorization-code"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Sign-In Using One-Time Authorization Code</h2>
+<ul>
+<li>The following guide describes the procedure of signing in the DSU using the <strong>One-Time Authorization Code</strong> returned by Google API.</li>
+<li>The app should connect to the Google API and obtain a One-Time Auth Code for <strong>Server-side API access</strong>. Please follow the instructions for your platform: <a href="https://developers.google.com/+/mobile/ios/sign-in#enable_server-side_api_access_for_your_app" rel="nofollow">iOS</a>, <a href="https://developers.google.com/+/mobile/android/sign-in#enable_server-side_api_access_for_your_app" rel="nofollow">Android</a>.</li>
+<li>You will need both <strong>your own app's google client id</strong> and the <strong>DSU's google client id</strong> when obtaining the code (the app's client id is optional in Android, but is required in iOS):
+<ul>
+<li>The test DSU server's Google Client ID is: <code>48636836762-mulldgpmet2r4s3f16s931ea9crcc64m.apps.googleusercontent.com</code>
+</li>
+<li>The scope in use is: <code>email https://www.googleapis.com/auth/userinfo.profile</code>
+</li>
+</ul>
+</li>
+<li>Obtain the one-time authorization code following the instructions, and send a GET request to the following endpoint on DSU (relative to the root url of the DSU):</li>
+</ul>
+<div class="highlight highlight-source-httpspec"><pre>/google-signin?code=fromApp_{<span class="pl-ii">OBTAINED_AUTH_CODE</span>}&amp;client_id={<span class="pl-ii">YOUR_DSU_CLIENT_ID</span>}</pre></div>
+<ul>
+<li>
+<p><strong>with header:</strong></p>
+<ul>
+<li>
+<strong>Authorization</strong>:
+<code>Basic {Base64-Encoded YOUR_DSU_CLIENT_ID:YOUR_DSU_CLIENT_SECRET}</code>.</li>
+</ul>
+</li>
+<li>
+<p>Note that the client ID here is the app's client ID <strong>granted by the DSU</strong>, not the app's google client id you used in obtaining the One-Time Auth Code. Same for the client secret.  The "client_id:client_secret" part of the Authorization header should be encoded in Base64. For example, for client ID: "android-app" and client secret: "secret", the header should be <em>"Basic YW5kcm9pZC1hcHA6c2VjcmV0"</em></p>
+</li>
+</ul>
+<p>The request should look something like this:</p>
+<div class="highlight highlight-source-httpspec"><pre><span class="pl-k">GET</span><span class="pl-c1"> /dsu/google-signin?code=fromApp_12345678&amp;client_id=org.example.client HTTP/1.1</span>
+<span class="pl-s"><span class="pl-v">Host:</span> lifestreams.smalldata.io</span>
+<span class="pl-s"><span class="pl-v">Authorization:</span> Basic YW5kcm9pZC1hcHA6c2VjcmV0</span></pre></div>
+<ul>
+<li>The DSU will return the access token in JSON as follows:</li>
+</ul>
+<div class="highlight highlight-source-json"><pre>{
+    <span class="pl-s"><span class="pl-pds">"</span>access_token<span class="pl-pds">"</span></span>: <span class="pl-s"><span class="pl-pds">"</span>ceb1c6de-ab22-473e-8e3f-65879fa5053b<span class="pl-pds">"</span></span>,
+    <span class="pl-s"><span class="pl-pds">"</span>token_type<span class="pl-pds">"</span></span>: <span class="pl-s"><span class="pl-pds">"</span>bearer<span class="pl-pds">"</span></span>,
+    <span class="pl-s"><span class="pl-pds">"</span>refresh_token<span class="pl-pds">"</span></span>: <span class="pl-s"><span class="pl-pds">"</span>72ef37d2-0220-4579-b675-539b8fd90297<span class="pl-pds">"</span></span>,
+    <span class="pl-s"><span class="pl-pds">"</span>expires_in<span class="pl-pds">"</span></span>: <span class="pl-c1">43199</span>,
+    <span class="pl-s"><span class="pl-pds">"</span>scope<span class="pl-pds">"</span></span>: <span class="pl-s"><span class="pl-pds">"</span>write_data_points<span class="pl-pds">"</span></span>
+}</pre></div>
+<ul>
+<li>Store the access token and refresh token at somewhere as it is needed in query/uploading data to DSU.</li>
+</ul>
+<h2>
+<a aria-hidden="true" class="anchor" href="#sign-in-using-webview" id="user-content-sign-in-using-webview"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Sign-In Using WebView</h2>
+<ul>
+<li>When user clicks the "Sign-In with Google" button, create a <strong>WebView</strong> pointing to the following url (relative to the root URL of the DSU):</li>
+</ul>
+<div class="highlight highlight-source-httpspec"><pre>/oauth/authorize?client_id={<span class="pl-ii">YOUR_CLIENT_ID</span>}&amp;response_type=code</pre></div>
+<p>For example: <code>https://lifestreams.smalldata.io/dsu/oauth/authorize?client_id=pamAndroidClient&amp;response_type=code</code></p>
+<ul>
+<li>The page will take the user through Google Sign-In process. If the sign-in <strong>succeeded</strong>, the WebView will be redirected to the location:</li>
+</ul>
+<div class="highlight highlight-source-httpspec"><pre>oauth://callback#code={<span class="pl-ii">OAUTH_CODE</span>}</pre></div>
+<p>, or if the sign-in <strong>failed</strong>, to the location:</p>
+<div class="highlight highlight-source-httpspec"><pre>oauth://callback?error={<span class="pl-ii">ERROR_MSG</span>}</pre></div>
+<ul>
+<li>When the sign-in succeeded, the app can exchange the code for an <strong>access token</strong> by sending a <strong>POST</strong> request to <code>/oauth/token</code> with the following parameters:
+<ul>
+<li>Headers
+<ul>
+<li>
+<strong>Authorization</strong>: "Basic {Base64-Encoded CLIENT_ID:CLIENT_SECRET}". For example, a client whose ID = "android-app" and Secret = "secret" should set the header as <em>"Basic YW5kcm9pZC1hcHA6c2VjcmV0"</em>
+</li>
+</ul>
+</li>
+<li>POST Parameters
+<ul>
+<li>
+<strong>code</strong>: the returned OAuth code.</li>
+<li>
+<strong>grant_type</strong>: should always be <em>"authorization_code"</em>.</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>The DSU will return the access token in JSON as follows:</li>
+</ul>
+<div class="highlight highlight-source-json"><pre>{
+    <span class="pl-s"><span class="pl-pds">"</span>access_token<span class="pl-pds">"</span></span>: <span class="pl-s"><span class="pl-pds">"</span>ceb1c6de-ab22-473e-8e3f-65879fa5053b<span class="pl-pds">"</span></span>,
+    <span class="pl-s"><span class="pl-pds">"</span>token_type<span class="pl-pds">"</span></span>: <span class="pl-s"><span class="pl-pds">"</span>bearer<span class="pl-pds">"</span></span>,
+    <span class="pl-s"><span class="pl-pds">"</span>refresh_token<span class="pl-pds">"</span></span>: <span class="pl-s"><span class="pl-pds">"</span>72ef37d2-0220-4579-b675-539b8fd90297<span class="pl-pds">"</span></span>,
+    <span class="pl-s"><span class="pl-pds">"</span>expires_in<span class="pl-pds">"</span></span>: <span class="pl-c1">43199</span>,
+    <span class="pl-s"><span class="pl-pds">"</span>scope<span class="pl-pds">"</span></span>: <span class="pl-s"><span class="pl-pds">"</span>write_data_points<span class="pl-pds">"</span></span>
+}</pre></div>
+<ul>
+<li>Store the access token and refresh token at somewhere as it is needed in query/uploading data to DSU.</li>
+</ul>
+
+        </div>
+
+    </div>]

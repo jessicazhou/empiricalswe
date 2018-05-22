@@ -1,0 +1,187 @@
+[<div class="wiki-body gollum-asciidoc-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <div>
+<div>Table of Contents</div>
+<ul>
+<li>
+<a href="#oasp-security">OASP Security</a>
+<ul>
+<li><a href="#how-oasp-security-works">How OASP Security works</a></li>
+<li><a href="#example">Example</a></li>
+<li><a href="#what-is-going-on-behind-the-scenes">What is going on behind the scenes?</a></li>
+<li><a href="#authorization-management">Authorization management</a></li>
+<li><a href="#getting-oasp-security-working-in-your-application">Getting OASP Security working in your application</a></li>
+</ul>
+</li>
+</ul>
+</div>
+
+<h1 id="user-content-oasp-security">
+<a aria-hidden="true" class="anchor" href="#oasp-security" id="user-content-oasp-security"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>OASP Security</h1>
+<div>
+<p>OASP Security provides a simple yet powerful solution to authentication and authorization (A&amp;A) in Single Page Applications built on top of AngularJS. The solution is based on ideas presented in the great book <a href="http://www.amazon.com/Mastering-Web-Application-Development-AngularJS-ebook/dp/B00EQ67J30" rel="nofollow"><em>Mastering Web Application Development with AngularJS</em></a> written by P. Kozlowski and P. B. Darwin.</p>
+</div>
+<div>
+<h2 id="user-content-how-oasp-security-works">
+<a aria-hidden="true" class="anchor" href="#how-oasp-security-works" id="user-content-how-oasp-security-works"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>How OASP Security works</h2>
+<div>
+<div>
+<p>OASP Security adds a response interceptor to your AngularJS application. The interceptor watches for error responses indicating unauthenticated requests (typically with the HTTP code 401) and gives a user of your application a chance to authenticate (typically through a pop-up dialog). If the authentication was successful, the original request is resent (including its original payload, e.g. data you filled a form with) and the user can continue his or her work.</p>
+</div>
+</div>
+</div>
+<div>
+<h2 id="user-content-example">
+<a aria-hidden="true" class="anchor" href="#example" id="user-content-example"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Example</h2>
+<div>
+<div>
+<p>Let’s go through an example. A user logs in to an application, goes to a dialog which allows him or her to search for orders. After finding some orders, he or she opens a modal dialog and edits one of the orders. After making a few changes to the order, the user decided to grab himself or herself a cup of coffee. In the meantime the session on the server expires…​ When the user comes back and pushes the <em>Save</em> button, then the OASP Security comes into play:</p>
+</div>
+<div>
+<div>
+<img alt="oasp security usage" src="img/oasp-security-usage.png" width="70%"/>
+</div>
+</div>
+<div>
+<p>The request for saving the order returns the HTTP 401 code indicating that the user is not authenticated. This error response is intercepted by the OASP Security response interceptor which tries to handle the situation giving the user a chance to authenticate. A typical way to do it - without loosing the application context - is to show a pop-up dialog on which the user can enter his or her credentials. Let us assume, the user enters his or her credentials and pushes the <em>Log In</em> button. The credentials are sent to the server and (assuming they are correct) the OK HTTP status code is returned. Now the OASP Security response interceptor takes the original request including its payload (the order data the user entered) and retries to send it to the server. As the user is now authenticated, the server processes the request and responds with the OK HTTP status code. For the application code (here for the method called upon pushing the <em>Save</em> button on the modal dialog) it looks as if the request for saving the order were successful (although a few things had happened as described earlier). So typically, the modal dialog is just closed.</p>
+</div>
+</div>
+</div>
+<div>
+<h2 id="user-content-what-is-going-on-behind-the-scenes">
+<a aria-hidden="true" class="anchor" href="#what-is-going-on-behind-the-scenes" id="user-content-what-is-going-on-behind-the-scenes"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>What is going on behind the scenes?</h2>
+<div>
+<div>
+<p>OASP Security provides the oaspSecurityService which can be used to log a user in (e.g. if you want to implement a log in page in addition to the pop-up dialog mentioned earlier) or to log the user off. Also, as OASP Security supports protection against the Cross Site Request Forgery (CSRF), the oaspSecurityService gives you the current CSRF token. Please note that OASP Security itself cares about adding the CSRF token to all HTTP requests, thus there are rare cases when you’ll need this token in your application.</p>
+</div>
+<div>
+<p>After a user successfully logs in, his or her data which is to be kept in the client is requested from the server. Once the user data comes, oasp-security lets your service (you can configure which one) know about the data. Complementary to this, when the user logs off, you’ll be notified too, so that your application has a chance to invalidate the user data. This is shown on the picture below:</p>
+</div>
+<div>
+<div>
+<img alt="oasp security structure" src="img/oasp-security-structure.png" width="70%"/>
+</div>
+</div>
+<div>
+<p>The application is expected to provide the following services (marked in blue):</p>
+</div>
+<div>
+<ol>
+<li>
+<p>securityRestServiceAdapter calls your application’s server. The following methods must be implemented:</p>
+<div>
+<ul>
+<li>
+<p>logIn(username, password) authenticates a user sending his or her credentials. Returns a promise which is resolved when a successful response comes.</p>
+</li>
+<li>
+<p>logOff() logs off the currently logged in user. Returns a promise which is resolved when a successful response comes.</p>
+</li>
+<li>
+<p>getCsrfToken() gets a CSRF token. Returns a promise which - once resolved - returns an object with the following properties:</p>
+<div>
+<ul>
+<li>
+<p>token a CSRF token</p>
+</li>
+<li>
+<p>headerName a name of an HTTP request header under which the CSRF token is expected to be sent with every HTTP request</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p>getCurrentUser() gets current user data. Returns a promise which - once resolved - returns an object representing current user data (depends on your application). When a user is not logged in or his or her session expired on the server, the promise is rejected.</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p>appContext is intended to manage your application data. The appContext is expected to provide the following methods:</p>
+<div>
+<ul>
+<li>
+<p>onLoggingIn(userData) is called by OASP Security after a user was successfully authenticated and the CSRF token as well as user data was successfully retrieved from the server. The user data is then passed to this method. It is the responsibility of your application to manage the user data and to provide it to other application components.</p>
+</li>
+<li>
+<p>onLoggingOff() is called by OASP Security after a user was successfully logged off. Your application should use this callback e.g. to invalidate user data or to do some clean-up.</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p>credentialsProvider is called by the oaspSecurityInterceptor to give the user of your application a chance to authenticate. It has just one method, credentialsProvider.provide(), which returns a promise. It is resolved once the user provides his or her credentials. The user may also decide to cancel the action in which case the promise is rejected.</p>
+</li>
+</ol>
+</div>
+</div>
+</div>
+<div>
+<h2 id="user-content-authorization-management">
+<a aria-hidden="true" class="anchor" href="#authorization-management" id="user-content-authorization-management"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Authorization management</h2>
+<div>
+<div>
+<p>OASP Security provides also authorization service, which allows to control the flow state in application.
+You can dynamically set visibility of DOM’s elements by directive:</p>
+</div>
+<div>
+<ul>
+<li>
+<p>hideIfUserHasRole</p>
+</li>
+<li>
+<p>showIfUserHasRole</p>
+</li>
+</ul>
+</div>
+<div>
+<p>Remember that this directive is only for simple elements. It works like ng-hide/ng-show, so it simply adds class for element.</p>
+</div>
+<div>
+<p>The application is expected to provide the following services (marked in blue):</p>
+</div>
+<div>
+<ul>
+<li>
+<p>getUserRoles() gets current user roles. Returns a promise which - once resolved - returns an object representing roles of current user.</p>
+</li>
+</ul>
+</div>
+<div>
+<p>Thanks to authorizationCheckResolver you can set roles for state.</p>
+</div>
+</div>
+</div>
+<div>
+<h2 id="user-content-getting-oasp-security-working-in-your-application">
+<a aria-hidden="true" class="anchor" href="#getting-oasp-security-working-in-your-application" id="user-content-getting-oasp-security-working-in-your-application"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Getting OASP Security working in your application</h2>
+<div>
+<div>
+<p>You need to install the oasp4js library in order to make use of the oasp-security. Please refer to the <a href="https://github.com/oasp/oasp4js-bower">home page</a> of the oasp4js repository for details how to do it.</p>
+</div>
+<div>
+<p>Add the oasp-security dependecy to your AngularJS application:</p>
+</div>
+<div>
+<div>
+<div class="highlight highlight-source-js"><pre><span class="pl-smi">angular</span>.<span class="pl-en">module</span>(<span class="pl-s"><span class="pl-pds">'</span>myApp<span class="pl-pds">'</span></span>, [<span class="pl-s"><span class="pl-pds">'</span>oaspSecurity<span class="pl-pds">'</span></span>, <span class="pl-k">...</span>])</pre></div>
+</div>
+</div>
+<div>
+<p>Set names of the services which you are expected to provide (as described above):</p>
+</div>
+<div>
+<div>
+<div class="highlight highlight-source-js"><pre><span class="pl-smi">angular</span>.<span class="pl-en">module</span>(<span class="pl-s"><span class="pl-pds">'</span>myApp<span class="pl-pds">'</span></span>)
+    .<span class="pl-en">config</span>(<span class="pl-k">function</span> (<span class="pl-smi">oaspSecurityProvider</span>, <span class="pl-smi">oaspAuthorizationProvider</span>) {
+            <span class="pl-smi">oaspSecurityProvider</span>.<span class="pl-en">setSecurityRestServiceAdapterName</span>(<span class="pl-s"><span class="pl-pds">'</span>mySecurityRestService<span class="pl-pds">'</span></span>);
+            <span class="pl-smi">oaspSecurityProvider</span>.<span class="pl-en">setAppContextServiceName</span>(<span class="pl-s"><span class="pl-pds">'</span>myAppContext<span class="pl-pds">'</span></span>);
+            <span class="pl-smi">oaspAuthorizationProvider</span>.<span class="pl-en">setAppContextServiceName</span>(<span class="pl-s"><span class="pl-pds">'</span>myAppContext<span class="pl-pds">'</span></span>);
+    })</pre></div>
+</div>
+</div>
+</div>
+</div>
+        </div>
+
+    </div>]

@@ -1,0 +1,121 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>Go to the Apple Developer Member Center - <a href="https://developer.apple.com/membercenter/index.action" rel="nofollow">https://developer.apple.com/membercenter/index.action</a></p>
+<p>Go to Certificates, Identifiers &amp; Profiles - <a href="https://developer.apple.com/account/overview.action" rel="nofollow">https://developer.apple.com/account/overview.action</a></p>
+<p><img alt="" src="https://cloud.githubusercontent.com/assets/246231/5607502/c490a2ec-9423-11e4-8664-cb7d52e47625.png"/></p>
+<p>Go to Identifiers - <a href="https://developer.apple.com/account/ios/identifiers/bundle/bundleList.action" rel="nofollow">https://developer.apple.com/account/ios/identifiers/bundle/bundleList.action</a></p>
+<p><img alt="" src="https://cloud.githubusercontent.com/assets/246231/5607501/c48e1b6c-9423-11e4-9364-c79d9b563d9a.png"/></p>
+<p>Register a new App ID:</p>
+<p><img alt="" src="https://cloud.githubusercontent.com/assets/246231/5607500/c48a1e90-9423-11e4-86b4-6595077186b1.png"/></p>
+<p>Make sure you select Explicit App ID:</p>
+<p><img alt="" src="https://cloud.githubusercontent.com/assets/246231/5607499/c48a081a-9423-11e4-8eec-2b9f0688082a.png"/></p>
+<p>The Bundle ID you fill in will need to be put into xCode once Meteor builds your package, make sure you remember it (I'll use <code>&lt;bundle_id&gt;</code> where you need it again).</p>
+<p>Under App Services, make sure you select Push Notifications:</p>
+<p><img alt="" src="https://cloud.githubusercontent.com/assets/246231/5607498/c486ec70-9423-11e4-9427-6f961f242349.png"/></p>
+<p>At the next screen click on submit.</p>
+<p>Now the "fun" starts! click on your new (or existing) App ID, make sure it has Push Notifications set as 'configurable':</p>
+<p><img alt="" src="https://cloud.githubusercontent.com/assets/246231/5607492/c477d3e8-9423-11e4-9aed-5e054088e323.png"/></p>
+<p>Click 'Edit' ... and follow along. Let the certificate dance begin!</p>
+<p>For Development/Production:</p>
+<p><img alt="" src="https://cloud.githubusercontent.com/assets/246231/5607493/c47ae18c-9423-11e4-896d-b7031357d7b0.png"/></p>
+<p>Under Development/Production SSL Certificate, click 'Create Certificate...'</p>
+<p>Pay close attention to Apple's CSR instructions here:</p>
+<p><img alt="" src="https://cloud.githubusercontent.com/assets/246231/5607494/c47c2fd8-9423-11e4-95d6-5d9bee1ad4ee.png"/></p>
+<p><img alt="" src="https://cloud.githubusercontent.com/assets/246231/5607497/c485d7f4-9423-11e4-9166-d4f90d144ddf.jpg"/></p>
+<p>(Bonus tip, don't have a key selected in your keychain so you get the generic menu item ' Request a Certificate from a Certificate Authority.'  In the Common Name field put in the name of your app)</p>
+<p>Once you have your file, click 'Continue'</p>
+<p>Choose your .certSigningRequest file and click 'Generate'</p>
+<p>Congrats, now click 'Download', so we can continue on!  Run the downloaded file to add it to your keychain.</p>
+<p>Find the new private key in your keychain and export it:</p>
+<p><img alt="" src="https://cloud.githubusercontent.com/assets/246231/5607496/c47ff50a-9423-11e4-8c5f-3180f20af9ff.png"/></p>
+<p>Name it properly, set file format to .p12 and click 'Save'.  Now enter a password, and click 'OK'. (You'll be asked for access to your keychain, enter your users password in the next field and click 'Always Allow').</p>
+<p><strong>TERMINAL TIME</strong></p>
+<p><em>Let's create our .pem files</em></p>
+<pre><code>cd /location_of_certificate_and_key/
+</code></pre>
+<pre><code>openssl x509 -in &lt;your_certificate_file&gt;.cer -inform der -out &lt;your_certificate_file&gt;.pem
+</code></pre>
+<pre><code>openssl pkcs12 -nocerts -out &lt;your_keyname&gt;.pem -in &lt;your_keyame&gt;.p12
+</code></pre>
+<p>Enter your chosen password from when you exported your .p12 file, then create a password for the .pem file (Bonus, just keep it the same, ie enter the same password 3 times.)</p>
+<p><strong>Test your cert and key:</strong></p>
+<p><em>DEV:</em></p>
+<pre><code>openssl s_client -connect gateway.sandbox.push.apple.com:2195 -cert &lt;your_certificate_file&gt;.pem -key &lt;your_keyname&gt;.pem
+</code></pre>
+<p><em>PROD:</em></p>
+<pre><code>openssl s_client -connect gateway.push.apple.com:2195 -cert &lt;your_certificate_file&gt;.pem -key &lt;your_keyname&gt;.pem
+</code></pre>
+<p><strong>On success you will see:</strong></p>
+<pre><code>Verify return code: 0 (ok)
+</code></pre>
+<p>Otherwise something is probably wrong with your key or you can't connect to the server, scroll up to see relevant error messages.</p>
+<p>Upon success, add the two .pem files to the <code>&lt;project_root&gt;/private directory</code> (create the directory if it doesn't exist).</p>
+<p>Create <code>config.push.json</code> in your <code>&lt;project_root&gt;</code> and fill use this template, changing the data to match your password, file names (just the filename, as it expects them to be in the private directory already), and gateway.</p>
+<p><em>DEV:</em></p>
+<div class="highlight highlight-source-js"><pre>{
+  <span class="pl-s"><span class="pl-pds">"</span>apn<span class="pl-pds">"</span></span><span class="pl-k">:</span> {
+    <span class="pl-s"><span class="pl-pds">"</span>passphrase<span class="pl-pds">"</span></span><span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">"</span>&lt;your_password&gt;<span class="pl-pds">"</span></span>,  
+    <span class="pl-s"><span class="pl-pds">"</span>key<span class="pl-pds">"</span></span><span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">"</span>&lt;your_keyname&gt;.pem<span class="pl-pds">"</span></span>,
+    <span class="pl-s"><span class="pl-pds">"</span>cert<span class="pl-pds">"</span></span><span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">"</span>&lt;your_certificate_file&gt;.pem<span class="pl-pds">"</span></span>,
+    <span class="pl-s"><span class="pl-pds">"</span>gateway<span class="pl-pds">"</span></span><span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">"</span>gateway.sandbox.push.apple.com<span class="pl-pds">"</span></span>
+  },
+  <span class="pl-s"><span class="pl-pds">"</span>production<span class="pl-pds">"</span></span><span class="pl-k">:</span> <span class="pl-c1">false</span>
+}</pre></div>
+<p><em>PROD:</em></p>
+<div class="highlight highlight-source-js"><pre>{
+  <span class="pl-s"><span class="pl-pds">"</span>apn<span class="pl-pds">"</span></span><span class="pl-k">:</span> {
+    <span class="pl-s"><span class="pl-pds">"</span>passphrase<span class="pl-pds">"</span></span><span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">"</span>&lt;your_password&gt;<span class="pl-pds">"</span></span>,  
+    <span class="pl-s"><span class="pl-pds">"</span>key<span class="pl-pds">"</span></span><span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">"</span>&lt;your_keyname&gt;.pem<span class="pl-pds">"</span></span>,
+    <span class="pl-s"><span class="pl-pds">"</span>cert<span class="pl-pds">"</span></span><span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">"</span>&lt;your_certificate_file&gt;.pem<span class="pl-pds">"</span></span>,
+    <span class="pl-s"><span class="pl-pds">"</span>gateway<span class="pl-pds">"</span></span><span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">"</span>gateway.push.apple.com<span class="pl-pds">"</span></span>
+  },
+  <span class="pl-s"><span class="pl-pds">"</span>production<span class="pl-pds">"</span></span><span class="pl-k">:</span> <span class="pl-c1">true</span>
+}</pre></div>
+<p><strong>Now set Push.debug=true; however you like on your server, either in server.js or:</strong></p>
+<div class="highlight highlight-source-js"><pre><span class="pl-k">if</span> (<span class="pl-smi">Meteor</span>.<span class="pl-smi">isServer</span>) {
+  <span class="pl-smi">Meteor</span>.<span class="pl-en">startup</span>(<span class="pl-k">function</span> () {
+    <span class="pl-smi">Push</span>.<span class="pl-smi">debug</span><span class="pl-k">=</span><span class="pl-c1">true</span>;
+  });
+}</pre></div>
+<p>Then build your app and start your server by using:</p>
+<pre><code>meteor run ios-device --mobile-server &lt;local_ip&gt;:&lt;local_port&gt;  
+</code></pre>
+<p>Let the project open in xCode and make sure the Bundle Identifier is set properly to the <code>&lt;bundle_id&gt;</code> you created earlier.</p>
+<p>Still in xCode make your way over to Build Settings and select the view of ALL and scroll down to code signing and select the proper Provisioning Profile here (should be the same as your <code>&lt;bundle_id&gt;</code> from earlier):</p>
+<p><img alt="" src="https://cloud.githubusercontent.com/assets/246231/5607495/c47eabf0-9423-11e4-8656-3055ed3bd4ff.png"/></p>
+<p>Now select your iOS device as a build target:</p>
+<p><img alt="" src="https://cloud.githubusercontent.com/assets/246231/5607491/c46cb828-9423-11e4-8192-64a6922156e6.png"/></p>
+<p>Click the play button (Build and then run the current scheme)</p>
+<p>Now watch your meteor console, as the app opens you should see the deivce register it's APN token for us to be able to communicate with it via <em>Push.send()</em></p>
+<p><strong>If so, let's try this now:</strong></p>
+<p>Press the home button on your device to 'de-focus' the app.  Open another terminal window, go to your <code>&lt;project_root&gt;</code>and run 'meteor shell'.</p>
+<p><strong>Once that loads paste this:</strong></p>
+<div class="highlight highlight-source-js"><pre><span class="pl-smi">Push</span>.<span class="pl-c1">send</span>({from<span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">'</span>push<span class="pl-pds">'</span></span>,title<span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">'</span>Congratulations<span class="pl-pds">'</span></span>,text<span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">'</span>You can now Push to this device!<span class="pl-pds">'</span></span>,query<span class="pl-k">:</span> {}});</pre></div>
+<p><strong>Gotchas (iOS)</strong></p>
+<p>Debugging this can be a little finicky due to setting up the keys.</p>
+<p>Assuming you received the
+<code>Verify return code: 0 (ok)</code> message here are some problems to check for</p>
+<ul>
+<li>make sure config.push.json is in the <code>&lt;project_root&gt;</code>
+</li>
+<li>if you reference keys that don't exist you will get a nondescript error when starting the server <code>meteor run ios-device --mobile-server 192.xxx.xxx.xxx:3000</code>
+</li>
+<li>make sure you have <code>Push.debug=true</code> and see <code>(STDERR) WARNING: Push APN is in development mode</code> when you start meteor</li>
+</ul>
+<p><strong>Running the app</strong></p>
+<ul>
+<li>Make sure your app prompts you for push permissions on first run.</li>
+<li>Make sure your <code>&lt;widget id="myid"&gt;</code>in cordova-build-override/config.xml is the correct appID you set in your certificates and keys. In Xcode under build settings search for "provision" and make sure you have the proper provisioning profile. It will warn you if there is an issue with your provisioning profile and have a button "fix issue" however, this will most likely set it to a wild card, which you cannot use. Make sure your appID certificates match your appID project name in Xcode. If you have to change these, you will need to regenerate your keys and certificates with the updated appID.</li>
+</ul>
+<p><strong>Errors when sending Push</strong></p>
+<p><code>Push.send({ from: 'Text', title: 'Hello', text: 'World', badge: 12, query: { }});</code></p>
+<ul>
+<li>
+<code>Error: error:06065064:digital envelope routines:EVP_DecryptFinal_ex:bad decrypt</code> is a bad password in config.push.json</li>
+<li>if you swap your key and cert in config.push.json raix will throw an exception when you send</li>
+</ul>
+<p><em>This micro-tutorial will be updated based on feedback, so please actively create issues as you run into problems.</em></p>
+
+        </div>
+
+    </div>]

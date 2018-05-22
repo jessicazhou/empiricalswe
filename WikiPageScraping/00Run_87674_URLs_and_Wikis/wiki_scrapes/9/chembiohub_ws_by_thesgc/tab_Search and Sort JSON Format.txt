@@ -1,0 +1,38 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>When searching or sorting content on ChemBio Hub there is a specific format to send your advanced search request.</p>
+<p>The search and sort formats are described in detail by the JSON schemata used to build the front end widgets.</p>
+<ul>
+<li><a href="https://github.com/thesgc/chembiohub_ws/search?utf8=%E2%9C%93&amp;q=CBH_SORT_SCHEMAFORM">JSON Schema for sorting</a></li>
+<li><a href="https://github.com/thesgc/chembiohub_ws/search?utf8=%E2%9C%93&amp;q=CBH_QUERY_SCHEMAFORM">JSON Schema for searching</a></li>
+</ul>
+<p>The searching itself is implemented in the elasticsearch_client module, mainly in the <a href="https://github.com/thesgc/chembiohub_ws/blob/master/cbh_utils/elasticsearch_client.py#L282">build_es_request function</a>.</p>
+<p><strong>Sort Format Example</strong></p>
+<p>An example sort would look like this:</p>
+<pre><code>    { "field_path" : "custom_fields.Name", "sort_direction" : "asc" }
+</code></pre>
+<p>This would then be made into a list JSON and encoded with base64 encoding to send the sort to the <a class="internal present" href="/thesgc/chembiohub_ws/wiki/Compound-Batch-API">Compound Batch API</a></p>
+<p><strong>Search Format</strong></p>
+<p>The encoded_query attribute of the GET list request of the <a class="internal present" href="/thesgc/chembiohub_ws/wiki/Compound-Batch-API">Compound Batch API</a> takes a JSON list of search objects, encoded as base64. Currently only one query is expected per field on the system.</p>
+<p><strong>Keyword Search Format example</strong></p>
+<pre><code>    {"keyword_or_phrase" : "foo", "field_path" :  "custom_fields.Name", "query_type": "keyword"}
+</code></pre>
+<p>Searches for a keyword or phrase as a <a href="">phrase prefix query</a> within the chosen column</p>
+<p><strong>Pick from list Search Format example</strong></p>
+<pre><code>    {"pick_from_list" : ["foo", "bar"], "field_path" :  "custom_fields.Description", "query_type": "pick_from_list"}
+</code></pre>
+<p>Searches for any one or more of a list of exact values in a field. List fields need match one item from the list.</p>
+<p><strong>Greater than, less than and between</strong></p>
+<p>The range queries all work with strings, the query_type selected determines which of the fields will be interpreted for example</p>
+<pre><code>  {"greater_than" : "1", "less_than" : "299", "query_type" : "between" , "field_path" : "custom_fields.My Numeric Field"}
+</code></pre>
+<p><strong>Blanks and nonblanks query</strong></p>
+<pre><code>  {"query_type": "nonblanks", "field_path" : "custom_fields.My Numeric Field"}
+</code></pre>
+<p>OR</p>
+<pre><code>  {"query_type": "blanks", "field_path" : "custom_fields.My Numeric Field"}
+</code></pre>
+
+        </div>
+
+    </div>]

@@ -1,0 +1,50 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <ul>
+<li>
+<p>I've come across this in Go and thought it looked hairy, but the solution in Python seems simple (and old news even!)</p>
+</li>
+<li>
+<p>Will Larson's 2008 blog post shares the following (which I've Py3-ified and replaced <code>urllib</code> with <code>requests</code>):</p>
+<div class="highlight highlight-source-python"><pre><span class="pl-k">from</span> threading <span class="pl-k">import</span> Thread, <span class="pl-c1">enumerate</span>
+<span class="pl-k">from</span> requests <span class="pl-k">import</span> get
+<span class="pl-k">from</span> time <span class="pl-k">import</span> sleep
+<span class="pl-k">from</span> functools <span class="pl-k">import</span> <span class="pl-v">reduce</span>
+
+<span class="pl-c1">UPDATE_INTERVAL</span> <span class="pl-k">=</span> <span class="pl-c1">0.01</span>
+
+<span class="pl-k">class</span> <span class="pl-en">URLThread</span>(<span class="pl-e">Thread</span>):
+    <span class="pl-k">def</span> <span class="pl-c1">__init__</span>(<span class="pl-smi"><span class="pl-smi">self</span></span>, <span class="pl-smi">url</span>):
+        <span class="pl-c1">super</span>(URLThread, <span class="pl-c1">self</span>).<span class="pl-c1">__init__</span>()
+        <span class="pl-c1">self</span>.url <span class="pl-k">=</span> url
+        <span class="pl-c1">self</span>.response <span class="pl-k">=</span> <span class="pl-c1">None</span>
+
+    <span class="pl-k">def</span> <span class="pl-en">run</span>(<span class="pl-smi"><span class="pl-smi">self</span></span>):
+        <span class="pl-c1">self</span>.response <span class="pl-k">=</span> get(<span class="pl-c1">self</span>.url)
+
+<span class="pl-k">def</span> <span class="pl-en">multi_get</span>(<span class="pl-smi">uris</span>, <span class="pl-smi">timeout</span><span class="pl-k">=</span><span class="pl-c1">2.0</span>):
+    <span class="pl-k">def</span> <span class="pl-en">alive_count</span>(<span class="pl-smi">lst</span>):
+        alive <span class="pl-k">=</span> <span class="pl-c1">map</span>(<span class="pl-k">lambda</span> <span class="pl-smi">x</span>: <span class="pl-c1">1</span> <span class="pl-k">if</span> x.isAlive() <span class="pl-k">else</span> <span class="pl-c1">0</span>, lst)
+        <span class="pl-k">return</span> <span class="pl-v">reduce</span>(<span class="pl-k">lambda</span> <span class="pl-smi">a</span>,<span class="pl-smi">b</span>: a<span class="pl-k">+</span>b, alive)
+    threads <span class="pl-k">=</span> [URLThread(uri) <span class="pl-k">for</span> uri <span class="pl-k">in</span> uris]
+    <span class="pl-k">for</span> thread <span class="pl-k">in</span> threads:
+        thread.start()
+    <span class="pl-k">while</span> alive_count(threads) <span class="pl-k">&gt;</span> <span class="pl-c1">0</span> <span class="pl-k">and</span> timeout <span class="pl-k">&gt;</span> <span class="pl-c1">0.0</span>:
+        timeout <span class="pl-k">=</span> timeout <span class="pl-k">-</span> <span class="pl-c1">UPDATE_INTERVAL</span>
+        sleep(<span class="pl-c1">UPDATE_INTERVAL</span>)
+    <span class="pl-k">return</span> [(x.url, x.response) <span class="pl-k">for</span> x <span class="pl-k">in</span> threads]</pre></div>
+</li>
+<li>
+<p>simply execute this function and it will return an array of <code>(url, payload)</code> tuples corresponding to the input <code>sites</code> array order once the last request is returned</p>
+</li>
+</ul>
+
+        </div>
+
+        <div class="wiki-footer gollum-markdown-content boxed-group" id="wiki-footer">
+          <div class="boxed-group-inner wiki-auxiliary-content markdown-body">
+            <p><a href="https://github.com/lmmx/devnotes/wiki">Main page</a></p>
+
+          </div>
+        </div>
+    </div>]

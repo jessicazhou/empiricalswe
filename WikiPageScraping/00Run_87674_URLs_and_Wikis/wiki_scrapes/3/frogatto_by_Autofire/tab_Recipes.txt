@@ -1,0 +1,36 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>This page contains recipes for common actions that you will want to do sometime, along with a short discussion about each one.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#adding-a-new-object-and-referencing-it" id="user-content-adding-a-new-object-and-referencing-it"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Adding A New Object (And Referencing It)</h2>
+<p>How to create a new object and keep a reference to it for later modification.</p>
+<pre><code>on_create: "[
+	set(alpha, self.vars.max_alpha), 
+	set(brightness, 255),
+	spawn(self.type + '.underlay', mid_x, mid_y+10, facing, [
+		set(self.underlay, child),
+		set(child.parent, self),
+		])
+	]",
+</code></pre>
+<p>Here, we have an on_create statement which does some stuff and then spawns our underlay sub-object. (A sub-object is defined in the same file as an object, and is accessed by a dot. So, <code>self.type + '.underlay'</code> is constructed this way so if we change our main object's ID the spawn statement won't need updating too.) We then have access, in the spawn statement list of commands, to our new unspawned object by the <code>child</code> variable. We set self.underlay to the child so we can mutate the child later.</p>
+<pre><code>on_create: "[
+	set(alpha, self.vars.max_alpha), 
+	set(brightness, 255),
+	[	add_object(obj),
+		set(self.underlay, obj),
+		set(obj.parent, self),
+	] where obj = object('${self.type}.underlay', mid_x, mid_y+10, facing)
+	]",
+</code></pre>
+<p>This is equivalent to the previous code. The only difference is that it's a bit longer, and we used the <code>${}</code> style string substitution instead of the addition operator for the object name. This last method is preferred in some cases because you don't have to create the object using the where <code>obj = object(…)</code> - it can be an object from anywhere. (eg, remove_object() from level, stored it in a variable <code>obj</code>, and the above code could be repurposed to add it back in. (Perhaps <code>where obj = if(obj, obj, object(…))</code>?)</p>
+
+        </div>
+
+        <div class="wiki-footer gollum-markdown-content boxed-group" id="wiki-footer">
+          <div class="boxed-group-inner wiki-auxiliary-content markdown-body">
+            <p>More help can be found via IRC, <a href="irc://irc.freenode.net/#frogatto" rel="nofollow">#Frogatto</a> on freenode.net. This wiki is not a complete reference.</p>
+
+          </div>
+        </div>
+    </div>]

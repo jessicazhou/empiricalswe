@@ -1,0 +1,35 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>ProxySQL admin interface is an interface that uses the MySQL protocol, making it very easy to be configured by any client able to send commands through such interface. ProxySQL parses the queries sent through this interface for any command specific to ProxySQL, and if appropiate sends them to the embedded SQLite3 engine to run the queries.</p>
+<p>Please note that SQL syntax used by SQLite3 and MySQL differs, therefore not all commands that work on MySQL will work on SQLite3. For example, although the USE command is accepted by the admin interface, it doesn't change the default schema as this feature is not available in SQLite3.</p>
+<p>When connecting to the ProxySQL admin interface, we can see that there are a few databases available. ProxySQL converts SHOW DATABASES command into the equivalent command for SQLite3.</p>
+<div class="highlight highlight-source-shell"><pre>mysql<span class="pl-k">&gt;</span> show databases<span class="pl-k">;</span>
++-----+---------+------------------+
+<span class="pl-k">|</span> seq <span class="pl-k">|</span> name    <span class="pl-k">|</span> file             <span class="pl-k">|</span>
++-----+---------+------------------+
+<span class="pl-k">|</span> 0   <span class="pl-k">|</span> main    <span class="pl-k">|</span>                  <span class="pl-k">|</span>
+<span class="pl-k">|</span> 2   <span class="pl-k">|</span> disk    <span class="pl-k">|</span> /tmp/proxysql.db <span class="pl-k">|</span>
+<span class="pl-k">|</span> 3   <span class="pl-k">|</span> stats   <span class="pl-k">|</span>                  <span class="pl-k">|</span>
+<span class="pl-k">|</span> 4   <span class="pl-k">|</span> monitor <span class="pl-k">|</span>                  <span class="pl-k">|</span>
+<span class="pl-k">|</span> 5   <span class="pl-k">|</span> myhgm   <span class="pl-k">|</span>                  <span class="pl-k">|</span>
++-----+---------+------------------+
+5 rows <span class="pl-k">in</span> <span class="pl-c1">set</span> (0.00 sec)
+</pre></div>
+<p>The purpose of these schemas is as follows:</p>
+<ul>
+<li>main: the in-memory configuration database. Using this database, it's easy to query and update the configuration of ProxySQL in an automated manner. Using the LOAD MYSQL USERS FROM MEMORY and similar commands, the configuration stored in here can be propagated to the in-memory data structures used by ProxySQL at runtime.</li>
+<li>disk: the disk-based mirror of "main". Across restarts, "main" is not persisted and is loaded either from the "disk" database or from the config file, based on startup flags and the existence of not of an on-disk database.</li>
+<li>stats: contains runtime metrics collected from the internal functioning of the proxy. Example metrics include the number of times each query rule was matched, the currently running queries, etc.</li>
+<li>monitor: contains monitoring metrics related to the backend servers to which ProxySQL connects. Example metrics include the minimal and maximal time for connecting to a backend server or for pinging it.</li>
+<li>myhgm: only enabled in debug builds</li>
+</ul>
+<p>Also, the access to the admin database is done using two types of users, with these default credentials:</p>
+<ul>
+<li>user: admin/password: admin -- with read-write access to all the tables</li>
+<li>user: stats/password: stats -- with read-only access to statistics tables. This is used for pulling metrics from ProxySQL, without exposing too much of the database</li>
+</ul>
+<p>The above credentials are configurable through the variables <code>admin-admin_credentials</code> and <code>admin-stats_credentials</code>.</p>
+
+        </div>
+
+    </div>]

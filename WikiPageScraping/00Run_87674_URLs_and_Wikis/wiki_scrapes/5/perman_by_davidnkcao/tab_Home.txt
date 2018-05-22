@@ -1,0 +1,149 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>命令文档：<a href="http://docs.mongodb.org/manual/reference/method/" rel="nofollow">http://docs.mongodb.org/manual/reference/method/</a></p>
+<ol>
+<li>
+<p>这四个就不用解释了，最常用的，也是最简单的。
+db.collection.find({ "field" : { $gt: value } } )   // 大于  : field &gt; value
+db.collection.find({ "field" : { $lt: value } } )   // 小于  :  field &lt; value
+db.collection.find({ "field" : { $gte: value } } )  // 大于等于 : field &gt;= value
+db.collection.find({ "field" : { $lte: value } } )  // 小于等于 : field &lt;= value</p>
+</li>
+<li>
+<p>如果要同时满足多个条件，记得要这样用：
+db.collection.find({ "field" : { $gt: value1, $lt: value2 } } )    // value1 &lt; field &lt; value
+$ne   不等于
+db.things.find( { x : { $ne : 3 } } ) 条件相当于x&lt;&gt;3,即x不等于3。</p>
+</li>
+<li>
+<p>$mod 取模运算
+db.things.find( { a : { $mod : [ 10 , 1 ] } } )  条件相当于a % 10 == 1 即a除以10余数为1的。</p>
+</li>
+<li>
+<p>$nin 不属于
+db.things.find({j:{$nin: [2,4,6]}})  条件相当于 j 不等于 [2,4,6] 中的任何一个。</p>
+</li>
+<li>
+<p>$in  属于
+db.things.find({j:{$in: [2,4,6]}})  条件相当于j等于[2,4,6]中的任何一个。</p>
+</li>
+<li>
+<p>$all 全部属于
+db.things.find( { a: { $all: [ 2, 3 ] } } ) 与$in类似，但必须是[]的值全部都存在。</p>
+</li>
+<li>
+<p>$size 数量，尺寸
+db.things.find( { a : { $size: 1 } } )  条件相当于a的值的数量是1（a必须是数组，一个值的情况不能算是数量为1的数组）。</p>
+</li>
+<li>
+<p>$exists 字段存在
+db.things.find( { a : { $exists : true } } )
+db.things.find( { a : { $exists : false } } )
+true返回存在字段a的数据，false返回不存在字度a的数据。</p>
+</li>
+<li>
+<p>$type 字段类型
+db.things.find( { a : { $type : 2 } } )  条件是a类型符合的话返回数据。
+Double                          1
+String                          2
+Object                          3
+Array                           4
+Binary data                     5
+Object id                       7
+Boolean                         8
+Date                            9
+Null                            10
+Regular expression              11
+JavaScript code                 13
+Symbol                          14
+JavaScript code with scope      15
+32-bit integer                  16
+Timestamp                       17
+64-bit integer                  18
+Min key                         255
+Max key                         127</p>
+</li>
+<li>
+<p>Regular Expressions  正则表达式
+db.customers.find( { name : /acme.*corp/i } )  类似sql中的like方法。
+行开始 /^ 行结束 $/
+这里要特别特别特别地注意一点，关乎查询效率：
+While /^a/, /^a./, and /^a.$/ are equivalent and will all use an index in the same way, the later two require scanning the whole string so they will be slower. The first format can stop scanning after the prefix is matched.
+意思大概就是指在查询以a开头字符串时，可以有三种形式， /^a/, /^a./,和/^a.$/ 。后面两种形式会扫描整个字符串，查询速度会变慢。第一种形式会在查到符合的开头后停止扫描后面的字符。
+所以要特别注意。</p>
+<p>几个附加参数：
+i的意思是忽略大小写。（这个很重要，很常用）
+m的意思是支持多行。（不过ME没有尝试过）
+x的意思是扩展。（也没用过）</p>
+</li>
+<li>
+<p>$or  或 （注意：MongoDB 1.5.3后版本可用）
+db.foo.find( { $or : [ { a : 1 } , { b : 2 } ] } )
+符合条件a=1的或者符合条件b=2的数据都会查询出来。
+与其他字段一起查询：
+db.foo.find( { name : "bob" , $or : [ { a : 1 } , { b : 2 } ] } )
+符合条件name等于bob，同时符合其他两个条件中任意一个的数据。</p>
+</li>
+<li>
+<p>Value in an Array 数组中的值
+例如数据库中存在这样的数据：
+{ "_id" : ObjectId("4c503405645fa23b31e11631"), "colors" : [ "red", "black" ] }
+查询
+db.things.find( { colors : "red" } );   即可查到上面那条数据。</p>
+</li>
+<li>
+<p>$elemMatch  要素符合
+t.find( { x : { $elemMatch : { a : 1, b : { $gt : 1 } } } } )
+结果：
+{ "_id" : ObjectId("4b5783300334000000000aa9"),"x" : [ { "a" : 1, "b" : 3 }, 7, { "b" : 99 }, { "a" : 11 } ]}
+x其中一个要素符合那个检索条件就可以被检索出来。（不过一般谁用像x这样的结构去保存数据呢？）</p>
+</li>
+<li>
+<p>Value in an Embedded Object  内嵌对象中的值
+例如数据库中存在这样的数据：
+{ "_id" : ObjectId("4c503773645fa23b31e11632"), "author" : { "name" : "Dan Brown", "age" : 38 }, "book" : "The Lost Symbol" }
+查询：
+db.postings.find( { "author.name" : "Dan Brown" } );
+即可查到上面那条数据。查询内嵌对象的属性，记得要加上“”，字段是“author.name”，而不是author.name。</p>
+</li>
+</ol>
+<p>15.$not 不是
+db.customers.find( { name : { $not : /acme.*corp/i } } );
+这是一个与其他查询条件组合使用的操作符，不会单独使用。
+只要你理解了前面的查询操作即可，只是再加上了$not，结果就是得到了没有$not的相反结果集。</p>
+<ol start="16">
+<li>
+<p>sort()  排序
+这个非常实用。即sql语言中的OrderBy。
+db.myCollection.find().sort( { ts : -1 } ) 也可以多个字段排序
+db.myCollection.find().sort( { ts : -1 ,ds : 1 } )
+这里的1代表升序，-1代表降序。
+经过ME的实验，小于0的数字就是降序，0以上（包括0）就是升序。</p>
+</li>
+<li>
+<p>limit() skip()
+这两个ME想连起来讲，他们就是你实现数据库分页的好帮手。
+limit()控制返回结果数量，如果参数是0，则当作没有约束，limit()将不起作用。
+skip()控制返回结果跳过多少数量，如果参数是0，则当作没有约束，skip()将不起作用，或者说跳过了0条。
+例如：
+db.test.find().skip(5).limit(5)  结果就是取第6条到第10条数据。</p>
+</li>
+<li>
+<p>snapshot() （没有尝试）</p>
+</li>
+<li>
+<p>count()   条数
+返回结果集的条数。
+db.test.count()
+在加入skip()和limit()这两个操作时，要获得实际返回的结果数，需要一个参数true，否则返回的是符合查询条件的结果总数。
+例子如下：
+&gt; db.test.find().skip(5).limit(5).count()
+9
+&gt; db.test.find().skip(5).limit(5).count(true)
+4</p>
+</li>
+</ol>
+
+        </div>
+
+    </div>]

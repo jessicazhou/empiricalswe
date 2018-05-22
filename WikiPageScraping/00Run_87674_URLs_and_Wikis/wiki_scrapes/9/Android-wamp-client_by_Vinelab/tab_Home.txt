@@ -1,0 +1,91 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <h1>
+<a aria-hidden="true" class="anchor" href="#android-wamp-client" id="user-content-android-wamp-client"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Android-wamp-client</h1>
+<p>Android client for WAMP v2 (Web Application Messaging Protocol) based on Jawampa library</p>
+<p>So as described before, this is "an open source AndroidStudio project that implements the WAMP protocol", targetting WAMP v2.</p>
+<p>Here we've made a simple project that shows how to integrate the WAMP library into your Android project.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#wamp-service" id="user-content-wamp-service"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>WAMP Service</h2>
+<p>Our case is pretty simple. The WAMP protocol is integrated to provide real-time comments service on published articles (called posts). The full service includes authentication, comments, likes and reports. Here we will only demonstrate how to connect to the WAMP router, fetch the article's comments, post a comment and listen to real-time added comments.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#establishing-connection" id="user-content-establishing-connection"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Establishing Connection</h3>
+<p>To establish a connection between the Android client and the configured WAMP router, 2 main parameters needs to be set in the WampClientBuider: The host Uri and realm. In our example, a local host is configured.</p>
+<pre><code>WampClientBuilder builder = new WampClientBuilder();    
+
+builder.withUri(WAMP_HOST)
+   .withRealm(WAMP_REALM)
+   .withInfiniteReconnects()
+   .withReconnectInterval(MIN_RECONNECT_INTERVAL, TimeUnit.SECONDS);
+
+client = builder.build();
+</code></pre>
+<p>When the builder is created, call <code>client.open()</code> to open the connection.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#connection-status-changes" id="user-content-connection-status-changes"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Connection Status Changes</h3>
+<p>The <code>statusChanged()</code> method will return an Observable object that allows to monitor the connection status of the current session between the client and the router (connected, disconnected or connecting). Subscribing to the Observable object will provide the status changes.</p>
+<pre><code>client.statusChanged().subscribe(new Action1&lt;WampClient.Status&gt;() {
+            @Override
+            public void call(WampClient.Status t1) {
+
+            }
+        });
+</code></pre>
+<h3>
+<a aria-hidden="true" class="anchor" href="#requesting-comments" id="user-content-requesting-comments"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Requesting Comments</h3>
+<p>To request the comments list of an article or post, request a 'call' to the destined 'procedure' (comments.get). The post identifier is sent along the arguments of the call request.</p>
+<pre><code>Observable&lt;Reply&gt; observable = client.call(procedure, arrayNode, node);
+        observable.subscribe(new Action1&lt;Reply&gt;(){
+            @Override
+            public void call(Reply reply) {
+                
+            }
+        }, new Action1&lt;Throwable&gt;(){
+            @Override
+            public void call(Throwable arg0) {
+               
+            }
+        });
+</code></pre>
+<p>The desired response will be received in the arguments of the Reply object returned on call. If anything went wrong, a Throwable is returned.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#subscribing-comments-updates-actions" id="user-content-subscribing-comments-updates-actions"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Subscribing Comments Updates (Actions)</h3>
+<p>Many actions can be predefined for comments scenario. The simplest action is when a new comment is added and broadcasted to all registered clients for the specified article (post).</p>
+<p>In order to do that, a <code>makeSubscribition</code> call is requested on the specific procedure, in our example: "comments.[POST_ID].add".</p>
+<pre><code>client.makeSubscription(procedure).subscribe(new Action1&lt;PubSubData&gt;(){
+        @Override
+        public void call(PubSubData arg0) {
+
+        }
+
+    }, new Action1&lt;Throwable&gt;(){
+        @Override
+        public void call(Throwable arg0) {
+
+        }
+    });
+</code></pre>
+<h3>
+<a aria-hidden="true" class="anchor" href="#adding-comment" id="user-content-adding-comment"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Adding Comment</h3>
+<p>To add a new comment on the current article (post), just make a 'call' request on the specific procedure "comments.add". The request arguments will hold the needed info about the comment to be added (text, post_id, etc.). The Reply object will contain the call status returned from the server.</p>
+<pre><code>Observable&lt;Reply&gt; observable = client.call(procedure, arrayNode, node);
+observable.subscribe(new Action1&lt;Reply&gt;(){
+                @Override
+                public void call(Reply reply) {
+
+                }
+            }, new Action1&lt;Throwable&gt;(){
+                @Override
+                public void call(Throwable arg0) {
+
+                }
+            });
+</code></pre>
+<h2>
+<a aria-hidden="true" class="anchor" href="#wrapping-up" id="user-content-wrapping-up"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Wrapping Up</h2>
+<p>This example is a show case on the simplicity of the WAMP protocol implementation in Android. It highlights the asynchronous way of handling actions responses. In the traditional WebSocket implementations, all server replies are received in one place. While using WAMP, a callback is created on each request, giving you that asynchronous behavior, and eventually a more structured implementation.</p>
+<p>The community is making a great effort to provide a full WAMP v2 solution on both back-side and client-side for different platforms. Keep tuned for updates!</p>
+
+        </div>
+
+    </div>]

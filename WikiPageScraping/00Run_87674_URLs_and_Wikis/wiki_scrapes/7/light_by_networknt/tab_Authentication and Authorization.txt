@@ -1,0 +1,399 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>Light Framework Authentication and Authorization</p>
+<p>AngularJS application running inside web browser is different than traditional server rendering application which keeps session on the server after receiving user's credentials from login form. In server side applications, no one else but server itself knows user state and intentions, where in client-side applications this is no longer true.</p>
+<p>Let's take a look at one flow of server side web application:</p>
+<ul>
+<li>User asks for a web page from <a href="http://www.example.com" rel="nofollow">www.example.com</a>
+</li>
+<li>Server generates html and Javascript and sends it back</li>
+<li>User chooses to visit a protected page <a href="http://www.example.com/admin" rel="nofollow">www.example.com/admin</a>
+</li>
+<li>Server figures out that user is not authenticated himself yet, so it:
+<ol>
+<li>remembers user's request,</li>
+<li>responds with a login form instead of requested content,</li>
+</ol>
+</li>
+<li>Once user sends back credentials, the server will send the requested content.</li>
+<li>User keeps visiting secured pages until the session times out.</li>
+<li>Server once again responds with login form and this goes on and on.</li>
+</ul>
+<p>Above flow is not going to work with AngularJS application as the code is running in the browser and asking for resources from the server in a stateless fashion. In order for the resource server to authenticate and authorize the request, an access token (JWT) has to be passed in the http request and it contains userId and roles as payload. This is one way to implement OAuth 2 protocol with JSON Web Tokens instead of Simple Web Tokens.</p>
+<p>The main difference between SWT and JWT is that signed JWT tokens are "stateless". They don't need to be stored on a hash-table, hence it's a more lightweight approach. OAuth2 does not dictate the format of the access_token so you could return a JWT from the authorization server containing the scope/permissions and the expiration.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#scenario-1-use-access-token-only" id="user-content-scenario-1-use-access-token-only"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Scenario 1 Use access token only</h3>
+<ul>
+<li>A user goes to <a href="http://www.example.com" rel="nofollow">www.example.com</a> and click login menu and a login form shows up.</li>
+<li>Enter userId/email, password and leave remember me as default unchecked.</li>
+<li>Click SignIn button and a request is send to the server. Here is the submitForm method in signinCtrl.</li>
+</ul>
+<pre><code>`block 1`
+    $scope.submitForm = function(form, model) {
+        // First we broadcast an event so all fields validate themselves
+        $scope.$broadcast('schemaFormValidate');
+        // Then we check if the form is valid
+        if (form.$valid) {
+            $scope.action[0].data = $scope.modelData;
+            $http.post('/api/rs', $scope.action[0])
+                .success(function (data, status, headers, config) {
+                    // Successfully logged in and get access token back. If remember me is checked, then a refresh token is returned as well. 
+                    authService.authentication.isAuth = true;
+                    // Parse the Json Token and get uesr object which contains userId and roles.
+                    authService.authentication.currentUser = JSON.parse(base64.base64Decode(data.accessToken.split('.')[1])).user;
+                    // This is an indicator if refresh token will be used to get another access token after access token is expired.
+                    authService.authentication.useRefreshTokens = $scope.modelData.rememberMe;
+                    // Save authorizationData object into local storage so it can last longer than the browser session. local storage will 
+                    // fall back to Cookie if HTML5 is not supported by the browser.
+                    localStorageService.set('authorizationData', { token: data.accessToken, currentUser: authService.authentication.currentUser, refreshToken: data.refreshToken || '', useRefreshTokens: authService.authentication.useRefreshTokens  });
+                    // Redirect to the attempted url if the login page was redirected upon 401 and 403 error. 
+                    httpBuffer.redirectToAttemptedUrl();
+                })
+                .error(function (data, status, headers, config) {
+                    // Clean the authorizatonData from local storage.
+                    authService.logOut();
+                    // Clean all the saved requests in httpBuffer if this is redirected from failure of refreshing token.
+                    httpBuffer.rejectAll();
+                    if(angular.isDefined($scope.action[0].error)) {
+                        $location.path($scope.action[0].error);
+                    }
+                    toaster.pop('error', status, data, 5000);
+                });
+        }
+    };
+</code></pre>
+<ul>
+<li>Here is the SignInUserRule which is a command rule to generate both access token JWT and refresh token</li>
+</ul>
+<pre><code>`block 2`
+public class SignInUserRule extends AbstractUserRule implements Rule {
+    public boolean execute (Object ...objects) throws Exception {
+        Map&lt;String, Object&gt; inputMap = (Map&lt;String, Object&gt;) objects[0];
+        Map&lt;String, Object&gt; data = (Map&lt;String, Object&gt;) inputMap.get("data");
+        String userIdEmail = (String) data.get("userIdEmail");
+        String inputPassword = (String) data.get("password");
+        Boolean rememberMe = (Boolean)data.get("rememberMe");
+
+        String error = null;
+        ODocument user = null;
+        if(isEmail(userIdEmail)) {
+            user = getUserByEmail(userIdEmail);
+        } else {
+            user = getUserByUserId(userIdEmail);
+        }
+        if(user != null) {
+            if(checkPassword(user, inputPassword)) {
+                String jwt = generateToken(user);
+                if(jwt != null) {
+                    Map eventMap = getEventMap(inputMap);
+                    Map&lt;String, Object&gt; eventData = (Map&lt;String, Object&gt;)eventMap.get("data");
+                    inputMap.put("eventMap", eventMap);
+                    Map&lt;String, String&gt; tokens = new HashMap&lt;String, String&gt;();
+                    tokens.put("accessToken", jwt);
+                    if(rememberMe != null &amp;&amp; rememberMe) {
+                        // generate refreshToken
+                        String refreshToken = HashUtil.generateUUID();
+                        tokens.put("refreshToken", refreshToken);
+                        String hashedRefreshToken = HashUtil.md5(refreshToken);
+                        eventData.put("hashedRefreshToken", hashedRefreshToken);
+                    }
+                    inputMap.put("result", mapper.writeValueAsString(tokens));
+                    eventData.put("userId", user.field("userId"));
+                    eventData.put("logInDate", new java.util.Date());
+                }
+            } else {
+                error = "Invalid password";
+                inputMap.put("responseCode", 400);
+            }
+        } else {
+            error = "Invalid userId or email";
+            inputMap.put("responseCode", 400);
+        }
+        if(error != null) {
+            inputMap.put("error", error);
+            return false;
+        } else {
+            return true;
+        }
+    }
+}
+
+</code></pre>
+<ul>
+<li>Now we have a local storage object that contains access token. The following request interceptor put the access token into all subsequent requests to the server.</li>
+</ul>
+<pre><code>`block 3`
+        var _request = function (config) {
+            config.headers = config.headers || {};
+            var authorizationData = localStorageService.get('authorizationData');
+            if (authorizationData) {
+                config.headers.Authorization = 'Bearer ' + authorizationData.token;
+            }
+            return config;
+        }
+</code></pre>
+<ul>
+<li>Most server side command rule will check the access token payload and perform other validations before generating event to trigger asynchronous event rule. Here is one example.</li>
+</ul>
+<pre><code>`block 4`
+public class DelForumRule extends AbstractForumRule implements Rule {
+    public boolean execute (Object ...objects) throws Exception {
+        Map&lt;String, Object&gt; inputMap = (Map&lt;String, Object&gt;) objects[0];
+        Map&lt;String, Object&gt; data = (Map&lt;String, Object&gt;) inputMap.get("data");
+        String rid = (String) data.get("@rid");
+        String host = (String) data.get("host");
+        String error = null;
+        Map&lt;String, Object&gt; payload = (Map&lt;String, Object&gt;) inputMap.get("payload");
+        if(payload == null) {
+            error = "Login is required";
+            inputMap.put("responseCode", 401);
+        } else {
+            Map&lt;String, Object&gt; user = (Map&lt;String, Object&gt;)payload.get("user");
+            List roles = (List)user.get("roles");
+            if(!roles.contains("owner") &amp;&amp; !roles.contains("admin") &amp;&amp; !roles.contains("forumAdmin")) {
+                error = "Role owner or admin or forumAdmin is required to delete forum";
+                inputMap.put("responseCode", 401);
+            } else {
+                String userHost = (String)user.get("host");
+                if(userHost != null &amp;&amp; !userHost.equals(host)) {
+                    error = "User can only delete forum from host: " + host;
+                    inputMap.put("responseCode", 401);
+                } else {
+                    ODocument forum = DbService.getODocumentByRid(rid);
+                    if(forum != null) {
+                        Map eventMap = getEventMap(inputMap);
+                        Map&lt;String, Object&gt; eventData = (Map&lt;String, Object&gt;)eventMap.get("data");
+                        inputMap.put("eventMap", eventMap);
+                        eventData.put("host", forum.field("host"));
+                        eventData.put("id", forum.field("id"));
+                    } else {
+                        error = "Forum with @rid " + rid + " doesn't exist on host " + host;
+                        inputMap.put("responseCode", 400);
+                    }
+                }
+            }
+        }
+        if(error != null) {
+            inputMap.put("error", error);
+            return false;
+        } else {
+            return true;
+        }
+    }
+}
+</code></pre>
+<ul>
+<li>After a while (configurable but use 30 minutes currently), the access token is expired. The RestHandler will send 401 and "token_expired" to the Angular app.</li>
+</ul>
+<pre><code>`block 5`
+        HeaderMap headerMap = exchange.getRequestHeaders();
+        Map&lt;String, Object&gt; payload = null;
+        try {
+            payload = getTokenPayload(headerMap);
+        } catch (IllegalStateException e) {
+            //e.printStackTrace();
+            String msg = e.getMessage();
+            if(msg != null &amp;&amp; msg.startsWith(JwtUtil.TOKEN_EXPIRED_MESSAGE)) {
+                // return 401 status and let client to refresh the token.
+                exchange.setResponseCode(401);
+                exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, ServerConstants.JSON_UTF8);
+                exchange.getResponseSender().send((ByteBuffer.wrap("token_expired".getBytes("utf-8"))));
+                return;
+            }
+        }
+
+</code></pre>
+<ul>
+<li>On the Angular side we have an response error interceptor as below. Since remember me is not checked, the current url will be saved and redirect to /signin to force user to log in again.</li>
+</ul>
+<pre><code>`block 6`
+        var _responseError = function (rejection) {
+            console.log("responseError: rejection", rejection);
+            var deferred = $q.defer();
+            if (rejection.status === 401) {
+                var authService = $injector.get('authService');
+                if(rejection.data === 'token_expired') {
+                    console.log("token expired, renewing...")
+                    httpBuffer.append(rejection.config, deferred);
+                    console.log("rejection and deferred are added to httpBuffer", rejection, deferred);
+                    authService.refreshToken().then(function (response) {
+                        console.log("_responseError: successfully called refreshToken");
+                        // the updater function will put the renewed token into header of saved requests.
+                        httpBuffer.retryAll(function(config) {
+                            config.headers = config.headers || {};
+                            var authorizationData = localStorageService.get('authorizationData');
+                            if (authorizationData) {
+                                config.headers.Authorization = 'Bearer ' + authorizationData.token;
+                            }
+                            return config;
+                        });
+                    }, function () {
+                        // failed to get refresh token somehow. Maybe didn't check remember me. go to login page.
+                        toaster.pop('error', rejection.status, rejection.data, 5000);
+                        console.log("_responseError failed to get refresh token. Maybe didn't check remember me");
+                        // abandon all the saved requests
+                        httpBuffer.rejectAll();
+                        httpBuffer.saveAttemptUrl();
+                        authService.logOut();
+                        $location.path('/signin');
+                        deferred.reject(rejection);
+                    });
+                } else {
+                    // 401 but not token expired the user is not logged in yet.
+                    toaster.pop('error', rejection.status, rejection.data, 5000);
+                    httpBuffer.rejectAll();
+                    httpBuffer.saveAttemptUrl();
+                    $location.path('/signin');
+                    deferred.reject(rejection);
+                }
+            } else if (rejection.status === 403) {
+                // 403 forbidden. The user is logged in but doesn't have permission for the request.
+                // logout and redirect to login page.
+                toaster.pop('error', rejection.status, rejection.data, 5000);
+                httpBuffer.rejectAll();
+                httpBuffer.saveAttemptUrl();
+                authService.logOut();
+                $location.path('/signin');
+                deferred.reject(rejection);
+            } else {
+                // some other errors, reject immediately.
+                toaster.pop('error', rejection.status, rejection.data, 5000);
+                deferred.reject(rejection);
+            }
+            return deferred.promise;
+        }
+
+</code></pre>
+<ul>
+<li>Once log in successfully, Angular will redirect to the saved attempted url as shown in code block 1.</li>
+</ul>
+<h3>
+<a aria-hidden="true" class="anchor" href="#scenario-2-use-refresh-token" id="user-content-scenario-2-use-refresh-token"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Scenario 2 Use Refresh Token</h3>
+<ul>
+<li>When login, check remember me, a refresh token will be send back to Angular which will not be expired.</li>
+<li>Upon access token expired, a call to the server with refresh token will get a renewed access token.</li>
+</ul>
+<pre><code>`block 7`
+                if(rejection.data === 'token_expired') {
+                    console.log("token expired, renewing...")
+                    httpBuffer.append(rejection.config, deferred);
+                    console.log("rejection and deferred are added to httpBuffer", rejection, deferred);
+                    authService.refreshToken().then(function (response) {
+                        console.log("_responseError: successfully called refreshToken");
+                        // the updater function will put the renewed token into header of saved requests.
+                        httpBuffer.retryAll(function(config) {
+                            config.headers = config.headers || {};
+                            var authorizationData = localStorageService.get('authorizationData');
+                            if (authorizationData) {
+                                config.headers.Authorization = 'Bearer ' + authorizationData.token;
+                            }
+                            return config;
+                        });
+                    }, function () {
+                        // failed to get refresh token somehow. Maybe didn't check remember me. go to login page.
+                        toaster.pop('error', rejection.status, rejection.data, 5000);
+                        console.log("_responseError failed to get refresh token. Maybe didn't check remember me");
+                        // abandon all the saved requests
+                        httpBuffer.rejectAll();
+                        httpBuffer.saveAttemptUrl();
+                        authService.logOut();
+                        $location.path('/signin');
+                        deferred.reject(rejection);
+                    });
+                } else {
+                    // 401 but not token expired the user is not logged in yet.
+                    toaster.pop('error', rejection.status, rejection.data, 5000);
+                    httpBuffer.rejectAll();
+                    httpBuffer.saveAttemptUrl();
+                    $location.path('/signin');
+                    deferred.reject(rejection);
+                }
+
+</code></pre>
+<ul>
+<li>Before getting another access token with refresh token, all the requests will be saved into into httpBuffer</li>
+<li>After getting another access token, all the saved request will be updated with the new access token and resend to the server. This happens behind the scene and users won't notice anything. Here is the refresh token rule.</li>
+</ul>
+<pre><code>`block 8`
+public class RefreshTokenRule extends AbstractUserRule implements Rule {
+
+    public boolean execute (Object ...objects) throws Exception {
+        Map&lt;String, Object&gt; inputMap = (Map&lt;String, Object&gt;) objects[0];
+        Map&lt;String, Object&gt; data = (Map&lt;String, Object&gt;) inputMap.get("data");
+        String error = null;
+
+        String refreshToken = (String)data.get("refreshToken");
+        String userId = (String)data.get("userId");
+        if(refreshToken == null || userId == null) {
+            inputMap.put("responseCode", 401);
+            error = "Refresh token or userId is missing";
+        } else {
+            ODocument user = getUserByUserId(userId);
+            if(user != null) {
+                ODocument credential = (ODocument) user.field("credential");
+                if (checkRefreshToken(credential, refreshToken)) {
+                    String jwt = generateToken(user);
+                    if (jwt != null) {
+                        Map&lt;String, String&gt; tokens = new HashMap&lt;String, String&gt;();
+                        tokens.put("accessToken", jwt);
+                        inputMap.put("result", mapper.writeValueAsString(tokens));
+                    }
+                } else {
+                    error = "Invalid refresh token";
+                    inputMap.put("responseCode", 400);
+                }
+            } else {
+                error = "The userId " + userId + " has not been registered";
+                inputMap.put("responseCode", 400);
+            }
+        }
+        if(error != null) {
+            inputMap.put("error", error);
+            return false;
+        } else {
+            return true;
+        }
+    }
+}
+
+</code></pre>
+<h3>
+<a aria-hidden="true" class="anchor" href="#scenario-3-logged-in-user-trying-to-access-unauthorized-resource" id="user-content-scenario-3-logged-in-user-trying-to-access-unauthorized-resource"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Scenario 3 logged in user trying to access unauthorized resource</h3>
+<ul>
+<li>In this case, 403 will be returned forbidden access.</li>
+<li>Angular will save the current url and redirect to login page for another user with higher level access.</li>
+<li>Upon login, Angular will redirect to saved url.</li>
+</ul>
+<pre><code>`block 9`
+            } else if (rejection.status === 403) {
+                // 403 forbidden. The user is logged in but doesn't have permission for the request.
+                // logout and redirect to login page.
+                toaster.pop('error', rejection.status, rejection.data, 5000);
+                httpBuffer.rejectAll();
+                httpBuffer.saveAttemptUrl();
+                authService.logOut();
+                $location.path('/signin');
+                deferred.reject(rejection);
+
+</code></pre>
+<h3>
+<a aria-hidden="true" class="anchor" href="#scenario-4-restart-browser-and-access-to-the-site-again" id="user-content-scenario-4-restart-browser-and-access-to-the-site-again"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Scenario 4 Restart browser and access to the site again</h3>
+<ul>
+<li>Angular app will load the authorizationData from local storage in run block.</li>
+</ul>
+<pre><code>`block 10`
+.run(['$rootScope', 'authService', function ($rootScope, authService) {
+        console.log("Angular is running...");
+        authService.fillAuthData();
+    }
+])
+</code></pre>
+<ul>
+<li>The first request send to the server will have the access token restored from local storage.</li>
+<li>If access token is not expired, then the request will be processed normally.</li>
+<li>If access token is expired, then 401 will be returned with "token_expired" and the refresh token logic will be triggered.</li>
+</ul>
+
+        </div>
+
+    </div>]

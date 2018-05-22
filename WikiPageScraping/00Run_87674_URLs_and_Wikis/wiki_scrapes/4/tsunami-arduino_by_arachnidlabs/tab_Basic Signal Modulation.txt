@@ -1,0 +1,33 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <h1>
+<a aria-hidden="true" class="anchor" href="#basic-signal-modulation-with-tsunami" id="user-content-basic-signal-modulation-with-tsunami"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Basic Signal Modulation with Tsunami</h1>
+<p>Frequency modulation is one common method used to encode data for transmission over radio or audio, or recording to a variety of media. One familiar application of this is encoding data to audio tape, a system used by a number of classic computers such as the BBC Micro.</p>
+<p>Classic computers like the BBC used a standard for encoding data to tape known as the Kansas City Standard. This is exceedingly simple; '0' bits are represented as four cycles of a 1200Hz sine wave, and '1' bits are represented as eight cycles of a 2400Hz sine wave. Bytes were encoded using a standard serial system called UART - the same system used by Arduino's serial module.</p>
+<p>With the Tsunami, writing something to encode data like this is very straightforward. So far, we've been using the Tsunami to generate a single frequency at a time, but the DDS the Tsunami uses has two registers. Which register is currently being used can be changed using the Tsunami library, but it can also be controlled from a digital pin. By using these facilities, we can encode data to audio with very little code required at all:</p>
+<pre><code>SoftwareSerial out(TSUNAMI_DDS_FSEL, TSUNAMI_DDS_FSEL);
+
+void setup() {
+    Tsunami.begin();
+    Tsunami.sleep(true);
+    Tsunami.setFrequency(0, 1200);
+    Tsunami.setFrequency(1, 2400);
+    out.begin(300);
+}
+
+void loop() {
+    while(!Serial.available());
+    Tsunami.sleep(false);
+    while(Serial.available()) {
+        out.write(Serial.read());
+    }
+    Tsunami.sleep(true);
+}
+</code></pre>
+<p>In the setup routine, we turn on the Tsunami, disable its output, and configure its two registers with 1200Hz and 2400Hz. Then, we set up a serial connection to send data to the digital pin that controls which frequency the Tsunami output.</p>
+<p>In the main loop, we wait for data to come in on the Tsunami's USB serial connection. Whenever data arrives, we turn the Tsunami's signal generation on, and write the data out to our virtual serial port, before turning the Tsunami back off again.</p>
+<p>That's it - all you need to do in order to encode data using frequency shift keying on the Tsunami. The example audio you hear in the Kickstarter video is encoded using exactly this method.</p>
+
+        </div>
+
+    </div>]

@@ -1,0 +1,118 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <h2>
+<a aria-hidden="true" class="anchor" href="#custom-types" id="user-content-custom-types"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Custom types</h2>
+<p>You can define your own types and use them directly as a field type in a service method request/response as long as they implement <code>json.Marshaler</code> and <code>json.Unmarshaler</code> interfaces.</p>
+<p>Let's say we have this method:</p>
+<div class="highlight highlight-source-go"><pre><span class="pl-k">func</span> <span class="pl-en">(<span class="pl-v">s</span> *<span class="pl-v">MyService</span>) <span class="pl-en">ListItems</span></span>(<span class="pl-v">r</span> *<span class="pl-v">http</span>.<span class="pl-v">Request</span>, <span class="pl-v">req</span> *<span class="pl-v">ListReq</span>, <span class="pl-v">resp</span> *<span class="pl-v">ItemsList</span>) <span class="pl-v">error</span> {
+  <span class="pl-c"><span class="pl-c">//</span> fetch a list of items</span>
+}</pre></div>
+<p>where <code>ListReq</code> and <code>ItemsList</code> are defined as follows:</p>
+<div class="highlight highlight-source-go"><pre><span class="pl-k">type</span> <span class="pl-v">ListReq</span> <span class="pl-k">struct</span> {
+    <span class="pl-v">Limit</span>  <span class="pl-k">int</span>        <span class="pl-s"><span class="pl-pds">`</span>json:"limit,string" endpoints:"d=10,max=100"<span class="pl-pds">`</span></span>
+    <span class="pl-v">Page</span> *QueryMarker <span class="pl-s"><span class="pl-pds">`</span>json:"cursor"<span class="pl-pds">`</span></span>
+}
+
+<span class="pl-k">type</span> <span class="pl-v">ItemsList</span> <span class="pl-k">struct</span> {
+    <span class="pl-v">Items</span> []*Item      <span class="pl-s"><span class="pl-pds">`</span>json:"items"<span class="pl-pds">`</span></span>
+    <span class="pl-v">Next</span>  *QueryMarker <span class="pl-s"><span class="pl-pds">`</span>json:"next,omitempty"<span class="pl-pds">`</span></span>
+}</pre></div>
+<p>What's interesting here is <code>ListReq.Cursor</code> and <code>ItemsList.Next</code> fields which are of type <code>QueryMarker</code>:</p>
+<div class="highlight highlight-source-go"><pre><span class="pl-k">import</span> <span class="pl-s"><span class="pl-pds">"</span>appengine/datastore<span class="pl-pds">"</span></span>
+
+<span class="pl-k">type</span> <span class="pl-v">QueryMarker</span> <span class="pl-k">struct</span> {
+    datastore.<span class="pl-smi">Cursor</span>
+}
+
+<span class="pl-k">func</span> <span class="pl-en">(<span class="pl-v">qm</span> *<span class="pl-v">QueryMarker</span>) <span class="pl-en">MarshalJSON</span></span>() ([]<span class="pl-v">byte</span>, <span class="pl-v">error</span>) {
+    <span class="pl-k">return</span> []<span class="pl-k">byte</span>(<span class="pl-s"><span class="pl-pds">`</span>"<span class="pl-pds">`</span></span> + qm.<span class="pl-c1">String</span>() + <span class="pl-s"><span class="pl-pds">`</span>"<span class="pl-pds">`</span></span>), <span class="pl-c1">nil</span>
+}
+
+<span class="pl-k">func</span> <span class="pl-en">(<span class="pl-v">qm</span> *<span class="pl-v">QueryMarker</span>) <span class="pl-en">UnmarshalJSON</span></span>(<span class="pl-v">buf</span> []<span class="pl-v">byte</span>) <span class="pl-v">error</span> {
+    <span class="pl-k">if</span> <span class="pl-c1">len</span>(buf) &lt; <span class="pl-c1">2</span> || buf[<span class="pl-c1">0</span>] != <span class="pl-s"><span class="pl-pds">'</span>"<span class="pl-pds">'</span></span> || buf[<span class="pl-c1">len</span>(buf)-<span class="pl-c1">1</span>] != <span class="pl-s"><span class="pl-pds">'</span>"<span class="pl-pds">'</span></span> {
+        <span class="pl-k">return</span> errors.<span class="pl-c1">New</span>(<span class="pl-s"><span class="pl-pds">"</span>QueryMarker: bad cursor value<span class="pl-pds">"</span></span>)
+    }
+    <span class="pl-smi">cursor</span>, <span class="pl-smi">err</span> <span class="pl-k">:=</span> datastore.<span class="pl-c1">DecodeCursor</span>(<span class="pl-k">string</span>(buf[<span class="pl-c1">1</span> : <span class="pl-c1">len</span>(buf)-<span class="pl-c1">1</span>]))
+    <span class="pl-k">if</span> err != <span class="pl-c1">nil</span> {
+        <span class="pl-k">return</span> err
+    }
+    *qm = QueryMarker{cursor}
+    <span class="pl-k">return</span> <span class="pl-c1">nil</span>
+}</pre></div>
+<p>Now that our <code>QueryMarker</code> implements required interfaces we can use <code>ListReq.Page</code> field as if it were a <code>datastore.Cursor</code> in our service method, for instance:</p>
+<div class="highlight highlight-source-go"><pre><span class="pl-k">func</span> <span class="pl-en">(<span class="pl-v">s</span> *<span class="pl-v">MyService</span>) <span class="pl-en">ListItems</span></span>(<span class="pl-v">r</span> *<span class="pl-v">http</span>.<span class="pl-v">Request</span>, <span class="pl-v">req</span> *<span class="pl-v">ListReq</span>, <span class="pl-v">list</span> *<span class="pl-v">ItemsList</span>) <span class="pl-v">error</span> {
+    <span class="pl-smi">c</span> <span class="pl-k">:=</span> endpoints.<span class="pl-c1">NewContext</span>(r)
+    list.<span class="pl-smi">Items</span> = <span class="pl-c1">make</span>([]*Item, <span class="pl-c1">0</span>, req.<span class="pl-smi">Limit</span>)
+
+    <span class="pl-smi">q</span> <span class="pl-k">:=</span> datastore.<span class="pl-c1">NewQuery</span>(<span class="pl-s"><span class="pl-pds">"</span>Item<span class="pl-pds">"</span></span>).<span class="pl-c1">Limit</span>(req.<span class="pl-smi">Limit</span>)
+    <span class="pl-k">if</span> req.<span class="pl-smi">Page</span> != <span class="pl-c1">nil</span> {
+        q = q.<span class="pl-c1">Start</span>(req.<span class="pl-smi">Page</span>.<span class="pl-smi">Cursor</span>)
+    }
+
+    <span class="pl-k">var</span> <span class="pl-smi">iter</span> *datastore.<span class="pl-smi">Iterator</span>
+    <span class="pl-k">for</span> <span class="pl-smi">iter</span> <span class="pl-k">:=</span> q.<span class="pl-c1">Run</span>(c); ; {
+        <span class="pl-k">var</span> <span class="pl-smi">item</span> Item
+        <span class="pl-smi">key</span>, <span class="pl-smi">err</span> <span class="pl-k">:=</span> iter.<span class="pl-c1">Next</span>(&amp;item)
+        <span class="pl-k">if</span> err == datastore.<span class="pl-smi">Done</span> {
+            <span class="pl-k">break</span>
+        }
+        <span class="pl-k">if</span> err != <span class="pl-c1">nil</span> {
+          <span class="pl-k">return</span> err
+        }
+        item.<span class="pl-smi">Key</span> = key
+        list.<span class="pl-smi">Items</span> = <span class="pl-c1">append</span>(list.<span class="pl-smi">Items</span>, &amp;item)
+    }
+
+    <span class="pl-smi">cur</span>, <span class="pl-smi">err</span> <span class="pl-k">:=</span> iter.<span class="pl-c1">Cursor</span>()
+    <span class="pl-k">if</span> err != <span class="pl-c1">nil</span> {
+        <span class="pl-k">return</span> err
+    }
+    list.<span class="pl-smi">Next</span> = &amp;QueryMarker{cur}
+    <span class="pl-k">return</span> <span class="pl-c1">nil</span>
+}</pre></div>
+<p>A serialized <code>ItemsList</code> would then look something like this:</p>
+<div class="highlight highlight-source-json"><pre>{
+  <span class="pl-s"><span class="pl-pds">"</span>items<span class="pl-pds">"</span></span>: [
+    {
+      <span class="pl-s"><span class="pl-pds">"</span>id<span class="pl-pds">"</span></span>: <span class="pl-s"><span class="pl-pds">"</span>5629499534213120<span class="pl-pds">"</span></span>,
+      <span class="pl-s"><span class="pl-pds">"</span>name<span class="pl-pds">"</span></span>: <span class="pl-s"><span class="pl-pds">"</span>A TV set<span class="pl-pds">"</span></span>,
+      <span class="pl-s"><span class="pl-pds">"</span>price<span class="pl-pds">"</span></span>: <span class="pl-c1">123.45</span>
+    }
+  ],
+  <span class="pl-s"><span class="pl-pds">"</span>next<span class="pl-pds">"</span></span>: <span class="pl-s"><span class="pl-pds">"</span>E-ABAIICImoNZGV2fmdvcGhtYXJrc3IRCxIEVXNlchiAgICAgICACgwU<span class="pl-pds">"</span></span>
+}</pre></div>
+<hr/>
+<p>Another nice thing about this is, some types in <code>appengine/datastore</code> package already implement json.Marshal and json.Unmarshal. Take, for instance, <a href="https://code.google.com/p/appengine-go/source/browse/appengine/datastore/key.go?spec=svnadcd6a11ae1097065d7b331622c35b4beacd1ac6&amp;r=213434652374dc9d5a869703059a533d8000c197#187" rel="nofollow">datastore.Key</a>. I could use it as an ID in my JSON response out of the box, if I wanted to:</p>
+<div class="highlight highlight-source-go"><pre><span class="pl-k">type</span> <span class="pl-v">User</span> <span class="pl-k">struct</span> {
+    <span class="pl-v">Key</span> *datastore.<span class="pl-smi">Key</span> <span class="pl-s"><span class="pl-pds">`</span>json:"id" datastore:"-"<span class="pl-pds">`</span></span>
+    <span class="pl-v">Name</span> <span class="pl-k">string</span> <span class="pl-s"><span class="pl-pds">`</span>json:"name" datastore:"name"<span class="pl-pds">`</span></span>
+    <span class="pl-v">Role</span> <span class="pl-k">string</span> <span class="pl-s"><span class="pl-pds">`</span>json:"role" datastore:"role"<span class="pl-pds">`</span></span>
+    <span class="pl-v">Email</span> <span class="pl-k">string</span> <span class="pl-s"><span class="pl-pds">`</span>json:"email" datastore:"email"<span class="pl-pds">`</span></span>
+}
+
+<span class="pl-k">type</span> <span class="pl-v">GetUserReq</span> <span class="pl-k">struct</span> {
+    <span class="pl-v">Key</span> *datastore.<span class="pl-smi">Key</span> <span class="pl-s"><span class="pl-pds">`</span>json:"id"<span class="pl-pds">`</span></span>
+}
+
+<span class="pl-c"><span class="pl-c">//</span> defined with "users/{id}" path template</span>
+<span class="pl-k">func</span> <span class="pl-en">(<span class="pl-v">s</span> *<span class="pl-v">MyService</span>) <span class="pl-en">GetUser</span></span>(<span class="pl-v">r</span> *<span class="pl-v">http</span>.<span class="pl-v">Request</span>, <span class="pl-v">req</span> *<span class="pl-v">GetUserReq</span>, <span class="pl-v">user</span> *<span class="pl-v">User</span>) <span class="pl-v">error</span> {
+  <span class="pl-smi">c</span> <span class="pl-k">:=</span> endpoints.<span class="pl-c1">NewContext</span>(r)
+  <span class="pl-k">if</span> <span class="pl-smi">err</span> <span class="pl-k">:=</span> datastore.<span class="pl-c1">Get</span>(c, req.<span class="pl-smi">Key</span>, user); err != <span class="pl-c1">nil</span> {
+    <span class="pl-k">return</span> err
+  }
+  user.<span class="pl-smi">Key</span> = req.<span class="pl-smi">Key</span>
+  <span class="pl-k">return</span> <span class="pl-c1">nil</span>
+}</pre></div>
+<p>JSON would then look something like this:</p>
+<pre><code>GET /_ah/api/myapi/v1/users/ag1kZXZ-Z29waG1hcmtzchELEgRVc2VyGICAgICAgIAKDA
+</code></pre>
+<div class="highlight highlight-source-json"><pre>{
+  <span class="pl-s"><span class="pl-pds">"</span>id<span class="pl-pds">"</span></span>: <span class="pl-s"><span class="pl-pds">"</span>ag1kZXZ-Z29waG1hcmtzchELEgRVc2VyGICAgICAgIAKDA<span class="pl-pds">"</span></span>,
+  <span class="pl-s"><span class="pl-pds">"</span>name<span class="pl-pds">"</span></span>: <span class="pl-s"><span class="pl-pds">"</span>John Doe<span class="pl-pds">"</span></span>,
+  <span class="pl-s"><span class="pl-pds">"</span>role<span class="pl-pds">"</span></span>: <span class="pl-s"><span class="pl-pds">"</span>member<span class="pl-pds">"</span></span>,
+  <span class="pl-s"><span class="pl-pds">"</span>email<span class="pl-pds">"</span></span>: <span class="pl-s"><span class="pl-pds">"</span>user@example.org<span class="pl-pds">"</span></span>
+}</pre></div>
+
+        </div>
+
+    </div>]

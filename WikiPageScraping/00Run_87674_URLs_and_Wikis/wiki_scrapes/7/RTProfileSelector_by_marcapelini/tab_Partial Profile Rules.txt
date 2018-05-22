@@ -1,0 +1,79 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>This section explains how to set up <em>partial profile rules</em>. The main differences between "partial profile rules" and the "normal" (<em>full profile</em>) rules are:</p>
+<ul>
+<li>They are always applied <strong>after</strong> the main processing profile selection</li>
+<li>They are applied in a <strong>cascading</strong> way, that is, they're not mutually exclusive, so that as many <em>matching</em> partial profile rules as found by RTPS will be applied</li>
+<li>The rules can be "<strong>ranked</strong>" so that they are applied in a particular order should there be more than one matching rule</li>
+<li>A section or <strong>list of sections</strong> from the <em>.pp3</em> file may be specified for the rule, so that only those sections from the matching processing profile will be merged into the destination profile.</li>
+<li>As of release 1.0.4 (see <a href="https://github.com/marcapelini/RTProfileSelector/issues/2">#2</a>), any keys found in a section from a selected partial profile are now <strong>merged</strong> into the corresponding section from the existing profile. Previous behaviour was to replace the whole section.</li>
+</ul>
+<hr/>
+<h3>
+<a aria-hidden="true" class="anchor" href="#example-selecting-an-appropriate-lcp-profile-for-a-compact-camera-model" id="user-content-example-selecting-an-appropriate-lcp-profile-for-a-compact-camera-model"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Example: selecting an appropriate LCP profile for a compact camera model</h3>
+<p>The steps for creating a partial profile rule are the same as for normal rules, so below I will focus on a practical example of how such a rule can be used.  Although this example deals with the automatic selection of an LCP profile for a particular camera, the concept is not specific to lens settings: any suitable set of Exif keys and partial .pp3 profiles can be used, just as with normal rules.</p>
+<hr/>
+<p>I have thousands of photos taken with a Canon Powershot G9. It is an oldish (2008) compact camera, which didn't automatically correct for lens distortion, chromatic aberration or vignetting.  Here's a photo taken at the lens's widest setting, showing its typical barrel distortion. Notice that the lens correction controls in RT have assumed their default values, that is, <em>no lens correction is being applied</em>:
+<img alt="" src="images/part_prof_no_lcp.png"/></p>
+<hr/>
+<ul>
+<li>I have <a href="http://50.87.144.65/%7Ert/w/index.php?title=How_to_get_LCP_and_DCP_profiles" rel="nofollow">downloaded an LCP file</a> (LCP stands for "lens correction profile") for the Canon Porwershot G9 which, when selected in RT, corrects for both the lens geometrical distortion and vignetting. So let's select the right profile for my camera:
+<img alt="" src="images/part_prof_lcp_dir.png"/>
+</li>
+</ul>
+<hr/>
+<ul>
+<li>Here's the same photo as above with the proper LCP file selected and applied. Notice that the lines are now straight and that the mild light fall off at the edges has been corrected:<br/>
+<img alt="" src="images/part_prof_lcp_applied.png"/>
+</li>
+</ul>
+<hr/>
+<p>Now that I have selected the LCP file for this particular photo, let's save an RT partial processing profile with <em>only the lens correction</em> information, so that it can be later applied to other photos taken with the G9 <em>without changing</em> any other parameter but the LCP selection.</p>
+<ul>
+<li>
+<p>Step 1: hold the CTLR key and click the "Save current profile" button.
+<img alt="" src="images/part_prof_save_1.png"/></p>
+</li>
+<li>
+<p>Step 2: give the partial processing profile any suitable name (I preffer to place my partial profiles in a separate folder, as shown below, but that's just me).
+<img alt="" src="images/part_prof_save_2.png"/></p>
+</li>
+<li>
+<p>Step 3: save it, selecting only the "Lens correction profile" option.
+<img alt="" src="images/part_prof_save_3.png"/></p>
+</li>
+</ul>
+<hr/>
+<p>Now that we have a .pp3 file with only the LCP selection information, it's just a matter of creating a rule to automatically select that partial profile the first time I open a photo taken with the Canon G9. The problem is: I already have a number of rules to select particular profiles for the G9, and I don't want to change all of those profiles to include the LCP info. What I'm going to do instead is leave my normal rules alone and create a <strong>partial profile rule</strong> that RTPS will apply after the main rule selection.</p>
+<p>The way RTPS identifies a rule as one suitable for <strong>partial profiles</strong> is by looking for a <strong>"@Sections"</strong> key in the rule definition section in <em>RTProfileSelectorRules.ini</em>. The <strong>"@Sections"</strong> key can contain a <em>comma-delimited list</em> of .pp3 file <em>section names</em> (remember that RT's .pp3 file format is just text ini file with a number of sections and keys for RT's processing parameters), or just an <em>asterisk</em> ("*"), meaning any sections found within the processing profile file will be copied to the destination processing profile, overwriting the corresponding sections from the full profile selected by the main rule.</p>
+<p>Here is a simple rule that applies the partial processing profile we created in the step above to any photo taken with the "Powershot G9". Notice the presence of a <strong>"@Sections=*"</strong> entry in the partial profile rule - <strong>don't forget to add</strong> this to your own partial profile rules, otherwise the whole <em>.pp3</em> file will be <strong>copied</strong> to the destination file, instead of being <strong>merged</strong> into the default or selected profile!<br/>
+<img alt="" src="images/partial_rule_exmaple.png"/></p>
+<hr/>
+<p><strong>Specifying which sections to merge</strong></p>
+<p>In most cases, having "<em>@Sections=*</em>" as in the rule above is the way to go, assuming the processing profile selected by your rule is in fact a partial one (one with just a number of selected sections, not the full set used by RT). However, if you want to further <strong>restrict</strong> which sections are applied by a partial processing rule, you can specify a <em>comma-delimited list</em> of <em>.pp3</em> sections so that RTPS will only copy those sections to the destination profile, and not any others that there may have been saved in the file. For example, if I want to make sure that only some lens-related settings are affected by the rule, here is how I might do that:</p>
+<pre><code>[Lens Profiles\Canon G9 - Lens.pp3]
+@Sections=LensProfile,CACorrection,Vignetting Correction
+Canon Model ID=PowerShot G9
+</code></pre>
+<hr/>
+<p><strong>Ranking rules: defining the order in which partial profile rules are applied</strong></p>
+<p>In case you have <em>more than one</em> partial profile rule that matches the Exif keys from a particular photo, you may want to define the <em>order</em> in which they're applied by RTPS so that important sections from a particular .pp3 file don't get inadvertently overwritten by another profile. In this case, you can assign a "<em>rank</em>" to each rule. A rank is just any integer value that you set via the optional "<strong>@Rank</strong>" key in your rule. All rules have a default rank of "0".  RTPS guarantees that the highest-ranked rules are applied after the lowest-ranked ones. For example, given the two rules below:</p>
+<pre><code>[Lens Profiles\Canon G9 - Lens.pp3]
+@Sections=*
+@Rank=10
+Canon Model ID=PowerShot G9
+
+[Noise Profiles\high_noise_partial.pp3]
+@Sections=*
+@Rank=1
+Canon Model ID=PowerShot G9
+ISO=400 ~ *
+</code></pre>
+<p>The "<em>Canon G9 - Lens.pp3</em>" will be applied <strong>after</strong> the "<em>high_noise_partial.pp3</em>" because it has a <strong>higher rank</strong>. This way, even if the "<em>high_noise_partial.pp3</em>" happens to have been saved with an LCP profile set, that information will be overridden by the one set in the "<em>Canon G9 - Lens.pp3</em>" file.</p>
+<hr/>
+<p>Previous page: <a class="internal present" href="/marcapelini/RTProfileSelector/wiki/Creating-Rules">Creating rules</a></p>
+<p>Next page: <a class="internal present" href="/marcapelini/RTProfileSelector/wiki/ISO-profiles">ISO Profiles</a></p>
+
+        </div>
+
+    </div>]

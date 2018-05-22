@@ -1,0 +1,77 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>PircBotX has a very different API from the original PircBot. Unfortunately this means changing from PircBot won't be a simple "replace pircbot.jar with pircbotx.jar". Conceptually however its still "start bot and override methods on<code>*</code> events", just done better.</p>
+<h1>
+<a aria-hidden="true" class="anchor" href="#why" id="user-content-why"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Why?</h1>
+<p>PircBot was forked due to its many issues and lack of maintenance</p>
+<ul>
+<li>Attempts to work on Java <strong>1.1</strong>, so newer and better Java features like Collections are not used</li>
+<li>The project has essentially stagnated, with little to no new features added in years</li>
+<li>Very limited "event" system</li>
+<li>Lack of any available information on the server or the channel except the channel topic</li>
+<li>Lack of important user info like hostmasks</li>
+<li>No support for HalfOp, SuperOp, and Owner statuses available on some IRC servers</li>
+<li>Exceptions are hidden in many places making debugging extremely difficult</li>
+<li>Any attempt to integrate into a higher-level framework takes significantly more work than should be required</li>
+<li>Methods or fields that might be useful to override or use are hindered by <code>private</code> and <code>final</code> modifiers</li>
+<li>Due to heavy usage of <code>private</code> and <code>final</code> modifiers, any modification requires modification of the original source code instead of overriding.</li>
+<li>Most documentation relies solely on JavaDocs and self-documentation instead of an actual full guide explaining everything</li>
+<li>Naming convention is not adhered to throughout the entire project, mainly when dealing with users</li>
+<li>Abuse of the <a href="http://en.wikipedia.org/wiki/God_object" rel="nofollow">God Object</a> pattern</li>
+<li>Doesn't scale very well. The larger the bot the more unmaintainable it is.</li>
+</ul>
+<h1>
+<a aria-hidden="true" class="anchor" href="#major-changes" id="user-content-major-changes"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Major Changes</h1>
+<ol>
+<li>
+<strong><a href="EventSystemExplained.md">Better Event system</a></strong> - PircBot's event system is a basic list of overridable methods with a couple of parameters. These parameters though only have some of the information you need and can't easily be passed to other methods. PircBotX on the other hand has a full Event-Listener system with event <em>objects</em> instead. All the available information in a single place and can easily be passed around.</li>
+<li>
+<strong>New <a href="http://thelq.github.io/pircbotx/latest/apidocs/org/pircbotx/Channel.html" rel="nofollow">Channel</a> and <a href="http://thelq.github.io/pircbotx/latest/apidocs/org/pircbotx/User.html" rel="nofollow">User</a> objects</strong> - Features, advantages, and usages of these objects include</li>
+</ol>
+<ul>
+<li>More Powerful User Class - Information such as hostmask, login, channels the user is in, channels the user is an operator in, even the number of hops to the user + much more is all available. Check the javadoc for more information</li>
+<li>New Powerful Channel Class - You can now easily (and cheaply) get access to information such as the channel topic, who set the topic, mode, current users and their status in the channel, and more without having to awkwardly send the command and have a listener to handle response. All of this information is available with a simple method call without a round trip to the server</li>
+<li>User-per-server instead of User-per-channel - In PircBot a new separate user was created for every user in every channel, regardless if they are in multiple channels. In PircBotX each user only gets created once.</li>
+</ul>
+<ol>
+<li>
+<strong>Don't extend PircBotX class</strong> - PircBot was centered around extending the PircBot class. In PircBotX this is not necessary and isn't recommended (although it is possible). Consider learning about PircBotX and writing utility classes before extending the main class.</li>
+<li>
+<strong>Feature friendly!</strong> - As this is still a relatively new project we are very happy to take feature requests. We do not suffer from the backwards compatibility and stagnation issues that plague PircBot.</li>
+<li>
+<strong>Full support for Maven</strong> - PircBot didn't provide any Maven support, making life difficult for Maven users and projects. PircBotX though is built entirely with Maven and is available in Maven central (see the downloading section on the Home Page)</li>
+<li>
+<strong>Heavily changed method parameters</strong> - Due to the new User and Channel classes described above they have replaced their String equivalents in most methods. Its imperative that you check existing code and javadoc for new method parameters</li>
+<li>
+<strong><code>final</code> and <code>private</code> modifiers removed from most methods and fields.</strong> - Final and private modifiers hurt extensibility, code reuse, and usability in certain situations. This leaves only a few options: a) Submit a feature request and wait, b) Copy and paste the class, modify it, and use it instead (very bad!) or c) Give up and pick a different project. With the removal of these modifiers you are free to modify methods to fix any issues you might have. Note that the entire PircBotX project originally started because of the frustration caused by these modifiers, preventing being able to modify and access certain functionality.</li>
+<li>
+<strong>Significantly more <a href="Features.md">Features</a></strong> - Almost all of them are new features that are missing in PircBot</li>
+</ol>
+<h1>
+<a aria-hidden="true" class="anchor" href="#bug-fixes" id="user-content-bug-fixes"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Bug Fixes</h1>
+<p>These are all issues in the original PircBot code that have been fixed in PircBotX</p>
+<ol>
+<li>
+<strong>Missing Hostmasks causes malformed events</strong> - This bug caused Issue #9 and is in the upstream code. Its mostly found in user mode changes and channel lists. As of March 1st, 2012 the <a href="http://www.deaded.com/forum/viewtopic.php?showtopic=1628" rel="nofollow">bug report</a> on PircBot's forums hasn't received any response in 14 months.</li>
+<li>
+<strong>Exception Swallowing</strong> - PircBot swallowed (didn't throw or log, just did catch(Exception e){} ) exceptions in many methods making debugging very difficult since you have no idea why your code suddenly failed. This anti-pattern and bad practice has been removed from PircBotX. To ease the pain of unchecked exceptions, Listeners can throw any encountered Exception which can then be handled at the ListenerManager level</li>
+</ol>
+<h1>
+<a aria-hidden="true" class="anchor" href="#better-managed-project" id="user-content-better-managed-project"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Better Managed Project</h1>
+<ol>
+<li>
+<strong>New package namespace</strong> - Because PircBotX is a significant change from PircBot, the package namespace was changed from <code>org.jibble.pircbot</code> to <code>org.pircbotx</code>.</li>
+<li>
+<strong>Set/Remove events condensed</strong> - Events like DeOpEvent and OpEvent have been compacted into just OpEvent. Use isOp() or the applicable method to check for setting or removing of modes</li>
+<li>
+<strong><a href="https://github.com/TheLQ/pircbotx/issues">Public Source Code Repository</a></strong> - PircBot didn't provide any public source code repository which made it difficult to suggest patches, track updates, and use the latest development version. PircBotX on the other hand hosts all code in this public github/bitbucket repositories.</li>
+<li>
+<strong><a href="https://github.com/TheLQ/pircbotx/issues">Public Issue Tracker</a></strong> - Find a problem? Instead of emailing the developer, notifying on a forum with miscellaneous discussion and support requests, or just fixing it in your own copy, report it in the Issue Tracker.</li>
+<li>
+<strong><a href="http://groups.google.com/group/pircbotx" rel="nofollow">Public Mailing List</a></strong> - PircBotX provides a public mailing list for discussion, announcements, support, and anything else you want to talk about. <strong>Note: Please do not email a developer directly, use the mailing list</strong>
+</li>
+</ol>
+
+        </div>
+
+    </div>]

@@ -1,0 +1,228 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <table>
+<thead>
+<tr>
+<th>Branches</th>
+<th>Issues</th>
+<th>Main developers</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<a href="/inexorgame/code/tree/fohlen/nodetree">fohlen/nodetree</a>, <a href="/inexorgame/code/tree/karo/tree-gen">karo/tree-gen</a>, <a href="/inexorgame/code/tree/karo/node-tree-api-ARCHIVE">karo/node-tree-api-ARCHIVE </a>
+</td>
+<td>?</td>
+<td>
+<a href="/fohlen">@Fohlen</a>, <a href="/koraa">@koraa</a>
+</td>
+</tr>
+</tbody>
+</table>
+<h1>
+<a aria-hidden="true" class="anchor" href="#inexor-file-system-api" id="user-content-inexor-file-system-api"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Inexor File System API</h1>
+<h2>
+<a aria-hidden="true" class="anchor" href="#introcurrent-api" id="user-content-introcurrent-api"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Intro/Current API</h2>
+<p>The current Inexor/Sauer API uses specially crafted network messages; e.g. a player changing their position has a special packet which contains three coordinates representing the new position. This can be though of as a procedural approach since in essence each message represents a call to a procedure modifying the state of the game.</p>
+<p>On a more abstract level, the entire construct serves the purpose of synchronizing the state between clients and server.</p>
+<p>Unfortunately, this approach is rather cumbersome since it requires the developers to add packages for every possible state change; e.g. name change needs it's own specially implemented procedure, weapon change, ...<br/>
+For Inexor, this approach definitely won't cut it: one of the goals is to make it possible to write plugins that define the behaviour of Inexor on a very deep level. Specifically it should be possible to implement all the game modes in Node/the Inexor graphical scripting language.</p>
+<p>As a very simple example, take for instance the addition of a handicap: The better a player is the larger their body becomes. This would require the addition of a size change message. Rather than implementing such our message, we should have a framework in place that can automatically process the local state change and automatically generate an appropriate update message.</p>
+<p>Essentially: I am talking about a state synchronization framework. We can use the following abstract strategy to build such framework:</p>
+<ul>
+<li>Declare our data and <strong>the way the data is organized</strong> in a machine readable format</li>
+<li>Create a generic rule to create differentials over the machine-readable data</li>
+</ul>
+<p>The rest of this document is going to outline my a way to organize the data in Inexor and how to send the differentials using Inexor directly and using Node.js.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#filesystems" id="user-content-filesystems"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Filesystems</h2>
+<p>There's a long tradition of storing data in the filesystem. In fact the filesystem centric approach is one of the strong points of the unixoid systems. Plan9, which was built as the next generation Unix (and IMO, in a way it is), is built around that concept: routing a large part of communication between users, applications and the kernel through the file system; APIs are generally provided via the 9P protocol, which is a remote file system protocol.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#requirements" id="user-content-requirements"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Requirements</h3>
+<p>In addition to the basic file systems (as provided by protocols like 9P, CIFS or NFS) we need some other features:</p>
+<ul>
+<li>Decentralization/Syncing – Unlike a traditional file system, we need to provide synchronization between different instances in addition to access only – each C++ instance should work with the data it has locally rather than waiting for IO before being able to access internal variables.</li>
+<li>Semantic Information – We need to be able to check whether a player is actually allowed to perform  a certain update (e.g. only an admin may kick another player but each player can disconnect themselves)</li>
+<li>Optimization – Since we know a lot about our internal data, we can compress that information. E.g. the time in the game left could be in the tree under <code>/game/eta</code>, but since we know this is a frequently accessed element we internally assign the file system ID 13; if we're clever, this fits into a 4bit varint; it can be decoded quickly and in our C++ server code we could use a statically compiled jumping table to access it.</li>
+</ul>
+<p>There already are a couple of file systems and file system protocols out there; 9P comes to mind very quickly because it was build as an API for accessing application internals. Unfortunately it doesn't meet the distributed requirement.<br/>
+Then, there also are some <a href="https://en.wikipedia.org/wiki/Comparison_of_distributed_file_systems#cite_note-6" rel="nofollow">distributed file systems</a> but they are generally built for storing big data (problems that won't fit on a single HD) where as we are dealing with a small amount of data that needs to be synced efficiently.</p>
+<p>So let's take a step back and design our own:</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#a-virtual-file-system-for-inexor" id="user-content-a-virtual-file-system-for-inexor"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>A Virtual File System for Inexor</h3>
+<p>The Inexor File System should be distributed, thus a set of process/computers has shared ownership over the FS; each of those is called a <strong>Peer</strong>.<br/>
+A peer who is actually playing will be called a...<strong>Player</strong>.</p>
+<p>File Sytems are generally just <strong>Trees</strong>;</p>
+<p><strong>Node</strong> is a vertex in the Tree; any of it's element.
+<strong>Directory</strong> a Node in the Tree that can contains references to other nodes by name.
+<strong>File</strong> a Node in the Tree that contains no other nodes but can have some data attached to it.j</p>
+<p>The simplest Tree consists of a single Directory containing no nodes. This base node is called the <strong>Root</strong>.</p>
+<p>For Inexor we need a couple more data structures:</p>
+<p><strong>Link</strong> File that contains a reference to another Node. This generally expresses äquivalence between nodes. Let <code>/players/22/name</code> be a File that contains "Arthur Dent" and let <code>/players/me</code> be a link that references <code>/players/22</code>; then <code>/players/me/name</code> is considered a File with the value "Arthur Dent". What a link points to can be changed.<br/>
+<strong>Set</strong> A Directory that is not compile time static. A Set contains any number of nodes; each of those nodes must follow the same structure. The name of a Node inside a directory needs to be a UUID. Sets also contain special directory <strong>by/</strong> which can be used to access subnodes based on their propertes. E.g. by <code>by/name/hoax</code> would reference a Directory inside the set that has a File <code>name</code> with the contents <code>hoax</code>.<br/>
+<strong>Log</strong> A Directory that contains a history of Nodes. Each Node in a log needs to follow the same structure. The names of the Nodes in a log are nanosecond precision unix timestamps PLUS a UUID. Logs also contain Links with numeric names: <code>0</code> would access the most recent node, while <code>1</code> would acces the Node before that. Logs only provide approximate chronological coherence: Nanosecond precision is mostly used to avoid name collisions; correctness can not be guaranteed because it is not possible to synchronize all the Peer's clocks and since Unix time is based on UTC and thus incorporates leap seconds. Old Nodes may be purged from nodes; the Log structure declares no limitation on when that may happen.</p>
+<p><a href="https://en.wikipedia.org/wiki/Path_(computing)#Unix_style" rel="nofollow">Unix Style Paths</a> are used to denote paths.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#synchronization" id="user-content-synchronization"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Synchronization</h3>
+<p>Now that we have defined our data structures we need to define differentials for these structures</p>
+<p><strong>Node</strong> defines no differential because it is only a abstract parent of all other nodes;
+<strong>Directory</strong> also defines no differentials because the content of plain directories is compile time constant.</p>
+<p><strong>File</strong> just uses the new value as a differential.
+<strong>Link</strong> also uses the new value as differential.
+<strong>Set</strong> has two differentials: <strong>add</strong> and <strong>remove</strong>; both contain the UUID of the Node as argument. add also optionally incorportates a dump of the Node.
+<strong>Log</strong> just contains the timestamp and the uuid of the new Node and optionally a dump of the node.</p>
+<p>The data structures mentioned above demonstrate only a very basic set of reusable data structures; there will be a bunch of structs (e.g. players will be Directories with a compile-time defined set of Nodes). And other things like the octree will need to be specially handled: An octree might be a plain file, but with a custom differentials to save some space and traffic. There might also be a Text type of file with plain old text differentials...</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#security" id="user-content-security"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Security</h3>
+<p>The approach described here is powerful, but opens a lot of security holes for cheaters. We need to define roles and a DSL for specifying what updates are permissible by whom (e.g. we could have a Game Master with superuser privileges and we could have Admins; a Game Master can do pretty much anything that is just the game, while an Admin can administrate the server; e.g. kick and bann people...)</p>
+<p>There needs to be a hardcoded security layer preventing any breaches that are not on a game/cheating level but are really security. E.g. a client must make sure it can not be forced to delete files or to allocate too much memory.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#custom-properties" id="user-content-custom-properties"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Custom Properties</h3>
+<p>As we add plugin capabilities we should also allow JS to define custom properties that are stored in inexor and efficiently synced but only used by the JS code.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#9p" id="user-content-9p"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>9P</h3>
+<p>We should also implement a 9P server for the Tree. Just because it's awesome!</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#structure" id="user-content-structure"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Structure</h3>
+<p>This is an outline of what the structure of the filesystem will look like; it's a high level overview seen by Node.js serving a specific inexor player; the parameters mentioned are not necessarily backed by Inexor and they are not necessarily synced. <strong>TODO: IMPROVE</strong></p>
+<pre><code># The basic tree
+struct Root
+  Set&lt;Peer&gt;  peers/                     # List of peers sharing the tree
+  Log&lt;Diff&gt;  history/                   # List of past changes to the tree
+  Set&lt;Game&gt;  games/                     # There may be multiple games going on at the sam etime
+  Link       games/current/ -&gt; /games/* # For Player Peers the game that is displayed on screen
+  Player     player/                    # For Player Peers the own player
+  Set&lt;Previewable&gt; maps/                # Set of known maps to the current client
+  Set&lt;Previewable&gt; playermodels/
+  Settings  settings/
+
+struct Diff
+  Link      element -&gt; *       # What was changed?
+  Link      author -&gt; /peers/* # Who did the change
+  Set&lt;Link&gt; reasoning          # An optional set of reasons for this differential for consistency checking. E.g collision with a pistol ammo -&gt; more pistol ammo
+  ... # Structure specific diff
+
+# A single game being played
+struct Game
+  Set&lt;Player&gt;      players/       # List of players playing this game
+  Link             map -&gt; /maps/* # The name of the map we're playing
+  Link             players/me -&gt; players/*
+  File&lt;Time&gt;       eta            # How long this game will continue to runh
+  File&lt;Timestamp&gt;  started_at
+  Log&lt;ChatMessage&gt; chat
+
+struct Player
+  File&lt;String&gt;  name
+  Link          playermodel -&gt; /playermodels/*
+  File&lt;Int&gt;     stats/ammo/pistol
+  File&lt;Int&gt;     stats/ammo/...
+  File&lt;Int&gt;     stats/health/max
+  File&lt;Int&gt;     stats/health/current
+  File&lt;Int&gt;     stats/armour/max
+  File&lt;Int&gt;     stats/armour/current
+  Position      position
+
+struct Position
+  File&lt;Float&gt; x
+  File&lt;Float&gt; y
+  File&lt;Float&gt; z
+  File&lt;Float&gt; yaw
+  File&lt;Float&gt; pitch
+  File&lt;Float&gt; rool
+
+struct Previewable
+  File&lt;String&gt; name
+  File&lt;Image&gt;  thumbnail
+
+struct Settings
+  ... # Pretty much most of the stuff accessible through the current settings page.
+</code></pre>
+<h2>
+<a aria-hidden="true" class="anchor" href="#nodejs-implementation" id="user-content-nodejs-implementation"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Node.js Implementation</h2>
+<p>For now I suggest we create an implementation of a similar tree like the one above in Node.js based on the cubescript variables. The purpose of this is to quickly create and evaluate an API.
+What excatly that tree will contain needs to be evaluated; specifically we should leave the entire syncing and differentials for now and just concentrate on creating a prototypical api.</p>
+<p>This API can should then be exposed via a REST API and we should create bindings for Angular so we can actually use it in the GUI.</p>
+<p>The api to declare the tree should look somewhat like this:</p>
+<pre><code>class Node
+  # pass
+
+class Directory
+  ls: -&gt; # Promise&lt;Array&lt;String&gt;&gt; Returns a list of the names of nodes inside this Directory
+  resolve: (path) -&gt; # Path -&gt; Promise&lt;Node&gt; – Get a node relative to this one
+
+class File extends Node
+  [[abstract]] read: -&gt; # Promise&lt;...&gt; – Get the contents of a file
+  [[abstract]] write: -&gt; # Promise&lt;&gt; – Write to the file. Promise is used for exception handling.
+
+class Link extends Node
+  read: -&gt; # Promise&lt;...&gt; – Get the contents of a referenced file
+  write: -&gt; # Promise&lt;&gt; – Write to the referenced file. Promise is used for exception handling.
+  resolve: (path) -&gt; # Path -&gt; Promise&lt;Node&gt; – Resolve relative to the referenced file
+  [[abstract]] writePath: -&gt; # Promise&lt;Path&gt; – Get path of this link
+  [[abstract]] readPath: (path) -&gt; # Promise&lt;&gt; – Set the path of this link
+
+class Set extends Directory
+  add: (payload) -&gt; # Promise&lt;&gt; - Add an element to the set. 
+  [[abstract]] add: (uuid, payload) -&gt; # Promise&lt;&gt; – Add an element to the set with specific
+  [[abstract]] ls: -&gt; # ...
+  [[abstract]] fopen: (uuid) -&gt; # Promise&lt;Node&gt; – Open the specific Node referenced by the UUID
+
+class Log extends Directory
+  add: (payload) -&gt; # Promise&lt;&gt;
+  add: (uuid, payload) -&gt; # Promise&lt;&gt;
+  [[abstract]] add: (timestamp, uuid, payload) -&gt; # Promise&lt;&gt;
+  [[abstract]] ls: -&gt; # ...
+  [[abstract]] fopen: (uuid) -&gt; # Promise&lt;Node&gt; 
+</code></pre>
+<p>And here is roughly how we should implement this: <strong>TODO: Finish</strong></p>
+<pre><code>class PlayersDir
+
+class InexorGameDir extends Directory
+  constructor:
+    super
+      players
+
+InexorFS = new Directory
+  # Emulating the set here so we can stick to this API later
+  games: new Directory
+    current: new InexorGameDir
+</code></pre>
+<h2>
+<a aria-hidden="true" class="anchor" href="#c-implementation" id="user-content-c-implementation"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>C++ Implementation</h2>
+<p>This tree also needs to be implemented in C++; here are the implementation steps how I imagine them (prone to change).
+(I know that most of the pseudocode below will not compile; I just hope it serves to illustrate the Idea).</p>
+<p>(1) in order to do this we can build on the already existing <code>SharedVar&lt;typename T&gt;</code> and add a path parameter to I (somehow, I will have to figure that out). The basic features a SharedVar contais would then be (1) Observability (creating differentials) and (2) assignment of a path in the tree.</p>
+<p>(2) In the next step we would need to build on that and add support for structures: Add a <code>SharableStructure</code> abstract base class; sharable structures inherit from that class and contain a buch of SharedVars; the shared vars are the variables of that structure that are actually synced between instances.
+Now you can create a <code>SharedVar&lt;MyStructure&gt; foobar{ "/foo/bar", ... }</code> where MyStructure extends SharedStructure. SharedVar recognoces that MyStructure inherits from SharedStructure. Now, if MyStructure contains a sharedVar under <code>name/</code>, this could be accessed under <code>/foo/bar/name</code>.</p>
+<p>(3) Now that we have the structures, we need the Log and the Set. <code>SharedSet&lt;std::vector, int&gt; my_number{ "/settings/my_number" }</code> would create a SharedSet containing lots of files with integer values backed by an std::vector. SharedSet/SharedLog would take anything SharedVar can take. We should also implement multiple bacing structures for performance (std::list, std::unordered_map, maybe boost::multimap for the SharedLog because it uses two keys, ...).</p>
+<p>The last three steps, did not implement the protocol. In fact the only purpose this really served was annotating our code with the tree structure. Now comes the slightly harder part: We need to find some reflection data to extract the information we just annotated (<a href="https://github.com/AustinBrunkhorst/CPP-Reflection/">https://github.com/AustinBrunkhorst/CPP-Reflection/</a>) and then we need to parse (<a href="https://developers.google.com/protocol-buffers/docs/reference/cpp/google.protobuf.compiler.parser" rel="nofollow">https://developers.google.com/protocol-buffers/docs/reference/cpp/google.protobuf.compiler.parser</a>) and update our protocol files to reflect the tree and we need generate glue code to generate protobuf diffs from our C++ differentials and apply them on the other side. (<a href="http://szelei.me/code-generator/" rel="nofollow">http://szelei.me/code-generator/</a>, <a href="https://stackoverflow.com/questions/12111381/template-based-c-c-code-generation" rel="nofollow">https://stackoverflow.com/questions/12111381/template-based-c-c-code-generation</a>).
+I know it sounds rather difficult but with the resources provided it should be doable.</p>
+<p>In this process we need to be very careful in order to stay backwards compatible (particularly, the protocol files and possibly the reflection data should be stored on disk and manually checked in in order to ensure full control).</p>
+<p>Finally, we also need to think about custom data structures that require custom diffs: We need to add support for them by allowing SharedStructures to implement special functions (diff, patch or so) that generate diffs with hand coded protocol files.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#roadmap" id="user-content-roadmap"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Roadmap</h2>
+<ul>
+<li>0.1 First node.js tree</li>
+<li>0.2 HTTP bindings and server for the node.js tree</li>
+<li>0.3 Angular bindings for the node.js data</li>
+<li>0.4 Moving the angular UI to using the tree data</li>
+<li>0.5 Implement plain shared var syncing in C++</li>
+<li>0.6 Implement shared structure syncing in C++</li>
+<li>0.7 Implement SharedLog and SharedSet in C++</li>
+<li>0.8 Remove the custom node.js tree and replace as much as possible with the C++ version</li>
+<li>0.9 Deprecate Cubescript and the Cube UI</li>
+<li>0.10 Reimplement the complete GUI</li>
+<li>1.0 remove Cubescript and the cube UI</li>
+<li>2.0 Remove the old network code</li>
+</ul>
+
+        </div>
+
+        <div class="wiki-footer gollum-markdown-content boxed-group" id="wiki-footer">
+          <div class="boxed-group-inner wiki-auxiliary-content markdown-body">
+            <p>Need help? <a class="internal present" href="/inexorgame/inexor-core/wiki/Contact">Contact</a> us.</p>
+
+          </div>
+        </div>
+    </div>]

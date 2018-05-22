@@ -1,0 +1,118 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>The base LibSQUID library provides several functions for working with
+[SQUID indexes](SQUID Index), [coordinates](XY Coordinates), and tiles.
+The library is written in the C programming language.  The function
+prototypes and preprocessor macro definitions are located in the libsquid.h
+header file.  The library functions themselves are spread across three C
+files; libsquid_base.c, libsquid_projections.c, and libsquid_utils.c.  The
+library is currently built using the cmake utility.  It also has a hand
+written Makefile which should work for most systems.</p>
+<p>The libsquid.h header file provides the following macro definititions:</p>
+<p><strong>LON_DIR -1:</strong>  Define the direction of increasing longitude relative to
+increasing x.  Typically this will be set to 1 for geocentric coordinates
+and -1 for celestial coordinates.</p>
+<p><strong>LON_POLE 0:</strong>  Define the longitude (in radians) that corresponds to the
+center of <a href="Face">face</a> 1.  The default setting is 0.</p>
+<p><strong>KMAX 26:</strong>  This is the maximum resolution parameter permitted by LibSQUID.
+26 is the default value and is based on defining the squid index as a 64 bit
+integer.</p>
+<p><strong>enum{TSC, CSC, QSC, HSC}:</strong>  Enumeration of the LibSQUID projection types.
+TSC=0, CSC=1, QSC=2, HSC=3.</p>
+<p><strong>enum{NEAREST, BILINEAR, CSPLINE, CCONVOL}:</strong>  Enumeration of the possible
+interpolation methods when using LibSQUID to handle images.  These interpolation
+types will be described in the section on the interp_img() function.</p>
+<p><strong>typedef uint64_t ullong:</strong>  Standard type for a squid index, unsigned 64 bit
+integer.</p>
+<p>The LibSQUID Library has the following primary functions:</p>
+<p>int <strong>squid_validate</strong>(ullong squid)<br/>
+This function is used to test whether a given squid is valid.  The return value
+is 1 is the squid is valid and 0 if it is not.</p>
+<p>int <strong>squid_getres</strong>(ullong squid)<br/>
+Given a squid, return the [resolution level](Resolution Level).</p>
+<p>int <strong>squid_getface</strong>(ullong squid)<br/>
+Given a squid index, return the <a href="Face">face number</a>.</p>
+<p>int <strong>squid2xyfk</strong>(ullong squid, llong *x, llong *y, int *face, int *k)<br/>
+Given a squid, return the [quad-tree coordinates](XY Coordinates), face and
+resolution level.  Returns 0 on success and -1 on failure.</p>
+<p>int <strong>xyfk2squid</strong>(llong x, llong y, int face, int k, ullong *squid)<br/>
+Given quad-tree coordinates (x,y) and the face and resolution level, k, return
+the squid index.</p>
+<p>int <strong>squid_tside</strong>(int projection, int k, double cdelt, double *tside)<br/>
+Given a projection, resolution, and cdelt (deg/pix), return the number of
+pixels that would occupy the side of a tile as tside.  Function return is
+0 on success and  -1 on failure.</p>
+<p>int <strong>squid2sph</strong>(int proj, ullong squid, double *lon, double *lat)<br/>
+Given a projection and a squid index, return the longitude and latitude
+of the squid center point on the sphere in radians.  Function return is
+0 on success and -1 on failure.</p>
+<p>int <strong>sph2squid</strong>(int proj, double lon, double lat, int k, ullong *squid)<br/>
+Given a latitude and longitude (in radians) and a projection and resolution
+level, return the squid index.  Function return is 0 on success and -1 on
+failure.</p>
+<p>int <strong>squid_corners</strong>(int proj, ullong squid, double *lonarr, double *latarr)<br/>
+Given a projection and a squid index return two 4 element arrays which give
+the longitude and latitude of the corners of the squid tile in radians.
+Function return is 0 on success and -1 on failure.</p>
+<p>void <strong>sphdist</strong>(double lon1, double lat1, double lon2, double lat2, double *sdist)<br/>
+Calculate the spherical distance between two points on the sphere defined
+by (lon1,lat1) and (lon2,lat2).  All angles are in radians.</p>
+<p>int <strong>quadcube_arrange</strong>(int face, int *fnbr, int *frot)<br/>
+Given a face number return two 5 element arrays giving the neighboring faces and
+their orientation in the following order [up,down,left,right,back].  The frot
+array gives the rotation of the face neighbors; 0=no rotation, 1=90 deg ccw
+(x'=-y, y'=x), 2=180 deg ccw (x'=-x, y'=-y), 3=270 deg ccw (x'=y, y'=-x).
+Function returns 0 on success and -1 on failure.</p>
+<p>int <strong>face_range</strong>(int face, double x, double y, int *newface, double *newx, double *newy)<br/>
+Given a face and face coordinates, make sure the x and y coordinates go from 0 to 1
+across the face.  If not, calculate which face the coordinates should really reside in
+and return that along with the modified x,y which are now within the 0 to 1 range.
+Function returns 0 on success and -1 on failure.</p>
+<p>int <strong>xyf2sph</strong>(int proj, double x, double y, int face, double *lon, double *lat)<br/>
+Given a projection, face, and face coordinates, return the longitude and latitude in
+radians.  Function returns 0 on success and -1 on failure.</p>
+<p>int <strong>sph2xyf</strong>(int proj, double lon, double lat, double *x, double *y, int *face)<br/>
+Given a projection, lat and lon in radians, return the face and face coordinates.
+Function returns 0 on success and -1 on failure.</p>
+<p>int <strong>tile_xy2sph</strong>(int proj, ullong squid, double x, double y, llong tside, double *lon, double *lat)<br/>
+Given a projection, squid index, [tile coordinates](XY Coordinates), and tside
+return the longitude and latitude in radians.  Function return is 0 on success and -1
+on failure.</p>
+<p>int <strong>tile_sph2xy</strong>(int proj, ullong squid, double lon, double lat, llong tside, double *x, double *y)<br/>
+Given a projection, squid index, longitude and latitude in radians, and tside, return
+the tile x,y.  Function return is 0 on success and -1 on failure.</p>
+<p>int <strong>[cone_search](Cone Search)</strong>(int proj, double lon, double lat, double srad, int kmin, int kmax,<br/>
+long *nfull, ullong **full_tiles, long *npart, ullong **part_tiles)<br/>
+Given a projection, longitude, latitude, and search radius, minimum resolution, and
+maximum resolution, perform a cone search.  The full_tiles array contains a list of the
+squid tiles fully contained within the search radius.  The length of the array is nfull.
+The part_tiles array contains a list of the squid tiles that are only partially contained
+within the search radius.  The length of that array is npart.  Function return is 0 on
+success and -1 on failure.</p>
+<p>int <strong>interp_img</strong>(int method, double x, double y, double *img, long naxis1, long naxis2, double *outpix)<br/>
+Given an interpolation method (as defined in libsquid.h), floating point x and y value, and an image
+array pointer of size x=naxis1, y=naxis2 pixels give the resulting interpolated pixel value.
+Function returns 0 on success and -1 on failure.</p>
+<p>When built, the LibSQUID library provides the following utility functions in the bin subdirectory.
+All of the commands will return a help message if run without arguments.  In general, the angle
+values are all in degrees for easier consumption by the user.</p>
+<p><strong>test_libsquid</strong><br/>
+Test the libsquid library for consistency.  The only argument is the projection to be tested.</p>
+<p><strong>squidinfo</strong><br/>
+Given a projection and a squid index, return a bunch of information on it such as the resolution
+level, center, and corner coordinates.  Angles are in degrees.</p>
+<p><strong>sph2squid</strong><br/>
+Given a projection, longtiude, latitude, and resolution parameter, return the squid index.
+Angles are in degrees.</p>
+<p><strong>[cone_search](Cone Search)</strong><br/>
+Run the library cone search function and return the results.  Angles in degrees.</p>
+<p><strong>tile_sph2xy</strong><br/>
+Given a squid index denoting a tile, convert latitude and longitude to tile coordinates.
+Angles in degrees.</p>
+<p><strong>tile_xy2sph</strong>
+Given a squid index denoting a tile, convert tile coordinates to latitude and longitude in
+degrees.</p>
+
+        </div>
+
+    </div>]

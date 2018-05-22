@@ -1,0 +1,132 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>This is the documentation for developers wanting to extend the extension. Users wanting to learn about the extension should <a href="https://github.com/CRESS-Surrey/eXtraWidgets/wiki">start here instead</a>.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#architecture" id="user-content-architecture"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Architecture</h2>
+<p>The eXtraWidget architecture is fairly modular. Complete understanding of it is not strictly required for developing new kinds of widgets, but it can't hurt to have an overview.</p>
+<p>Here is the dependency diagram:</p>
+<p><img alt="" src="https://raw.githubusercontent.com/CRESS-Surrey/eXtraWidgets/master/doc/dependencies.png?token=AA3d0n_42Njh_PmD6qb2HsSL_wuvsS-7ks5UhyUFwA%3D%3D"/></p>
+<p>It is basically a summary of the information contained in the main <a href="https://github.com/CRESS-Surrey/eXtraWidgets/blob/master/build.sbt"><code>build.sbt</code></a>. Each module is a separate sbt sub-project and compiles to its own JAR.</p>
+<p>All new widget kinds should only depend on the <code>api</code> JAR.</p>
+<p>Ideally, <code>api</code> would have contained only interfaces, but as it stands, it contains implementations as well. Future work on the project should try to move most implementations to <code>core</code>.</p>
+<p>The point of having separate modules for <code>core</code> and <code>xw</code> (the latter being the extension itself) is that, in theory, the extension is only one of the possible ways to manipulate extra widgets. We could envision a plugin that would manipulate all widgets through the GUI. This plugin would depend on <code>core</code> and could co-exist with the extension while remaining independent from it.</p>
+<p>The state of the extension (i.e., widgets and the values of their properties) is stored in a map of maps: <code>Map[WidgetKey, Map[PropertyKey, PropertyValue]]</code>. In other words, a map from widget keys to maps from property keys to property values. These maps are Java <a href="https://docs.oracle.com/javase/6/docs/api/java/util/concurrent/ConcurrentSkipListMap.html" rel="nofollow"><code>ConcurrentSkipListMap</code></a>, which allows for concurrent access and keeps the keys in alphabetical order. Keys are strings and property values are <code>AnyRef</code> (the Scala equivalent of <code>java.lang.Object</code>). The concurrent access part is important because the map can be modified from both NetLogo's job thread (when extension <a class="internal present" href="/CRESS-Surrey/eXtraWidgets/wiki/Primitives">primitives</a> are used) and the AWT Event thread (when a user manipulates widgets on the screen). You should probably read <a href="https://github.com/NetLogo/NetLogo/wiki/Architecture#threads">the note on threads in the NetLogo architecture guide</a> to get a better idea of what this implies.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#a-note-about-versions" id="user-content-a-note-about-versions"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>A note about versions</h2>
+<p>Since the extension is <a href="https://github.com/NetLogo/NetLogo/wiki/Building#tools">built to work with NetLogo 5.x</a>, you need to use Scala 2.9.x and Java 6.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#widget-kinds" id="user-content-widget-kinds"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Widget Kinds</h2>
+<p>As you can see from <a href="https://github.com/CRESS-Surrey/eXtraWidgets/tree/master/xw/widgets">the source code of various widget kinds bundled with the extension</a>, you need to define at least two classes to create a new widget kind:</p>
+<ul>
+<li>
+<p>A class that extends <a href="https://github.com/CRESS-Surrey/eXtraWidgets/blob/master/api/src/main/scala/uk/ac/surrey/xw/api/WidgetKind.scala"><code>uk.ac.surrey.xw.api.WidgetKind</code></a>. This is the definition of your widget that will be loaded at runtime by the extension to find out what properties are available for your kind and what to name the primitives that it will generate.</p>
+</li>
+<li>
+<p>A class that extends <a href="https://github.com/CRESS-Surrey/eXtraWidgets/blob/master/api/src/main/scala/uk/ac/surrey/xw/api/ExtraWidget.scala"><code>uk.ac.surrey.xw.api.ExtraWidget</code></a>. This is the class of your widgets themselves, those that will appear on the screen.</p>
+</li>
+</ul>
+<p>We'll say a few words about each of those in turn. This, along with <a href="#properties">Properties</a>, should be enough to get you started.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#the-widgetkind-class" id="user-content-the-widgetkind-class"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>The <code>WidgetKind</code> Class</h3>
+<p>You should refer to <a href="https://cress-surrey.github.io/eXtraWidgets/#uk.ac.surrey.xw.api.WidgetKind" rel="nofollow">the ScalaDoc</a> for details, but when extending <code>WidgetKind</code>, there are two things that you absolutely need to provide:</p>
+<ul>
+<li>A name for your class (<code>name</code>) that the extension will use to generate primitives.</li>
+<li>A constructor function (<code>newWidget</code>) that the extension will use to create widget instances.</li>
+</ul>
+<p>In addition, you will most likely want to provide:</p>
+<ul>
+<li>A few extra <a href="#properties">properties</a> (<code>WidgetKind</code> gives you the <code>KIND</code> and <code>KEY</code> properties, but your widget would not be very useful if that is all you had). Be sure to override <code>propertySet</code> to include your custom properties, probably by appending your own set to <code>super.propertySet</code>.</li>
+<li>A default property (<code>defaultProperty</code>) to be used with the <code>xw:get</code> and <code>xw:set</code> primitives.</li>
+</ul>
+<p>In some instances, you may want to also provide:</p>
+<ul>
+<li>A plural name for your kind (<code>pluralName</code>). The extension usually just adds an <code>'S'</code>, but sometimes, that's not enough (e.g., <code>"CHECKBOX"</code> → <code>"CHECKBOXES"</code>).</li>
+<li>Default values for your properties (<code>defaultValues</code>).</li>
+</ul>
+<p>Also note that <code>WidgetKind</code> has a type parameter that indicates the type of the widget instances. When extending <code>WidgetKind</code>, you will typically do something like this:</p>
+<pre><code>class MyWidgetKind[W &lt;: MyWidget] extends WidgetKind[W]
+</code></pre>
+<p>Well, that's not quite true. The api does provide <a href="https://cress-surrey.github.io/eXtraWidgets/#uk.ac.surrey.xw.api.JComponentWidgetKind" rel="nofollow"><code>JComponentWidgetKind</code></a>, a class that extends <code>WidgetKind</code> with most of the properties you need for a <a href="https://docs.oracle.com/javase/6/docs/api/javax/swing/JComponent.html" rel="nofollow"><code>JComponent</code></a> widget. I see no reason why you wouldn't want to do that. So:</p>
+<pre><code>class MyWidgetKind[W &lt;: MyWidget] extends JComponentWidgetKind[W]
+</code></pre>
+<p>Note that, in such a case, <code>MyWidget</code> would need to extend <code>JComponentWidget</code> (which, again, is something that you probably want. The extension also provide a couple of more specialized kinds, of which <a href="https://cress-surrey.github.io/eXtraWidgets/#uk.ac.surrey.xw.api.LabeledPanelWidgetKind" rel="nofollow"><code>LabeledPanelWidgetKind</code></a> (the "super kind" of choosers, multi-choosers, sliders and inputs) is more likely to be useful.</p>
+<p>To conclude with an example, here is (as of December 2014), the full <code>SliderKind</code> class (a lot of stuff being provided by <code>LabeledPanelWidgetKind</code>, of course):</p>
+<div class="highlight highlight-source-scala"><pre><span class="pl-k">class</span> <span class="pl-en">SliderKind</span>[<span class="pl-en">W</span> <span class="pl-k">&lt;</span><span class="pl-k">:</span> <span class="pl-en">Slider</span>] <span class="pl-k">extends</span> <span class="pl-e">LabeledPanelWidgetKind</span>[<span class="pl-en">W</span>] {
+  <span class="pl-k">override</span> <span class="pl-k">val</span> <span class="pl-smi">name</span> <span class="pl-k">=</span> <span class="pl-s"><span class="pl-pds">"</span>SLIDER<span class="pl-pds">"</span></span>
+  <span class="pl-k">override</span> <span class="pl-k">val</span> <span class="pl-smi">newWidget</span> <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-en">Slider</span>(_, _, _)
+  <span class="pl-k">val</span> <span class="pl-smi">valueProperty</span> <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-en">DoubleProperty</span>[<span class="pl-en">W</span>](
+    <span class="pl-s"><span class="pl-pds">"</span>VALUE<span class="pl-pds">"</span></span>, <span class="pl-en">Some</span>(_.sliderData.setValue(_)), _.sliderData.value, <span class="pl-c1">50</span>)
+  <span class="pl-k">override</span> <span class="pl-k">val</span> <span class="pl-smi">defaultProperty</span> <span class="pl-k">=</span> <span class="pl-en">Some</span>(valueProperty)
+  <span class="pl-k">override</span> <span class="pl-k">val</span> <span class="pl-smi">propertySet</span> <span class="pl-k">=</span> <span class="pl-c1">super</span>.propertySet <span class="pl-k">++</span> <span class="pl-en">Set</span>(valueProperty,
+    <span class="pl-k">new</span> <span class="pl-en">StringProperty</span>[<span class="pl-en">W</span>](<span class="pl-s"><span class="pl-pds">"</span>UNITS<span class="pl-pds">"</span></span>,
+      <span class="pl-en">Some</span>(_.setUnits(_)), _.units),
+    <span class="pl-k">new</span> <span class="pl-en">DoubleProperty</span>[<span class="pl-en">W</span>](<span class="pl-s"><span class="pl-pds">"</span>MINIMUM<span class="pl-pds">"</span></span>,
+      <span class="pl-en">Some</span>(_.sliderData.setMinimum(_)), _.sliderData.minimum, <span class="pl-c1">0d</span>),
+    <span class="pl-k">new</span> <span class="pl-en">DoubleProperty</span>[<span class="pl-en">W</span>](<span class="pl-s"><span class="pl-pds">"</span>MAXIMUM<span class="pl-pds">"</span></span>,
+      <span class="pl-en">Some</span>(_.sliderData.setMaximum(_)), _.sliderData.maximum, <span class="pl-c1">100d</span>),
+    <span class="pl-k">new</span> <span class="pl-en">DoubleProperty</span>[<span class="pl-en">W</span>](<span class="pl-s"><span class="pl-pds">"</span>INCREMENT<span class="pl-pds">"</span></span>,
+      <span class="pl-en">Some</span>(_.sliderData.setIncrement(_)), _.sliderData.increment, <span class="pl-c1">1d</span>)
+  )
+}</pre></div>
+<h3>
+<a aria-hidden="true" class="anchor" href="#the-extrawidget-class" id="user-content-the-extrawidget-class"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>The <code>ExtraWidget</code> Class</h3>
+<p>This is the code for your actual widget.</p>
+<p>One requirement is that your constructor should take parameters <a href="https://cress-surrey.github.io/eXtraWidgets/#uk.ac.surrey.xw.api.package" rel="nofollow">key: <code>WidgetKey</code></a>, <a href="https://cress-surrey.github.io/eXtraWidgets/#uk.ac.surrey.xw.api.State" rel="nofollow">state: <code>State</code></a>, and <a href="https://github.com/NetLogo/NetLogo/blob/5.x/src/main/org/nlogo/window/GUIWorkspace.java">ws: <code>GUIWorkspace</code></a>, and that those are declared as <strong><code>val</code></strong> so that they implement abstract values of the same name in <code>ExtraWidget</code>.</p>
+<p>The other requirement is that you provide a <code>kind</code> value for instances of your class. The code for <code>Slider</code> illustrates these requirements:</p>
+<div class="highlight highlight-source-scala"><pre><span class="pl-k">class</span> <span class="pl-en">Slider</span>(
+  <span class="pl-k">val</span> <span class="pl-smi">key</span><span class="pl-k">:</span> <span class="pl-en">WidgetKey</span>,
+  <span class="pl-k">val</span> <span class="pl-smi">state</span><span class="pl-k">:</span> <span class="pl-en">State</span>,
+  <span class="pl-k">val</span> <span class="pl-smi">ws</span><span class="pl-k">:</span> <span class="pl-en">GUIWorkspace</span>)
+  <span class="pl-k">extends</span> <span class="pl-e">LabeledPanelWidget</span> {
+
+  <span class="pl-k">override</span> <span class="pl-k">val</span> <span class="pl-smi">kind</span> <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-en">SliderKind</span>[<span class="pl-c1">this</span>.type]
+
+  <span class="pl-c"><span class="pl-c">//</span> ... lots of other stuff ...</span>
+
+}</pre></div>
+<p>(Note: perhaps there would be a way to organize the types such that it would not be necessary to provide the widget's singleton type (<code>this.type</code>) to the kind class, but I haven't found it yet.)</p>
+<p>Notice how the class extends <code>LabeledPanelWidget</code> (which in turn extends <code>JComponentWidget</code> and so on until we reach <code>ExtraWidget</code> as the root class).</p>
+<p>The actual content of the class will vary a lot from one widget to another.</p>
+<ul>
+<li>A bunch of getters and setters to be used by <a href="#properties">properties</a>.</li>
+<li>A <a href="http://docs.oracle.com/javase/tutorial/uiswing/events/" rel="nofollow">swing event listener</a> that will update the state of the extension using the <code>ExtraWidget.updateInState</code> method.</li>
+</ul>
+<p>The goal of <code>updateInState</code> is to update the value of a property in the extension's <code>State</code> following user interactions. In a slider, for example, this is what happens when a user drags the slider's knob around:</p>
+<div class="highlight highlight-source-scala"><pre>slider.onStateChange { _ <span class="pl-k">⇒</span>
+  sliderData.updateFromTicks(slider.getValue)
+  valueLabel.update()
+  updateInState(kind.valueProperty)
+}</pre></div>
+<p>The <code>onStateChange</code> method (defined in the <a href="https://github.com/CRESS-Surrey/eXtraWidgets/blob/master/api/src/main/scala/uk/ac/surrey/xw/api/swing/package.scala"><code>uk.ac.surrey.xw.api.swing</code></a> package) is just a shortcut to add a <a href="https://docs.oracle.com/javase/6/docs/api/javax/swing/event/ChangeListener.html" rel="nofollow"><code>javax.swing.event.ChangeListener</code></a> to our slider. <code>sliderData.updateFromTicks(slider.getValue)</code> and <code>valueLabel.update()</code> update some fields of the widget class following the change of value.</p>
+<p>The interesting line is <code>updateInState(kind.valueProperty)</code>: it tells the extension to update the <code>valueProperty</code> of the slider (as defined in <code>SliderKind</code>) in its state map. And properties happen to be the topic of our next section.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#properties" id="user-content-properties"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Properties</h2>
+<p>Unless you need <code>Float</code>s or <code>Long</code>s (for which I haven't defined property classes) you shouldn't have to write property classes: you just need to understand how to create instances of the provided classes. Those are:</p>
+<ul>
+<li><code>ObjectProperty</code></li>
+<li><code>StringProperty</code></li>
+<li><code>BooleanProperty</code></li>
+<li><code>IntegerProperty</code></li>
+<li><code>DoubleProperty</code></li>
+<li><code>ColorProperty</code></li>
+<li><code>ListProperty</code></li>
+</ul>
+<p>As might you might have guessed, each of them allows you to define a property of a particular type. When creating an instance, you will need to provide:</p>
+<ul>
+<li>The type of the widget that this property applies to. This is normally the type parameter of the widget kind itself. For example, if your kind is defined as <code>SliderKind[W &lt;: Slider]</code>, you just pass on <code>W</code> to your property definitions, e.g.: <code>new StringProperty[W](/*...*/)</code>.</li>
+<li>The property key, as an uppercase string.</li>
+<li>A setter function of type <code>Option[(W, T) ⇒ Unit]</code>, where <code>W</code> is the widget's type and <code>T</code> is the property's type. Often, this will just forward a call the a method of the widget. For example, the setter of the <code>"UNITS"</code> property in a slider is: <code>Some(_.setUnits(_))</code>. If the property should be read-only, simply pass <code>None</code> instead.</li>
+<li>A getter function of type <code>W ⇒ T</code>. Again, this is most likely just a call to a getter method in the widget, e.g.: <code>_.units</code>.</li>
+<li>A default value for the property. That last parameter can be omitted, in which case the default will be: <code>nobody</code> for an <code>ObjectProperty</code>, <code>""</code> for a <code>StringProperty</code>, <code>false</code> for a <code>BooleanProperty</code>, <code>0</code> for an <code>IntegerProperty</code>, <code>0.0</code> for a <code>DoubleProperty</code>, <code>white</code> for a <code>ColorProperty</code> and <code>[]</code> for a <code>ListProperty</code>.</li>
+</ul>
+<p>And that's it. Don't forget to make sure that your properties are included in the <code>propertySet</code> of your <code>WidgetKind</code>.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#a-note-about-java" id="user-content-a-note-about-java"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>A note about Java</h2>
+<p>I think it should be possible to create new widget kinds using Java (or any other JVM language, for that matter), but I haven't tried. That being said, interacting with NetLogo in general is much easier from Scala then from Java. And there is a better chance that I will be able to help you with your project if you use Scala.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#getting-help" id="user-content-getting-help"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Getting help</h2>
+<p>In addition to the usual options of <a href="https://github.com/CRESS-Surrey/eXtraWidgets/issues/new">opening a new issue</a> or <a href="http://stackoverflow.com/questions/tagged/netlogo" rel="nofollow">asking a question on StackOverflow</a>, you're welcome to <a href="mailto:nicolaspayette@gmail.com">send me an email</a> if you're thinking about developing a new widget kind. I am well aware that the instructions provided here are a little thin, and I'd be happy to fill in the gaps as needed.</p>
+
+        </div>
+
+    </div>]

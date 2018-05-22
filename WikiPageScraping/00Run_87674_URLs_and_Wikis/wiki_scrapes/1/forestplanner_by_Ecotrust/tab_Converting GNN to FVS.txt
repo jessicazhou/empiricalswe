@@ -1,0 +1,57 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>I started working on an Access query to get the GNN data into and FVS-friendly format. The procedure for past projects (based on what I could dig up from past projects) requires two tables which are then run through the <code>StandProcessor.py</code> script to create fvs files:</p>
+<h1>
+<a aria-hidden="true" class="anchor" href="#the-treelist" id="user-content-the-treelist"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>The Treelist</h1>
+<p>From the GNN DB</p>
+<pre><code>FCID	PLTID	LIVE_ID	TREE_COUNT	'TreeHistory'	SPP_SYMBOL	DBH_CM	HT_M	'ICR'
+</code></pre>
+<p>which correspond to these headers that are described in the processing script</p>
+<pre><code>Stand_ID, Plot_ID, Tree_ID, Tree_Count, Tree_History, Species, DBH, HT, ICR
+</code></pre>
+<p>The GNN database provides corollaries for all but 2 of these fields. I’m not sure what type of data FVS expects for them or if they are mandatory. <em>If they are not mandatory for FVS, can we drop them?</em></p>
+<ul>
+<li><strong>Tree_History</strong></li>
+<li><strong>ICR</strong></li>
+</ul>
+<p>Also, it appears that the GNN database uses a different <strong>species code</strong> (SPP_SYMBOL) than FVS so we'll need to translate between them. I'm sure species code is mandatory so we'll have to tackle this one. I have not seen any such <em>lookup table</em>.</p>
+<h1>
+<a aria-hidden="true" class="anchor" href="#the-stand-level-table" id="user-content-the-stand-level-table"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>The Stand level table</h1>
+<p>It appears the default is</p>
+<pre><code>Stand ID, Inventory Year, Originating Year, Site Index, Num Plots
+</code></pre>
+<p>But most cases will want to specifiy much more detail at the stand level</p>
+<pre><code>StandID,InvYr,Lat,Long,OrigYr,Aspect,Slope,Elev,BasalAf,InvStFap,BkptDbh,NumPlots,Nonstock,
+SampWt,PropStockSa,Dgtc,DiaPer,Hgtc,HtPer,MortPer,IndSpec,SiteIndex
+</code></pre>
+<p>The <strong>StandID</strong>, <strong>Inventory year</strong>, <strong>Basal Area factor</strong> and <strong>Num Plots</strong> are the only fields that I can identify from the GNN database; <em>How many of the other fields are required and how can we populate them?</em>  It seems like many of the site characteristics like lat,lon,slope,aspect could be pulled from an example GNN pixel. Site index might be harder to figure out as I recall that FVS is sensitive to it.</p>
+<h1>
+<a aria-hidden="true" class="anchor" href="#thoughts" id="user-content-thoughts"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Thoughts...</h1>
+<p>Once we get the query nailed down, it’s fairly straightforward to convert to FVS treelist files.  However, we’ll need to think through how we approach the construction of these queries and how we should fill in the gaps mentioned above. It would be really helpful to know how/if anyone has taken GNN data and translated it to FVS. My impression is that the GNN db simply doesn’t provide enough info to run a G&amp;Y model and must be supplemented with other info.</p>
+<p>Any thoughts on how we should proceed?</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#queries" id="user-content-queries"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Queries</h2>
+<pre><code>SELECT TREE_LIVE.FCID, TREE_LIVE.PLTID, TREE_LIVE.LIVE_ID, TREE_LIVE.TREE_COUNT, 
+    TREE_LIVE.STATE AS ['TreeHistory'],     SPECIES_CLASS.SPP_SYMBOL, TREE_LIVE.DBH_CM, 
+    TREE_LIVE.HT_M, TREE_LIVE.STATE AS ['ICR']
+FROM TREE_LIVE INNER JOIN SPECIES_CLASS ON TREE_LIVE.SPP_SYMBOL = SPECIES_CLASS.SPP_SYMBOL
+WHERE (((TREE_LIVE.FCID)=79178 Or (TREE_LIVE.FCID)=20519));
+</code></pre>
+<h2>
+<a aria-hidden="true" class="anchor" href="#random-notes" id="user-content-random-notes"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>random notes</h2>
+<ul>
+<li>Fvs variant impute for property</li>
+<li>Fia converter ... <a href="http://apps.fs.fed.us/fiadb-downloads/datamart.html" rel="nofollow">http://apps.fs.fed.us/fiadb-downloads/datamart.html</a>
+</li>
+<li>Is the Gnn data set ... Apropos for growth?</li>
+<li>Add gnn data to the output , tree and stand detail for the stand</li>
+<li>Geo interface</li>
+<li>Staticmap for Murdock</li>
+<li>Start tile milling</li>
+<li>Linking fiadb with fcid?</li>
+<li>Species crosswalk table</li>
+</ul>
+
+        </div>
+
+    </div>]

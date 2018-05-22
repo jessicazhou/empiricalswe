@@ -1,0 +1,269 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <h2>
+<a aria-hidden="true" class="anchor" href="#extending-contractconfigurator" id="user-content-extending-contractconfigurator"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Extending ContractConfigurator</h2>
+<p>ContractConfigurator is extensible!  So if you want to use it as part of your mod, but it doesn't quite have the right parameter or requirement for your needs, then you can write a new one!</p>
+<ul>
+<li>
+<a class="internal present" href="/jrossignol/ContractConfigurator/wiki/Extending#extending-contractconfigurator">Extending ContractConfigurator</a>
+<ul>
+<li><a class="internal present" href="/jrossignol/ContractConfigurator/wiki/Extending#extending-parameters">Extending Parameters</a></li>
+<li><a class="internal present" href="/jrossignol/ContractConfigurator/wiki/Extending#extending-requirements">Extending Requirements</a></li>
+<li>
+<a class="internal present" href="/jrossignol/ContractConfigurator/wiki/Extending#extending-behaviours">Extending Behaviours</a>
+<ul>
+<li><a class="internal present" href="/jrossignol/ContractConfigurator/wiki/Extending#behaviourfactory">BehaviourFactory</a></li>
+<li><a class="internal present" href="/jrossignol/ContractConfigurator/wiki/Extending#contractbehaviour">ContractBehaviour</a></li>
+</ul>
+</li>
+<li><a class="internal present" href="/jrossignol/ContractConfigurator/wiki/Extending#using-the-persistent-data-store">Using the Persistent Data Store</a></li>
+</ul>
+</li>
+<li><a class="internal present" href="/jrossignol/ContractConfigurator/wiki/Extending#copyright-statement">Copyright statement</a></li>
+</ul>
+<p><sub>[ <a class="internal present" href="/jrossignol/ContractConfigurator/wiki/Extending">Top</a> ] [ <a class="internal present" href="/jrossignol/ContractConfigurator/wiki/Extending#extending-contractconfigurator">Extending ContractConfigurator</a> ]</sub></p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#extending-parameters" id="user-content-extending-parameters"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Extending Parameters</h3>
+<p>To create a new PARAMETER type, a new class should be created that extends the ParameterFactory class. In the configuration file, the value of the 'type' node needs to match the class name (unless it ends with "Factory" - in which case the "Factory" is dropped). There are two methods that need to be implemented:</p>
+<blockquote>
+<p><code>bool Load(ConfigNode configNode)</code> - This method receives the PARAMETER node to be loaded. Load any additional values that are required by your class.  If you do not require additional config node values, then you do not need to implement this method.</p>
+</blockquote>
+<blockquote>
+<p><code>ContractParameter Generate(Contract contract)</code> - This method is called when it is time to generate the actual ContractParameter that the config file represents.  Each time it is called, a new ContractParameter should be created and returned.</p>
+</blockquote>
+<p>The following example shows how the CollectScience parameter is implemented:</p>
+<pre><code>/*
+ * ParameterFactory wrapper for CollectScience ContractParameter.
+ */
+public class CollectScienceFactory : ParameterFactory
+{
+    protected BodyLocation location { get; set; }
+
+    public override bool Load(ConfigNode configNode)
+    {
+        // Load base class
+        bool valid = base.Load(configNode);
+
+        // Get location
+        if (!configNode.HasValue("location"))
+        {
+            valid = false;
+            Debug.LogError("ContractConfigurator: " + ErrorPrefix(configNode) +
+                ": missing required value 'location'.");
+        }
+        try
+        {
+            string locationStr = configNode.GetValue("location");
+            location = (BodyLocation)Enum.Parse(typeof(BodyLocation), locationStr);
+        }
+        catch (Exception e)
+        {
+            valid = false;
+            Debug.LogError("ContractConfigurator: " + ErrorPrefix(configNode) +
+                ": error parsing location: " + e.Message);
+        }
+
+        // Validate target body
+        if (targetBody == null)
+        {
+            valid = false;
+            Debug.LogError("ContractConfigurator: " + ErrorPrefix(configNode) +
+                ": targetBody for CollectScience must be specified.");
+        }
+
+        return valid;
+    }
+
+    public override ContractParameter Generate(Contract contract)
+    {
+        return new CollectScience(targetBody, location);
+    }
+}
+</code></pre>
+<p><sub>[ <a class="internal present" href="/jrossignol/ContractConfigurator/wiki/Extending">Top</a> ] [ <a class="internal present" href="/jrossignol/ContractConfigurator/wiki/Extending#extending-contractconfigurator">Extending ContractConfigurator</a> / <a class="internal present" href="/jrossignol/ContractConfigurator/wiki/Extending#extending-parameters">Extending Parameters</a> ]</sub></p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#extending-requirements" id="user-content-extending-requirements"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Extending Requirements</h3>
+<p>To create a new REQUIREMENT type, a new class should be created that extends the ContractRequirement class. In the configuration file, the value of the 'type' node needs to match the class name (unless it ends with "Requirement" - in which case the "Requirement" is dropped). There are two methods that may be implemented:</p>
+<blockquote>
+<p><code>bool Load(ConfigNode configNode)</code> - This method receives the REQUIREMENT node to be loaded. Load any additional values that are required by your class.  If you do not require additional config node values, then you do not need to implement this method.</p>
+</blockquote>
+<blockquote>
+<p><code>bool RequirementMet(ContractType contractType)</code> - This method is called to check whether the requirement is met (either when generating a new contract, or when checking that a contract is still valid). It should return true if the requirement is met, false otherwise.</p>
+</blockquote>
+<p>The following example shows how the AltitudeRecord requirement is implemented:</p>
+<pre><code>/*
+ * ContractRequirement to provide requirement for player having reached a minimum altitude.
+ */
+public class AltitudeRecordRequirement : ContractRequirement
+{
+    protected double minAltitude { get; set; }
+
+    public override bool Load(ConfigNode configNode)
+    {
+        // Load base class
+        bool valid = base.Load(configNode);
+
+        // Get minAltitude
+        if (!configNode.HasValue("minAltitude"))
+        {
+            valid = false;
+            Debug.LogError("ContractConfigurator: " + ErrorPrefix(configNode) +
+                ": missing required value 'minAltitude'.");
+        }
+        else
+        {
+            minAltitude = Convert.ToDouble(configNode.GetValue("minAltitude"));
+            if (minAltitude &lt;= 0.0)
+            {
+                valid = false;
+                Debug.LogError("ContractConfigurator: " + ErrorPrefix(configNode) +
+                    ": minAltitude must be greater than zero.");
+            }
+        }
+
+        return valid;
+    }
+
+    public override bool RequirementMet(ContractType contractType)
+    {
+        return ProgressTracking.Instance.altitudeRecords.record &gt; minAltitude;
+    }
+}
+</code></pre>
+<p><sub>[ <a class="internal present" href="/jrossignol/ContractConfigurator/wiki/Extending">Top</a> ] [ <a class="internal present" href="/jrossignol/ContractConfigurator/wiki/Extending#extending-contractconfigurator">Extending ContractConfigurator</a> / <a class="internal present" href="/jrossignol/ContractConfigurator/wiki/Extending#extending-requirements">Extending Requirements</a> ]</sub></p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#extending-behaviours" id="user-content-extending-behaviours"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Extending Behaviours</h3>
+<p>To create a new BEHAVIOUR type, two classes are required.  One that subclasses ContractBehaviour (which provides the logic for the behaviour), and one that subclasses BehaviourFactory (which loads the data from a ConfigNode and is responsible for creating the ContractBehaviour objects when requested).  In the configuration file, the value of the 'type' node needs to match the name of the BehaviourFactory class (unless it ends with "Factory" - in which case the "Factory" is dropped).</p>
+<p><sub>[ <a class="internal present" href="/jrossignol/ContractConfigurator/wiki/Extending">Top</a> ] [ <a class="internal present" href="/jrossignol/ContractConfigurator/wiki/Extending#extending-contractconfigurator">Extending ContractConfigurator</a> / <a class="internal present" href="/jrossignol/ContractConfigurator/wiki/Extending#extending-behaviours">Extending Behaviours</a> ]</sub></p>
+<h4>
+<a aria-hidden="true" class="anchor" href="#behaviourfactory" id="user-content-behaviourfactory"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>BehaviourFactory</h4>
+<p>For a BehaviourFactory sub-class, there are two methods that need to be implemented:</p>
+<blockquote>
+<p><code>bool Load(ConfigNode)</code> - This method receives the BEHAVIOUR node to be loaded. Load any additional values that are required by your class.  If you do not require additional config node values, then you do not need to implement this method.</p>
+</blockquote>
+<blockquote>
+<p><code>ContractBehaviour Generate(ConfiguredContract)</code> - This method is called when it is time to generate the actual ContractBehaviour that the config file represents.  Each time it is called, a new ContractBehaviour should be created and returned.</p>
+</blockquote>
+<p>The following example shows a generic template for a behaviour factory:</p>
+<pre><code>public class MyNewBehaviourFactory : BehaviourFactory
+{
+    public override bool Load(ConfigNode configNode)
+    {
+        // Load base class
+        bool valid = base.Load(configNode);
+
+        // Load class specific data
+        //     ADD YOUR LOGIC HERE
+
+        return valid;
+    }
+
+    public override ContractBehaviour Generate(ConfiguredContract contract)
+    {
+        return new MyNewBehaviour();
+    }
+}
+</code></pre>
+<p><sub>[ <a class="internal present" href="/jrossignol/ContractConfigurator/wiki/Extending">Top</a> ] [ <a class="internal present" href="/jrossignol/ContractConfigurator/wiki/Extending#extending-contractconfigurator">Extending ContractConfigurator</a> / <a class="internal present" href="/jrossignol/ContractConfigurator/wiki/Extending#extending-behaviours">Extending Behaviours</a> / <a class="internal present" href="/jrossignol/ContractConfigurator/wiki/Extending#behaviourfactory">BehaviourFactory</a> ]</sub></p>
+<h4>
+<a aria-hidden="true" class="anchor" href="#contractbehaviour" id="user-content-contractbehaviour"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>ContractBehaviour</h4>
+<p>For a ContractBehaviour sub-class, there are a large number of methods that can be implemented:</p>
+<blockquote>
+<p><code>void OnAccepted()</code> - Called when the contract the behaviour is tied to is accepted.</p>
+</blockquote>
+<blockquote>
+<p><code>void OnCancelled()</code> - Called when the contract the behaviour is tied to is cancelled.</p>
+</blockquote>
+<blockquote>
+<p><code>void OnCompleted()</code> - Called when the contract the behaviour is tied to is completed.</p>
+</blockquote>
+<blockquote>
+<p><code>void OnDeadlineExpired()</code> - Called when the deadline expires for completing the contract tied to this behaviour.</p>
+</blockquote>
+<blockquote>
+<p><code>void OnDeclined()</code> - Called when the contract the behaviour is tied to is declined.</p>
+</blockquote>
+<blockquote>
+<p><code>void OnFailed()</code> - Called when the contract the behaviour is tied to fails.</p>
+</blockquote>
+<blockquote>
+<p><code>void OnFinished()</code> - Called when the contract the behaviour is tied to is finished (completed or failed).</p>
+</blockquote>
+<blockquote>
+<p><code>void OnGenerateFailed()</code> - Called when there is an error generating the contract.</p>
+</blockquote>
+<blockquote>
+<p><code>void OnOffered()</code> - Called when the contract the behaviour is tied to is offered.</p>
+</blockquote>
+<blockquote>
+<p><code>void OnOfferExpired()</code> - Called when the deadline expires for accepting the contract tied to this behaviour.</p>
+</blockquote>
+<blockquote>
+<p><code>void OnParameterStateChange(ContractParameter)</code> - Called when any parameter on the contract tied to this behaviour changes state.</p>
+</blockquote>
+<blockquote>
+<p><code>void OnRegister()</code> - Standard function for registering Unity callbacks.</p>
+</blockquote>
+<blockquote>
+<p><code>void OnUnregister()</code> - Standard function for unregistering Unity callbacks.</p>
+</blockquote>
+<blockquote>
+<p><code>void OnUpdate()</code> - Called on every frame update.</p>
+</blockquote>
+<blockquote>
+<p><code>void OnWithdrawn()</code> - Called when the contract the behaviour is tied to is withdrawn.</p>
+</blockquote>
+<blockquote>
+<p><code>void OnLoad(ConfigNode)</code> - Standard function for loading the behaviour from a config node.</p>
+</blockquote>
+<blockquote>
+<p><code>void OnSave(ConfigNode)</code> - Standard function for saving the behaviour to a config node.</p>
+</blockquote>
+<p>The following example shows a template that can be used for a new ContractBehaviour:</p>
+<pre><code>public class MyNewBehaviour : ContractBehaviour
+{
+    protected override void OnAccepted() { }
+    protected override void OnCancelled() { }
+    protected override void OnCompleted() { }
+    protected override void OnDeadlineExpired() { }
+    protected override void OnDeclined() { }
+    protected override void OnFailed() { }
+    protected override void OnFinished() { }
+    protected override void OnGenerateFailed() { }
+    protected override void OnOffered() { }
+    protected override void OnOfferExpired() { }
+    protected override void OnParameterStateChange(ContractParameter param) { }
+    protected override void OnRegister() { }
+    protected override void OnUnregister() { }
+    protected override void OnUpdate() { }
+    protected override void OnWithdrawn() { }
+    protected override void OnLoad(ConfigNode configNode) { }
+    protected override void OnSave(ConfigNode configNode) { }
+}
+</code></pre>
+<p><sub>[ <a class="internal present" href="/jrossignol/ContractConfigurator/wiki/Extending">Top</a> ] [ <a class="internal present" href="/jrossignol/ContractConfigurator/wiki/Extending#extending-contractconfigurator">Extending ContractConfigurator</a> / <a class="internal present" href="/jrossignol/ContractConfigurator/wiki/Extending#extending-behaviours">Extending Behaviours</a> / <a class="internal present" href="/jrossignol/ContractConfigurator/wiki/Extending#contractbehaviour">ContractBehaviour</a> ]</sub></p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#using-the-persistent-data-store" id="user-content-using-the-persistent-data-store"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Using the Persistent Data Store</h3>
+<p>Contract Configurator contains a persistant data store that may be used by extension modules.  This is intended for storing values that need to be tracked across different contracts.  To store data for a parameter, store it using the OnLoad/OnSave functions of the ContractParameter class.  To store data for a contract, store it using the OnLoad/OnSave functions of a ContractBehaviour class.</p>
+<p>The persistant data store is access by calling one of the two following methods on PersistantDataStore.Instance:</p>
+<blockquote>
+<p><code>void Store&lt;T&gt;(string key, T value)</code> - This will store the value under the given key.  Try to make the key include a prefix for your module to ensure that it unique across all possible Contract Configurator modules.</p>
+</blockquote>
+<blockquote>
+<p><code>T Retrieve&lt;T&gt;(string key)</code> - This will retrieve a previously stored value.</p>
+</blockquote>
+<p><sub>[ <a class="internal present" href="/jrossignol/ContractConfigurator/wiki/Extending">Top</a> ] [ <a class="internal present" href="/jrossignol/ContractConfigurator/wiki/Extending#extending-contractconfigurator">Extending ContractConfigurator</a> / <a class="internal present" href="/jrossignol/ContractConfigurator/wiki/Extending#using-the-persistent-data-store">Using the Persistent Data Store</a> ]</sub></p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#copyright-statement" id="user-content-copyright-statement"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Copyright statement</h2>
+<p><em>All source code posted on this page is released into the public domain.</em></p>
+<blockquote>
+<p>"Yours without obligation, let or lien. A freely given gift."</p>
+</blockquote>
+<blockquote>
+<p><strong>The Wise Man's Fear</strong>, Patrick Rothfuss</p>
+</blockquote>
+<p><sub>[ <a class="internal present" href="/jrossignol/ContractConfigurator/wiki/Extending">Top</a> ] [ <a class="internal present" href="/jrossignol/ContractConfigurator/wiki/Extending#copyright-statement">Copyright statement</a> ]</sub></p>
+
+        </div>
+
+    </div>]

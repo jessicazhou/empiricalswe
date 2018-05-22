@@ -1,0 +1,116 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <h2>
+<a aria-hidden="true" class="anchor" href="#error-is-the-server-running-on-host-localhost-and-accepting-tcpip-connections-on-port-5432" id="user-content-error-is-the-server-running-on-host-localhost-and-accepting-tcpip-connections-on-port-5432"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Error: Is the server running on host “localhost” and accepting TCP/IP connections on port 5432?</h2>
+<p>This error is really common among others. It often happens to appear just after you began to migrate the database -or create them- [rake db:create db:migrate, for example] , or when you are trying to set-up the server for tests [rails server]. There are many "things" that could potentially cause this type of error, we will try to cover the common ones here:</p>
+<ul>
+<li>
+<ol>
+<li>An installation of <strong>postgresql</strong> that went bad.</li>
+</ol>
+</li>
+<li>
+<ol start="2">
+<li>An installation of <strong>postgresql</strong> that went well, but is un-expectedly misconfigurated.</li>
+</ol>
+</li>
+</ul>
+<h3>
+<a aria-hidden="true" class="anchor" href="#situation-1" id="user-content-situation-1"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Situation #1:</h3>
+<p>It is often resolved by un-installing <strong>postgresql</strong> and re-installing it. This problem is usually caused by having an old installed version, or, a corrupted one. For Ubuntu users, by terminal, the "recipe" should be:</p>
+<ul>
+<li>
+<ol>
+<li>Un-install <strong>postgresql</strong>: sudo apt-get remove postgresql. <em>If you happen to have trouble with dependency, you will need to remove any program that depends on <strong>postgresql</strong>, and then, remove it.</em>
+</li>
+</ol>
+</li>
+<li>
+<ol start="2">
+<li>Re-install <strong>postgresql</strong>: sudo apt-get install postgresql. <em>After installing, just to check it is well installed, in case it didn't, start the <strong>postgresql service</strong> (sudo service postgresql start) , and go to <strong>/var/run</strong> and check if the directory <strong>postgresql</strong> exists. If it exists, it all went correct.</em>
+</li>
+</ol>
+</li>
+</ul>
+<h3>
+<a aria-hidden="true" class="anchor" href="#situation-2" id="user-content-situation-2"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Situation #2</h3>
+<p>This situation is rare, but it also causes trouble. While you should think that, after a fresh and successful installation, your <strong>postgresql</strong> is set to work, you may need to check its configuration. There are cases which have the <strong>listen_address</strong> not set, or set wrongly. To see if that's the real cause, go to the installation directory of <strong>postgresql</strong> (in Ubuntu it should be <strong>/etc/postgresql/<em>(your installed postgresql version)</em>/main)</strong> and open <strong>postgresql.conf</strong>. This file, among other things, allow us to modify certain connection settings. The one that cares us the most is the <strong>listen_address</strong>. This setting will define <strong>which IPs the server will answer on</strong>. If it appears to be commented, un-comment it.</p>
+<p><strong>#listen_address = "localhost"</strong>.
+Should be:
+<strong>listen_address = "localhost"</strong>.</p>
+<p>If it happens to be set to "localhost", set it to " * ", where the " * " means that the server <strong>will answer on</strong> any given IP. It should be:</p>
+<p><strong>listen_address = " * "</strong></p>
+<p>Another useful file is <strong>pg_hba.conf</strong>. Since we are not going deep in its use, which you can read <a href="http://www.postgresql.org/docs/9.1/static/auth-pg-hba-conf.html" rel="nofollow">here</a>, the things you should check is that in the <strong>IPv4 local connections</strong> you should have:</p>
+<p><strong>host    all             all             127.0.0.1/32            md5</strong></p>
+<p>Since this file is read and write protected, you can edit it by running this command line: <strong>sudo gedit pg_hba.conf</strong>.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#error-the-role-mumuki-does-not-exist" id="user-content-error-the-role-mumuki-does-not-exist"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Error: the role 'mumuki' does not exist.</h2>
+<p>While this error may have a quick solution by creating the role <strong>mumuki</strong> in the database, in this case we will treat the problem where the role <strong>postgres</strong> doesn't exist.</p>
+<p>It is known to be caused for having different "versions" of <strong>postgresql</strong> installed on top of the <strong>postgresql</strong> itself. For example: <strong>postgres-xc</strong>, <strong>postgres-xc-common</strong> or <strong>postgres-xl</strong>. Having this versions mixed generates trouble to locate the correct configuration files for the service, or just locating the missing role. The solution to this problem is:</p>
+<ul>
+<li>
+<ol>
+<li>Un-install <strong>postgres-xl</strong>. <em>In case you have it installed</em>
+</li>
+</ol>
+</li>
+<li>
+<ol start="2">
+<li>Un-install <strong>postgres-xc-common</strong>. <em>In case you have it installed</em>
+</li>
+</ol>
+</li>
+<li>
+<ol start="3">
+<li>Un-install <strong>postgres-xc</strong>. <em>In case you have it installed</em>
+</li>
+</ol>
+</li>
+<li>
+<ol start="4">
+<li>Un-install <strong>postgresql</strong>.</li>
+</ol>
+</li>
+<li>
+<ol start="5">
+<li>Install <strong>postgresql</strong>. <em>Probably it will install the latest version, which is good!</em>
+</li>
+</ol>
+</li>
+<li>
+<ol start="6">
+<li>Enter the <strong>postgres role</strong>: sudo su postgres</li>
+</ol>
+</li>
+<li>
+<ol start="7">
+<li>Enter <strong>psql</strong>: psql</li>
+</ol>
+</li>
+<li>
+<ol start="8">
+<li>Create the user <strong>mumuki</strong> with password <strong>mumuki</strong>: create role mumuki with createdb login password 'mumuki';</li>
+</ol>
+</li>
+<li>
+<ol start="9">
+<li>Exit the <strong>psql</strong> and <strong>postgres role</strong>: CTRL + D</li>
+</ol>
+</li>
+<li>
+<ol start="10">
+<li>Run the migrations: rake db:create db:migrate</li>
+</ol>
+</li>
+<li>
+<ol start="11">
+<li>Run the server: rails server <em>(just to test the app)</em>
+</li>
+</ol>
+</li>
+</ul>
+<p>Note: The server could be hosted in localhost:3000 instead of localhost:5432, which is not a problem.</p>
+
+        </div>
+
+    </div>]

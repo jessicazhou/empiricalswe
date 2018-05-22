@@ -1,0 +1,55 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>A number of breaking changes were added to ChemBio Hub in the early part of 2016.</p>
+<p>Before you start <a class="internal present" href="/thesgc/chembiohub_ws/wiki/Backup-and-restore-of-the-database">Backup and restore of the database</a></p>
+<p>In order to upgrade, the following commands are necessary:</p>
+<pre><code>#Log on to your server and change to the project directory (/srv/chembiohub by default)
+git pull origin master
+git submodule foreach git pull origin master
+</code></pre>
+<p>Now clean up the removed submodules</p>
+<pre><code>cd src
+mv ng-chem /tmp/ng-chem
+rm -rf *
+mv /tmp/ng-chem ng-chem
+cd ..
+</code></pre>
+<p>Now reinstall all of the dependencies where $ENV_NAME is the name of your installation (which should correspond to the URL path)</p>
+<pre><code>source activate $ENV_NAME
+conda install -y --file anaconda_requirements.txt
+pip install -r pip_requirements.txt
+python manage.py migrate
+cd src/ng-chem
+bower install
+cd ../..
+python manage.py collectstatic --noinput
+python manage.py log_all_users_out
+</code></pre>
+<p>Next there are a number of changes that need to be made to the data and the indices. To do these changes, run the following:</p>
+<ol>
+<li>Add the new IDs to the projects:</li>
+</ol>
+<pre><code>source activate $ENV_NAME
+python manage.py add_ids_to_existing_compounds
+</code></pre>
+<ol start="2">
+<li>Find the data home of elasticsearch and remove all indices (default location is /var/lib/elaticsearch)</li>
+</ol>
+<pre><code>sudo rm -rf /var/lib/elasticsearch/elasticsearch/nodes/0/indices/
+sudo service elasticsearch restart
+</code></pre>
+<ol start="3">
+<li>Next run the command to reindex elasticsearch</li>
+</ol>
+<pre><code>source activate $ENV_NAME
+python manage.py reindex_compounds_new
+</code></pre>
+<ol start="4">
+<li>Next restart the services as usual</li>
+</ol>
+<pre><code>sudo service supervisor restart
+</code></pre>
+
+        </div>
+
+    </div>]

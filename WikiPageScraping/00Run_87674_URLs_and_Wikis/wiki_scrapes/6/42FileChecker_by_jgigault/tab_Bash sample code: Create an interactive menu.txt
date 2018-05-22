@@ -1,0 +1,120 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>Display an interactive menu in your Bash scripts like 42FileChecker does.</p>
+<hr/>
+<h3>
+<a aria-hidden="true" class="anchor" href="#sample-code" id="user-content-sample-code"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><a name="user-content-code"></a>Sample code</h3>
+<p>We are going to create a 3 items menu so that the user will be asked to type a number between 1 and 3. The idea is to read the sandard input from the keyboard with the function <code>read</code>, to check if an action has been defined in an array called <code>MY_ACTIONS</code> and finally to execute the action with the command <code>eval</code>:</p>
+<div class="highlight highlight-source-shell"><pre><span class="pl-k">function</span> <span class="pl-en">do_libft</span>
+{
+    <span class="pl-c1">echo</span> <span class="pl-s"><span class="pl-pds">"</span>-&gt; You selected LIBFT<span class="pl-pds">"</span></span>
+    display_menu
+}
+
+<span class="pl-k">function</span> <span class="pl-en">do_libftasm</span>
+{
+    <span class="pl-c1">echo</span> <span class="pl-s"><span class="pl-pds">"</span>-&gt; You selected LIBFTASM<span class="pl-pds">"</span></span>
+    display_menu
+}
+
+<span class="pl-k">function</span> <span class="pl-en">do_exit</span>
+{
+    <span class="pl-c1">echo</span> <span class="pl-s"><span class="pl-pds">"</span>-&gt; Exit the script<span class="pl-pds">"</span></span>
+    <span class="pl-c1">exit</span>
+}
+
+<span class="pl-c"><span class="pl-c">#</span> Function that displays the menu</span>
+<span class="pl-k">function</span> <span class="pl-en">display_menu</span>
+{
+    <span class="pl-c"><span class="pl-c">#</span> Declare an array containing the actions to do</span>
+    <span class="pl-k">local</span> -a MY_ACTIONS
+    MY_ACTIONS[1]=<span class="pl-s"><span class="pl-pds">"</span>do_libft<span class="pl-pds">"</span></span>
+    MY_ACTIONS[2]=<span class="pl-s"><span class="pl-pds">"</span>do_libftasm<span class="pl-pds">"</span></span>
+    MY_ACTIONS[3]=<span class="pl-s"><span class="pl-pds">"</span>do_exit<span class="pl-pds">"</span></span>
+
+    <span class="pl-c"><span class="pl-c">#</span> Display items</span>
+    <span class="pl-k">local</span> -i I=1
+    <span class="pl-c1">echo</span> <span class="pl-s"><span class="pl-pds">"</span>#########################<span class="pl-pds">"</span></span>
+    <span class="pl-k">while</span> [ <span class="pl-smi">$I</span> <span class="pl-k">-le</span> <span class="pl-smi">${<span class="pl-k">#</span>MY_ACTIONS[@]}</span> ]
+    <span class="pl-k">do</span>
+        <span class="pl-c1">echo</span> <span class="pl-s"><span class="pl-pds">"</span><span class="pl-smi">$I</span>) <span class="pl-smi">${MY_ACTIONS[$I]}</span><span class="pl-pds">"</span></span>
+        <span class="pl-s"><span class="pl-pds">((</span> I <span class="pl-k">+=</span> <span class="pl-c1">1</span> <span class="pl-pds">))</span></span>
+    <span class="pl-k">done</span>
+
+    <span class="pl-c"><span class="pl-c">#</span> Read keyboard silently, one character at a time, </span>
+    <span class="pl-c"><span class="pl-c">#</span> and save the value in $SELECTION</span>
+    <span class="pl-k">local</span> SELECTION
+    <span class="pl-c1">read</span> -s -n1 SELECTION
+
+    <span class="pl-c"><span class="pl-c">#</span> Convert the ascii value of $SELECTION into a numeric index</span>
+    <span class="pl-k">local</span> ORD_VALUE=<span class="pl-s"><span class="pl-pds">$(</span>LC_CTYPE=C <span class="pl-c1">printf</span> <span class="pl-s"><span class="pl-pds">'</span>%d<span class="pl-pds">'</span></span> <span class="pl-s"><span class="pl-pds">"</span>'<span class="pl-smi">$SELECTION</span><span class="pl-pds">"</span></span><span class="pl-pds">)</span></span>
+    <span class="pl-s"><span class="pl-pds">((</span> ORD_VALUE <span class="pl-k">-=</span> <span class="pl-c1">48</span> <span class="pl-pds">))</span></span>
+
+    <span class="pl-c"><span class="pl-c">#</span> Check if the index is valid</span>
+    <span class="pl-k">if</span> [ <span class="pl-smi">$ORD_VALUE</span> <span class="pl-k">-gt</span> 0 <span class="pl-k">-a</span> <span class="pl-smi">$ORD_VALUE</span> <span class="pl-k">-le</span> <span class="pl-smi">${<span class="pl-k">#</span>MY_ACTIONS[@]}</span> ]
+    <span class="pl-k">then</span>
+        <span class="pl-c"><span class="pl-c">#</span> If yes, evaluate the action and exit the function</span>
+        <span class="pl-c1">eval</span> <span class="pl-smi">${MY_ACTIONS[${ORD_VALUE}]}</span>
+        <span class="pl-k">return</span>
+    <span class="pl-k">fi</span>
+
+    <span class="pl-c"><span class="pl-c">#</span> If not, call display_menu one more time</span>
+    <span class="pl-c1">echo</span> <span class="pl-s"><span class="pl-pds">"</span>-&gt; INVALID SELECTION<span class="pl-pds">"</span></span>
+    display_menu
+}
+
+<span class="pl-c"><span class="pl-c">#</span> Call the menu</span>
+display_menu</pre></div>
+<hr/>
+<h3>
+<a aria-hidden="true" class="anchor" href="#tips" id="user-content-tips"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Tips</h3>
+<hr/>
+<h5>
+<a aria-hidden="true" class="anchor" href="#convert-ascii-number-into-numeric-value" id="user-content-convert-ascii-number-into-numeric-value"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><a name="user-content-tip1"></a>Convert ASCII number into numeric value</h5>
+<div class="highlight highlight-source-shell"><pre><span class="pl-k">function</span> <span class="pl-en">get_ord</span>
+{
+    LC_CTYPE=C <span class="pl-c1">printf</span> <span class="pl-s"><span class="pl-pds">'</span>%d<span class="pl-pds">'</span></span> <span class="pl-s"><span class="pl-pds">"</span>'<span class="pl-smi">$1</span><span class="pl-pds">"</span></span>
+}
+
+get_ord <span class="pl-s"><span class="pl-pds">"</span>1<span class="pl-pds">"</span></span>                      <span class="pl-c"><span class="pl-c">#</span> Print ASCII value of "1": 49</span>
+get_ord <span class="pl-s"><span class="pl-pds">"</span>A<span class="pl-pds">"</span></span>                      <span class="pl-c"><span class="pl-c">#</span> Print ASCII value of "A": 65</span>
+
+<span class="pl-k">declare</span> -i VALUE=<span class="pl-s"><span class="pl-pds">$(</span>get_ord <span class="pl-s"><span class="pl-pds">"</span>1<span class="pl-pds">"</span></span><span class="pl-pds">)</span></span>  <span class="pl-c"><span class="pl-c">#</span> Save the result in a variable $VALUE</span>
+<span class="pl-s"><span class="pl-pds">((</span> VALUE <span class="pl-k">-=</span> <span class="pl-c1">48</span> <span class="pl-pds">))</span></span>                <span class="pl-c"><span class="pl-c">#</span> Do an arithmetic operation</span>
+<span class="pl-c1">echo</span> <span class="pl-smi">$VALUE</span>                      <span class="pl-c"><span class="pl-c">#</span> Print the numeric value of "1": 1</span></pre></div>
+<hr/>
+<h5>
+<a aria-hidden="true" class="anchor" href="#check-if-an-index-is-valid" id="user-content-check-if-an-index-is-valid"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><a name="user-content-tip2"></a>Check if an index is valid</h5>
+<p>In the current example of menu, we set an array <code>MY_ARRAY</code> containing 3 indexes from 1 to 3. The arithmetic comparisons we need to do are: "greater than" 0 (-gt) and "less or equal than" 3 (-le). 3 is also the count number of items in the array, then we use the special symbol <code>#</code> before the name of the array to get its length and the special parameter <code>[@]</code> to expand all items of the array. <code>-a</code> is an "AND" operator that permits to join our two comparisons.</p>
+<div class="highlight highlight-source-shell"><pre><span class="pl-c"><span class="pl-c">#</span> C equivalent: if (ord_value &gt; 0 and ord_value &lt;= length)</span>
+<span class="pl-k">if</span> [ <span class="pl-smi">$ORD_VALUE</span> <span class="pl-k">-gt</span> 0 <span class="pl-k">-a</span> <span class="pl-smi">$ORD_VALUE</span> <span class="pl-k">-le</span> <span class="pl-smi">${<span class="pl-k">#</span>MY_ACTIONS[@]}</span> ]
+<span class="pl-k">then</span>
+    <span class="pl-c"><span class="pl-c">#</span> ...</span>
+<span class="pl-k">fi</span></pre></div>
+<p>We also could have use the "zero" test (-z) that returns success when a string is empty:</p>
+<div class="highlight highlight-source-shell"><pre><span class="pl-c"><span class="pl-c">#</span> Invert the test by using the symbol '!'</span>
+<span class="pl-k">if</span> [ <span class="pl-k">!</span> <span class="pl-k">-z</span> <span class="pl-smi">${MY_ACTIONS[$ORD_VALUE]}</span> ]
+<span class="pl-k">then</span>
+    <span class="pl-c"><span class="pl-c">#</span> This test causes an error when $ORD_VALUE is a negative number</span>
+    <span class="pl-c"><span class="pl-c">#</span> Array indexes can only be positive or zero</span>
+<span class="pl-k">fi</span></pre></div>
+<hr/>
+<h5>
+<a aria-hidden="true" class="anchor" href="#evaluate-a-string-as-a-command-line" id="user-content-evaluate-a-string-as-a-command-line"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><a name="user-content-tip3"></a>Evaluate a string as a command line</h5>
+<p><code>eval</code> is a builtin command that interprets a string or a list of arguments as a command line:</p>
+<div class="highlight highlight-source-shell"><pre><span class="pl-c"><span class="pl-c">#</span> Convert a string into a command line</span>
+<span class="pl-k">declare</span> ACTION=<span class="pl-s"><span class="pl-pds">"</span>echo '42FileChecker' | cat -e<span class="pl-pds">"</span></span>
+<span class="pl-c1">eval</span> <span class="pl-smi">$ACTION</span>
+
+<span class="pl-c"><span class="pl-c">#</span> Convert a list of arguments into a command line</span>
+<span class="pl-c1">eval</span> <span class="pl-s"><span class="pl-pds">"</span>echo<span class="pl-pds">"</span></span> <span class="pl-s"><span class="pl-pds">"</span>42FileChecker<span class="pl-pds">"</span></span> <span class="pl-s"><span class="pl-pds">"</span>|<span class="pl-pds">"</span></span> <span class="pl-s"><span class="pl-pds">"</span>cat -e<span class="pl-pds">"</span></span></pre></div>
+
+        </div>
+
+        <div class="wiki-footer gollum-markdown-content boxed-group" id="wiki-footer">
+          <div class="boxed-group-inner wiki-auxiliary-content markdown-body">
+            <p><a href="https://github.com/jgigault/42FileChecker/wiki/"><strong>Back to summary</strong></a> - <a href="#"><strong>Back to top</strong></a></p>
+
+          </div>
+        </div>
+    </div>]

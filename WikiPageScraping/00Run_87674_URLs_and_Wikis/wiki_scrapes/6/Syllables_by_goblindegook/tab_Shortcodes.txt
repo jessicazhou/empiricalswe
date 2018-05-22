@@ -1,0 +1,57 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>The <code>Shortcode</code> wrapper class was created so we could have a convenient way to filter a single shortcode's output.</p>
+<p>The <code>add()</code> and <code>remove()</code> methods serve as wrappers to the <code>\add_shortcode()</code> and <code>\remove_shortcode()</code> core WordPress functions that handle shortcode registration. <code>add()</code> does some additional checking so you don't accidentally overwrite an existing shortcode (it throws an <code>\Exception</code> if the tag name is already in use).</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#usage" id="user-content-usage"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Usage</h3>
+<h4>
+<a aria-hidden="true" class="anchor" href="#filtering-a-shortcodes-output" id="user-content-filtering-a-shortcodes-output"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Filtering a shortcode's output</h4>
+<p>As of this writing, WordPress does not allow you to filter the output of a single shortcode in a convenient manner.  You could hook a filter function to <code>the_content</code>, but it wouldn't be easy to tell a shortcode's output from the rest of the post's content.</p>
+<p>When using this class and its methods to register a shortcode, your callback is not hooked directly. Instead, we're hooking the <code>output()</code> method to invoke your callback and then apply the <code>syllables/shortcode/output</code> filter on its output.</p>
+<p>This becomes especially useful when filtering the output of existing shortcodes. For example:</p>
+<div class="highlight highlight-text-html-php"><pre><span class="pl-s1"><span class="pl-c"><span class="pl-c">//</span> Re-register the `[gallery]` shortcode using our wrapper:</span></span>
+<span class="pl-s1"><span class="pl-smi">$gallery_shortcode</span> <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-c1">\Syllables\</span><span class="pl-c1">Shortcode</span>( <span class="pl-s"><span class="pl-pds">'</span>gallery<span class="pl-pds">'</span></span>, <span class="pl-s"><span class="pl-pds">'</span>\gallery_shortcode<span class="pl-pds">'</span></span> );</span>
+<span class="pl-s1"><span class="pl-smi">$gallery_shortcode</span><span class="pl-k">-&gt;</span>replace();</span>
+<span class="pl-s1"></span>
+<span class="pl-s1"><span class="pl-c"><span class="pl-c">/**</span></span></span>
+<span class="pl-s1"><span class="pl-c"> * Remove HTML breaks from the default `[gallery]` shortcode.</span></span>
+<span class="pl-s1"><span class="pl-c"> <span class="pl-c">*/</span></span></span>
+<span class="pl-s1">\add_filter( <span class="pl-s"><span class="pl-pds">'</span>syllables/shortcode/output<span class="pl-pds">'</span></span>, <span class="pl-k">function</span> ( <span class="pl-smi">$output</span>, <span class="pl-smi">$atts</span>, <span class="pl-smi">$content</span>, <span class="pl-smi">$tag</span> ) {</span>
+<span class="pl-s1">    <span class="pl-k">if</span> ( <span class="pl-smi">$tag</span> <span class="pl-k">===</span> <span class="pl-s"><span class="pl-pds">'</span>gallery<span class="pl-pds">'</span></span> ) {</span>
+<span class="pl-s1">        <span class="pl-smi">$content</span> <span class="pl-k">=</span> \<span class="pl-c1">preg_replace</span>( <span class="pl-sr"><span class="pl-pds">'/</span>&lt;br(<span class="pl-pds">[^&gt;]</span><span class="pl-k">+</span>)&gt;<span class="pl-pds">/mi'</span></span>, <span class="pl-s"><span class="pl-pds">'</span><span class="pl-pds">'</span></span>, <span class="pl-smi">$output</span> );</span>
+<span class="pl-s1">    }</span>
+<span class="pl-s1">    <span class="pl-k">return</span> <span class="pl-smi">$output</span>;</span>
+<span class="pl-s1">} );</span></pre></div>
+<h4>
+<a aria-hidden="true" class="anchor" href="#custom-shortcode-subclass" id="user-content-custom-shortcode-subclass"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Custom shortcode subclass</h4>
+<p><code>Shortcode</code> can be used as a base class for implementing custom shortcodes by overriding the <code>render()</code> method. If you do this, you should not pass a callback to the constructor since it will be ignored anyway.</p>
+<div class="highlight highlight-text-html-php"><pre><span class="pl-s1"><span class="pl-c"><span class="pl-c">/**</span></span></span>
+<span class="pl-s1"><span class="pl-c"> * Custom shortcode class.</span></span>
+<span class="pl-s1"><span class="pl-c"> <span class="pl-c">*/</span></span></span>
+<span class="pl-s1"><span class="pl-k">class</span> <span class="pl-en">Custom_Shortcode</span> <span class="pl-k">extends</span> <span class="pl-c1">\Syllables\</span><span class="pl-e">Shortcode</span> {</span>
+<span class="pl-s1"></span>
+<span class="pl-s1">	<span class="pl-c"><span class="pl-c">/**</span></span></span>
+<span class="pl-s1"><span class="pl-c">	 * Custom shortcode implementation.</span></span>
+<span class="pl-s1"><span class="pl-c">	 *</span></span>
+<span class="pl-s1"><span class="pl-c">	 * <span class="pl-k">@param</span>  array  $atts    The shortcode's attributes.</span></span>
+<span class="pl-s1"><span class="pl-c">	 * <span class="pl-k">@param</span>  string $content (Optional) Content enclosed in shortcode.</span></span>
+<span class="pl-s1"><span class="pl-c">	 * <span class="pl-k">@param</span>  string $tag     (Optional) Shortcode tag being rendered.</span></span>
+<span class="pl-s1"><span class="pl-c">	 * <span class="pl-k">@return</span> string          The rendered shortcode.</span></span>
+<span class="pl-s1"><span class="pl-c">	 <span class="pl-c">*/</span></span></span>
+<span class="pl-s1">	<span class="pl-k">public</span> <span class="pl-k">function</span> <span class="pl-en">render</span>( <span class="pl-smi">$atts</span>, <span class="pl-smi">$content</span> <span class="pl-k">=</span> <span class="pl-c1">null</span>, <span class="pl-smi">$tag</span> <span class="pl-k">=</span> <span class="pl-c1">null</span> ) {</span>
+<span class="pl-s1">		<span class="pl-c"><span class="pl-c">//</span> Your code, which should return the rendered content.</span></span>
+<span class="pl-s1">	}</span>
+<span class="pl-s1">}</span>
+<span class="pl-s1"></span>
+<span class="pl-s1"><span class="pl-c"><span class="pl-c">//</span> Create and hook the `[custom]` (or `[custom][/custom]`) shortcode:</span></span>
+<span class="pl-s1"><span class="pl-smi">$custom_shortcode</span> <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-c1">Custom_Shortcode</span>( <span class="pl-s"><span class="pl-pds">'</span>custom<span class="pl-pds">'</span></span> );</span>
+<span class="pl-s1"><span class="pl-smi">$custom_shortcode</span><span class="pl-k">-&gt;</span>add();</span></pre></div>
+<h3>
+<a aria-hidden="true" class="anchor" href="#deprecation-notice" id="user-content-deprecation-notice"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Deprecation Notice</h3>
+<ul>
+<li>The <code>syllables/shortcode/render</code> filter triggered by the <code>render()</code> method is deprecated. You are encouraged to use the <code>syllables/shortcode/output</code> filter instead, which is always triggered before outputting the shortcode.</li>
+</ul>
+
+        </div>
+
+    </div>]

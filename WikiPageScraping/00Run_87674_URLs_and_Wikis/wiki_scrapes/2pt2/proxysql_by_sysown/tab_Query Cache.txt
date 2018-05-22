@@ -1,0 +1,193 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <h2>
+<a aria-hidden="true" class="anchor" href="#preface" id="user-content-preface"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Preface</h2>
+<p>Historically, there are 2 ways of using caching in a MySQL environment:</p>
+<ul>
+<li>enable MySQL Query Cache : embedded in MySQL server itself, no external dependencies. Although it is a bottleneck for any write intensive workload because cache entries are invalidated when the relevant table receives a write.</li>
+<li>use external caching : allows a lot of flexibility, but also requires a lot of application changes and logic, because the application must connect to both the database and the caching system, and be responsible for keeping it updated</li>
+</ul>
+<p>Although external caching is very efficient, it requires development efforts and DBAs have no control over data flow.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#caching-on-the-wire" id="user-content-caching-on-the-wire"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Caching on the wire</h2>
+<p>ProxySQL introduced a new paradigma to query caching. According to configuration (details below) resultsets are cached on the wire, while queries are executed and the resultset is returned to the application.
+If the application will re-executed the same query, the resultset will be returned by the embedded Query Cache.</p>
+<p>It is a quite common scenarios to identify database load caused by not-optimal SELECT statements that generate a resultset that should be cached for few seconds.
+To implement a code change can be a long process (developers should write new code, build it, testing in staging, then deploy on production), and this is often not a suitable option during an emergency.
+As the configuration of the database proxy layer (ProxySQL in this case) falls under the responsibility of DBAs, to enable caching DBAs won't require developers to make changes to the application.<br/>
+Therefore this is a feature that empowers the DBAs.</p>
+<h1>
+<a aria-hidden="true" class="anchor" href="#define-traffic-that-needs-to-be-cached" id="user-content-define-traffic-that-needs-to-be-cached"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Define traffic that needs to be cached</h1>
+<p>To define what traffic need to be cached we need to define <a href="./admin_tables.md#mysql_query_rules">query rules</a> that
+match incoming traffic, and define a cache_ttl for it.</p>
+<p>As pointed in the <a href="./admin_tables.md#mysql_query_rules">documentation</a>, there are many ways to define matches for incoming traffic.
+All we need to do to cache resultset is to define matching criteria and timeout.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#caching-example" id="user-content-caching-example"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Caching example</h3>
+<p>The best way to illustrate how to configure caching is with an example.<br/>
+Assume we run sysbench against proxysql, with a very small table:</p>
+<div class="highlight highlight-source-shell"><pre>$ sysbench --num-threads=16 --max-requests=0 --max-time=60 --test=oltp \
+--mysql-user=msandbox --mysql-password=msandbox --mysql-db=sbtest --mysql-host=127.0.0.1 --mysql-port=6033 \
+--oltp-table-size=10000 --oltp-read-only=on --db-ps-mode=disable --oltp-skip-trx=on \
+--oltp-point-selects=100 --oltp-simple-ranges=1 --oltp-sum-ranges=1 --oltp-order-ranges=1 \
+--oltp-distinct-ranges=1 run</pre></div>
+<p>And result is:</p>
+<div class="highlight highlight-source-shell"><pre>    read/write requests:                 380952 (6341.71 per sec.)</pre></div>
+<p>In ProxySQL we can see the follow results:</p>
+<div class="highlight highlight-source-sql"><pre>Admin<span class="pl-k">&gt;</span> <span class="pl-k">SELECT</span> count_star,sum_time,hostgroup,digest,digest_text <span class="pl-k">FROM</span> stats_mysql_query_digest_reset <span class="pl-k">ORDER BY</span> sum_time <span class="pl-k">DESC</span>;
+<span class="pl-k">+</span><span class="pl-c"><span class="pl-c">--</span>----------+-----------+-----------+--------------------+-------------------------------------------------------------------+</span>
+| count_star | sum_time  | hostgroup | digest             | digest_text                                                       |
+<span class="pl-k">+</span><span class="pl-c"><span class="pl-c">--</span>----------+-----------+-----------+--------------------+-------------------------------------------------------------------+</span>
+| <span class="pl-c1">366300</span>     | <span class="pl-c1">508306254</span> | <span class="pl-c1">1</span>         | 0xE8930CB2CC9E68D7 | <span class="pl-k">SELECT</span> c <span class="pl-k">from</span> sbtest <span class="pl-k">where</span> id<span class="pl-k">=</span>?                                   |
+| <span class="pl-c1">3663</span>       | <span class="pl-c1">6932505</span>   | <span class="pl-c1">1</span>         | 0xB749413737FAF581 | <span class="pl-k">SELECT DISTINCT</span> c <span class="pl-k">from</span> sbtest <span class="pl-k">where</span> id between ? <span class="pl-k">and</span> ? <span class="pl-k">order by</span> c |
+| <span class="pl-c1">3663</span>       | <span class="pl-c1">6607248</span>   | <span class="pl-c1">1</span>         | 0x78881FD58E5437B2 | <span class="pl-k">SELECT</span> c <span class="pl-k">from</span> sbtest <span class="pl-k">where</span> id between ? <span class="pl-k">and</span> ? <span class="pl-k">order by</span> c          |
+| <span class="pl-c1">3663</span>       | <span class="pl-c1">5534740</span>   | <span class="pl-c1">1</span>         | 0x547C0EAF9BC36E91 | <span class="pl-k">SELECT</span> <span class="pl-c1">SUM</span>(K) <span class="pl-k">from</span> sbtest <span class="pl-k">where</span> id between ? <span class="pl-k">and</span> ?                |
+| <span class="pl-c1">3663</span>       | <span class="pl-c1">5506153</span>   | <span class="pl-c1">1</span>         | 0xDC1EE02F8CD8B09B | <span class="pl-k">SELECT</span> c <span class="pl-k">from</span> sbtest <span class="pl-k">where</span> id between ? <span class="pl-k">and</span> ?                     |
+| <span class="pl-c1">1</span>          | <span class="pl-c1">2372</span>      | <span class="pl-c1">1</span>         | 0xD575B97BB01C8428 | SHOW TABLE STATUS <span class="pl-k">LIKE</span> ?                                          |
+<span class="pl-k">+</span><span class="pl-c"><span class="pl-c">--</span>----------+-----------+-----------+--------------------+-------------------------------------------------------------------+</span>
+<span class="pl-c1">6</span> rows <span class="pl-k">in</span> <span class="pl-k">set</span> (<span class="pl-c1">0</span>.<span class="pl-c1">00</span> sec)</pre></div>
+<p>With no doubt, most of the execution time comes from a single type of <code>SELECT</code>, executed many time.
+Let's cache it creating a matching rule. In this example we will use <code>digest</code> as a matching criteria, and a <code>cache_ttl</code> of 2000ms.</p>
+<div class="highlight highlight-source-sql"><pre>Admin<span class="pl-k">&gt;</span> <span class="pl-k">INSERT INTO</span> mysql_query_rules (rule_id,active,digest,cache_ttl,apply)
+<span class="pl-k">VALUES</span> (<span class="pl-c1">5</span>,<span class="pl-c1">1</span>,<span class="pl-s"><span class="pl-pds">'</span>0xE8930CB2CC9E68D7<span class="pl-pds">'</span></span>,<span class="pl-c1">2000</span>,<span class="pl-c1">1</span>);
+Query OK, <span class="pl-c1">1</span> row affected (<span class="pl-c1">0</span>.<span class="pl-c1">00</span> sec)
+
+Admin<span class="pl-k">&gt;</span> LOAD MYSQL QUERY RULES TO RUNTIME;SAVE MYSQL QUERY RULES TO DISK;
+Query OK, <span class="pl-c1">0</span> rows affected (<span class="pl-c1">0</span>.<span class="pl-c1">00</span> sec)
+
+Query OK, <span class="pl-c1">0</span> rows affected (<span class="pl-c1">0</span>.<span class="pl-c1">01</span> sec)</pre></div>
+<p>Let's rerun the testing benchmark:</p>
+<div class="highlight highlight-source-shell"><pre>$ sysbench --num-threads=16 --max-requests=0 --max-time=60 --test=oltp \
+--mysql-user=msandbox --mysql-password=msandbox --mysql-db=sbtest --mysql-host=127.0.0.1 --mysql-port=6033 \
+--oltp-table-size=10000 --oltp-read-only=on --db-ps-mode=disable --oltp-skip-trx=on \
+--oltp-point-selects=100 --oltp-simple-ranges=1 --oltp-sum-ranges=1 --oltp-order-ranges=1 \
+--oltp-distinct-ranges=1 run</pre></div>
+<p>And result is:</p>
+<div class="highlight highlight-source-shell"><pre>    read/write requests:                 1613248 (26873.58 per sec.)</pre></div>
+<p>We can immediately see that the throughtput has increased drastically, as some queries were cached by ProxySQL.</p>
+<p>In ProxySQL we can see the follow results <code>from stats_mysql_query_digest</code>:</p>
+<div class="highlight highlight-source-sql"><pre>Admin<span class="pl-k">&gt;</span> <span class="pl-k">SELECT</span> count_star,sum_time,hostgroup,digest,digest_text <span class="pl-k">FROM</span> stats_mysql_query_digest <span class="pl-k">ORDER BY</span> sum_time <span class="pl-k">DESC</span>;
+<span class="pl-k">+</span><span class="pl-c"><span class="pl-c">--</span>----------+-----------+-----------+--------------------+-------------------------------------------------------------------+</span>
+| count_star | sum_time  | hostgroup | digest             | digest_text                                                       |
+<span class="pl-k">+</span><span class="pl-c"><span class="pl-c">--</span>----------+-----------+-----------+--------------------+-------------------------------------------------------------------+</span>
+| <span class="pl-c1">114715</span>     | <span class="pl-c1">119933775</span> | <span class="pl-c1">1</span>         | 0xE8930CB2CC9E68D7 | <span class="pl-k">SELECT</span> c <span class="pl-k">from</span> sbtest <span class="pl-k">where</span> id<span class="pl-k">=</span>?                                   |
+| <span class="pl-c1">6783</span>       | <span class="pl-c1">8244945</span>   | <span class="pl-c1">1</span>         | 0xB749413737FAF581 | <span class="pl-k">SELECT DISTINCT</span> c <span class="pl-k">from</span> sbtest <span class="pl-k">where</span> id between ? <span class="pl-k">and</span> ? <span class="pl-k">order by</span> c |
+| <span class="pl-c1">6800</span>       | <span class="pl-c1">8081234</span>   | <span class="pl-c1">1</span>         | 0x78881FD58E5437B2 | <span class="pl-k">SELECT</span> c <span class="pl-k">from</span> sbtest <span class="pl-k">where</span> id between ? <span class="pl-k">and</span> ? <span class="pl-k">order by</span> c          |
+| <span class="pl-c1">6877</span>       | <span class="pl-c1">7923794</span>   | <span class="pl-c1">1</span>         | 0xDC1EE02F8CD8B09B | <span class="pl-k">SELECT</span> c <span class="pl-k">from</span> sbtest <span class="pl-k">where</span> id between ? <span class="pl-k">and</span> ?                     |
+| <span class="pl-c1">6840</span>       | <span class="pl-c1">7535059</span>   | <span class="pl-c1">1</span>         | 0x547C0EAF9BC36E91 | <span class="pl-k">SELECT</span> <span class="pl-c1">SUM</span>(K) <span class="pl-k">from</span> sbtest <span class="pl-k">where</span> id between ? <span class="pl-k">and</span> ?                |
+| <span class="pl-c1">1</span>          | <span class="pl-c1">2199</span>      | <span class="pl-c1">1</span>         | 0xD575B97BB01C8428 | SHOW TABLE STATUS <span class="pl-k">LIKE</span> ?                                          |
+| <span class="pl-c1">8729</span>       | <span class="pl-c1">0</span>         | <span class="pl-k">-</span><span class="pl-c1">1</span>        | 0xB749413737FAF581 | <span class="pl-k">SELECT DISTINCT</span> c <span class="pl-k">from</span> sbtest <span class="pl-k">where</span> id between ? <span class="pl-k">and</span> ? <span class="pl-k">order by</span> c |
+| <span class="pl-c1">8672</span>       | <span class="pl-c1">0</span>         | <span class="pl-k">-</span><span class="pl-c1">1</span>        | 0x547C0EAF9BC36E91 | <span class="pl-k">SELECT</span> <span class="pl-c1">SUM</span>(K) <span class="pl-k">from</span> sbtest <span class="pl-k">where</span> id between ? <span class="pl-k">and</span> ?                |
+| <span class="pl-c1">8712</span>       | <span class="pl-c1">0</span>         | <span class="pl-k">-</span><span class="pl-c1">1</span>        | 0x78881FD58E5437B2 | <span class="pl-k">SELECT</span> c <span class="pl-k">from</span> sbtest <span class="pl-k">where</span> id between ? <span class="pl-k">and</span> ? <span class="pl-k">order by</span> c          |
+| <span class="pl-c1">8635</span>       | <span class="pl-c1">0</span>         | <span class="pl-k">-</span><span class="pl-c1">1</span>        | 0xDC1EE02F8CD8B09B | <span class="pl-k">SELECT</span> c <span class="pl-k">from</span> sbtest <span class="pl-k">where</span> id between ? <span class="pl-k">and</span> ?                     |
+| <span class="pl-c1">1436485</span>    | <span class="pl-c1">0</span>         | <span class="pl-k">-</span><span class="pl-c1">1</span>        | 0xE8930CB2CC9E68D7 | <span class="pl-k">SELECT</span> c <span class="pl-k">from</span> sbtest <span class="pl-k">where</span> id<span class="pl-k">=</span>?                                   |
+<span class="pl-k">+</span><span class="pl-c"><span class="pl-c">--</span>----------+-----------+-----------+--------------------+-------------------------------------------------------------------+</span>
+<span class="pl-c1">11</span> rows <span class="pl-k">in</span> <span class="pl-k">set</span> (<span class="pl-c1">0</span>.<span class="pl-c1">00</span> sec)</pre></div>
+<p>Note: queries with <code>hostgroup=-1</code> represent traffic served directly from the query cache, without hitting any backend.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#metrics" id="user-content-metrics"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Metrics</h2>
+<p>Some of the metrics currently avaiable are the ones reported in <code>stats_mysql_query_digest</code> with <code>hostgroup=-1</code>, like in the example below.</p>
+<p>Other metrics related to Query Cache are available through the stats table <code>stats_mysql_global</code> :</p>
+<div class="highlight highlight-source-sql"><pre>Admin<span class="pl-k">&gt;</span> <span class="pl-k">SELECT</span> <span class="pl-k">*</span> <span class="pl-k">FROM</span> stats_mysql_global <span class="pl-k">WHERE</span> Variable_Name <span class="pl-k">LIKE</span> <span class="pl-s"><span class="pl-pds">'</span>Query_Cache%<span class="pl-pds">'</span></span>;
+<span class="pl-k">+</span><span class="pl-c"><span class="pl-c">--</span>------------------------+----------------+</span>
+| Variable_Name            | Variable_Value |
+<span class="pl-k">+</span><span class="pl-c"><span class="pl-c">--</span>------------------------+----------------+</span>
+| Query_Cache_Memory_bytes | <span class="pl-c1">54133472</span>       |
+| Query_Cache_count_GET    | <span class="pl-c1">1892409</span>        |
+| Query_Cache_count_GET_OK | <span class="pl-c1">1699405</span>        |
+| Query_Cache_count_SET    | <span class="pl-c1">193004</span>         |
+| Query_Cache_bytes_IN     | <span class="pl-c1">24323669</span>       |
+| Query_Cache_bytes_OUT    | <span class="pl-c1">135396517</span>      |
+| Query_Cache_Purged       | <span class="pl-c1">185323</span>         |
+| Query_Cache_Entries      | <span class="pl-c1">7681</span>           |
+<span class="pl-k">+</span><span class="pl-c"><span class="pl-c">--</span>------------------------+----------------+</span>
+<span class="pl-c1">8</span> rows <span class="pl-k">in</span> <span class="pl-k">set</span> (<span class="pl-c1">0</span>.<span class="pl-c1">00</span> sec)</pre></div>
+<p>They represent:</p>
+<ul>
+<li>
+<code>Query_Cache_Memory_bytes</code> : total size of the resultset stored in the Query Cache. This doesn't include metadata;</li>
+<li>
+<code>Query_Cache_count_GET</code> : total number of GET requests executed against the Query Cache;</li>
+<li>
+<code>Query_Cache_count_GET_OK</code> : total number of <em>successful</em> GET requests executed against the Query Cache: resultset was present and not expired;</li>
+<li>
+<code>Query_Cache_count_SET</code> : total number of resultset inserted into Query Cache;</li>
+<li>
+<code>Query_Cache_bytes_IN</code> : amount of data written into the Query Cache;</li>
+<li>
+<code>Query_Cache_bytes_OUT</code> : amount of data read from the Query Cache;</li>
+<li>
+<code>Query_Cache_Purged</code> : number of entries purged;</li>
+<li>
+<code>Query_Cache_Entries</code> : number of entries currently in the Query Cache.</li>
+</ul>
+<h2>
+<a aria-hidden="true" class="anchor" href="#query-cache-tuning" id="user-content-query-cache-tuning"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Query Cache tuning</h2>
+<p>At the moment, it is only possible to tune the total amount of memory used by the Query Cache, using the variable <code>mysql-query_cache_size_MB</code> :</p>
+<div class="highlight highlight-source-sql"><pre>mysql<span class="pl-k">&gt;</span> SHOW VARIABLES <span class="pl-k">LIKE</span> <span class="pl-s"><span class="pl-pds">'</span>mysql-query_cache%<span class="pl-pds">'</span></span>;
+<span class="pl-k">+</span><span class="pl-c"><span class="pl-c">--</span>-------------------------+-------+</span>
+| Variable_name             | Value |
+<span class="pl-k">+</span><span class="pl-c"><span class="pl-c">--</span>-------------------------+-------+</span>
+| mysql<span class="pl-k">-</span>query_cache_size_MB | <span class="pl-c1">256</span>   |
+<span class="pl-k">+</span><span class="pl-c"><span class="pl-c">--</span>-------------------------+-------+</span></pre></div>
+<p><strong>Important note:</strong> the current implementation of <code>mysql-query_cache_size_MB</code> <em>doesn't impose a hard limit</em> . Instead, it is used as an argument by the purging thread.</p>
+<p>To change the total amount of memory used by the Query Cache, it is possible to use commands like the follows:</p>
+<div class="highlight highlight-source-sql"><pre>mysql<span class="pl-k">&gt;</span> <span class="pl-k">SET</span> mysql<span class="pl-k">-</span>query_cache_size_MB<span class="pl-k">=</span><span class="pl-c1">128</span>; LOAD MYSQL VARIABLES TO RUNTIME;
+Query OK, <span class="pl-c1">1</span> row affected (<span class="pl-c1">0</span>.<span class="pl-c1">00</span> sec)
+
+Query OK, <span class="pl-c1">0</span> rows affected (<span class="pl-c1">0</span>.<span class="pl-c1">00</span> sec)</pre></div>
+<p>A variable not strictly related to Query Cache but that influence its behavior is <code>mysql-threshold_resultset_size</code>.<br/>
+<code>mysql-threshold_resultset_size</code> defines the maximum resultset size that ProxySQL will buffer before starting sending it to the client.<br/>
+Setting this variable too low will prevent the retry of queries failed while retrieving the resultset from the backend.<br/>
+Setting this variable too high will potentially increase memory footprint, as ProxySQL will try to buffer more data.<br/>
+Because <code>mysql-threshold_resultset_size</code> defines the maximum resultset size that can be buffered, it also defines the maximum resultset size that can be stored in Query Cache.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#implementation-details" id="user-content-implementation-details"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Implementation details</h2>
+<p>Every element in the Query Cache has several metadata associated with it:</p>
+<ul>
+<li>
+<code>key</code> : uniquely identify a Query Cache entry: it is a hash derived from username, schemaname and query itself. Combining these, it ensures that users access only their resultsets and for the correct schema;</li>
+<li>
+<code>value</code> : the resultset;</li>
+<li>
+<code>length</code> : length of the resultset;</li>
+<li>
+<code>expire_ms</code> : defines when the entry will expire;</li>
+<li>
+<code>access_ms</code> : records the last time an entry was accessed;</li>
+<li>
+<code>ref_count</code> : a reference count to identify resultset currently in use.</li>
+</ul>
+<h5>
+<a aria-hidden="true" class="anchor" href="#get-calls" id="user-content-get-calls"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>GET calls</h5>
+<p>Every time a <code>GET</code> call succeeds, to improve performance, the copy of the data is performed after increasing a reference pointer and releasing any lock. Then the copy is completed, the ref_count is decreased. This ensures that entries are not deleted from the Query Cache while still in use.
+When a <code>GET</code> call finds an entry that is expired, the entry will be moved to a purging queue.</p>
+<h5>
+<a aria-hidden="true" class="anchor" href="#set-calls" id="user-content-set-calls"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>SET calls</h5>
+<p>A <code>SET</code> call never fails. If <code>mysql-query_cache_size_MB</code> is reached, the <code>SET</code> call will not fails.<br/>
+If there is an entry with the same key, it is moved into the purging queue.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#purging-thread" id="user-content-purging-thread"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Purging thread</h2>
+<p>The purging of entries in the Query Cache is performed by a Purging thread.<br/>
+This ensure that any maintenance of the Query Cache is not performed by the MySQL Thread accessing it, but by a background thread, thus improving performance.<br/>
+This is the reason why <code>SET</code> calls never fails even if <code>mysql-query_cache_size_MB</code> is reached: it is not responsibility of the MySQL Thread accessing the Query Cache to free some space; instead Purging thread will take care of it.</p>
+<p>Purging thread is not only responsible for purging entries from the purging queue. It is also responsible for peridiocally scanning the whole Query Cache looking for expired entries.<br/>
+As an optimization, Purging thread doesn't perform any purging if the current memory usage is less than 3% of <code>mysql-query_cache_size_MB</code> .</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#limitations" id="user-content-limitations"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Limitations</h3>
+<p>There are currently multiple known limitations in Query Cache.<br/>
+Some are simple to implement, other less.<br/>
+There is not a defined priority list: and priorites will be defined based on user requests.</p>
+<p>Current known limitations:</p>
+<ul>
+<li>it is not possible to define query cache invalidation other than by cache_ttl;</li>
+<li>there is no command to immediately purge the whole content of the query cache</li>
+<li>
+<code>mysql-query_cache_size_MB</code> is not stricly enforced, but only used a metrics to trigger automatic purging of expired entries;</li>
+<li>although <code>access_ms</code> is recorded, it is not used as a metric to expire unused metric when <code>mysql-query_cache_size_MB</code> is achieved;</li>
+<li>Query Cache does not support Prepared Statements.</li>
+</ul>
+
+        </div>
+
+    </div>]

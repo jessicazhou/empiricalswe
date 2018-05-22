@@ -1,0 +1,62 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <h1>
+<a aria-hidden="true" class="anchor" href="#how-to-create--use-pileup-weights" id="user-content-how-to-create--use-pileup-weights"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>How to create &amp; use pileup weights</h1>
+<h2>
+<a aria-hidden="true" class="anchor" href="#context" id="user-content-context"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Context</h2>
+<p>MC events are generated with a certain "true" pileup distribution (pileup = overlapping pp collisions). This may be uniform over some range, or 0, or one value. In a given simulated event however, the number of pileup will not necessarily be <strong>exactly</strong> that value (except for the case of 0PU). Instead, this original number (known as the <em><strong>number of true interactions</strong></em>) is used as the mean of a Poisson distribution, and a random number is drawn according to that distribution, and this number will be the number of PU in <em>that</em> specific event (known as just <strong>nPU</strong> or similar). If you plotted that value for lots of MC events, it will look like a Poisson distribution (if the # true interactions was one value).</p>
+<p>(In CMSSW, this is stored in MiniAOD in a PileupSummaryInfo object: <a href="http://cmsdoxygen.web.cern.ch/cmsdoxygen/CMSSW_9_4_1/doc/html/d3/d93/classPileUpSummaryInfo_1_1PileUpSummaryInfo.html" rel="nofollow">http://cmsdoxygen.web.cern.ch/cmsdoxygen/CMSSW_9_4_1/doc/html/d3/d93/classPileUpSummaryInfo_1_1PileUpSummaryInfo.html</a>)</p>
+<p>Now, the MC is generated with a reasonable idea of the pileup, but when we take data we instead get a different distribution depending on beam conditions, instantaneous luminosity, etc. Since analyses can be dependent on pileup, if an analyst wants to compare data &amp; MC, they should "reweight" their MC events such that the pileup matches that in data.</p>
+<p>Thus, an analysis needs:</p>
+<ol>
+<li>histograms of data &amp; MC pileup distributions</li>
+<li>some way of using them to reweight events in the analysis</li>
+</ol>
+<p>These will now be covered. Note that step 1 is not necessary for every analyst - typically with new data one person creates it and commits it to the repo for everyone else to use.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#creating-the-input-histograms" id="user-content-creating-the-input-histograms"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Creating the input histograms</h3>
+<p>The data and MC histograms are created separately.</p>
+<h4>
+<a aria-hidden="true" class="anchor" href="#data-histogram" id="user-content-data-histogram"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Data histogram</h4>
+<p>Do:</p>
+<pre><code>pileupCalc.py -i MyAnalysisJSON.txt --inputLumiJSON PileupJSON.txt --calcMode true --minBiasXsec 69200 --maxPileupBin 100 --numPileupBins 100  MyDataPileupHistogram.root
+</code></pre>
+<p>where:</p>
+<ul>
+<li>
+<code>MyAnalysisJSON.txt</code> is the Lumi JSON (e.g. Golden JSON)</li>
+<li>
+<code>PileupJSON.txt</code> is the pileup JSON (as announced on Physics Validation HyperNews), e.g. ``/afs/cern.ch/cms/CAF/CMSCOMM/COMM_DQM/certification/Collisions17/13TeV/PileUp/pileup_latest.txt`</li>
+<li>69200 is the total inelastic cross-section in ub (use 69400 for 2012, should check this)</li>
+<li>You should set the binning to match the MC histogram.</li>
+</ul>
+<h4>
+<a aria-hidden="true" class="anchor" href="#mc-histogram" id="user-content-mc-histogram"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>MC histogram</h4>
+<p>For MC, since we used the <code>--calcMode true</code> in the data, we must therefore compare to the number of <strong>true</strong> interactions in the MC (not the reconstructed).
+The <code>MCPileupReweight</code> module (see below) expects the MC histogram to have a certain name and be in a certain directory.
+There are 2 ways to generate the MC distribution.</p>
+<ol>
+<li>Use <code>scripts/makeMCPileupHist.py</code> in conjunction with the official PU mixing python config</li>
+</ol>
+<p>e.g. SimGeneral.MixingModule.mix_2017_25ns_WinterMC_PUScenarioV1_PoissonOOTPU_cfi</p>
+<ol start="2">
+<li>Use <code>examples/MakePileupHistMC.xml</code> to make the necessary hist from your sample.</li>
+</ol>
+<p>This is necessary in 94X MC, as the distribution may have spikes at 0 or other values, and a glutton of vertices at 75-100.</p>
+<p>Therefore, the user should run over MC once with just this module. The output file will assumed to be called <code>MyMCPileupHistogram.root</code>.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#using-the-input-histograms-in-your-analysis" id="user-content-using-the-input-histograms-in-your-analysis"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Using the input histograms in your analysis</h3>
+<p>The <code>MCPileupReweight</code> module does all the reweighting for you.
+When including it, you should also include the following in your XMl config:</p>
+<div class="highlight highlight-text-xml"><pre>&lt;<span class="pl-ent">Item</span> <span class="pl-e">Name</span>=<span class="pl-s"><span class="pl-pds">"</span>pileup_directory_data<span class="pl-pds">"</span></span> <span class="pl-e">Value</span>=/path/to/MyDataPileupHistogram.root /&gt;
+&lt;<span class="pl-ent">Item</span> <span class="pl-e">Name</span>=<span class="pl-s"><span class="pl-pds">"</span>pileup_directory<span class="pl-pds">"</span></span> <span class="pl-e">Value</span>=/path/to/MyMCPileupHistogram.root /&gt;</pre></div>
+<p>Then, in your main analysis <code>process()</code> method, remember to call the <code>process()</code> method of your <code>MCPileupReweight</code> object. This will automatically multiple the event weight by the pileup weight, and also store the pileup weight in the output tree for later inspection.</p>
+<p>Then you can just use <code>event.weight</code> when filling histograms, etc as per usual.</p>
+<p><strong>Important</strong> if you are using a <code>CommonModules</code> object then pileup reweighting is <strong>by default on</strong> for MC events. So don't do it twice! To turn it off, use the <code>CommonModules::disable_mcpileupreweight()</code> method.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#useful-links" id="user-content-useful-links"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Useful links</h2>
+<p><a href="https://twiki.cern.ch/twiki/bin/view/CMS/PileupJSONFileforData" rel="nofollow">https://twiki.cern.ch/twiki/bin/view/CMS/PileupJSONFileforData</a></p>
+
+        </div>
+
+    </div>]

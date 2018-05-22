@@ -1,0 +1,85 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <h1>
+<a aria-hidden="true" class="anchor" href="#fson-post-processor" id="user-content-fson-post-processor"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>FSON Post Processor</h1>
+<p>Frogatto's FSON data format features a post-processor that is executed on documents after they are parsed. One of the key ideas of the post-processor is to ensure the document is legal FSON both before and after processing.</p>
+<p>All post processor directives occur inside FSON strings. Any FSON string containing post processor directives begins with a '@' symbol followed by the directive.</p>
+<p>Basic directives:</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#including-other-files" id="user-content-including-other-files"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Including other files</h3>
+<p>To include another file in an FSON document, you can use a @include directive:
+<code>{ a: 4, x: 7, attr: "blah", name: "@include somefile.cfg" }</code></p>
+<p>The string "@include somefile.cfg" will be replaced with the parsed contents of somefile.cfg. somefile.cfg must itself be a complete, legal FSON document.</p>
+<p>Now suppose you have a list of files that you want to include. Each of these files defines one or more objects and you want all of the objects in a list. You can use @include with multiple files and it will concatenate objects in the files as lists.</p>
+<p>For instance:</p>
+<p>filea.cfg: <code>{x: 4, y: 7}</code>
+fileb.cfg: <code>[{x: 9, y: 2}, {x: 2, y: 9}]</code></p>
+<p>If you use</p>
+<p><code>"@include filea.cfg fileb.cfg"</code></p>
+<p>you will end up with,</p>
+<p><code>[{x: 4, y: 7}, {x: 9, y: 2}, {x: 2, y: 9}]</code></p>
+<p>Note that an @include with one argument will always just take whatever is in that file and substitute it. An @include with multiple files expects the files to contain lists and will concatenate these lists. If any of the files contains something other than a list, it will make it into a singleton list with whatever item is in the file.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#flatten" id="user-content-flatten"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Flatten</h3>
+<p>A limitation of @include is that the file included must itself be a complete, legal FSON document. So suppose we had several entities like this, where each of the entities are actually big complex objects:</p>
+<p><code>[A, B, C, D, E]</code></p>
+<p>We wanted to break them into files to make them more manageable, so we created two files; file1.cfg contains <code>A, B, C</code> and file2.cfg contains <code>D, E</code>. This wouldn't be possible simply by going,</p>
+<p><code>["@include file1.cfg", "@include file2.cfg"]</code></p>
+<p>Because file1.cfg would contain <code>A, B, C</code> which isn't a legal FSON document. However, we could make file1.cfg contain <code>[A, B, C]</code> -- a list, which is a legal FSON document -- and file2.cfg contain <code>[D, E]</code>, also a legal FSON document. However, when the @include expansion was completed we'd have a final document like this:</p>
+<p><code>[ [A, B, C], [D, E] ]</code></p>
+<p>Which is not what we want. Fortunately we can use the @flatten directive in a list to flatten out any contained lists. E.g.</p>
+<p><code>["@flatten", [A, B, C], [D, E]] -&gt; [A, B, C, D, E]</code></p>
+<p>So we can write our include statements thusly:</p>
+<p><code>["@flatten", "@include file1.cfg", "@include file2.cfg"]</code></p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#eval" id="user-content-eval"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Eval</h3>
+<p>If you want to evaluate an expression, you can do so using the @eval directive. For instance,</p>
+<p><code>"@eval 4 + 5"</code> becomes simply <code>9</code>. This can be useful for a number of reasons, but is especially useful to deserialize objects, which cannot be represented otherwise in FSON. e.g. <code>"@eval deserialize('0xaf2902')"</code></p>
+<p>Note that while @eval can be given any FFL formula, the values it has access to are only those that are available while parsing files -- that is, global game constants.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#base" id="user-content-base"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Base</h3>
+<p>Suppose you have a list of objects, and these objects share many similar features. You don't want to repeat the same attributes over and over. You can make the first item in the list a 'base' object using the base directive:</p>
+<p><code>[{"@base": true, image: "frogatto.png", solid: true}, {x:4, y:5}, {x: 8, y: 24}]</code></p>
+<p>This becomes,</p>
+<p><code>[{image: "frogatto.png", solid: true, x: 4, y: 5}, {image: "frogatto.png", solid: true, x: 8, y: 24}]</code></p>
+<p>Note that the @base object itself is not considered a 'real' object and is removed from the list.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#derive" id="user-content-derive"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Derive</h3>
+<p>To specify defaults for a FSON object, we can derive it from another object.</p>
+<p><code>{"@derive": "@include data/level/cube-trains/header-info.cfg"}</code></p>
+<p>This line makes the file which it is in have the attributes of the @included file. Both files must be valid objects.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#merge" id="user-content-merge"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Merge</h3>
+<p><code>{"@merge": "@include data/level/cube-trains/header-info.cfg"}</code></p>
+<p>Probably different than <code>@derive</code>.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#advanced-usage" id="user-content-advanced-usage"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Advanced Usage</h2>
+<h3>
+<a aria-hidden="true" class="anchor" href="#macros---introduction" id="user-content-macros---introduction"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Macros - Introduction</h3>
+<p>The FSON post-processor allows you to create <em>macros</em> -- objects that may be created and then later referenced elsewhere in the document. For instance, suppose you had a certain location that you wanted to refer to throughout your file. You could set up a macro for it:</p>
+<p><code>"@macro key_loc": { x: 45, y: 87 }</code></p>
+<p>Then later, you can <em>call</em> your macro:</p>
+<p><code>{"@call": "key_loc"}</code></p>
+<p>This object will be replaced with the contents of key_loc.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#macros---arguments" id="user-content-macros---arguments"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Macros - Arguments</h3>
+<p>Using macros like this is somewhat useful, but it is rare that you want to use the exact same object multiple places in a document. Macros support <em>arguments</em> that you can pass in to customize the object you're receiving.</p>
+<p>Suppose we wanted to define an animation object we were going to use in many places. However, each place would want the area of the animation to be a little different. We might do this:</p>
+<p><code>"@macro anim": { area: ["@eval x", "@eval y", 32, 32], velocity_x: 100, velocity_y: 200 }</code></p>
+<p>Note the use of @eval. When you call a macro, the macro is evaluated, using the object that "@call" is found in as an accessible object. So, you can now call your macro like this:</p>
+<p><code>{ "@call": "anim", x: 10, y: 16 }</code></p>
+<p>The macro call will be evaluated and you'll end up with an object like this:</p>
+<p><code>{ area: [10, 16, 32, 32], velocity_x: 100, velocity_y: 200 }</code></p>
+<p>Macros are designed to allow avoidance of highly repetitive FSON code by repeating similar objects easily.</p>
+<p>##See Also
+If you want to include a value from a file in FFL, refer to the get_document('path/to/file') function as documented in <a class="internal present" href="/Autofire/frogatto/wiki/Object-Functions">Object-Functions</a>.</p>
+
+        </div>
+
+        <div class="wiki-footer gollum-markdown-content boxed-group" id="wiki-footer">
+          <div class="boxed-group-inner wiki-auxiliary-content markdown-body">
+            <p>More help can be found via IRC, <a href="irc://irc.freenode.net/#frogatto" rel="nofollow">#Frogatto</a> on freenode.net. This wiki is not a complete reference.</p>
+
+          </div>
+        </div>
+    </div>]

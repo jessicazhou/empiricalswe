@@ -1,0 +1,192 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>The "<a href="https://en.wikipedia.org/wiki/Digital_object_identifier" rel="nofollow">Digital Object Identifier</a>” uniquely identifies a research paper (and recently it's being co-opted to reference associated datasets). There're  <a href="http://biochemistri.es/post/69580411732/on-going-deeper-than-the-article" rel="nofollow">interesting and troublesome exceptions</a>, but in the vast majority of cases any paper published in at least the last 10 years or so will have one.</p>
+<p>Although NCBI Pubmed does a great job of cataloguing biomedical literature, another site, <a href="http://doi.org" rel="nofollow">doi.org</a> provides a consistent gateway to the original source of the paper. You only need to prepend the DOI to "dx.doi.org/" to generate a working redirection link.</p>
+<p>Last week the NCBI <a href="https://www.youtube.com/watch?v=iCFVVexp30o" rel="nofollow">posted a webinar</a> detailing the inner workings of <em>Entrez Direct</em>, the command line interface for <a href="https://en.wikipedia.org/wiki/Unix" rel="nofollow">Unix</a> computers (GNU/Linux, and Macs; Windows users can fake it with <a href="https://en.wikipedia.org/wiki/Cygwin" rel="nofollow">Cygwin</a>). It revolves around a custom XML parser written in <a href="https://en.wikipedia.org/wiki/Perl" rel="nofollow">Perl</a> (typical for bioinformaticians) encoding subtle 'switches' to tailor the output just as you would from the web service (albeit with a bit more of the inner workings on show).</p>
+<p>I've pieced together a bit of a home pipeline, which has a function to generate citations from files listing basic bibliographic information, and in the final piece of the puzzle now have a custom function (or several) that does its best to find a single unique article matching the author, publication year, and title of a paper systematically.</p>
+<p><em>Entrez Direct</em> has concise <a href="http://www.ncbi.nlm.nih.gov/books/NBK179288/" rel="nofollow">documentation</a>, and this setup  can also be used to access genetic, oncology (<a href="https://en.wikipedia.org/wiki/Online_Mendelian_Inheritance_in_Man" rel="nofollow">OMIM</a>), protein, and other types of data.</p>
+<p>When installing the setup script added a "<code>source .bashrc</code>" command to my .bashrc, 'sourcing' my .bash_profile, which was already in turn 'sourcing' my .bashrc, effectively putting every new terminal command prompt in an infinite loop - watch out for this if your terminals freeze then quit after installation!</p>
+<p>The scripts below are <a href="https://gist.github.com/lmmx/3c9406c4ec2c42b82158/edit">available here</a>, I'll update them on the GitHub Gist if I make amendments:</p>
+<div class="highlight highlight-source-shell"><pre><span class="pl-k">function</span> <span class="pl-en">cutf</span>		(){ cut -d <span class="pl-s"><span class="pl-pds">$'</span><span class="pl-cce">\t</span><span class="pl-pds">'</span></span> -f <span class="pl-s"><span class="pl-pds">"</span><span class="pl-smi">$@</span><span class="pl-pds">"</span></span>; }
+
+<span class="pl-k">function</span> <span class="pl-en">striptoalpha</span>	(){ <span class="pl-k">for</span> <span class="pl-smi">thisword</span> <span class="pl-k">in</span> <span class="pl-s"><span class="pl-pds">$(</span>echo <span class="pl-s"><span class="pl-pds">"</span><span class="pl-smi">$@</span><span class="pl-pds">"</span></span> <span class="pl-k">|</span> tr -dc <span class="pl-s"><span class="pl-pds">"</span>[A-Z][a-z]\n<span class="pl-pds">"</span></span> <span class="pl-k">|</span> tr [A-Z] [a-z]<span class="pl-pds">)</span></span><span class="pl-k">;</span> <span class="pl-k">do</span> <span class="pl-c1">echo</span> <span class="pl-smi">$thisword</span><span class="pl-k">;</span> <span class="pl-k">done</span>; }
+
+<span class="pl-k">function</span> <span class="pl-en">pubmed</span>		(){ esearch -db pubmed -query <span class="pl-s"><span class="pl-pds">"</span><span class="pl-smi">$@</span><span class="pl-pds">"</span></span> <span class="pl-k">|</span> efetch -format docsum <span class="pl-k">|</span> xtract -pattern DocumentSummary -present Author -and Title -element Id -first <span class="pl-s"><span class="pl-pds">"</span>Author/Name<span class="pl-pds">"</span></span> -element Title; }
+
+<span class="pl-k">function</span> <span class="pl-en">pubmeddocsum</span>	(){ esearch -db pubmed -query <span class="pl-s"><span class="pl-pds">"</span><span class="pl-smi">$@</span><span class="pl-pds">"</span></span> <span class="pl-k">|</span> efetch -format docsum; } 
+
+<span class="pl-k">function</span> <span class="pl-en">pubmedextractdoi</span> (){ pubmeddocsum <span class="pl-s"><span class="pl-pds">"</span><span class="pl-smi">$@</span><span class="pl-pds">"</span></span> <span class="pl-k">|</span> xtract -pattern DocumentSummary -element Id -first <span class="pl-s"><span class="pl-pds">"</span>Author/Name<span class="pl-pds">"</span></span> -element Title SortPubDate -block ArticleId -match <span class="pl-s"><span class="pl-pds">"</span>IdType:doi<span class="pl-pds">"</span></span> -element Value <span class="pl-k">|</span> awk <span class="pl-s"><span class="pl-pds">'</span>{split($0,a,"\t"); split(a[4],b,"/"); print a[1]"\t"a[2]"\t"a[3]"\t"a[5]"\t"b[1]}<span class="pl-pds">'</span></span>; }
+
+<span class="pl-k">function</span> <span class="pl-en">pubmeddoi</span>	(){ pubmedextractdoi <span class="pl-s"><span class="pl-pds">"</span><span class="pl-smi">$@</span><span class="pl-pds">"</span></span> <span class="pl-k">|</span> cutf 4; }
+
+<span class="pl-k">function</span> <span class="pl-en">pubmeddoimulti</span> (){ 
+	xtracted=<span class="pl-s"><span class="pl-pds">$(</span>pubmedextractdoi <span class="pl-s"><span class="pl-pds">"</span><span class="pl-smi">$@</span><span class="pl-pds">"</span></span><span class="pl-pds">)</span></span>
+	<span class="pl-k">if</span> [[ <span class="pl-s"><span class="pl-pds">$(</span>echo <span class="pl-s"><span class="pl-pds">"</span><span class="pl-smi">$xtracted</span><span class="pl-pds">"</span></span> <span class="pl-k">|</span> cutf 4<span class="pl-pds">)</span></span> <span class="pl-k">==</span> <span class="pl-s"><span class="pl-pds">'</span><span class="pl-pds">'</span></span> ]]
+	<span class="pl-k">then</span>
+		xtractedpmid=<span class="pl-s"><span class="pl-pds">$(</span>echo <span class="pl-s"><span class="pl-pds">"</span><span class="pl-smi">$xtracted</span><span class="pl-pds">"</span></span> <span class="pl-k">|</span> cutf 1<span class="pl-pds">)</span></span>
+		pmid2doirestful <span class="pl-s"><span class="pl-pds">"</span><span class="pl-smi">$xtractedpmid</span><span class="pl-pds">"</span></span>
+	<span class="pl-k">else</span>
+		<span class="pl-c1">echo</span> <span class="pl-s"><span class="pl-pds">"</span><span class="pl-smi">$xtracted</span><span class="pl-pds">"</span></span> <span class="pl-k">|</span> cutf 4
+	<span class="pl-k">fi</span>
+}
+
+<span class="pl-k">function</span> <span class="pl-en">pmid2doi</span>	(){ curl -s www.pmid2doi.org/rest/json/doi/<span class="pl-s"><span class="pl-pds">"</span><span class="pl-smi">$@</span><span class="pl-pds">"</span></span> <span class="pl-k">|</span> awk <span class="pl-s"><span class="pl-pds">'</span>{split($0,a,",\"doi\":\"|\"}"); print a[2]}<span class="pl-pds">'</span></span>; }
+<span class="pl-k">function</span> <span class="pl-en">pmid2doimulti</span> 	(){
+	curleddoi=<span class="pl-s"><span class="pl-pds">$(</span>pmid2doi <span class="pl-s"><span class="pl-pds">"</span><span class="pl-smi">$@</span><span class="pl-pds">"</span></span><span class="pl-pds">)</span></span>
+	<span class="pl-k">if</span> [[ <span class="pl-smi">$curleddoi</span> <span class="pl-k">==</span> <span class="pl-s"><span class="pl-pds">'</span><span class="pl-pds">'</span></span> ]]
+	<span class="pl-k">then</span>
+		pmid2doincbi <span class="pl-s"><span class="pl-pds">"</span><span class="pl-smi">$@</span><span class="pl-pds">"</span></span>
+	<span class="pl-k">else</span>
+		<span class="pl-c1">echo</span> <span class="pl-s"><span class="pl-pds">"</span><span class="pl-smi">$curleddoi</span><span class="pl-pds">"</span></span>
+	<span class="pl-k">fi</span>
+}
+<span class="pl-k">function</span> <span class="pl-en">pmid2doincbi</span> 	(){
+	xtracteddoi=<span class="pl-s"><span class="pl-pds">$(</span>pubmedextractdoi <span class="pl-s"><span class="pl-pds">"</span><span class="pl-smi">$@</span><span class="pl-pds">"</span></span><span class="pl-pds">)</span></span>
+	<span class="pl-k">if</span> [[ <span class="pl-smi">$xtracteddoi</span> <span class="pl-k">==</span> <span class="pl-s"><span class="pl-pds">'</span><span class="pl-pds">'</span></span> ]]
+	<span class="pl-k">then</span>
+		<span class="pl-c1">echo</span> <span class="pl-s"><span class="pl-pds">"</span>DOI NA<span class="pl-pds">"</span></span>
+	<span class="pl-k">else</span>
+		<span class="pl-c1">echo</span> <span class="pl-s"><span class="pl-pds">"</span><span class="pl-smi">$xtracteddoi</span><span class="pl-pds">"</span></span>
+	<span class="pl-k">fi</span>
+}
+
+<span class="pl-k">function</span> <span class="pl-en">AddPubTableDOIsSimple</span>   () {
+        old_IFS=<span class="pl-smi">$IFS</span>
+        IFS=<span class="pl-s"><span class="pl-pds">$'</span><span class="pl-cce">\n</span><span class="pl-pds">'</span></span>
+        <span class="pl-k">for</span> <span class="pl-smi">line</span> <span class="pl-k">in</span> <span class="pl-s"><span class="pl-pds">$(</span>cat <span class="pl-s"><span class="pl-pds">"</span><span class="pl-smi">$@</span><span class="pl-pds">"</span></span><span class="pl-pds">)</span></span><span class="pl-k">;</span> <span class="pl-k">do</span>
+                AddPubDOI <span class="pl-s"><span class="pl-pds">"</span><span class="pl-smi">$line</span><span class="pl-pds">"</span></span>
+        <span class="pl-k">done</span>
+        IFS=<span class="pl-smi">$old_IFS</span>
+}
+
+<span class="pl-c"><span class="pl-c">#</span> Came across NCBI rate throttling while trying to call AddPubDOI in parallel, so added a second attempt for "DOI NA"</span>
+<span class="pl-c"><span class="pl-c">#</span> and also writing STDOUT output to STDERR as this function will be used on a file (meaning STDOUT will get silenced)</span>
+<span class="pl-c"><span class="pl-c">#</span> so you can see progress through the lines, as in:</span>
+<span class="pl-c"><span class="pl-c">#</span>     AddPubTableDOIs table.tsv &gt; outputfile.tsv</span>
+<span class="pl-c"><span class="pl-c">#</span> I'd recommend it's not wise to overwrite unless you're using version control.</span>
+
+<span class="pl-k">function</span> <span class="pl-en">AddPubTableDOIs</span>   () {
+	old_IFS=<span class="pl-smi">$IFS</span>
+	IFS=<span class="pl-s"><span class="pl-pds">$'</span><span class="pl-cce">\n</span><span class="pl-pds">'</span></span>
+	<span class="pl-k">for</span> <span class="pl-smi">line</span> <span class="pl-k">in</span> <span class="pl-s"><span class="pl-pds">$(</span>cat <span class="pl-s"><span class="pl-pds">"</span><span class="pl-smi">$@</span><span class="pl-pds">"</span></span><span class="pl-pds">)</span></span><span class="pl-k">;</span> <span class="pl-k">do</span>
+		DOIresp=<span class="pl-s"><span class="pl-pds">$(</span>AddPubDOI <span class="pl-s"><span class="pl-pds">"</span><span class="pl-smi">$line</span><span class="pl-pds">"</span></span> <span class="pl-k">2&gt;</span>/dev/null<span class="pl-pds">)</span></span>
+		<span class="pl-k">if</span> [[ <span class="pl-smi">$DOIresp</span> <span class="pl-k">=~</span> <span class="pl-s"><span class="pl-pds">'</span>DOI NA<span class="pl-pds">'</span></span> ]]<span class="pl-k">;</span> <span class="pl-k">then</span>
+			<span class="pl-c"><span class="pl-c">#</span> try again in case it's just NCBI rate throttling, but just the once</span>
+			DOIresp2=<span class="pl-s"><span class="pl-pds">$(</span>AddPubDOI <span class="pl-s"><span class="pl-pds">"</span><span class="pl-smi">$line</span><span class="pl-pds">"</span></span> <span class="pl-k">2&gt;</span>/dev/null<span class="pl-pds">)</span></span>
+			<span class="pl-k">if</span> [[ <span class="pl-s"><span class="pl-pds">$(</span>echo <span class="pl-s"><span class="pl-pds">"</span><span class="pl-smi">$DOIresp2</span><span class="pl-pds">"</span></span> <span class="pl-k">|</span> awk <span class="pl-s"><span class="pl-pds">'</span>BEGIN{FS="\t"};{print NF}<span class="pl-pds">'</span></span> <span class="pl-k">|</span> uniq <span class="pl-k">|</span> wc -l<span class="pl-pds">)</span></span> <span class="pl-k">==</span> <span class="pl-s"><span class="pl-pds">'</span>1<span class="pl-pds">'</span></span> ]]<span class="pl-k">;</span> <span class="pl-k">then</span>
+				<span class="pl-c1">echo</span> <span class="pl-s"><span class="pl-pds">"</span><span class="pl-smi">$DOIresp2</span><span class="pl-pds">"</span></span>
+				<span class="pl-k">&gt;&amp;2</span> <span class="pl-c1">echo</span> <span class="pl-s"><span class="pl-pds">"</span><span class="pl-smi">$DOIresp</span><span class="pl-pds">"</span></span>
+			<span class="pl-k">else</span>
+				DOIinput=<span class="pl-s"><span class="pl-pds">$(</span>echo <span class="pl-s"><span class="pl-pds">"</span><span class="pl-smi">$line</span><span class="pl-pds">"</span></span> <span class="pl-k">|</span> cutf 1-3<span class="pl-pds">)</span></span>
+				<span class="pl-c1">echo</span> -e <span class="pl-s"><span class="pl-pds">"</span><span class="pl-smi">$DOIinput</span>\tDOI NA: Parse error<span class="pl-pds">"</span></span>
+				<span class="pl-k">&gt;&amp;2</span> <span class="pl-c1">echo</span> <span class="pl-s"><span class="pl-pds">"</span><span class="pl-smi">$DOIinput</span>\tDOI NA: Parse error<span class="pl-pds">"</span></span>
+			<span class="pl-k">fi</span>
+		<span class="pl-k">else</span>
+			<span class="pl-k">if</span> [[ <span class="pl-s"><span class="pl-pds">$(</span>echo <span class="pl-s"><span class="pl-pds">"</span><span class="pl-smi">$DOIresp</span><span class="pl-pds">"</span></span> <span class="pl-k">|</span> awk <span class="pl-s"><span class="pl-pds">'</span>BEGIN{FS="\t"};{print NF}<span class="pl-pds">'</span></span> <span class="pl-k">|</span> uniq <span class="pl-k">|</span> wc -l<span class="pl-pds">)</span></span> <span class="pl-k">==</span> <span class="pl-s"><span class="pl-pds">'</span>1<span class="pl-pds">'</span></span> ]]<span class="pl-k">;</span> <span class="pl-k">then</span>
+				<span class="pl-c1">echo</span> <span class="pl-s"><span class="pl-pds">"</span><span class="pl-smi">$DOIresp</span><span class="pl-pds">"</span></span>
+				<span class="pl-k">&gt;&amp;2</span> <span class="pl-c1">echo</span> <span class="pl-s"><span class="pl-pds">"</span><span class="pl-smi">$DOIresp</span><span class="pl-pds">"</span></span>
+			<span class="pl-k">else</span>
+				DOIinput=<span class="pl-s"><span class="pl-pds">$(</span>echo <span class="pl-s"><span class="pl-pds">"</span><span class="pl-smi">$line</span><span class="pl-pds">"</span></span> <span class="pl-k">|</span> cutf 1-3<span class="pl-pds">)</span></span>
+				<span class="pl-c1">echo</span> -e <span class="pl-s"><span class="pl-pds">"</span><span class="pl-smi">$DOIinput</span>\tDOI NA: Parse error<span class="pl-pds">"</span></span>
+				<span class="pl-k">&gt;&amp;2</span> <span class="pl-c1">echo</span> <span class="pl-s"><span class="pl-pds">"</span><span class="pl-smi">$DOIinput</span>\tDOI NA: Parse error<span class="pl-pds">"</span></span>
+			<span class="pl-k">fi</span>
+		<span class="pl-k">fi</span>
+	<span class="pl-k">done</span>
+	IFS=<span class="pl-smi">$old_IFS</span>
+}
+
+<span class="pl-k">function</span> <span class="pl-en">AddPubDOI</span>	(){
+	<span class="pl-k">if</span> [[ <span class="pl-s"><span class="pl-pds">$(</span>echo <span class="pl-s"><span class="pl-pds">"</span><span class="pl-smi">$@</span><span class="pl-pds">"</span></span> <span class="pl-k">|</span> cutf 4<span class="pl-pds">)</span></span> <span class="pl-k">!=</span> <span class="pl-s"><span class="pl-pds">'</span><span class="pl-pds">'</span></span> ]]<span class="pl-k">;</span> <span class="pl-k">then</span>
+		<span class="pl-c1">echo</span> <span class="pl-s"><span class="pl-pds">"</span><span class="pl-smi">$@</span><span class="pl-pds">"</span></span>
+		<span class="pl-k">continue</span>
+	<span class="pl-k">fi</span>
+	<span class="pl-c1">printf</span> <span class="pl-s"><span class="pl-pds">"</span><span class="pl-s"><span class="pl-pds">$(</span>echo <span class="pl-s"><span class="pl-pds">"</span><span class="pl-smi">$@</span><span class="pl-pds">"</span></span> <span class="pl-k">|</span> cutf 1-3<span class="pl-pds">)</span></span>\t<span class="pl-pds">"</span></span>
+	thistitle=<span class="pl-s"><span class="pl-pds">$(</span>echo <span class="pl-s"><span class="pl-pds">"</span><span class="pl-smi">$@</span><span class="pl-pds">"</span></span> <span class="pl-k">|</span> cutf 3<span class="pl-pds">)</span></span>
+	<span class="pl-k">if</span> [[ <span class="pl-smi">$thistitle</span> <span class="pl-k">!=</span> <span class="pl-s"><span class="pl-pds">'</span>Title<span class="pl-pds">'</span></span> ]]<span class="pl-k">;</span> <span class="pl-k">then</span>
+		thisauthor=<span class="pl-s"><span class="pl-pds">$(</span>echo <span class="pl-s"><span class="pl-pds">"</span><span class="pl-smi">$@</span><span class="pl-pds">"</span></span> <span class="pl-k">|</span> cutf 1<span class="pl-pds">)</span></span>
+		thisyear=<span class="pl-s"><span class="pl-pds">$(</span>echo <span class="pl-s"><span class="pl-pds">"</span><span class="pl-smi">$@</span><span class="pl-pds">"</span></span> <span class="pl-k">|</span> cutf 2<span class="pl-pds">)</span></span>
+		round1=<span class="pl-s"><span class="pl-pds">$(</span>pubmeddoimulti <span class="pl-s"><span class="pl-pds">"</span><span class="pl-smi">$thistitle</span> AND <span class="pl-smi">$thisauthor</span> [AUTHOR]<span class="pl-pds">"</span></span><span class="pl-pds">)</span></span>
+		round1hits=<span class="pl-s"><span class="pl-pds">$(</span>echo <span class="pl-s"><span class="pl-pds">"</span><span class="pl-smi">$round1</span><span class="pl-pds">"</span></span> <span class="pl-k">|</span> wc -l<span class="pl-pds">)</span></span>
+		<span class="pl-k">if</span> [[ <span class="pl-s"><span class="pl-pds">"</span><span class="pl-smi">$round1hits</span><span class="pl-pds">"</span></span> <span class="pl-k">-gt</span> <span class="pl-s"><span class="pl-pds">'</span>1<span class="pl-pds">'</span></span> ]]<span class="pl-k">;</span> <span class="pl-k">then</span>
+			round2=<span class="pl-s"><span class="pl-pds">$(</span>pubmeddoimulti <span class="pl-s"><span class="pl-pds">"</span><span class="pl-smi">$thistitle</span> AND <span class="pl-smi">$thisauthor</span> [AUTHOR] AND (<span class="pl-pds">"</span></span><span class="pl-smi">$thisyear</span><span class="pl-s"><span class="pl-pds">"</span>[Date - Publication] : <span class="pl-pds">"</span></span><span class="pl-smi">$thisyear</span><span class="pl-s"><span class="pl-pds">"</span>[Date - Publication])<span class="pl-pds">"</span></span><span class="pl-pds">)</span></span>
+			round2hits=<span class="pl-s"><span class="pl-pds">$(</span>echo <span class="pl-s"><span class="pl-pds">"</span><span class="pl-smi">$round2</span><span class="pl-pds">"</span></span> <span class="pl-k">|</span> wc -l<span class="pl-pds">)</span></span>
+			<span class="pl-k">if</span> [[ <span class="pl-s"><span class="pl-pds">"</span><span class="pl-smi">$round2hits</span><span class="pl-pds">"</span></span> <span class="pl-k">-gt</span> <span class="pl-s"><span class="pl-pds">'</span>1<span class="pl-pds">'</span></span> ]]<span class="pl-k">;</span> <span class="pl-k">then</span>
+				round3=<span class="pl-s"><span class="pl-pds">$(</span></span>
+<span class="pl-s">					xtracted=<span class="pl-s"><span class="pl-pds">$(</span>pubmedextractdoi <span class="pl-s"><span class="pl-pds">"</span><span class="pl-smi">$@</span><span class="pl-pds">"</span></span><span class="pl-pds">)</span></span></span>
+<span class="pl-s">					xtractedtitles=<span class="pl-s"><span class="pl-pds">$(</span>echo <span class="pl-s"><span class="pl-pds">"</span><span class="pl-smi">$xtracted</span><span class="pl-pds">"</span></span> <span class="pl-k">|</span> cutf 3 <span class="pl-k">|</span> tr -dc <span class="pl-s"><span class="pl-pds">"</span>[A-Z][a-z]\n<span class="pl-pds">"</span></span><span class="pl-pds">)</span></span></span>
+<span class="pl-s">					alphatitles=<span class="pl-s"><span class="pl-pds">$(</span>striptoalpha <span class="pl-s"><span class="pl-pds">"</span><span class="pl-smi">$xtractedtitles</span><span class="pl-pds">"</span></span><span class="pl-pds">)</span></span></span>
+<span class="pl-s">					thistitlealpha=<span class="pl-s"><span class="pl-pds">$(</span>striptoalpha <span class="pl-s"><span class="pl-pds">"</span><span class="pl-smi">$thistitle</span><span class="pl-pds">"</span></span><span class="pl-pds">)</span></span></span>
+<span class="pl-s">					presearchIFS=<span class="pl-smi">$IFS</span></span>
+<span class="pl-s">					IFS=<span class="pl-s"><span class="pl-pds">$'</span><span class="pl-cce">\n</span><span class="pl-pds">'</span></span></span>
+<span class="pl-s">					titlecounter=<span class="pl-s"><span class="pl-pds">"</span>1<span class="pl-pds">"</span></span></span>
+<span class="pl-s">					<span class="pl-k">for</span> <span class="pl-smi">searchtitle</span> <span class="pl-k">in</span> <span class="pl-s"><span class="pl-pds">$(</span>echo <span class="pl-s"><span class="pl-pds">"</span><span class="pl-smi">$alphatitles</span><span class="pl-pds">"</span></span><span class="pl-pds">)</span></span><span class="pl-k">;</span> <span class="pl-k">do</span></span>
+<span class="pl-s">						<span class="pl-s"><span class="pl-pds">((</span> titlecounter<span class="pl-k">++</span> <span class="pl-pds">))</span></span></span>
+<span class="pl-s">						<span class="pl-k">if</span> [[ <span class="pl-s"><span class="pl-pds">"</span><span class="pl-smi">$searchtitle</span><span class="pl-pds">"</span></span> <span class="pl-k">==</span> <span class="pl-k">*</span><span class="pl-s"><span class="pl-pds">"</span><span class="pl-smi">$thistitlealpha</span><span class="pl-pds">"</span></span><span class="pl-k">*</span> ]]<span class="pl-k">;</span> <span class="pl-k">then</span></span>
+<span class="pl-s">							<span class="pl-c1">echo</span> <span class="pl-s"><span class="pl-pds">"</span><span class="pl-smi">$xtracted</span><span class="pl-pds">"</span></span> <span class="pl-k">|</span> sed <span class="pl-smi">$titlecounter</span><span class="pl-s"><span class="pl-pds">'</span>q;d<span class="pl-pds">'</span></span> <span class="pl-k">|</span> cutf 4</span>
+<span class="pl-s">						<span class="pl-k">fi</span></span>
+<span class="pl-s">					<span class="pl-k">done</span></span>
+<span class="pl-s">					IFS=<span class="pl-smi">$presearchIFS</span></span>
+<span class="pl-s">				<span class="pl-pds">)</span></span>
+				round3hits=<span class="pl-s"><span class="pl-pds">$(</span>echo <span class="pl-s"><span class="pl-pds">"</span><span class="pl-smi">$round3</span><span class="pl-pds">"</span></span> <span class="pl-k">|</span> wc -l<span class="pl-pds">)</span></span>
+				<span class="pl-k">if</span> [[ <span class="pl-s"><span class="pl-pds">"</span><span class="pl-smi">$round3hits</span><span class="pl-pds">"</span></span> <span class="pl-k">-gt</span> <span class="pl-s"><span class="pl-pds">'</span>1<span class="pl-pds">'</span></span> ]]<span class="pl-k">;</span> <span class="pl-k">then</span>
+					<span class="pl-c1">echo</span> <span class="pl-s"><span class="pl-pds">"</span>ERROR multiple DOIs after 3 attempts to reduce - <span class="pl-pds">"</span></span><span class="pl-smi">$round3</span>
+				<span class="pl-k">else</span>
+					<span class="pl-c1">echo</span> <span class="pl-smi">$round3</span>
+				<span class="pl-k">fi</span>
+			<span class="pl-k">else</span>
+				<span class="pl-c1">echo</span> <span class="pl-smi">$round2</span>
+			<span class="pl-k">fi</span>
+		<span class="pl-k">else</span>
+			<span class="pl-c1">echo</span> <span class="pl-smi">$round1</span>
+		<span class="pl-k">fi</span>
+	<span class="pl-k">fi</span>
+}
+
+<span class="pl-k">function</span> <span class="pl-en">pmid2doirestful</span> (){
+	curleddoi=<span class="pl-s"><span class="pl-pds">$(</span>pmid2doi <span class="pl-s"><span class="pl-pds">"</span><span class="pl-smi">$@</span><span class="pl-pds">"</span></span><span class="pl-pds">)</span></span>
+	<span class="pl-k">if</span> [[ <span class="pl-smi">$curleddoi</span> <span class="pl-k">==</span> <span class="pl-s"><span class="pl-pds">'</span><span class="pl-pds">'</span></span> ]]
+	<span class="pl-k">then</span>
+		<span class="pl-c1">echo</span> <span class="pl-s"><span class="pl-pds">"</span>DOI NA<span class="pl-pds">"</span></span>
+	<span class="pl-k">else</span>
+		<span class="pl-c1">echo</span> <span class="pl-s"><span class="pl-pds">"</span><span class="pl-smi">$curleddoi</span><span class="pl-pds">"</span></span>
+	<span class="pl-k">fi</span>
+}
+
+<span class="pl-k">function</span> <span class="pl-en">mmrlit</span> { cat <span class="pl-k">~</span>/Dropbox/Y3/MMR/Essay/literature_table.tsv<span class="pl-k">;</span> }
+<span class="pl-k">function</span> <span class="pl-en">mmrlitedit</span> { vim <span class="pl-k">~</span>/Dropbox/Y3/MMR/Essay/literature_table.tsv<span class="pl-k">;</span> }
+<span class="pl-k">function</span> <span class="pl-en">mmrlitgrep</span>     (){ grep -i <span class="pl-s"><span class="pl-pds">"</span><span class="pl-smi">$@</span><span class="pl-pds">"</span></span> <span class="pl-k">~</span>/Dropbox/Y3/MMR/Essay/literature_table_with_DOIs.tsv; }
+<span class="pl-k">function</span> <span class="pl-en">mmrlitdoi</span>      (){ mmrlitgrep <span class="pl-s"><span class="pl-pds">"</span><span class="pl-smi">$@</span><span class="pl-pds">"</span></span> <span class="pl-k">|</span> cut -d <span class="pl-s"><span class="pl-pds">$'</span><span class="pl-cce">\t</span><span class="pl-pds">'</span></span> -f 4 <span class="pl-k">|</span> tr -d <span class="pl-s"><span class="pl-pds">'</span>\n<span class="pl-pds">'</span></span> <span class="pl-k">|</span> xclip -sel p; clipconfirm<span class="pl-k">;</span>  }
+<span class="pl-k">function</span> <span class="pl-en">mmrlitdoicite</span>  (){ mmrlitgrep <span class="pl-s"><span class="pl-pds">"</span><span class="pl-smi">$@</span><span class="pl-pds">"</span></span> <span class="pl-k">|</span> cut -d <span class="pl-s"><span class="pl-pds">$'</span><span class="pl-cce">\t</span><span class="pl-pds">'</span></span> -f 4 <span class="pl-k">|</span> awk <span class="pl-s"><span class="pl-pds">'</span>{print "`r citet(\""$0"\")`"}<span class="pl-pds">'</span></span> <span class="pl-k">|</span> tr -d <span class="pl-s"><span class="pl-pds">'</span>\n<span class="pl-pds">'</span></span> <span class="pl-k">|</span> xclip -sel p; clipconfirm<span class="pl-k">;</span> }</pre></div>
+<p>The main functions in the script are <code>AddPubDOI</code> and <code>AddPubTableDOIs</code>, the former being executed for every line in the input (reading from a table). Weird bug/programming language feature who knows where - you can't use the <a href="http://stackoverflow.com/questions/10929453/bash-scripting-read-file-line-by-line" rel="nofollow">traditional <code>while read variable;</code> <code>do function(variable);</code> <code>done &lt; inputfile</code> construction</a> to handle a file line by line, so I resorted to <a href="https://en.wikipedia.org/wiki/Cat_(Unix)" rel="nofollow"><code>cat</code></a> trickery. I blame Perl.</p>
+<ul>
+<li>
+<code>cutf</code> is my shorthand to tell the <a href="https://www.gnu.org/software/gawk/manual/html_node/Cut-Program.html" rel="nofollow"><code>cut</code></a> command I want a specific column in a tab-separated file or variable.</li>
+<li>
+<code>striptoalpha</code> is a function I made here to turn paper titles into all-lowercase squished together strings of letters (no dashes, commas etc that might get in the way of text comparison) in a really crude way of checking one name against another. This part of the script could easily be improved, but I was just sorting out one funny case - usually matching author and year and using a loose title match will be sufficient to find the matching Pubmed entry, for which a DOI can be found.</li>
+<li>
+<code>pubmed</code> chains together: <code>esearch</code> to search pubmed for the query; <code>efetch</code> to get the document (i.e. article) summaries as XML; and <code>xtract</code> to get the basic info. I don't use this in my little pipeline setup, rather I kept my options open and chose to get more information, and match within blocks of the XML for the DOI. It's not so complicated to follow, as well as my code there's <a href="https://www.biostars.org/p/98483/" rel="nofollow">this example on Biostars</a>.</li>
+<li>
+<code>pubmeddocsum</code> just does the first 2 of the steps above: providing full unparsed XML 'docsums'</li>
+<li>
+<code>pubmedextractdoi</code> gets date and DOI information as columns, then uses GNU awk to rearrange the columns in the output</li>
+<li>
+<code>pubmeddoi</code> gives just the DOI column from said rearranged output</li>
+<li>
+<code>pubmeddoimulti</code> has 'multiple' ways to try and get the DOI for an article matched from searching Pubmed: firstly from the DOI output, then attempting to use the <a href="http://pmid2doi.org/" rel="nofollow">pmid2doi</a> service output.</li>
+<li>
+<code>pmid2doimulti</code> does as for <code>pubmeddoimulti</code> but from a provided PMID</li>
+<li>
+<code>pmid2doi</code> handles the <em>pmid2doi.org</em> response, <code>pmid2doincbi</code> the <em>Entrez Direct</em> side, both feed into <code>pmid2doimulti</code>.</li>
+</ul>
+<p>Rookie's disclaimer: I'm aware pipelines are suposed to contain more um, pipes, but I can't quite figure out an easy way to make these functions 'pipe' to one another, so I'm sticking with passing the output to the next as input (<code>"$@"</code> in <a href="https://en.wikipedia.org/wiki/Bash_(Unix_shell)" rel="nofollow"><em>bash</em></a> script).</p>
+<p><a href="http://biochemistri.es/post/103610333161/the-national-centre-for-biotechnology-information" rel="nofollow"><em>Further notes in this blog post</em></a></p>
+
+        </div>
+
+        <div class="wiki-footer gollum-markdown-content boxed-group" id="wiki-footer">
+          <div class="boxed-group-inner wiki-auxiliary-content markdown-body">
+            <p><a href="https://github.com/lmmx/devnotes/wiki">Main page</a></p>
+
+          </div>
+        </div>
+    </div>]

@@ -1,0 +1,76 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>In this section, we give you the keys to understand how different classes interact with one another in order to let you modify BBRL for your needs.</p>
+<p>If you need more specific information on a given class, do not forget to check out its header. We put in a lot of efforts to allow everyone to understand the use and purpose of each method/attribute.</p>
+<h1>
+<a aria-hidden="true" class="anchor" href="#debugging-mode" id="user-content-debugging-mode"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Debugging mode</h1>
+<p>BBRL has a debugging mode, defined with the macro <code>NDEBUG</code>:</p>
+<div class="highlight highlight-source-c++"><pre>... <span class="pl-c"><span class="pl-c">//</span> Code compiled in both normal and debugging mode</span>
+
+#<span class="pl-k">ifndef</span> NDEBUG
+... <span class="pl-c"><span class="pl-c">//</span> Code compiled in debugging mode only</span>
+#<span class="pl-k">endif</span>
+
+... <span class="pl-c"><span class="pl-c">//</span> Code compiled in both normal and debugging mode</span></pre></div>
+<p>Most implemented classes have a method <code>void checkIntegrity() const</code>, the aim of which is to ensure its attributes are consistent. This method is generally called whenever a method of this class is able to modify its attributes.</p>
+<p>In order to activate the debugging mode, you have to modify the <code>CMakeLists.txt</code> file before compiling BBRL.</p>
+<div class="highlight highlight-source-cmake"><pre>...
+
+<span class="pl-c"><span class="pl-c">#</span> ============================================================================</span>
+<span class="pl-c"><span class="pl-c">#</span>	Compilation command</span>
+<span class="pl-c"><span class="pl-c">#</span> ============================================================================</span>
+<span class="pl-c"><span class="pl-c">#</span> ----------------------------------------------------------------------------</span>
+<span class="pl-c"><span class="pl-c">#</span>	DEBUG</span>
+<span class="pl-c"><span class="pl-c">#</span> ----------------------------------------------------------------------------</span>
+<span class="pl-c1">set</span>(CMAKE_CXX_FLAGS <span class="pl-s">"-O0 -g -Wall -W -Wextra -Wno-long-long -pedantic-errors"</span>) <span class="pl-c"><span class="pl-c">#</span> &lt;-- uncomment</span>
+
+<span class="pl-c"><span class="pl-c">#</span> ----------------------------------------------------------------------------</span>
+<span class="pl-c"><span class="pl-c">#</span>	VALGRIND</span>
+<span class="pl-c"><span class="pl-c">#</span> ----------------------------------------------------------------------------</span>
+<span class="pl-c"><span class="pl-c">#</span>set(CMAKE_CXX_FLAGS "-O0 -g")</span>
+
+<span class="pl-c"><span class="pl-c">#</span> ----------------------------------------------------------------------------</span>
+<span class="pl-c"><span class="pl-c">#</span>	GPROF</span>
+<span class="pl-c"><span class="pl-c">#</span> ----------------------------------------------------------------------------</span>
+<span class="pl-c"><span class="pl-c">#</span>add_definitions(-DNDEBUG)</span>
+<span class="pl-c"><span class="pl-c">#</span>set(CMAKE_CXX_FLAGS "-O0 -pg")</span>
+
+<span class="pl-c"><span class="pl-c">#</span> ----------------------------------------------------------------------------</span>
+<span class="pl-c"><span class="pl-c">#</span>	RELEASE</span>
+<span class="pl-c"><span class="pl-c">#</span> ----------------------------------------------------------------------------</span>
+<span class="pl-c"><span class="pl-c">#</span>add_definitions(-DNDEBUG)            # &lt;-- comment</span>
+<span class="pl-c"><span class="pl-c">#</span>set(CMAKE_CXX_FLAGS "-g -O3 -fPIC")  # &lt;-- comment</span>
+
+...</pre></div>
+<p>Note that if you want to run BBRL with <code>valgrind</code> or <code>gprof</code>, you can uncomment the corresponding line(s) before compiling  (do not try to activate several modes at the same time).</p>
+<h1>
+<a aria-hidden="true" class="anchor" href="#custom-program" id="user-content-custom-program"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Custom program</h1>
+<p>The necessity to write your own program based on the BBRL library can arise at some point. To this end, we included the file <code>src/custom.cpp</code>. This file is the main file of a program called <code>BBRL-custom</code>, which is built whenever you compile BBRL.</p>
+<div class="highlight highlight-source-c++"><pre>#<span class="pl-k">include</span> <span class="pl-s"><span class="pl-pds">&lt;</span>assert.h<span class="pl-pds">&gt;</span></span>
+#<span class="pl-k">include</span> <span class="pl-s"><span class="pl-pds">&lt;</span>fstream<span class="pl-pds">&gt;</span></span>
+#<span class="pl-k">include</span> <span class="pl-s"><span class="pl-pds">&lt;</span>iostream<span class="pl-pds">&gt;</span></span>
+#<span class="pl-k">include</span> <span class="pl-s"><span class="pl-pds">&lt;</span>string<span class="pl-pds">&gt;</span></span>
+#<span class="pl-k">include</span> <span class="pl-s"><span class="pl-pds">&lt;</span>vector<span class="pl-pds">&gt;</span></span>
+
+#<span class="pl-k">include</span> <span class="pl-s"><span class="pl-pds">"</span>DDS/DDSLib.h<span class="pl-pds">"</span></span>
+#<span class="pl-k">include</span> <span class="pl-s"><span class="pl-pds">"</span>Utils/UtilsLib.h<span class="pl-pds">"</span></span>
+
+<span class="pl-k">using</span> <span class="pl-k">namespace</span> <span class="pl-en">std</span><span class="pl-k">;</span>
+
+
+<span class="pl-k">int</span> <span class="pl-en">main</span>(<span class="pl-k">int</span>, <span class="pl-k">char</span>*[])
+{
+     <span class="pl-c1">dds::init</span>();
+     
+     
+     <span class="pl-c"><span class="pl-c">/*</span>   YOUR CODE HERE <span class="pl-c">*/</span></span>
+     
+     
+     <span class="pl-c"><span class="pl-c">//</span>   Return</span>
+     <span class="pl-k">return</span> <span class="pl-c1">0</span>;
+}</pre></div>
+<p>It is also important to note that <code>dds::init()</code> must be called before using any class/method from the <code>dds</code> namespace.</p>
+
+        </div>
+
+    </div>]

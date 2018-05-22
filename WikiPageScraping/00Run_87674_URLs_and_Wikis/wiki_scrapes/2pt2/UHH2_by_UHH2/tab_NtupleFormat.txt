@@ -1,0 +1,37 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <h1>
+<a aria-hidden="true" class="anchor" href="#ntuple-format" id="user-content-ntuple-format"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Ntuple Format</h1>
+<p>The current ROOT ntuple format in the <code>master</code> branch is the same as for <code>UHHAnalysis</code>. However, the transition to 13TeV data analysis offers the opportunity to make some cleanups while adding new variables. The dataformat is developed in a separate branch <code>next-ntuple-format</code> to allow testing while still keeping the current dataformat for ongoing analysis which can use the <code>master</code> branch.</p>
+<p><strong>NOTE</strong>: The <code>next-ntuple-format</code> branch should be used together with CMSSW74X which includes improvements in the candidate-based b-tagging, which is used by the ntuplewriter CMSSW python configuration.</p>
+<p>Currently included changes are:</p>
+<ul>
+<li>Introduce a class <code>Tags</code> which allows to store arbitrary (int-indexed) float data to allow easier evolution of the dataformat in the future by adding new integer keys (as new enum values).</li>
+<li>Add the <code>Tags</code> mechanism to the classes <code>Jet</code>, <code>TopJet</code>, <code>Electron</code>, <code>Muon</code>, <code>Tau</code> to add more b-tagging / top-tagging / lepton variables.</li>
+<li>For electrons, use the <code>Tags</code> mechanism to store the currently recommended PHYS14 electron ids as computed by the CMSSW module.</li>
+<li>For <code>Muon</code> and <code>Tau</code>, use a <code>uint64_t</code> to store single boolean data as bits. For <code>Tau</code>s, use this bits to store the new recommended id variables. For <code>Muon</code>s, remove some data only needed for the ids (which are very stable now); instead, store the ids bits.</li>
+<li>For <code>Jet</code>s, remove the GenJet Particle pointer, which was also stored in the file, although it shouldn't be.</li>
+<li>For <code>TopJet</code> change subjets to have type <code>vector&lt;Jet&gt;</code> instead of <code>vector&lt;Particle&gt;</code> for saving subjet information (flavor, JEC, area, etc.) consistently; this also allows reducing the amount of code duplication in <code>SubjetCorrector</code>.</li>
+<li>For <code>TopJet</code>, remove detailed btagging variables</li>
+<li>remove <code>PFParticle</code> class, as these are never stored in the <code>UHH2</code> framework</li>
+</ul>
+<p>While changing the dataformat, also changes to <code>NtupleWriter</code> have beeen made:</p>
+<ul>
+<li>calculate substructure information (nsubjettiness, qjets mass volatility) for <code>TopJet</code>s in CMSSW instead of using own interface to fastjet.</li>
+</ul>
+<h2>
+<a aria-hidden="true" class="anchor" href="#further-proposals" id="user-content-further-proposals"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Further proposals</h2>
+<p>Currently not included are these changes:</p>
+<ul>
+<li>Consider saving isRealData as metadata, as these change rarely between events</li>
+</ul>
+<h1>
+<a aria-hidden="true" class="anchor" href="#caveats-and-limitations" id="user-content-caveats-and-limitations"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Caveats and limitations</h1>
+<p>Not everything is available in the <code>next-ntuple-format</code>; in particular:</p>
+<ul>
+<li>subjet b-tagging is not working for puppi jets (it does work for chs subjets, and for puppi fat-jets). From the <code>ntuplewriter</code>, the configuration is there, but the explicit jet-track association in CMSSW does not work (all puppi particles have bestTrack()==0, which breaks the CandIPProducer). To be fixed in CMSSW-80X.</li>
+</ul>
+
+        </div>
+
+    </div>]

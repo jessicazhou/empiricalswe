@@ -1,0 +1,359 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>This page serves as simple basic instruction on how you can eliminate a lot of crashing bugs by simply using some tools!</p>
+<p>Firstly you will probably notice that on crash you see a log of lastly executed commands (on Windows you see that in an additional appearing window, on Linux and OS/X it appears in the command line and of course in the log.txt file.)</p>
+<p>What we do now is called <em>stepping</em> and it basicly means you go step by step through your program to see which line of code the error caused.</p>
+<h1>
+<a aria-hidden="true" class="anchor" href="#stepping-on-windows-visual-studio" id="user-content-stepping-on-windows-visual-studio"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Stepping on Windows (Visual Studio)</h1>
+<p>To enable stepping you have to set your configuration to Debug (Release won't work).
+Now we need to find a way to start your executable inside Visual Studio. This requires the following steps:</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#start-inexor-inside-vs" id="user-content-start-inexor-inside-vs"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Start Inexor inside VS</h3>
+<ol>
+<li>Copy all necessary shared libs from <code>bin/windows/__your_architecture__/´ to your executable intermediate folder</code>build/inexor/client/Debug`</li>
+</ol>
+<ul>
+<li>this basicly means you copy all files from the old place, except inexor.exe and inexor.pdb</li>
+<li>if you do not have files inside <code>bin/windows/__your_architecture__/</code> (your_architeture of course beeing either win32 or win64 depending on your system), you need to build the <code>install</code> project inside your inexor solution once.</li>
+</ul>
+<ol start="2">
+<li>Set an execution folder (and arguments)</li>
+<li>Right click the <code>inexor</code> project inside your solution explorer, select <code>Properties</code> (Straight down on the bottom of the list)</li>
+<li>Select the <code>Debugging</code> section</li>
+<li>Add <code>-t0 -kmedia/core</code> to <code>Command Arguments</code> (This means we always want to start in windowed mode and since the data and code repo are seperated, media/core sets the path to where you cloned the data repo into)</li>
+<li>Forward the <code>working directory</code> to the base dir of your inexor project (or where your data repo is)</li>
+</ol>
+<ul>
+<li>that's the place you'd normally start the inexor.bat from, so one above <code>media</code>
+</li>
+</ul>
+<ol start="5">
+<li>Save and close</li>
+<li>Set the <code>inexor</code> project as the startup project</li>
+</ol>
+<ul>
+<li>This is done by right clicking the <code>inexor</code> project in the solution explorer again and selecting <code>Set as Startup-Project</code>
+</li>
+</ul>
+<p>Now, we can start Inexor inside Visual Studio by simply pressing the <code>Debug</code> button in the toolbar (The play button in the upper middle of your screen :P ).</p>
+<p>Now to the next and last part:</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#find-the-bug" id="user-content-find-the-bug"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Find the bug</h3>
+<p>Luckily we do not start from scratch, we`ve got some starting point: our output of the lastly executed functions!
+So what we want to do now is:</p>
+<ol>
+<li>Pause the program just before the bug probably occurs</li>
+<li>Going step-by-step (call by call, function after function) forward, checking values and when what causes the bug.</li>
+</ol>
+<p>For doing 1., we need to set a <code>Breakpoint</code> that is done by either:</p>
+<ul>
+<li>Right clicking a specific code line (in your place i'd choose the second last function of the callstack and in that function the first line after the brace) and select 'Breakpoint' -&gt; <code>Insert Breakpoint</code>
+</li>
+<li>Or shorthand by just clicking left of the text line in the reserved area.</li>
+</ul>
+<p>A red point will appear left of your line, marking that specific spot.</p>
+<p>Now you have to start the program (click the Play-Button ;) ) and try to reproduce the bug somehow (if it lastly appeared while shooting rockets, you .. well you get the point)</p>
+<p>Yay! We made it till here, now make it to the end: You'll notice that your program stopped and threw you back to the text-editor. The Breakpoint line is now also marked with a yellow arrow. This arrow marks your current line.</p>
+<p>Now to the find the actual stepping:</p>
+<p>You can control how fastly your code continues by using the Debug-Tool-Bar (it freshly appeared, there will be some arrows saying <code>Step over</code>, <code>Step into</code>, <code>Step out</code>.. if you hover them in your upper middle toolbar.
+You can check values of variables by simply hovering them.</p>
+<p>Here you go, you can find the error now easily by going step by step through your program till it crashes, noting the line and what values the variables in your line had when it crashed!</p>
+<hr/>
+<h2>
+<a aria-hidden="true" class="anchor" href="#use-external-debuggers" id="user-content-use-external-debuggers"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Use external debuggers</h2>
+<p>If not anything works, try to use external debugging tools.
+Thanks to <a href="https://github.com/ValveSoftware/vogl">VALVE's Vogl</a>, there is finally a good OpenGL graphic debugger out there. There is also <a href="https://apitrace.github.io/" rel="nofollow">apitrace</a>.</p>
+<h1>
+<a aria-hidden="true" class="anchor" href="#linux-gdb" id="user-content-linux-gdb"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Linux (gdb)</h1>
+<p>On Linux, the powerful gdb debugger is available. It features many capabilities to trace the programs' execution and monitor the programs' internal variables. It is even possible to call or return from functions in the middle of a debugging session independently of the normal execution.</p>
+<p>Note that especially beginners should consider a frontend which features a graphical user interface. Here, the usage of gdb itself is explained.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#preparation" id="user-content-preparation"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Preparation</h2>
+<p>Like inexor, the program should be compiled with debugging symbols.</p>
+<p>In order to use ptrace in gdb the following command should be issued as root:</p>
+<pre><code># echo 0 &gt; /proc/sys/kernel/yama/ptrace_scope
+</code></pre>
+<h2>
+<a aria-hidden="true" class="anchor" href="#connect-inexor-to-gdb" id="user-content-connect-inexor-to-gdb"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Connect inexor to gdb</h2>
+<p>Start inexor like you normally would.</p>
+<p>First, you have to find out the PID of the inexor process. That happens by issuing</p>
+<pre><code>$ ps a | grep ./bin/linux/x86_64/inexor | grep -v grep | grep -v xargs
+</code></pre>
+<p>The first number is the PID which you are looking for.</p>
+<p>Next, start gdb with the inexor executable as its only command line option:</p>
+<pre><code>$ gdb inexor
+</code></pre>
+<p>To connect inexor to gdb, type in gdb</p>
+<pre><code>(gdb) attach PID
+</code></pre>
+<p>where PID is the PID you got in the previous step.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#debugging-with-gdb" id="user-content-debugging-with-gdb"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Debugging with gdb</h2>
+<p>There are plenty of tutorials on how gdb is used for debugging. Here, only the basics are explained for quick reference.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#stop-and-continue-execution" id="user-content-stop-and-continue-execution"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Stop and continue execution</h3>
+<p>To stop the execution of inexor at any time, send the signal SIGINT to gdb by pressing &lt;ctrl+c&gt;.</p>
+<p>To continue the execution after that or after a breakpoint has been triggered, enter</p>
+<pre><code>(gdb) continue
+</code></pre>
+<h3>
+<a aria-hidden="true" class="anchor" href="#backtrace" id="user-content-backtrace"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Backtrace</h3>
+<p>Especially if the program crashes</p>
+<pre><code>(gdb) backtrace
+</code></pre>
+<p>gives a list of the functions that you get if you follow the stackframes back. That is useful to get a general idea where the problem might be. An alias that might be easier to remember is</p>
+<pre><code>(gdb) where
+</code></pre>
+<h3>
+<a aria-hidden="true" class="anchor" href="#breakpoints" id="user-content-breakpoints"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Breakpoints</h3>
+<p>Breakpoints are marks in the code at which the execution of a program should be paused. That gives opportunity to examine the state of the program. There are many options to place a breakpoint. One would be</p>
+<pre><code>(gdb) break octaedit.cpp:42
+</code></pre>
+<p>where octaedit.cpp is the file and 42 is the line you want the breakpoint to be. Instead of a line you can also put a function name. You can also use classes and methods like in</p>
+<pre><code>(gdb) break LinkedList&lt;int&gt;::remove
+</code></pre>
+<p>A list of breakpoints is available through</p>
+<pre><code>(gdb) info break
+</code></pre>
+<p>You can disable breakpoints with</p>
+<pre><code>(gdb) disable &lt;number&gt;
+</code></pre>
+<p>where &lt;number&gt; is the number of the breakpoint. To enable the breakpoint again, enter</p>
+<pre><code>(gdb) enable &lt;number&gt;
+</code></pre>
+<p>To pause the program on breakpoints conditionally, issue</p>
+<pre><code>(gdb) condition &lt;number&gt; &lt;condition&gt;
+</code></pre>
+<p>where &lt;number&gt; is the number of the breakpoint and &lt;condition&gt; is the condition that has to be valid in order to pause the program. An example for that would be</p>
+<pre><code>(gdb) condition 1 item_to_remove==1
+</code></pre>
+<h3>
+<a aria-hidden="true" class="anchor" href="#watchpoints" id="user-content-watchpoints"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Watchpoints</h3>
+<p>If you are rather interested in a variable than in a code segment, watchpoints might be a better alternative to breakpoints. Watchpoints are triggered if a particular variable is accessed.</p>
+<p>You can place watchpoints by</p>
+<pre><code>(gdb) watch &lt;variable&gt;
+</code></pre>
+<p>where &lt;variable&gt; is the variable of interest. The program stops if &lt;variable&gt; is modified. To stop the program as soon as the variable is read, issue</p>
+<pre><code>(gdb) rwatch &lt;variable&gt;
+</code></pre>
+<p>and if you want to stop the program in both cases – if the variable is read from or written to – enter</p>
+<pre><code>(gdb) awatch &lt;variable&gt;
+</code></pre>
+<p>Watchpoints are listed together with breakpoints</p>
+<pre><code>(gdb) info break
+</code></pre>
+<p>and can also be disabled and enabled again.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#examine" id="user-content-examine"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Examine</h3>
+<p>As soon as the program is stopped by sending SIGINT or triggering a breakpoint/watchpoint, the state of the program can be looked at more closely. There is a huge number of options how to examine the memory with gdb. Here, the most important are explained.</p>
+<p>To list all the parameters of the current function, call</p>
+<pre><code>(gdb) info args
+</code></pre>
+<p>and to list all the local variables of a function, call</p>
+<pre><code>(gdb) info locals
+</code></pre>
+<p>If you want to print the value of one single variable, issue</p>
+<pre><code>(gdb) print &lt;variable&gt;
+</code></pre>
+<h3>
+<a aria-hidden="true" class="anchor" href="#stepping" id="user-content-stepping"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Stepping</h3>
+<p>After a breakpoint or watchpoint has been triggered, you can go one step further by issuing</p>
+<pre><code>(gdb) step
+</code></pre>
+<p>which will also step into functions that are called. To avoid that and stay in the current function, you can issue</p>
+<pre><code>(gdb) next
+</code></pre>
+<h2>
+<a aria-hidden="true" class="anchor" href="#quit" id="user-content-quit"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Quit</h2>
+<p>To exit gdb, enter</p>
+<pre><code>(gdb) quit
+</code></pre>
+<h1>
+<a aria-hidden="true" class="anchor" href="#debugging-tricks" id="user-content-debugging-tricks"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Debugging tricks</h1>
+<h2>
+<a aria-hidden="true" class="anchor" href="#sauerbraten-debug-leftovers" id="user-content-sauerbraten-debug-leftovers"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Sauerbraten debug leftovers</h2>
+<table>
+<thead>
+<tr>
+<th>command name</th>
+<th>parameter</th>
+<th>function</th>
+<th>appearance</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>/debugao</td>
+<td>0 or 1</td>
+<td>debug ambient occlusion (?)</td>
+<td>?</td>
+</tr>
+<tr>
+<td>/debugdepthfx</td>
+<td>0 or 1</td>
+<td>debug depth function</td>
+<td>rectangular area in top left screen</td>
+</tr>
+<tr>
+<td>/debugglare</td>
+<td>0 or 1</td>
+<td>debug glare shader (/glare must be 1)</td>
+<td>rectangular area in top left of the screen</td>
+</tr>
+<tr>
+<td>/debugjson</td>
+<td>0 or 1</td>
+<td>debug JSON parser?</td>
+<td>?</td>
+</tr>
+<tr>
+<td>/debugparticles</td>
+<td>0 or 1</td>
+<td>debug the old Sauerbraten particle system</td>
+<td>text table in left middle of the screen</td>
+</tr>
+<tr>
+<td>/debugparticles</td>
+<td>0 or 1</td>
+<td>debug the old Sauerbraten particle system</td>
+<td>text table in left middle screen</td>
+</tr>
+<tr>
+<td>/debugsm</td>
+<td>0 or 1</td>
+<td>debug shadow map</td>
+<td>rectangular area in top left of the screen</td>
+</tr>
+<tr>
+<td>/debugsm</td>
+<td>0 or 1</td>
+<td>debug shadow map</td>
+<td>rectangular area in top left of the screen</td>
+</tr>
+<tr>
+<td>/aidebug</td>
+<td>0 - 6</td>
+<td>debug artificial intelligence (bots)</td>
+<td>shows waypoints, additional text and text over bots</td>
+</tr>
+<tr>
+<td>/dbgalias</td>
+<td>0 - 5</td>
+<td>debug alias lookups?</td>
+<td>?</td>
+</tr>
+<tr>
+<td>/dbgblob</td>
+<td>0 or 1</td>
+<td>?</td>
+<td>?</td>
+</tr>
+<tr>
+<td>/dbgdds</td>
+<td>0 or 1</td>
+<td>?</td>
+<td>?</td>
+</tr>
+<tr>
+<td>/dbgdec</td>
+<td>0 or 1</td>
+<td>?</td>
+<td>?</td>
+</tr>
+<tr>
+<td>/dbgexts</td>
+<td>0 or 1</td>
+<td>?</td>
+<td>?</td>
+</tr>
+<tr>
+<td>/dbgffdl</td>
+<td>0 or 1</td>
+<td>?</td>
+<td>?</td>
+</tr>
+<tr>
+<td>/dbgffsm</td>
+<td>0 or 1</td>
+<td>?</td>
+<td>?</td>
+</tr>
+<tr>
+<td>/dbggrass</td>
+<td>0 or 1</td>
+<td>?</td>
+<td>?</td>
+</tr>
+<tr>
+<td>/dbggz</td>
+<td>0 or 1</td>
+<td>?</td>
+<td>?</td>
+</tr>
+<tr>
+<td>/dbgmodes</td>
+<td>0 or 1</td>
+<td>?</td>
+<td>?</td>
+</tr>
+<tr>
+<td>/dbgmovie</td>
+<td>0 or 1</td>
+<td>?</td>
+<td>?</td>
+</tr>
+<tr>
+<td>/dbgpcull</td>
+<td>0 or 1</td>
+<td>?</td>
+<td>?</td>
+</tr>
+<tr>
+<td>/dbgpseed</td>
+<td>0 or 1</td>
+<td>?</td>
+<td>?</td>
+</tr>
+<tr>
+<td>/dbgubu</td>
+<td>0 or 1</td>
+<td>?</td>
+<td>?</td>
+</tr>
+<tr>
+<td>/dbgvars</td>
+<td>0 or 1</td>
+<td>?</td>
+<td>?</td>
+</tr>
+<tr>
+<td>/dbgzip</td>
+<td>0 or 1</td>
+<td>?</td>
+<td>?</td>
+</tr>
+</tbody>
+</table>
+<h2>
+<a aria-hidden="true" class="anchor" href="#miliseconds-and-sdl_getticks" id="user-content-miliseconds-and-sdl_getticks"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Miliseconds and SDL_GetTicks()</h2>
+<p>So far you can use <a href="https://wiki.libsdl.org/SDL_GetTicks" rel="nofollow">SDL_GetTicks()</a> to get the number of miliseconds since the SDL initialisation (program start.)
+<code>unsigned long ulStartTime = SDL_GetTicks(); // Store current time SDL_Delay(100); // Wait 100 miliseconds unsigned long ulEndTime = SDL_GetTicks(); // Store end time conoutf(CON_DEBUG, "Well that took around %llu miliseconds..", ulEndTime - ulStartTime);</code></p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#do-something-every-5-seconds-workaround" id="user-content-do-something-every-5-seconds-workaround"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Do something every 5 seconds (workaround)</h2>
+<p>Some things are just way too heavy to print every sub-calculation to the screen. You should limit the output.
+One method to do this is to calculate the modulo of SDL_GetTicks(). It's very dirty though because some calls could be skipped!
+<code>if(SDL_GetTicks() % 5000 &lt;= 20) { // How long was it ago that another five seconds passed? conoutf(CON_DEBUG, "See you in 5 seconds again!"); }</code></p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#using-static-variables-to-control-code-flow" id="user-content-using-static-variables-to-control-code-flow"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Using static variables to control code flow</h2>
+<p>As you surely know, static variables keep their values and will not be deleted from the Stack after the function is called. They are very similar to global variables but can't be accessed outside of the code block (block scope).</p>
+<p><code>for(int i=0; i&lt;100; i++) { static int test = 0; test++; if(test &gt; 30 &amp;&amp; test &lt; 40) conoutf(CON_DEBUG, %d lays between 30 and 40, i); // break, continue... }</code></p>
+
+        </div>
+
+        <div class="wiki-footer gollum-markdown-content boxed-group" id="wiki-footer">
+          <div class="boxed-group-inner wiki-auxiliary-content markdown-body">
+            <p>Need help? <a class="internal present" href="/inexorgame/inexor-core/wiki/Contact">Contact</a> us.</p>
+
+          </div>
+        </div>
+    </div>]

@@ -1,0 +1,63 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>GP-DREAM is based on the <a href="http://www.broadinstitute.org/cancer/software/genepattern/" rel="nofollow">GenePattern</a> (GP) platform. In the following guide we assume that you have familiarized yourself with GenePattern, e.g., by following the quick start guide or tutorials available on the GenePattern website:</p>
+<ul>
+<li><a href="http://www.broadinstitute.org/cancer/software/genepattern/desc/quick_start" rel="nofollow">GenePattern quick start guide</a></li>
+<li><a href="http://www.broadinstitute.org/cancer/software/genepattern/tutorial/gp_web_client.html" rel="nofollow">GenePattern user guide</a></li>
+</ul>
+<p>In this short tutorial, you will infer a regulatory network from an expression compendium of the DREAM5 challenge. There are four steps:</p>
+<ol start="0">
+<li><a class="internal present" href="/marbach/gpdream/wiki/Step-by-step-guide#wiki-Login">Logging in to GP-DREAM</a></li>
+<li><a class="internal present" href="/marbach/gpdream/wiki/Step-by-step-guide#wiki-Input-data">Preparing input data</a></li>
+<li><a class="internal present" href="/marbach/gpdream/wiki/Step-by-step-guide#wiki-Network-inference">Running individual network inference methods</a></li>
+<li><a class="internal present" href="/marbach/gpdream/wiki/Step-by-step-guide#wiki-Prediction-integration">Integrating predictions to form a consensus network</a></li>
+</ol>
+<a name="user-content-Login"></a>
+## 1. Logging in to GP-DREAM
+Go to the [**GP-DREAM login page**](http://dream.broadinstitute.org/gp/pages/login.jsf) and enter your username and password.
+<p>As a first-time user, you have to register by following the link <em>Click to register</em> on the login page.</p>
+<a name="user-content-Input-data"></a>
+## 2. Preparing input data
+<p>GP-DREAM modules consistently use the file formats that were defined for the DREAM5 challenge. Here, we briefly describe these formats, for a full description see <a class="internal present" href="/marbach/gpdream/wiki/File-formats">File formats</a>.</p>
+<p>As an example for this tutorial, download and unzip the following input data from the DREAM5 challenge:</p>
+<ul>
+<li><a href="http://www.broadinstitute.org/%7Emarbach/net1_input_data.zip" rel="nofollow">net1_input_data.zip</a></li>
+</ul>
+<p>There are three files, containing the expression data, the list of TFs, and the chip features, respectively. The expression data is given as a matrix, where rows correspond to experiments and columns to genes. The list of TFs defines which genes are considered to be potential regulators in the network. The chip features file contains meta information for the experiments, such as the time point for time series and the identity of the deleted gene for knockout experiments.</p>
+<a name="user-content-Network-inference"></a>
+## 3. Running network inference methods
+<p>For the purpose of this tutorial we will use two modules with fast runtime, <a class="internal present" href="/marbach/gpdream/wiki/CorrelationNet">CorrelationNet</a> and <a class="internal present" href="/marbach/gpdream/wiki/ANOVerence">ANOVerence</a>, to infer regulatory networks from the input data downloaded in the previous step.</p>
+<p>Click on the <a class="internal present" href="/marbach/gpdream/wiki/CorrelationNet">CorrelationNet</a> module in the <em>Modules &amp; Pipelines list</em> (see left bar; you may want to open the link in a new browser tab). This leads you to the <em>Run module</em> page, which allows input options/arguments for the module to be set. Short descriptions of options are given below the corresponding fields, for details see the <a href="Modules">module documentation</a>. To run the module:</p>
+<ul>
+<li>Upload the expression data <code>net1_expression_data.txt</code> by clicking on the <em>Browse</em> button of the <em>Expression data</em> option</li>
+<li>Upload the list of regulators <code>net1_transcription_factors.txt</code>
+</li>
+<li>Click <em>Run</em> to dispatch the job to the Broad cluster</li>
+</ul>
+<p>This leads to the result page of the job. The spinning blue arrow indicates that your job has been dispatched to the cluster (it may be running or in the wait queue). Note that you can close the window or even log out of GP-DREAM without affecting your job. You can also choose to be notified by email when the job completes. The job results page can be accessed anytime using the Job Results tab in the top bar.</p>
+<blockquote>
+<p><strong>Important note on runtime</strong>. In the module list, we give the approximate runtime of each module for the datasets of the DREAM5 challenge. This runtime does not include the wait time in the queue, which depends on the load of the cluster and the number of GP-DREAM jobs already submitted by other users. Wait times can range from few seconds up to days if the cluster is busy. Read more on <a class="internal absent" href="/marbach/gpdream/wiki/Runtime-%26amp%3B-memory-limits">Runtime &amp; memory limits</a>.</p>
+</blockquote>
+<p>While the Correlation method is running, let's launch <a class="internal present" href="/marbach/gpdream/wiki/ANOVerence">ANOVerence</a>. Click on the ANOVerence module and upload the expression data and TF list as described above. ANOVerence also uses the meta information (TF knockout or overepxression experiments are upweighted because they were found to be particularly informative). Thus, you will also have to upload the chip features file <code>net1_chip_features.txt</code> in the corresponding field. Click <em>Run</em> and wait for the two jobs to finish (you may have to refresh the page to check for finished jobs).</p>
+<p>Once the jobs have finished, download the network predictions from the two corresponding <em>Job Results</em> pages. The files will be named <code>net1_expression_data_CorrelationNet_predictions.txt</code> and <code>net1_expression_data_ANOVerence_predictions.txt</code>. The file format is a ranked list of edges (see <a class="internal present" href="/marbach/gpdream/wiki/File-formats">File formats</a> for details). The messages written to standard output and standard error by the module can also be viewed in the corresponding files.</p>
+<blockquote>
+<p><strong>Note</strong>: Instead of uploading the input datasets, you can also directly choose from a number of datasets that are available on the server (currently, the DREAM5 datasets). To access these datasets, instead of clicking the <em>Browse</em> button, click the radio button <em>Specify File Path or URL</em>. Next, click <em>Browse Server File System</em>, which opens a window that allows you to select a file. The directory <code>dream5_data</code> contains the input datasets of the challenge. The directory <code>test_data</code> contains a small dataset with only a handful of genes for testing purposes.</p>
+</blockquote>
+<a name="user-content-Prediction-integration"></a>
+## 4. Integrating predictions to form consensus networks
+<p>We can now integrate the predictions produced in the previous step using the <a class="internal present" href="/marbach/gpdream/wiki/ConsensusNet">ConsensusNet</a> module. First, create a zip file containing the prediction files that you want to integrate (here, the two files <code>net1_expression_data_Correlation_predictions.txt</code> and <code>net1_expression_data_ANOVerence_predictions.txt</code>). Alternatively, you can also download an example with the 29 team-supplied predictions from the DREAM5 challenge:</p>
+<ul>
+<li><a href="http://www.broadinstitute.org/%7Emarbach/net1_predictions.zip" rel="nofollow">net1_predictions.zip</a></li>
+</ul>
+<p>Click on the <em>ConsensusNet</em> module in the <em>Modules &amp; Pipelines</em> list. Upload the zip file with the predictions by clicking the <em>Browse</em> button. Click <em>Run</em> to dispatch the job to the Broad cluster.</p>
+<p>Download the integrated predictions <code>&lt;input file&gt;_consensus.txt</code> from the <em>Job Results</em> page as described above.</p>
+
+        </div>
+
+        <div class="wiki-footer gollum-markdown-content boxed-group" id="wiki-footer">
+          <div class="boxed-group-inner wiki-auxiliary-content markdown-body">
+            <p><a href="Community">Credits</a> | <a href="Publications">How to cite</a> | <a href="Contact">Contact</a></p>
+
+          </div>
+        </div>
+    </div>]

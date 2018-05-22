@@ -1,0 +1,39 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <blockquote>
+<p>No longer works? VLC won't play files anymore, lacks decoder for file type 'undf'. All files are suspiciously 4 bytes, 8.2kB, or 1.4MB.</p>
+</blockquote>
+<p>Streaming video can be slow and it's difficult to skip ahead in certain players.</p>
+<p>A recent conference streamed its videos online, but not within a service like YouTube which publicly available downloader sites will work with.</p>
+<p>Streaming a video in Google Chrome generates flv files automatically on your local machine, which can be accessed simply. I read a blog post describing how Chrome's flash player (pepper) can be accessed from the command line on unix machines, from a store which is deliberately made to appear empty.</p>
+<ul>
+<li>
+<a href="http://liori.jogger.pl/2010/11/08/getting-flash-videos-from-almost-deleted-files/" rel="nofollow">This</a> wasn't the post, but describes how they're "almost deleted"</li>
+</ul>
+<p>While completing other work, I left all videos from this conference streaming - note that they must be left uninterrupted, and set to the highest quality where available. Skipping will create fragmented flv cache files.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#find-the-pid-of-chromes-flash-plugin" id="user-content-find-the-pid-of-chromes-flash-plugin"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Find the PID of Chrome's flash plugin</h2>
+<p><code>ps ax | grep -i chrome | grep -i flash</code> <sup><a href="http://superuser.com/a/286116/244556" rel="nofollow">via</a></sup></p>
+<pre>16452 ?        Sl    19:29 /opt/google/chrome/chrome --type=ppapi --channel=[not needed] --ppapi-flash-args --lang=en-GB</pre>
+<p>The flash plugin used to be <code>libgcflashplayer</code> but is now <code>ppapi</code> (<em>Pepper Plugin API</em>). In my case the process ID (pid) is 16452:</p>
+<p><code>sudo ls -al /proc/16452/fd</code> will show all symbolic links, including those '<em>deleted</em>', so jump into <code>sudo -i</code>:</p>
+<div class="highlight highlight-source-shell"><pre>procnum=16452
+ls -al /proc/<span class="pl-s"><span class="pl-pds">"</span><span class="pl-smi">$procnum</span><span class="pl-pds">"</span></span>/fd <span class="pl-k">|</span> grep Chrome <span class="pl-k">|</span> awk <span class="pl-s"><span class="pl-pds">'</span>{print $9}<span class="pl-pds">'</span></span></pre></div>
+<p>Each symlink here is a number (seemingly below 100), pointing at <code>/run/shm/.com.google.Chrome.{6_character_alphanumeric_code}</code>, all marked <code>(deleted)</code>.</p>
+<p>Automate the mass move to normal files with awk (sorry):</p>
+<div class="highlight highlight-source-shell"><pre>cpcommands=<span class="pl-s"><span class="pl-pds">$(</span>ls -al /proc/<span class="pl-s"><span class="pl-pds">"</span><span class="pl-smi">$procnum</span><span class="pl-pds">"</span></span>/fd <span class="pl-k">|</span> grep Chrome <span class="pl-k">|</span> awk -v procvar=<span class="pl-s"><span class="pl-pds">"</span><span class="pl-smi">$procnum</span><span class="pl-pds">"</span></span> <span class="pl-s"><span class="pl-pds">'</span>{print "cp /proc/"procvar"/fd/"$9" /home/louis/Desktop/vid"$9".flv"}<span class="pl-pds">'</span></span><span class="pl-pds">)</span></span>
+<span class="pl-k">while</span> <span class="pl-c1">read</span> line<span class="pl-k">;</span> <span class="pl-k">do</span> <span class="pl-c1">eval</span> <span class="pl-s"><span class="pl-pds">"</span><span class="pl-smi">$line</span><span class="pl-pds">"</span></span><span class="pl-k">;</span> <span class="pl-k">done</span> <span class="pl-k">&lt;</span> <span class="pl-s"><span class="pl-pds">&lt;(</span>echo <span class="pl-s"><span class="pl-pds">"</span><span class="pl-smi">$cpcommands</span><span class="pl-pds">"</span></span><span class="pl-pds">)</span></span></pre></div>
+<blockquote>
+<p><sup>NB awk won't take variables identically named to shell variables, so <code>procvar</code> ⇢ <code>procnum</code></sup></p>
+</blockquote>
+<p><code>chmod 777 /home/louis/Desktop/vid*.flv</code> afterwards.</p>
+
+        </div>
+
+        <div class="wiki-footer gollum-markdown-content boxed-group" id="wiki-footer">
+          <div class="boxed-group-inner wiki-auxiliary-content markdown-body">
+            <p><a href="https://github.com/lmmx/devnotes/wiki">Main page</a></p>
+
+          </div>
+        </div>
+    </div>]

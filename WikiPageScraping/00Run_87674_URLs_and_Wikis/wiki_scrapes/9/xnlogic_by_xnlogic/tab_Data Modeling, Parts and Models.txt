@@ -1,0 +1,129 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>In this section, we will go over the basics of xnlogic data-model, parts and models.</p>
+<ul>
+<li>
+<em>Parts</em> (aka <em>extensions</em>) are Ruby modules containing your custom xnlogic application code.</li>
+<li>
+<em>Model objects</em> correspond to vertices in the graph, and get extended by various <em>Parts</em>.</li>
+<li>The <em>Parts</em> that can extend a given <em>model object</em> are determined by the <em>model's type</em> (aka <em>model name</em>).</li>
+<li>Each <em>model type</em> is defined as an array of <em>Parts</em> (i.e. parts types).</li>
+<li>The order in the array determines override behaviour.</li>
+</ul>
+<p>Let's go straight to an example</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#step-1---our-data-model" id="user-content-step-1---our-data-model"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Step 1 - Our data model</h3>
+<p>We will use the following over-simplified data model:</p>
+<ul>
+<li>2 model types: <code>SmartPhone</code> and <code>Laptop</code>.</li>
+<li>3 part types: <code>Screen</code>, <code>Battery</code> and <code>GPS</code>.</li>
+<li>A <code>SmartPhone</code> has the following parts: <code>Screen</code>, <code>Battery</code> and <code>GPS</code>.</li>
+<li>A <code>Laptop</code> has the following parts: <code>Screen</code> and <code>Battery</code>.</li>
+</ul>
+<h3>
+<a aria-hidden="true" class="anchor" href="#step-2---define-the-models" id="user-content-step-2---define-the-models"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Step 2 - Define the models</h3>
+<p>In <code>lib/$XN_APP/models.rb</code>, add the following entries to the <code>client_models</code> hash.</p>
+<div class="highlight highlight-source-ruby"><pre>    <span class="pl-c1">smart_phone:</span> [<span class="pl-c1">Screen</span>,<span class="pl-c1">Battery</span>,<span class="pl-c1">GPS</span>],
+    <span class="pl-c1">laptop:</span>      [<span class="pl-c1">Screen</span>,<span class="pl-c1">Battery</span>]</pre></div>
+<h3>
+<a aria-hidden="true" class="anchor" href="#step-3---define-the-parts" id="user-content-step-3---define-the-parts"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Step 3 - Define the parts</h3>
+<p>We will define the following parts:</p>
+<div class="highlight highlight-source-ruby"><pre>  <span class="pl-k">module</span> <span class="pl-en">Screen</span>
+    xn_part
+    property <span class="pl-c1">:touch_screen</span>, <span class="pl-c1">type:</span> <span class="pl-c1">:boolean</span>
+  <span class="pl-k">end</span>
+
+  <span class="pl-k">module</span> <span class="pl-en">Battery</span>
+    xn_part
+  <span class="pl-k">end</span>
+
+  <span class="pl-k">module</span> <span class="pl-en">GPS</span>
+    xn_part
+  <span class="pl-k">end</span></pre></div>
+<h3>
+<a aria-hidden="true" class="anchor" href="#step-4---create-some-data" id="user-content-step-4---create-some-data"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Step 4 - Create some data</h3>
+<p>Before we can try a few things, we'll need to create some data.
+We can paste the following code snippet in the IRB.</p>
+<div class="highlight highlight-source-ruby"><pre>graph.transaction <span class="pl-k">do</span>
+    app.create(<span class="pl-c1">M</span>::<span class="pl-c1">SmartPhone</span> , {<span class="pl-c1">name:</span> <span class="pl-s"><span class="pl-pds">'</span>iPhone 6<span class="pl-pds">'</span></span>, <span class="pl-c1">touch_screen:</span> <span class="pl-c1">true</span>})
+    app.create(<span class="pl-c1">M</span>::<span class="pl-c1">SmartPhone</span> , {<span class="pl-c1">name:</span> <span class="pl-s"><span class="pl-pds">'</span>Galaxy Note<span class="pl-pds">'</span></span>, <span class="pl-c1">touch_screen:</span> <span class="pl-c1">true</span>})
+    app.create(<span class="pl-c1">M</span>::<span class="pl-c1">Laptop</span> , {<span class="pl-c1">name:</span> <span class="pl-s"><span class="pl-pds">'</span>Thinkpad<span class="pl-pds">'</span></span>})
+    app.create(<span class="pl-c1">M</span>::<span class="pl-c1">Laptop</span> , {<span class="pl-c1">name:</span> <span class="pl-s"><span class="pl-pds">'</span>Macbook Pro<span class="pl-pds">'</span></span>})
+    app.create(<span class="pl-c1">M</span>::<span class="pl-c1">Laptop</span> , {<span class="pl-c1">name:</span> <span class="pl-s"><span class="pl-pds">'</span>Acer<span class="pl-pds">'</span></span>, <span class="pl-c1">touch_screen:</span> <span class="pl-c1">true</span>})
+<span class="pl-k">end</span></pre></div>
+<h3>
+<a aria-hidden="true" class="anchor" href="#step-5---test-in-the-irb" id="user-content-step-5---test-in-the-irb"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Step 5 - Test in the IRB</h3>
+<p>Let's try to filter based on the model.</p>
+<div class="highlight highlight-source-ruby"><pre>jruby<span class="pl-k">-</span><span class="pl-c1">1.7</span>.<span class="pl-c1">16</span> :<span class="pl-c1">056</span> <span class="pl-k">&gt;</span> graph.v(<span class="pl-c1">M</span>::<span class="pl-c1">Laptop</span>)
+<span class="pl-c"><span class="pl-c">#</span>&lt;V[167] Acer&gt;        #&lt;V[166] Macbook Pro&gt; #&lt;V[165] Thinkpad&gt;   </span>
+<span class="pl-c1">Total:</span> <span class="pl-c1">3</span>
+ =&gt; <span class="pl-c"><span class="pl-c">#</span>&lt;V-Lucene(model_name:"laptop") ~ 3&gt; </span>
+
+jruby<span class="pl-k">-</span><span class="pl-c1">1.7</span>.<span class="pl-c1">16</span> :<span class="pl-c1">057</span> <span class="pl-k">&gt;</span> graph.v(<span class="pl-c1">M</span>::<span class="pl-c1">SmartPhone</span>)
+<span class="pl-c"><span class="pl-c">#</span>&lt;V[163] iPhone 6&gt;    #&lt;V[164] Galaxy Note&gt;</span>
+<span class="pl-c1">Total:</span> <span class="pl-c1">2</span>
+ =&gt; <span class="pl-c"><span class="pl-c">#</span>&lt;V-Lucene(model_name:"smart_phone") ~ 2&gt;</span></pre></div>
+<p>Notice that the output of the IRB shows you how the traversal was performed.
+In this case, we can see that filtering by model is done via the (indexed) property <code>model_name</code>.</p>
+<p>We can also filter the results by part. For example, let's get everything that has a screen.</p>
+<div class="highlight highlight-source-ruby"><pre>jruby<span class="pl-k">-</span><span class="pl-c1">1.7</span>.<span class="pl-c1">16</span> :<span class="pl-c1">058</span> <span class="pl-k">&gt;</span> graph.v(<span class="pl-c1">Screen</span>)
+<span class="pl-c"><span class="pl-c">#</span>&lt;V[163]&gt; #&lt;V[164]&gt; #&lt;V[167]&gt; #&lt;V[166]&gt; #&lt;V[165]&gt;</span>
+<span class="pl-c1">Total:</span> <span class="pl-c1">5</span>
+ =&gt; <span class="pl-c"><span class="pl-c">#</span>&lt;V-Lucene((model_name:"smart_phone" OR model_name:"laptop")) ~ 5 -&gt; V&gt; </span></pre></div>
+<p>There are two things to notice here:</p>
+<ul>
+<li>xnlogic resolves all models that contain a <code>Screen</code> parts.</li>
+<li>The vertices are printed in a non-friendly way (more on that later).</li>
+</ul>
+<p>For now, to make sure we can see the contents of the result, let's look at the properties of the vertices.</p>
+<div class="highlight highlight-source-ruby"><pre>jruby<span class="pl-k">-</span><span class="pl-c1">1.7</span>.<span class="pl-c1">16</span> :<span class="pl-c1">059</span> <span class="pl-k">&gt;</span> graph.v(<span class="pl-c1">Screen</span>).properties
+{<span class="pl-s"><span class="pl-pds">"</span>touch_screen<span class="pl-pds">"</span></span>=&gt;<span class="pl-c1">true</span>, <span class="pl-s"><span class="pl-pds">"</span>name<span class="pl-pds">"</span></span>=&gt;<span class="pl-s"><span class="pl-pds">"</span>iPhone 6<span class="pl-pds">"</span></span>, <span class="pl-s"><span class="pl-pds">"</span>created_at<span class="pl-pds">"</span></span>=&gt;<span class="pl-c1">2015</span><span class="pl-k">-</span><span class="pl-c1">01</span><span class="pl-k">-</span><span class="pl-c1">16</span> <span class="pl-c1">01</span>:<span class="pl-c1">13</span>:<span class="pl-c1">07</span> <span class="pl-c1">UTC</span>, <span class="pl-s"><span class="pl-pds">"</span>model_name<span class="pl-pds">"</span></span>=&gt;<span class="pl-s"><span class="pl-pds">"</span>smart_phone<span class="pl-pds">"</span></span>}
+{<span class="pl-s"><span class="pl-pds">"</span>touch_screen<span class="pl-pds">"</span></span>=&gt;<span class="pl-c1">true</span>, <span class="pl-s"><span class="pl-pds">"</span>name<span class="pl-pds">"</span></span>=&gt;<span class="pl-s"><span class="pl-pds">"</span>Galaxy Note<span class="pl-pds">"</span></span>, <span class="pl-s"><span class="pl-pds">"</span>created_at<span class="pl-pds">"</span></span>=&gt;<span class="pl-c1">2015</span><span class="pl-k">-</span><span class="pl-c1">01</span><span class="pl-k">-</span><span class="pl-c1">16</span> <span class="pl-c1">01</span>:<span class="pl-c1">13</span>:<span class="pl-c1">07</span> <span class="pl-c1">UTC</span>, <span class="pl-s"><span class="pl-pds">"</span>model_name<span class="pl-pds">"</span></span>=&gt;<span class="pl-s"><span class="pl-pds">"</span>smart_phone<span class="pl-pds">"</span></span>}
+{<span class="pl-s"><span class="pl-pds">"</span>touch_screen<span class="pl-pds">"</span></span>=&gt;<span class="pl-c1">true</span>, <span class="pl-s"><span class="pl-pds">"</span>name<span class="pl-pds">"</span></span>=&gt;<span class="pl-s"><span class="pl-pds">"</span>Acer<span class="pl-pds">"</span></span>, <span class="pl-s"><span class="pl-pds">"</span>created_at<span class="pl-pds">"</span></span>=&gt;<span class="pl-c1">2015</span><span class="pl-k">-</span><span class="pl-c1">01</span><span class="pl-k">-</span><span class="pl-c1">16</span> <span class="pl-c1">01</span>:<span class="pl-c1">13</span>:<span class="pl-c1">07</span> <span class="pl-c1">UTC</span>, <span class="pl-s"><span class="pl-pds">"</span>model_name<span class="pl-pds">"</span></span>=&gt;<span class="pl-s"><span class="pl-pds">"</span>laptop<span class="pl-pds">"</span></span>}
+{<span class="pl-s"><span class="pl-pds">"</span>name<span class="pl-pds">"</span></span>=&gt;<span class="pl-s"><span class="pl-pds">"</span>Macbook Pro<span class="pl-pds">"</span></span>, <span class="pl-s"><span class="pl-pds">"</span>created_at<span class="pl-pds">"</span></span>=&gt;<span class="pl-c1">2015</span><span class="pl-k">-</span><span class="pl-c1">01</span><span class="pl-k">-</span><span class="pl-c1">16</span> <span class="pl-c1">01</span>:<span class="pl-c1">13</span>:<span class="pl-c1">07</span> <span class="pl-c1">UTC</span>, <span class="pl-s"><span class="pl-pds">"</span>model_name<span class="pl-pds">"</span></span>=&gt;<span class="pl-s"><span class="pl-pds">"</span>laptop<span class="pl-pds">"</span></span>}
+{<span class="pl-s"><span class="pl-pds">"</span>name<span class="pl-pds">"</span></span>=&gt;<span class="pl-s"><span class="pl-pds">"</span>Thinkpad<span class="pl-pds">"</span></span>, <span class="pl-s"><span class="pl-pds">"</span>created_at<span class="pl-pds">"</span></span>=&gt;<span class="pl-c1">2015</span><span class="pl-k">-</span><span class="pl-c1">01</span><span class="pl-k">-</span><span class="pl-c1">16</span> <span class="pl-c1">01</span>:<span class="pl-c1">13</span>:<span class="pl-c1">07</span> <span class="pl-c1">UTC</span>, <span class="pl-s"><span class="pl-pds">"</span>model_name<span class="pl-pds">"</span></span>=&gt;<span class="pl-s"><span class="pl-pds">"</span>laptop<span class="pl-pds">"</span></span>}
+<span class="pl-c1">Total:</span> <span class="pl-c1">5</span>
+ =&gt; <span class="pl-c"><span class="pl-c">#</span>&lt;V-Lucene((model_name:"smart_phone" OR model_name:"laptop")) ~ 5 -&gt; V -&gt; Hash-Map&gt; </span></pre></div>
+<p>We can also ask for "everything that has a touchscreen".</p>
+<div class="highlight highlight-source-ruby"><pre>jruby<span class="pl-k">-</span><span class="pl-c1">1.7</span>.<span class="pl-c1">16</span> :<span class="pl-c1">060</span> <span class="pl-k">&gt;</span> graph.v(<span class="pl-c1">Screen</span>, <span class="pl-c1">touch_screen:</span> <span class="pl-c1">true</span>).properties
+{<span class="pl-s"><span class="pl-pds">"</span>touch_screen<span class="pl-pds">"</span></span>=&gt;<span class="pl-c1">true</span>, <span class="pl-s"><span class="pl-pds">"</span>name<span class="pl-pds">"</span></span>=&gt;<span class="pl-s"><span class="pl-pds">"</span>iPhone 6<span class="pl-pds">"</span></span>, <span class="pl-s"><span class="pl-pds">"</span>created_at<span class="pl-pds">"</span></span>=&gt;<span class="pl-c1">2015</span><span class="pl-k">-</span><span class="pl-c1">01</span><span class="pl-k">-</span><span class="pl-c1">16</span> <span class="pl-c1">01</span>:<span class="pl-c1">13</span>:<span class="pl-c1">07</span> <span class="pl-c1">UTC</span>, <span class="pl-s"><span class="pl-pds">"</span>model_name<span class="pl-pds">"</span></span>=&gt;<span class="pl-s"><span class="pl-pds">"</span>smart_phone<span class="pl-pds">"</span></span>}
+{<span class="pl-s"><span class="pl-pds">"</span>touch_screen<span class="pl-pds">"</span></span>=&gt;<span class="pl-c1">true</span>, <span class="pl-s"><span class="pl-pds">"</span>name<span class="pl-pds">"</span></span>=&gt;<span class="pl-s"><span class="pl-pds">"</span>Galaxy Note<span class="pl-pds">"</span></span>, <span class="pl-s"><span class="pl-pds">"</span>created_at<span class="pl-pds">"</span></span>=&gt;<span class="pl-c1">2015</span><span class="pl-k">-</span><span class="pl-c1">01</span><span class="pl-k">-</span><span class="pl-c1">16</span> <span class="pl-c1">01</span>:<span class="pl-c1">13</span>:<span class="pl-c1">07</span> <span class="pl-c1">UTC</span>, <span class="pl-s"><span class="pl-pds">"</span>model_name<span class="pl-pds">"</span></span>=&gt;<span class="pl-s"><span class="pl-pds">"</span>smart_phone<span class="pl-pds">"</span></span>}
+{<span class="pl-s"><span class="pl-pds">"</span>touch_screen<span class="pl-pds">"</span></span>=&gt;<span class="pl-c1">true</span>, <span class="pl-s"><span class="pl-pds">"</span>name<span class="pl-pds">"</span></span>=&gt;<span class="pl-s"><span class="pl-pds">"</span>Acer<span class="pl-pds">"</span></span>, <span class="pl-s"><span class="pl-pds">"</span>created_at<span class="pl-pds">"</span></span>=&gt;<span class="pl-c1">2015</span><span class="pl-k">-</span><span class="pl-c1">01</span><span class="pl-k">-</span><span class="pl-c1">16</span> <span class="pl-c1">01</span>:<span class="pl-c1">13</span>:<span class="pl-c1">07</span> <span class="pl-c1">UTC</span>, <span class="pl-s"><span class="pl-pds">"</span>model_name<span class="pl-pds">"</span></span>=&gt;<span class="pl-s"><span class="pl-pds">"</span>laptop<span class="pl-pds">"</span></span>}
+<span class="pl-c1">Total:</span> <span class="pl-c1">3</span>
+ =&gt; <span class="pl-c"><span class="pl-c">#</span>&lt;V-Lucene((model_name:"smart_phone" OR model_name:"laptop")) ~ 5 -&gt; V-Property(TestApp1::Screen, touch_screen==true) -&gt; Hash-Map&gt; </span>
+jruby<span class="pl-k">-</span><span class="pl-c1">1.7</span>.<span class="pl-c1">16</span> :<span class="pl-c1">061</span> <span class="pl-k">&gt;</span> </pre></div>
+<p>Notice that, in both of the above traversals, the result contains both <code>SmartPhone</code>s and <code>Laptop</code>s.</p>
+<p>Next, let's search for all models/vertices that have <code>Screen</code> and <code>GPS</code> parts.</p>
+<div class="highlight highlight-source-ruby"><pre>jruby<span class="pl-k">-</span><span class="pl-c1">1.7</span>.<span class="pl-c1">16</span> :<span class="pl-c1">061</span> <span class="pl-k">&gt;</span> graph.v(<span class="pl-c1">Screen</span>,<span class="pl-c1">GPS</span>).properties
+{<span class="pl-s"><span class="pl-pds">"</span>touch_screen<span class="pl-pds">"</span></span>=&gt;<span class="pl-c1">true</span>, <span class="pl-s"><span class="pl-pds">"</span>name<span class="pl-pds">"</span></span>=&gt;<span class="pl-s"><span class="pl-pds">"</span>iPhone 6<span class="pl-pds">"</span></span>, <span class="pl-s"><span class="pl-pds">"</span>created_at<span class="pl-pds">"</span></span>=&gt;<span class="pl-c1">2015</span><span class="pl-k">-</span><span class="pl-c1">01</span><span class="pl-k">-</span><span class="pl-c1">16</span> <span class="pl-c1">01</span>:<span class="pl-c1">13</span>:<span class="pl-c1">07</span> <span class="pl-c1">UTC</span>, <span class="pl-s"><span class="pl-pds">"</span>model_name<span class="pl-pds">"</span></span>=&gt;<span class="pl-s"><span class="pl-pds">"</span>smart_phone<span class="pl-pds">"</span></span>}
+{<span class="pl-s"><span class="pl-pds">"</span>touch_screen<span class="pl-pds">"</span></span>=&gt;<span class="pl-c1">true</span>, <span class="pl-s"><span class="pl-pds">"</span>name<span class="pl-pds">"</span></span>=&gt;<span class="pl-s"><span class="pl-pds">"</span>Galaxy Note<span class="pl-pds">"</span></span>, <span class="pl-s"><span class="pl-pds">"</span>created_at<span class="pl-pds">"</span></span>=&gt;<span class="pl-c1">2015</span><span class="pl-k">-</span><span class="pl-c1">01</span><span class="pl-k">-</span><span class="pl-c1">16</span> <span class="pl-c1">01</span>:<span class="pl-c1">13</span>:<span class="pl-c1">07</span> <span class="pl-c1">UTC</span>, <span class="pl-s"><span class="pl-pds">"</span>model_name<span class="pl-pds">"</span></span>=&gt;<span class="pl-s"><span class="pl-pds">"</span>smart_phone<span class="pl-pds">"</span></span>}
+<span class="pl-c1">Total:</span> <span class="pl-c1">2</span>
+ =&gt; <span class="pl-c"><span class="pl-c">#</span>&lt;V-Lucene((model_name:"smart_phone")) ~ 2 -&gt; V -&gt; Hash-Map&gt;</span></pre></div>
+<p>As you can see, xnlogic starts by finding all model(s) that can be extended by <em>both</em> <code>Screen</code> <em>and</em> <code>GPS</code>.</p>
+<h4>
+<a aria-hidden="true" class="anchor" href="#extension-not-just-filter" id="user-content-extension-not-just-filter"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Extension, not just filter</h4>
+<p>When querying for <code>graph.v(Part_1, ..., Part_n)</code>, xnlogic does the following:</p>
+<ul>
+<li>Gets all vertices that can be extended by <code>Part_1</code> and ... and <code>Part_n</code>.</li>
+<li>Extend each vertex with <code>Part_1</code> and ... and <code>Part_n</code>.</li>
+</ul>
+<p>This concept allow you, as a developer, to provide granular access to the data - You can query only the parts that a user is authorized to access.</p>
+<p>For example:</p>
+<div class="highlight highlight-source-ruby"><pre><span class="pl-c"><span class="pl-c">#</span> Anything that has a Screen part has a touch_screen property</span>
+jruby<span class="pl-k">-</span><span class="pl-c1">1.7</span>.<span class="pl-c1">16</span> :<span class="pl-c1">063</span> <span class="pl-k">&gt;</span> graph.v(<span class="pl-c1">Screen</span>).first.touch_screen
+ =&gt; <span class="pl-c1">true</span> 
+
+<span class="pl-c"><span class="pl-c">#</span> Laptops have a Screen part, therefore they have a touch_screen property</span>
+jruby<span class="pl-k">-</span><span class="pl-c1">1.7</span>.<span class="pl-c1">16</span> :<span class="pl-c1">064</span> <span class="pl-k">&gt;</span> graph.v(<span class="pl-c1">M</span>::<span class="pl-c1">Laptop</span>).first.touch_screen
+ =&gt; <span class="pl-c1">true</span> </pre></div>
+<p>In the following query, we are extending a vertex with the <code>GPS</code> part only.
+Therefore, the <code>touch_screen</code> method is not defined:</p>
+<div class="highlight highlight-source-ruby"><pre>jruby<span class="pl-k">-</span><span class="pl-c1">1.7</span>.<span class="pl-c1">16</span> :<span class="pl-c1">065</span> <span class="pl-k">&gt;</span> graph.v(<span class="pl-c1">GPS</span>).first.touch_screen
+<span class="pl-c1">NoMethodError:</span> undefined method <span class="pl-s"><span class="pl-pds">`</span>touch_screen' for #&lt;V[163]&gt;</span></pre></div>
+<p>The exact same vertex, when extended with the <code>Screen</code> part, has a <code>touch_screen</code> method:</p>
+<div class="highlight highlight-source-ruby"><pre>jruby<span class="pl-k">-</span><span class="pl-c1">1.7</span>.<span class="pl-c1">16</span> :<span class="pl-c1">068</span> <span class="pl-k">&gt;</span> graph.vertex(<span class="pl-c1">163</span>, <span class="pl-c1">Screen</span>).touch_screen
+ =&gt; <span class="pl-c1">true</span> </pre></div>
+
+        </div>
+
+    </div>]

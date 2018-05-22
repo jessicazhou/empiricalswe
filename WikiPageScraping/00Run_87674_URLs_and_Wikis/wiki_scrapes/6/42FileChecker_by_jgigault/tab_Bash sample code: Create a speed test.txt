@@ -1,0 +1,125 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>42FileChecker features a speedtest to compare two programs or two functions together. This test is based on the number of outputted lines, and strictly requires that the two programs works exactly the same way! Here is how it works! (Note: This is not a reliable test ;-) )</p>
+<hr/>
+<h3>
+<a aria-hidden="true" class="anchor" href="#sample-code" id="user-content-sample-code"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><a name="user-content-code"></a>Sample code</h3>
+<div class="highlight highlight-source-shell"><pre><span class="pl-c"><span class="pl-c">#</span> This function executes a command and returns the number of ouputted lines</span>
+<span class="pl-c"><span class="pl-c">#</span> Returns -1 if the program has failed or terminated in less than $TIMEOUT</span>
+<span class="pl-k">function</span> <span class="pl-en">speedtest_exec_command</span>
+{
+    <span class="pl-k">local</span> COMMAND=<span class="pl-smi">$1</span>              <span class="pl-c"><span class="pl-c">#</span> The program to execute</span>
+    <span class="pl-k">local</span> TIMEOUT=30              <span class="pl-c"><span class="pl-c">#</span> Duration of execution of the test</span>
+    <span class="pl-k">local</span> LOGFILE=.tmp_speedtest  <span class="pl-c"><span class="pl-c">#</span> Temporary file to save outputs</span>
+    <span class="pl-k">local</span> TOTAL                   <span class="pl-c"><span class="pl-c">#</span> Value to return</span>
+
+    <span class="pl-c"><span class="pl-c">#</span> Execute, redirect outputs, send it to background and get PID</span>
+    (<span class="pl-smi">$COMMAND</span> <span class="pl-k">1&gt;</span><span class="pl-smi">$LOGFILE</span> <span class="pl-k">2&gt;&amp;1</span>) <span class="pl-k">&amp;</span>
+    <span class="pl-k">local</span> PID=<span class="pl-smi">$!</span>
+
+    <span class="pl-c"><span class="pl-c">#</span> Wait for the duration and check if the process is still running</span>
+    sleep <span class="pl-smi">$TIMEOUT</span>
+    <span class="pl-k">if</span> [ <span class="pl-k">!</span> <span class="pl-k">-z</span> <span class="pl-s"><span class="pl-pds">"</span><span class="pl-s"><span class="pl-pds">$(</span>ps a <span class="pl-k">|</span> awk <span class="pl-s"><span class="pl-pds">'</span>{print $1}<span class="pl-pds">'</span></span> <span class="pl-k">|</span> grep <span class="pl-smi">$PID</span><span class="pl-pds">)</span></span><span class="pl-pds">"</span></span> ]
+    <span class="pl-k">then</span>
+        <span class="pl-c"><span class="pl-c">#</span> If yes, stop the process...</span>
+        <span class="pl-c1">kill</span> <span class="pl-smi">$PID</span>
+        <span class="pl-c1">wait</span> <span class="pl-smi">$!</span> <span class="pl-k">2&gt;</span>/dev/null
+
+        <span class="pl-c"><span class="pl-c">#</span> ...and count the number of lines written in the temporary file</span>
+        TOTAL=<span class="pl-s"><span class="pl-pds">$(</span>cat <span class="pl-smi">$LOGFILE</span> <span class="pl-k">|</span> wc -l <span class="pl-k">|</span> sed <span class="pl-s"><span class="pl-pds">'</span>s/[^0-9]*//g<span class="pl-pds">'</span></span><span class="pl-pds">)</span></span>
+    <span class="pl-k">else</span>
+        <span class="pl-c"><span class="pl-c">#</span> If not, the program has failed running the minimum duration</span>
+        TOTAL=-1
+    <span class="pl-k">fi</span>
+
+    rm -f <span class="pl-smi">$LOGFILE</span>          <span class="pl-c"><span class="pl-c">#</span> Remove the temporary file</span>
+    <span class="pl-c1">printf</span> <span class="pl-s"><span class="pl-pds">"</span>%d<span class="pl-pds">"</span></span> <span class="pl-s"><span class="pl-pds">"</span><span class="pl-smi">$TOTAL</span><span class="pl-pds">"</span></span>    <span class="pl-c"><span class="pl-c">#</span> and print the returned value $TOTAL</span>
+}
+
+<span class="pl-c"><span class="pl-c">#</span> This is the main function that takes 3 arguments:</span>
+<span class="pl-c"><span class="pl-c">#</span> - The name of the Student's program</span>
+<span class="pl-c"><span class="pl-c">#</span> - The name of the original Unix program</span>
+<span class="pl-c"><span class="pl-c">#</span> - The arguments to pass to each program on execution</span>
+<span class="pl-k">function</span> <span class="pl-en">speedtest</span>
+{
+    <span class="pl-k">local</span> PROG1=<span class="pl-smi">$1</span>
+    <span class="pl-k">local</span> PROG2=<span class="pl-smi">$2</span>
+    <span class="pl-k">local</span> ARGUMENTS=<span class="pl-smi">$3</span>
+
+    <span class="pl-c"><span class="pl-c">#</span> Call the 'speedtest_exec_command' with the 1st program</span>
+    <span class="pl-c"><span class="pl-c">#</span> and save the result in a variable $RET1</span>
+    <span class="pl-c1">echo</span> <span class="pl-s"><span class="pl-pds">"</span>RUNNING: '<span class="pl-smi">$PROG1</span> <span class="pl-smi">$ARGUMENTS</span>'<span class="pl-pds">"</span></span>
+    <span class="pl-k">local</span> RET1=<span class="pl-s"><span class="pl-pds">`</span>speedtest_exec_command <span class="pl-s"><span class="pl-pds">"</span><span class="pl-smi">$PROG1</span> <span class="pl-smi">$ARGUMENTS</span><span class="pl-pds">"</span></span><span class="pl-pds">`</span></span>
+    <span class="pl-c1">echo</span> <span class="pl-s"><span class="pl-pds">"</span>Total of lines: <span class="pl-smi">$RET1</span><span class="pl-pds">"</span></span>
+
+    <span class="pl-c"><span class="pl-c">#</span> Call the 'speedtest_exec_command' with the 2nd program</span>
+    <span class="pl-c"><span class="pl-c">#</span> and save the result in a variable $RET2</span>
+    <span class="pl-c1">echo</span> <span class="pl-s"><span class="pl-pds">"</span>RUNNING: '<span class="pl-smi">$PROG2</span> <span class="pl-smi">$ARGUMENTS</span>'<span class="pl-pds">"</span></span>
+    <span class="pl-k">local</span> RET2=<span class="pl-s"><span class="pl-pds">`</span>speedtest_exec_command <span class="pl-s"><span class="pl-pds">"</span><span class="pl-smi">$PROG2</span> <span class="pl-smi">$ARGUMENTS</span><span class="pl-pds">"</span></span><span class="pl-pds">`</span></span>
+    <span class="pl-c1">echo</span> <span class="pl-s"><span class="pl-pds">"</span>Total of lines: <span class="pl-smi">$RET2</span><span class="pl-pds">"</span></span>
+
+    <span class="pl-c"><span class="pl-c">#</span> Calculate the ratio between $RET1 and $RET2 and print it</span>
+    <span class="pl-k">local</span> RATIO
+    <span class="pl-s"><span class="pl-pds">((</span> RATIO <span class="pl-k">=</span> <span class="pl-smi">$RET1</span> <span class="pl-k">*</span> <span class="pl-c1">100</span> <span class="pl-k">/</span> <span class="pl-smi">$RET2</span> <span class="pl-pds">))</span></span>
+    <span class="pl-c1">echo</span> <span class="pl-s"><span class="pl-pds">"</span>\nRatio: <span class="pl-smi">$RATIO</span>%<span class="pl-pds">"</span></span>
+}
+
+<span class="pl-c"><span class="pl-c">#</span> Call the speedtest (e.g: compare 'ft_ls' and 'ls')</span>
+speedtest <span class="pl-s"><span class="pl-pds">"</span>ft_ls<span class="pl-pds">"</span></span> <span class="pl-s"><span class="pl-pds">"</span>ls<span class="pl-pds">"</span></span> <span class="pl-s"><span class="pl-pds">"</span>-1R /<span class="pl-pds">"</span></span></pre></div>
+<hr/>
+<h3>
+<a aria-hidden="true" class="anchor" href="#tips" id="user-content-tips"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Tips</h3>
+<hr/>
+<h5>
+<a aria-hidden="true" class="anchor" href="#redirect-outputs-of-a-command-line" id="user-content-redirect-outputs-of-a-command-line"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><a name="user-content-tip1"></a>Redirect outputs of a command line</h5>
+<div class="highlight highlight-source-shell"><pre><span class="pl-k">declare</span> LOGFILE_STDOUT=.standard_output
+<span class="pl-k">declare</span> LOGFILE_STDERR=.standard_error
+
+<span class="pl-c"><span class="pl-c">#</span> Redirect STDOUT and STDERR to distinct files</span>
+cat <span class="pl-k">*</span> <span class="pl-k">1&gt;</span><span class="pl-smi">$LOGFILE_STDOUT</span> <span class="pl-k">2&gt;</span><span class="pl-smi">$LOGFILE_STDERR</span>
+
+<span class="pl-k">declare</span> LOGFILE=.outputs
+
+<span class="pl-c"><span class="pl-c">#</span> Redirect STDOUT and STDERR to the same file</span>
+cat <span class="pl-k">*</span> <span class="pl-k">1&gt;</span><span class="pl-smi">$LOGFILE</span> <span class="pl-k">2&gt;&amp;1</span>   <span class="pl-c"><span class="pl-c">#</span> '&amp;1' means 'to where the stream #1 is going'</span>
+cat <span class="pl-k">*</span> <span class="pl-k">2&gt;</span><span class="pl-smi">$LOGFILE</span> <span class="pl-k">1&gt;&amp;2</span>   <span class="pl-c"><span class="pl-c">#</span> The same result but inverted</span>
+
+cat <span class="pl-k">*</span> <span class="pl-k">2&gt;&amp;1</span> <span class="pl-k">1&gt;</span><span class="pl-smi">$LOGFILE</span>   <span class="pl-c"><span class="pl-c">#</span> Invalid order of redirections!</span></pre></div>
+<hr/>
+<h5>
+<a aria-hidden="true" class="anchor" href="#count-the-number-of-lines-of-a-file" id="user-content-count-the-number-of-lines-of-a-file"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><a name="user-content-tip2"></a>Count the number of lines of a file</h5>
+<div class="highlight highlight-source-shell"><pre><span class="pl-k">declare</span> FILENAME=42FileChecker.sh
+
+cat <span class="pl-smi">$FILENAME</span>                               <span class="pl-c"><span class="pl-c">#</span> Read the file</span>
+cat <span class="pl-smi">$FILENAME</span> <span class="pl-k">|</span> wc -l                       <span class="pl-c"><span class="pl-c">#</span> Display the number of lines</span>
+cat <span class="pl-smi">$FILENAME</span> <span class="pl-k">|</span> wc -l <span class="pl-k">|</span> sed <span class="pl-s"><span class="pl-pds">'</span>s/[^0-9]*//g<span class="pl-pds">'</span></span>  <span class="pl-c"><span class="pl-c">#</span> Keep only the numeric value</span>
+
+<span class="pl-c"><span class="pl-c">#</span> Now save the result in a numeric variable $TOTAL</span>
+<span class="pl-k">declare</span> -i TOTAL
+TOTAL=<span class="pl-s"><span class="pl-pds">$(</span>cat <span class="pl-smi">$FILENAME</span> <span class="pl-k">|</span> wc -l <span class="pl-k">|</span> sed <span class="pl-s"><span class="pl-pds">'</span>s/[^0-9]*//g<span class="pl-pds">'</span></span><span class="pl-pds">)</span></span>
+<span class="pl-c1">echo</span> <span class="pl-s"><span class="pl-pds">"</span>Number of lines: <span class="pl-smi">$TOTAL</span><span class="pl-pds">"</span></span></pre></div>
+<hr/>
+<h5>
+<a aria-hidden="true" class="anchor" href="#execute-a-command-and-store-the-result-in-a-variable" id="user-content-execute-a-command-and-store-the-result-in-a-variable"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><a name="user-content-tip3"></a>Execute a command and store the result in a variable</h5>
+<p>You can set the content of a variable as a command to run, by surrounding the command with <strong>backticks</strong> <code>`</code>, which is the legacy syntax for oldest shells, or by using the <strong>command substitution</strong> syntax <code>$(...)</code>.</p>
+<div class="highlight highlight-source-shell"><pre><span class="pl-k">declare</span> MY_NAME
+
+MY_NAME=<span class="pl-s"><span class="pl-pds">`</span>uname<span class="pl-pds">`</span></span>   <span class="pl-c"><span class="pl-c">#</span> using backticks</span>
+MY_NAME=<span class="pl-s"><span class="pl-pds">$(</span>uname<span class="pl-pds">)</span></span>  <span class="pl-c"><span class="pl-c">#</span> using command substitution</span>
+
+<span class="pl-c1">echo</span> <span class="pl-s"><span class="pl-pds">"</span>My name is <span class="pl-smi">$MY_NAME</span><span class="pl-pds">"</span></span></pre></div>
+<p>As you can read on this wiki post <a href="http://mywiki.wooledge.org/BashFAQ/082" rel="nofollow"><strong>Why is $(...) preferred over `...` (backticks)?</strong></a>, you would prefer to use the clearest command substitution syntax, especially with nesting command substitutions like bellow:</p>
+<div class="highlight highlight-source-shell"><pre><span class="pl-k">declare</span> SEARCH_RESULTS
+
+SEARCH_RESULTS=<span class="pl-s"><span class="pl-pds">`</span>grep <span class="pl-s"><span class="pl-pds">"</span><span class="pl-cce">\`</span>uname<span class="pl-cce">\`</span><span class="pl-pds">"</span></span> <span class="pl-s"><span class="pl-pds">"</span>./libft.h<span class="pl-pds">"</span></span><span class="pl-pds">`</span></span>
+SEARCH_RESULTS=<span class="pl-s"><span class="pl-pds">$(</span>grep <span class="pl-s"><span class="pl-pds">"</span><span class="pl-s"><span class="pl-pds">$(</span>uname<span class="pl-pds">)</span></span><span class="pl-pds">"</span></span> <span class="pl-s"><span class="pl-pds">"</span>./libft.h<span class="pl-pds">"</span></span><span class="pl-pds">)</span></span>  <span class="pl-c"><span class="pl-c">#</span> clearest way</span></pre></div>
+
+        </div>
+
+        <div class="wiki-footer gollum-markdown-content boxed-group" id="wiki-footer">
+          <div class="boxed-group-inner wiki-auxiliary-content markdown-body">
+            <p><a href="https://github.com/jgigault/42FileChecker/wiki/"><strong>Back to summary</strong></a> - <a href="#"><strong>Back to top</strong></a></p>
+
+          </div>
+        </div>
+    </div>]

@@ -1,0 +1,80 @@
+[<div class="wiki-body gollum-creole-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>So, how do you use these newfangled <tt>*_input_</tt> objects? To start, prototype your playable object to <tt>player_input</tt>. This defines a whole host of basic input functions for the other objects to use. (You'll probably have to put <tt>%PROTO%</tt> in on_create and on_process.) Next, draw up a button image and make it into an object. It should have an animation frame named <tt>'normal'</tt>. Next, add the object to the level. It will default to staying in the upper-left corner of your screen, and is fully functional. Of course, since we haven't actually defined any behavior for it yet, it doesn't <strong>do</strong> anything for us. To remedy this, add some code to the event <tt>on_mouse_not_left_down</tt>.</p><p>Now, how do you position a button elsewhere on screen? Let's say you want the button on the right side of the screen, half-way down. To do this, you call the button's <tt>getCameraAnchor(int)</tt> function. This returns an x/y pair that you can set your button to to position it.</p><pre>╔═╦═╦═╗
+║7║8║9║
+╠═╬═╬═╣
+║4║5║6║
+╠═╬═╬═╣
+║1║2║3║
+╚═╩═╩═╝
+Figure 1</pre><p>In the chart, we see that '6' is on the right-hand side of the screen, half-way down. So, we'll call <tt>getCameraAnchor(6)</tt> for that coordinate, and then <tt>set(vars.reference_anchor, def() getCameraAnchor(6))</tt>. (The <tt>def()</tt> tells our object to set to this value every frame.) In addition, we'll now want to change vars.offset to the x/y pair <tt>[-25, 0]</tt>. Offset is effectively the margin for our button when it's placed. By default, the margin is set to <tt>25</tt>, but this will offset it by 25 in the 3rd direction (see Figure 1 again). However, the new list will offset the button by -25 horizontally, and by nothing vertically - the button is already centered from <tt>getCameraAnchor(6)</tt>. So, run Frogatto again, and the button is now on the middle of the right side of the screen.</p><p>To create a second button, positioned relative to the first one, just do like before but change <tt>def() getCameraAnchor(6)</tt> to <tt>getCameraAnchor(6)</tt> and <tt>vars.offset</tt> to an appropriate value. Then set the second button's <tt>parent</tt> to be the first button.</p><h2>
+<a aria-hidden="true" class="anchor" href="#prototypes" id="user-content-prototypes"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Prototypes</h2><table>
+<tbody><tr>
+<td>name</td>
+<td>behavior</td>
+</tr>
+<tr>
+<td>base_input</td>
+<td>Grants universal functions, such as <tt>set_anchor()</tt> and <tt>get_camera_anchor()</tt>. Includes handling for reference_anchor and offset.</td>
+</tr>
+<tr>
+<td>button_input</td>
+<td>Implements some events, such as <tt>on_mouse_over</tt>, that would be needed to make a button respond to the mouse.</td>
+</tr>
+<tr>
+<td>drag_input</td>
+<td>Makes the object dragable. However, for the object to stay where it was dropped, it's reference_anchor must be not a function.</td>
+</tr>
+<tr>
+<td>player_input</td>
+<td>Monitors the mouse and send the appropriate event to all the other widgets. Uses on_create and on_process events, so <tt>%PROTO%</tt> those if you use them in the player object. <em>This must be a prototype for the player if the other prototypes in this list are to be used.</em>
+</td>
+</tr>
+</tbody></table><h2>
+<a aria-hidden="true" class="anchor" href="#thrown-events" id="user-content-thrown-events"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Thrown Events</h2><p>These events may be defined in an object or prototype, and will be thrown when the appropriate conditions are filled. Note that, if you re-use these events in your object, you'll probably want to include <tt>%PROTO%</tt> in them so as to not rid them of their prototypical functionality.</p><table>
+<tbody><tr>
+<td>event</td>
+<td>description</td>
+</tr>
+<tr>
+<td><tt>on_mouse_over</tt></td>
+<td>Guaranteed to <tt>not_over</tt>.</td>
+</tr>
+<tr>
+<td><tt>on_mouse_not_over</tt></td>
+<td></td>
+</tr>
+<tr>
+<td><tt>on_mouse_left_down</tt></td>
+<td>If the mouse is moved out of frame, <tt>not_left_down</tt> will not fire.</td>
+</tr>
+<tr>
+<td><tt>on_mouse_not_left_down</tt></td>
+<td></td>
+</tr>
+<tr>
+<td><tt>on_mouse_right_down</tt></td>
+<td>Similar <tt>left_down</tt>.</td>
+</tr>
+<tr>
+<td><tt>on_mouse_not_right_down</tt></td>
+<td></td>
+</tr>
+<tr>
+<td><tt>on_mouse_start_drag</tt></td>
+<td>Guaranteed to <tt>end_drag</tt>.</td>
+</tr>
+<tr>
+<td><tt>on_mouse_end_drag</tt></td>
+<td></td>
+</tr>
+</tbody></table>
+        </div>
+
+        <div class="wiki-footer gollum-markdown-content boxed-group" id="wiki-footer">
+          <div class="boxed-group-inner wiki-auxiliary-content markdown-body">
+            <p>More help can be found via IRC, <a href="irc://irc.freenode.net/#frogatto" rel="nofollow">#Frogatto</a> on freenode.net. This wiki is not a complete reference.</p>
+
+          </div>
+        </div>
+    </div>]

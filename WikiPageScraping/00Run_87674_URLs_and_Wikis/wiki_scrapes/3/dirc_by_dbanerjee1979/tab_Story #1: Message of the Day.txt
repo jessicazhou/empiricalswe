@@ -1,0 +1,84 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>##Connect to an IRC server (like DALNet) with guest account and display the message of the day in a window</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#user-interface" id="user-content-user-interface"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>User Interface</h3>
+<p>Use Functional Reactive Programming to implement the UI. Identified library which suits this purpose well:</p>
+<p><a href="http://hackage.haskell.org/package/reactive-banana-0.8.0.2" rel="nofollow">http://hackage.haskell.org/package/reactive-banana-0.8.0.2</a></p>
+<p>GTK support is not implemented. WX support is provided, but I'm having library conflicts between hkWX (which wants libwx version 2.9) and Ubuntu 14.04 (which as libwx version 3.0 in apt). I found an implementation someone posted on Github:</p>
+<p><a href="https://github.com/emonkak/reactive-banana-gtk/">https://github.com/emonkak/reactive-banana-gtk/</a></p>
+<p>But it is woefully out of date. I translated the code to modern reactive-banana, using reactive-banana-wx as a guide:</p>
+<p><a href="http://hackage.haskell.org/package/reactive-banana-wx-0.8.0.0/src/src/Reactive/Banana/WX.hs" rel="nofollow">http://hackage.haskell.org/package/reactive-banana-wx-0.8.0.0/src/src/Reactive/Banana/WX.hs</a></p>
+<p>At this point, I have enough to go on to implement the UI portion of this story.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#networking" id="user-content-networking"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Networking</h3>
+<p>The Haskell Wiki has a good resource on networking and concurrency in the chat server tutorial:</p>
+<p><a href="https://www.haskell.org/haskellwiki/Implement_a_chat_server" rel="nofollow">https://www.haskell.org/haskellwiki/Implement_a_chat_server</a></p>
+<p>The messages sent by the IRC server can be described by a pseudo-BNF described in the RFC. This can be used
+to parse the message into tokens:</p>
+<pre><code>data Token = Sender a | Message a | Param a
+</code></pre>
+<p>Thus the server response:</p>
+<pre><code>:choopa.nj.us.dal.net NOTICE AUTH :*** Looking up your hostname...\r\n
+</code></pre>
+<p>Can be broken into the following tokens by a lexer:</p>
+<pre><code>[ Sender "choopa.nj.us.dal.net", Message "NOTICE", Param "AUTH", Param "*** Looking up your hostname..." ]
+</code></pre>
+<p>This list of lexer tokens can be decomposed by the parser:</p>
+<pre><code>parse (Sender s:Command "NOTICE":Param target:Param text:[]) -&gt; Just $ Notice { sender = (Just s), target = target, text = text }
+...
+parser _ = Nothing    
+</code></pre>
+<p>This makes the parsing process very clear and concise.</p>
+<p>It might be beneficial to encode the Message type as a data structure:</p>
+<pre><code>data Message = Notice { sender :: Maybe String, target :: String, text :: String }
+</code></pre>
+<h3>
+<a aria-hidden="true" class="anchor" href="#rendering" id="user-content-rendering"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Rendering</h3>
+<p>Server messages will be rendered into a GTK TextBuffer in Courier font. IRC messages make use of ASCII
+art, which will not render properly in a proportional font. A fixed-width font like Courier will ensure
+that ASCII art looks correct.</p>
+<p>NOTICE messages come in two varieties (seen so far) with differing targets. AUTH seems to be sent for
+authentication messages sent before there is a user logged in. User messages, where the target is the
+nickname, are informational messages sent to the user. The two types of messages will be distinguished
+by a lock icon for AUTH and an info icon for user messages.</p>
+<p>The Message Of The Day will be distinguished by rendering the text in blue in a yellow background.</p>
+<p>For the purposes of this story, the application will be implemented as a window consisting of a single
+TextView containing the TextBuffer.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#message-of-the-day" id="user-content-message-of-the-day"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Message Of The Day</h3>
+<p>The Message of the Day is returned as a series of IRC replies:</p>
+<table>
+<thead>
+<tr>
+<th>Response</th>
+<th>Response Code</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>375</td>
+<td>RPL_MOTDSTART</td>
+</tr>
+<tr>
+<td>372</td>
+<td>RPL_MOTD</td>
+</tr>
+<tr>
+<td>376</td>
+<td>RPL_ENDOFMOTD</td>
+</tr>
+<tr>
+<td>422</td>
+<td>ERR_NOMOTD</td>
+</tr>
+</tbody>
+</table>
+<h3>
+<a aria-hidden="true" class="anchor" href="#demo" id="user-content-demo"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Demo</h3>
+<p>The final result of implementing this story:</p>
+<p><img alt="Test" src="images/motd.png"/></p>
+
+        </div>
+
+    </div>]

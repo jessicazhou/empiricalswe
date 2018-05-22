@@ -1,0 +1,92 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <h1>
+<a aria-hidden="true" class="anchor" href="#enabling-auto-updates" id="user-content-enabling-auto-updates"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Enabling Auto-Updates</h1>
+<p>SumatraPDF can be compiled in a way so that when new updates are available, these updates are installed with minimal user intervention (one click for portable builds, additionally entering the administration password for installers).</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#overview" id="user-content-overview"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Overview</h2>
+<p>SumatraPDF downloads once a day a small file containing the latest version number, compares it and informs the user when the latest version is newer than the current one.</p>
+<p>This file may also contain a link to where to download the update and a fingerprint in order to verify the download's integrity. Additionally, this file contains a digital signature so that SumatraPDF can verify that link and fingerprint have not been tampered with.</p>
+<p>If an update is available and the user agrees to update, SumatraPDF usually just loads the webbrowser so that the user can manually download and install the update. If auto-updates are enabled, SumatraPDF downloads itself and either launches the installer in a non-interactive mode or has the portable build replace itself.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#preparation-required-once" id="user-content-preparation-required-once"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Preparation (required once)</h2>
+<p>In order to enable auto-updates, you'll need the following tools:</p>
+<ul>
+<li>makecert.exe (included in the Windows SDK, usually shipping with Visual Studio)</li>
+<li>Python (available from <a href="https://www.python.org/" rel="nofollow">https://www.python.org/</a>) or sha256sum.exe</li>
+</ul>
+<h3>
+<a aria-hidden="true" class="anchor" href="#create-certificate" id="user-content-create-certificate"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Create Certificate</h3>
+<p>Open a command prompt in an empty directory outside of SumatraPDF's sources and run</p>
+<pre><code>makecert.exe -r -n "CN=SumatraPDF Authority" -cy authority -a sha1 -sv sumatra.pvk sumatra.cer
+
+makecert.exe -n "CN=SumatraPDF" -ic sumatra.cer -iv sumatra.pvk -a sha1 -sky signature -pe -sr currentuser -ss My sumatra-app.cer
+</code></pre>
+<p>This will create a new self-signed certificate for SumatraPDF in your local store and create backups named "sumatra.pvk" (private key), "sumatra.cer" (root certificate) and "sumatra-app.cer" (signing certificate) which you should <strong>backup in a safe location</strong>.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#build-signfileexe" id="user-content-build-signfileexe"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Build signfile.exe</h3>
+<p>Open a command prompt in SumatraPDF's main source directory and run</p>
+<pre><code>scripts\vc.bat &amp;&amp; nmake /f makefile.msvc CFG=rel signfile
+</code></pre>
+<p>to build signfile.exe in "obj-rel" (where SumatraPDF's own executables are built as well).</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#create-public-signature-key" id="user-content-create-public-signature-key"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Create Public Signature Key</h3>
+<p>Run</p>
+<pre><code>obj-rel\signfile.exe -cert SumatraPDF -pubkey src\SumatraPDF.key
+</code></pre>
+<p>for creating the file "src\SumatraPDF.key" which will be included in SumatraPDF.exe and will be used for verifying the signature of the update file.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#build-sumatrapdf-with-support-for-auto-update" id="user-content-build-sumatrapdf-with-support-for-auto-update"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Build SumatraPDF with Support for Auto-Update</h2>
+<p>For every build (portable or installer), you now have to tell the compiler to include the public signature key into SumatraPDF.exe and then add the required information to the update file.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#include-public-signature-key" id="user-content-include-public-signature-key"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Include Public Signature Key</h3>
+<p>SumatraPDF is built through an nmake.exe makefile, either from a Visual Studio command prompt or through Visual Studio itself. The following is a minimal invocation for including the public signature key produced above:</p>
+<pre><code>nmake.exe /f makefile.msvc CFG=rel SumatraPDF "EXTCFLAGS=/D \"SUMATRA_UPDATE_INFO_URL=L\\\"http://www.example.net/update-info.txt\\\"\" /D SUPPORTS_AUTO_UPDATE /D HAS_PUBLIC_APP_KEY"
+</code></pre>
+<p>(change the URL to where you'll upload the update info file)</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#calculate-sha-256-fingerprint" id="user-content-calculate-sha-256-fingerprint"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Calculate SHA-256 Fingerprint</h3>
+<p>Use either "sha256sum.exe" from a trusted source or a local Python installation for calculating the SHA-256 fingerprint of SumatraPDF.exe (portable build) and/or SumatraPDF-install.exe:</p>
+<pre><code>sha256sum.exe obj-rel\SumatraPDF.exe
+</code></pre>
+<p>or using Python 2.7</p>
+<pre><code>python -c "import hashlib, sys; print ''.join([('0' + hex(ord(c))[2:])[-2:] for c in hashlib.sha256(open(sys.argv[1], 'rb').read()).digest()])" obj-rel\SumatraPDF.exe
+</code></pre>
+<p>or using Python 3.4</p>
+<pre><code>python -c "import hashlib, sys; print(''.join([('0' + hex(c)[2:])[-2:] for c in hashlib.sha256(open(sys.argv[1], 'rb').read()).digest()]))" obj-rel\SumatraPDF.exe
+</code></pre>
+<h3>
+<a aria-hidden="true" class="anchor" href="#assemble-update-info" id="user-content-assemble-update-info"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Assemble Update Info</h3>
+<p>Now create a file called "update-info.txt" (the name has to match the URL passed to nmake.exe above) and include the following data:</p>
+<pre><code>[SumatraPDF]
+Latest &lt;version&gt;
+
+Portable [
+	URL: &lt;URL of the portable executable (must not be included in a ZIP archive)&gt;
+	Hash &lt;SHA-256 fingerprint of the linked executable&gt;
+]
+</code></pre>
+<p>Instead of or in addition to the "Portable" subsection you can also have an "Installer" subsection. E.g.</p>
+<pre><code>[SumatraPDF]
+Latest 2.6
+
+Installer [
+	URL: http://www.example.net/SumatraPDF-install.exe
+	Hash 5397e57f28b86f9f8be18668e96d83a86ba813b3a43ef4e06ae1e726dd1cc236
+]
+</code></pre>
+<p>See <a href="https://github.com/sumatrapdfreader/sumatrapdf/blob/3.0split/src/SumatraPDF.cpp#L1965-L1984">the source</a> for the code handling this format and <a href="http://software.zeniko.ch/sumatrapdf/update-rel.txt" rel="nofollow">zeniko's update-rel.txt</a> for a live example.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#sign-update-info" id="user-content-sign-update-info"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Sign Update Info</h3>
+<p>Once all the information is complete, sign this file using signfile.exe:</p>
+<pre><code>signfile.exe -cert SumatraPDF -out "update-info.txt" -comment # "update-info.txt"
+</code></pre>
+<p>This will append the signature to the "update-info.txt" file. After this has happened, the file may not be modified any more. If you change any content, you'll have to sign it anew.</p>
+<p><em>TODO: Create a script for creating a signed update-info.txt automatically.</em></p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#upload-files" id="user-content-upload-files"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Upload Files</h3>
+<p>Finally, upload the update info file and the portable/installer executable(s) to your website. Users will now have to download this build in order to be able to auto-update to all future builds produced in this way.</p>
+
+        </div>
+
+    </div>]

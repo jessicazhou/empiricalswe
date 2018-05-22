@@ -1,0 +1,512 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>If you are migrating from PircBot, its important to read <a href="https://github.com/TheLQ/pircbotx/wiki/DifferencesFromPircBot">DifferencesFromPircBot</a> as well</p>
+<h1>
+<a aria-hidden="true" class="anchor" href="#configuring-and-starting-your-bot" id="user-content-configuring-and-starting-your-bot"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Configuring and Starting Your Bot</h1>
+<h2>
+<a aria-hidden="true" class="anchor" href="#configuration-basics" id="user-content-configuration-basics"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Configuration Basics</h2>
+<p>PircBotX 2.0 introduced the powerful immutable Configuration class. To create these, use <a href="http://pircbotx.github.io/pircbotx/latest/apidocs/org/pircbotx/Configuration.Builder.html" rel="nofollow">Configuration.Builder</a>.</p>
+<p>For example, to connect to the Freenode IRC network, changing the nick when its already in use and automatically joining the #pircbotx channel</p>
+<pre><code>Configuration&lt;PircBotX&gt; config = new Configuration.Builder()
+    .setName("MyExampleBot") //Nick of the bot. CHANGE IN YOUR CODE
+    .setLogin("PircBotXUser") //Login part of hostmask, eg name:login@host
+    .setAutoNickChange(true) //Automatically change nick when the current one is in use
+    .addAutoJoinChannel("#pircbotx") //Join #pircbotx channel on connect
+    .buildConfiguration(); //Create an immutable configuration from this builder
+
+PircBotX myBot = new PircBotX(config);
+</code></pre>
+<p>For a full list of options, see the <a href="http://pircbotx.github.io/pircbotx/latest/apidocs/org/pircbotx/Configuration.Builder.html" rel="nofollow">Configuration.Builder Javadoc</a></p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#templates" id="user-content-templates"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Templates</h3>
+<p>Configuration.Builder easily allows you to create a template configuration that is shared by all bots.</p>
+<p>Lets say you want all bots to share the same listeners, handle nick already in use automatically, same login, and same nick</p>
+<pre><code>Configuration.Builder&lt;PircBotX&gt; templateConfig = new Configuration.Builder()
+    .setName("MyMultiServerBot")
+    .setLogin("PircBotXUser")
+    .setAutoNickChange(true)
+
+PircBotX freenodeBot = new PircBotX(templateConfig.buildForServer("irc.freenode.net"));
+PircBotX mibbitBot = new PircBotX(templateConfig.buildForServer("irc.mibbit.net"));
+</code></pre>
+<h3>
+<a aria-hidden="true" class="anchor" href="#copying" id="user-content-copying"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Copying</h3>
+<p>Configuration.Builder also allows you to copy any existing Configuration or Configuration.Builder (.buildForServer() is just a pretty wrapper around this)</p>
+<pre><code>//Copy an existing configuration from a running bot
+Configuration.Builder&lt;PircBotX&gt; newConfig = new Configuration.Builder(someBot.getConfiguration());
+
+//Add to an existing builder
+Configuration.Builder&lt;PircBotX&gt; newBuilder = new Configuration.Builder(otherBuilder);
+</code></pre>
+<h2>
+<a aria-hidden="true" class="anchor" href="#connection-options" id="user-content-connection-options"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Connection Options</h2>
+<p>PircBotX defaults will work on normal IRC servers on port 6667 but also supports more advanced setups</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#standard-irc" id="user-content-standard-irc"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Standard IRC</h3>
+<p>The following will connect to irc.freenode.net on port 6667. Usually this is all that you will need.</p>
+<pre><code>configBuilder.addServer("irc.freenode.net")
+</code></pre>
+<h3>
+<a aria-hidden="true" class="anchor" href="#ssl-support---ssl-only-port" id="user-content-ssl-support---ssl-only-port"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>SSL Support - SSL-only port</h3>
+<p>To connect to an IRC SSL server at startup, change the port to the servers SSL port and provide a SSLSocketFactory.</p>
+<pre><code>configBuilder.addServer("irc.freenode.net", 7000)
+    .setSocketFactory(SSLSocketFactory.getDefault())
+    //Other options...
+</code></pre>
+<p>For convenience in non-standard situations, PircBotX provides <a href="http://pircbotx.github.io/pircbotx/latest/apidocs/org/pircbotx/UtilSSLSocketFactory.html" rel="nofollow">UtilSSLSocketFactory</a></p>
+<p>To accept any certificate,</p>
+<pre><code>configBuilder.addServer("irc.freenode.net", 7000)
+    .setSocketFactory(new UtilSSLSocketFactory().trustAllCertificates())
+    //Other options...
+</code></pre>
+<p>To disable Diffie Hellman key exchange due to <a href="http://bugs.java.com/bugdatabase/view_bug.do?bug_id=6521495" rel="nofollow">JDK bug #6521495</a> which can't accept prime sizes above 1024 bits (see Issue <a href="https://github.com/TheLQ/pircbotx/issues/34">#34</a>),</p>
+<pre><code>configBuilder.addServer("irc.freenode.net", 7000)
+    .setSocketFactory(new UtilSSLSocketFactory().disableDiffieHellman())
+    //Other options...
+</code></pre>
+<h3>
+<a aria-hidden="true" class="anchor" href="#ssl-support---ircv3-tls-capability" id="user-content-ssl-support---ircv3-tls-capability"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>SSL Support - IRCv3 tls capability</h3>
+<p>PircBotX supports <a href="http://ircv3.net/specs/extensions/tls-3.1.html" rel="nofollow">IRCv3 tls</a>. Note that as of 2.0.1 your <code>NICK</code> and <code>USER</code> lines are sent in plaintext, before it learns about the servers tls capability.</p>
+<pre><code>configBuilder.addServer("irc.mozilla.org")
+    .addCapHandler(new TLSCapHandler(SSLSocketFactory.getDefault(), true))
+    //Other options
+</code></pre>
+<h3>
+<a aria-hidden="true" class="anchor" href="#ident-server" id="user-content-ident-server"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Ident Server</h3>
+<p>PircBotX contains a build in <a href="http://en.wikipedia.org/wiki/Ident_protocol" rel="nofollow">ident server</a> to respond to servers that require ident identification.</p>
+<p>Since the server is separate, you must start the server manually before it can be used. Then you just need to enable ident in the configuration:</p>
+<pre><code>//Before anything else
+IdentServer.startServer();
+		
+Configuration&lt;PircBotX&gt; botConfig = new Configuration.Builder()
+	.setIdentServerEnabled(true)
+	//...other configuration...
+	.buildConfiguration();
+</code></pre>
+<h2>
+<a aria-hidden="true" class="anchor" href="#ipv6-support" id="user-content-ipv6-support"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>IPv6 Support</h2>
+<p>PircBotX fully supports IPv6 IRC servers, DCC connections, and ident. The required code to connect to IPv6 is identical to IPv4.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#webirc-authentication" id="user-content-webirc-authentication"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>WEBIRC Authentication</h2>
+<p>PircBotX supports <a href="http://wiki.mibbit.com/index.php/WebIRC" rel="nofollow">WEBIRC</a> authentication. The Mibbit wiki explains:</p>
+<blockquote>
+<p>IRC is a client to server protocol. Multiple clients connect to one server, called the IRC Server, and the server handles communications between the clients. Each client announces who it is through its hostmask. When a user connects through a client that connects directly to the server, the hostmask shows their nick and their IP, though the IP is usually obfuscated before sending to other users (default mode +x). When a user connects through an indirect method, such as through Mibbit.com, the indirect client sends its own IP instead of sending the normal user unless WebIRC is implemented by both the client and the server. For IRC, IPs are extremely useful for making sure users do not disbehave. Without WebIRC implemented, the users of the indirect client will be banned more often for the actions of others or might not be allowed to join the server because too many users of that IP are connected at once.</p>
+</blockquote>
+<p>To fully configure WEBIRC in PircBotX</p>
+<pre><code>configBuilder.setWebIrcEnabled(true)
+    .setWebIrcAddress(clientsAddress) //The address of the user that's connecting
+    .setWebIrcHostname(clientsHostname) //The resolved hostname of the user that's connecting
+    .setWebIrcUsername("serverUsername") //Agreed upon WEBIRC username given by IRCd operator
+    .setWebIrcPassword("serverPassword"); //Agreed upon WEBIRC password given by IRCd operator
+</code></pre>
+<h2>
+<a aria-hidden="true" class="anchor" href="#starting-pircbotx" id="user-content-starting-pircbotx"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Starting PircBotX</h2>
+<pre><code>Configuration config = ...
+
+PircBotX bot = new PircBotX(config);
+bot.startBot();
+</code></pre>
+<p>Create a new PircBotX object and call startBot()</p>
+<ul>
+<li>This method blocks until disconnecting from the IRC server or, if configured setAutoReconnect(true), stopBot() is called.</li>
+<li>If connecting fails with an Exception it is thrown immediately (and also generates a ConnectAttemptFailedEvent)</li>
+<li>(2.1 Placeholder) To ignore exceptions, call...</li>
+</ul>
+<p>Your bot should connect to the IRC server and join the configured channels. Congratulations, you've just wrote and ran your first bot!</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#manage-bots-on-multiple-servers" id="user-content-manage-bots-on-multiple-servers"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Manage Bots on Multiple Servers</h3>
+<p>Connecting to a single server is straightforward. Connecting to multiple servers is slightly more complex due to threading.</p>
+<p>To make the process simple, PircBotX provides <a href="http://pircbotx.github.io/pircbotx/latest/apidocs/org/pircbotx/MultiBotManager.html" rel="nofollow">MultiBotManager</a>. It neatly handles creating, starting, managing, and stopping any number of bots.</p>
+<p>Expanding on the Configuration Templates code above, this will start 2 bots on Freenode and Mibbit</p>
+<pre><code>Configuration.Builder&lt;PircBotX&gt; templateConfig = new Configuration.Builder()
+        .setName("MyMultiServerBot")
+        .setLogin("PircBotXUser")
+        .setAutoNickChange(true);
+
+MultiBotManager&lt;PircBotX&gt; manager = new MultiBotManager();
+manager.addBot(templateConfig.buildForServer("irc.freenode.net"));
+manager.addBot(templateConfig.buildForServer("irc.mibbit.net"));
+manager.start();
+</code></pre>
+<h2>
+<a aria-hidden="true" class="anchor" href="#stopping-pircbotx" id="user-content-stopping-pircbotx"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Stopping PircBotX</h2>
+<p>If your want to stop a single PircBotX instance gracefully:</p>
+<pre><code>bot.stopBotReconnect();
+bot.sendIRC().quitServer("your /quit message")
+</code></pre>
+<p>Forcing a bot to stop (Do not send a QUIT message):</p>
+<pre><code>bot.stopBotReconnect();
+bot.close();
+</code></pre>
+<p>Stopping a MultiBotManager instance:</p>
+<pre><code>multiBotManager.close("goodbye);
+</code></pre>
+<h1>
+<a aria-hidden="true" class="anchor" href="#listenerevent-system" id="user-content-listenerevent-system"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Listener/Event System</h1>
+<p>PircBotX has an extensive and flexible Event and Listener system with over 50 different events from various mode changes (op, deop and other statuses, channel key, moderated, channel limit, etc) to DCC information to all user actions (message, private message, action, notice, etc).</p>
+<p><a href="https://github.com/TheLQ/pircbotx/blob/latest/src/test/java/org/pircbotx/impl/PircBotXExample.java">PircBotXExample.java</a> contains an example class that implements 2 listeners</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#basics" id="user-content-basics"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Basics</h2>
+<p>Various <a href="http://pircbotx.github.io/pircbotx/latest/apidocs/org/pircbotx/hooks/Event.html" rel="nofollow">Events</a> are dispatched to <a href="http://pircbotx.github.io/pircbotx/latest/apidocs/org/pircbotx/hooks/Listener.html" rel="nofollow">Listeners</a> by the <a href="http://pircbotx.github.io/pircbotx/latest/apidocs/org/pircbotx/hooks/managers/ListenerManager.html" rel="nofollow">ListenerManager</a>.</p>
+<ul>
+<li>Every line from the server is parsed by PircBotX and generates an event that contains what the line said. Sometimes multiple events are dispatched, e.g. <code>MODE +o user</code> generates an OpEvent and a ModeEvent</li>
+<li>There are also generic events which are interfaces for multiple Events, e.g. GenericMessageEvent which ActionEvent, MessageEvent, NoticeEvent, and PrivateMessageEvent implement</li>
+<li>Since the Listener interface only has one method for the abstract Event class, there is the easy utility class <a href="http://pircbotx.github.io/pircbotx/latest/apidocs/org/pircbotx/hooks/ListenerAdapter.html" rel="nofollow">ListenerAdapter</a> which provides individual overridable methods for each event.</li>
+<li>The default ListenerManager is <a href="http://pircbotx.github.io/pircbotx/latest/apidocs/org/pircbotx/hooks/managers/ThreadedListenerManager.html" rel="nofollow">ThreadedListenerManager</a>
+</li>
+<li>Because events are executed co-currently, in certain cases you might have to add synchronization code to prevent thread races. If you are unfamiliar with Java Thread synchronization practices, its recommended you read the <a href="http://docs.oracle.com/javase/tutorial/essential/concurrency/sync.html" rel="nofollow">Synchronization</a> and <a href="http://docs.oracle.com/javase/tutorial/essential/concurrency/liveness.html" rel="nofollow">Liveness</a> sections of the Oracle Java Tutorials.</li>
+</ul>
+<p><a href="http://pircbotx.github.io/pircbotx/latest/apidocs/org/pircbotx/hooks/events/package-summary.html" rel="nofollow">Full list of Events</a></p>
+<p><a href="http://pircbotx.github.io/pircbotx/latest/apidocs/org/pircbotx/hooks/types/package-summary.html" rel="nofollow">Full list of Generic Events</a></p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#listenermanagers-explained" id="user-content-listenermanagers-explained"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>ListenerManagers Explained</h2>
+<p>In general, events are dispatched on multiple threads to all the added listeners. This covers most use cases and prevents 1 listeners from
+deadlocking the entire bot.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#threadedlistenermanager" id="user-content-threadedlistenermanager"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>ThreadedListenerManager</h3>
+<p>This is the default ListenerManager that PircBotX uses. Using a cached thread pool (which you can replace with your own), it creates Threads to run each event and each Listener. IE if 2 events come in at roughly the same time and you have 3 Listeners, it creates 6 threads to run everything at the same time.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#backgroundlistenermanager" id="user-content-backgroundlistenermanager"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>BackgroundListenerManager</h3>
+<p>BackgroundListenerManager expands ThreadedListenerManager by running certain specified Listener's their own single background Thread. For example, logging listeners generally need to process events one at a time to log them in order and not on top of each other.</p>
+<p>Usage is very similar</p>
+<pre><code>BackgroundListenerManager myListenerManager = new BackgroundListenerManager();
+myListenerManager.addListener(myLoggingListener, true);
+configBuilder.setListenerManager(myListenerManager)
+		.addListener(myStandardListener);
+</code></pre>
+<h3>
+<a aria-hidden="true" class="anchor" href="#writing-your-own" id="user-content-writing-your-own"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Writing your own</h3>
+<p>If none of these ListenerManagers fit your use cases you can write your own by extending the abstract <a href="http://pircbotx.github.io/pircbotx/latest/apidocs/org/pircbotx/hooks/managers/ListenerManager.html" rel="nofollow">ListenerManager</a> class.</p>
+<p>To make things easier its recommended to extend ThreadedListenerManager since it already implements most features that a standard ListenerManager has. It also has been designed to be extendable with several overridable callbacks. Look at the <a href="https://github.com/TheLQ/pircbotx/blob/latest/src/main/java/org/pircbotx/hooks/managers/ThreadedListenerManager.java">source code</a> to see if it provides a good starting point</p>
+<h1>
+<a aria-hidden="true" class="anchor" href="#user-and-channel-objects" id="user-content-user-and-channel-objects"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>User and Channel objects</h1>
+<p><a href="http://pircbotx.github.io/pircbotx/latest/apidocs/org/pircbotx/User.html" rel="nofollow">User</a> and <a href="http://pircbotx.github.io/pircbotx/latest/apidocs/org/pircbotx/Channel.html" rel="nofollow">Channel</a> objects are mapped together by <a href="http://pircbotx.github.io/pircbotx/latest/apidocs/org/pircbotx/UserChannelDao.html" rel="nofollow">UserChannelDao</a>.</p>
+<p>Most relevant information can be obtained from the Channel or User that comes with an Event. If you need more information, you can query the UserChannelDao directly, eg</p>
+<pre><code>event.getBot().getUserChannelDao().containsChannel("#somechannel")
+</code></pre>
+<p>See the above JavaDoc pages for User-Channel data that is available.</p>
+<h1>
+<a aria-hidden="true" class="anchor" href="#dcc-chat-and-file-sharing" id="user-content-dcc-chat-and-file-sharing"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>DCC Chat and File Sharing</h1>
+<p>DCC is a very powerful tool in IRC allowing direct communication with other clients without going through the IRC server. It allows for chat as well as sending files.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#connectivity-notes" id="user-content-connectivity-notes"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Connectivity Notes</h2>
+<p>DCC works by having users directly connect to each other. That means that for users to directly connect to your bot, your bot needs to be accessible.</p>
+<p>IPv4 NAT makes this process more complex (IPv6 users can skip this section). If your bot is running behind a NAT (which most home networks are) then it has a "private" IP address, an address that nobody else can connect to. PircBotX needs your public IP address. Unfortunately PircBotX cannot do this itself, you must provide the address and set it using <a href="http://pircbotx.github.io/pircbotx/latest/apidocs/org/pircbotx/Configuration.Builder.html#setDccLocalAddress(java.net.InetAddress)" rel="nofollow">setDccInetAddress() in Configuration</a>. Note that if the server your bot is running from already has a public IP address, this step is not necessary.</p>
+<p>Next you need to decide which ports to use. By default PircBotX picks a random free port. If you only wish to use a set amount of ports, put them in the<a href="http://pircbotx.github.io/pircbotx/latest/apidocs/org/pircbotx/Configuration.Builder.html#setDccPorts%28java.util.List%29" rel="nofollow">DCC ports list in Configuration</a>. Unless your server has no firewall and is publicly accessible on all ports (not recommended for security reasons), you will need to set a specific range of ports so you can configure your router if you are behind a NAT and firewall. See below.</p>
+<p>Lastly, you need to configure your firewall to allow connections from those ports and, if you are behind a NAT, setup port forwarding in your router. Consult the manual or Google if you do not know how to do this.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#dcc-chat" id="user-content-dcc-chat"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>DCC Chat</h2>
+<p>DCC Chat can be thought of as a raw private message without any interference from the IRC server. It's raw simply because no processing is done on the line in PircBotX; once a line is received it is directly handed to whatever is requesting it.</p>
+<p>DCC Chat can be useful in situations where private messaging just won't work due to various reasons. For example, one use is to create a cross server "party line", where people DCC into the bot and can have their own "channel", regardless of which server they are on. It can also be used to pass large amounts of text that would be considered spam or be truncated by standard IRC servers.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#accepting-incoming-chat-requests" id="user-content-accepting-incoming-chat-requests"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Accepting Incoming Chat Requests</h3>
+<p>When a user requests to have a DCC Chat with PircBotX, an <a href="http://pircbotx.github.io/pircbotx/latest/apidocs/org/pircbotx/hooks/events/IncomingChatRequestEvent.html" rel="nofollow">IncomingChatRequestEvent</a> is dispatched. You must <a href="http://pircbotx.github.io/pircbotx/latest/apidocs/org/pircbotx/hooks/events/IncomingChatRequestEvent.html#accept%28%29" rel="nofollow">accept()</a> the request to get the ReceiveChat object. This object is how you will be communicating with the user over DCC.  Following is some example code that accepts and responds to a user's DCC chat.</p>
+<pre><code>public class DccIncomingChatExample extends ListenerAdapter {
+	@Override
+	public void onIncomingChatRequest(IncomingChatRequestEvent event) throws Exception {
+		//Accept the request. This actually opens the connection. Remember that 
+		//the user may have a time limit on how long you have to accept the request
+		ReceiveChat chat = event.accept();
+
+		//Basic read loop. This is similar to reading a stream
+		String line;
+		//Keep reading lines until the line is null, signaling the end of the connection
+		while ((line = chat.readLine()) != null) {
+			//Just send back what they said
+			String response = "You said " + line;
+			chat.sendLine(response);
+			System.out.println("Sent line: " + response);
+		}
+	}
+}
+</code></pre>
+<h3>
+<a aria-hidden="true" class="anchor" href="#creating-outgoing-chat-requests" id="user-content-creating-outgoing-chat-requests"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Creating Outgoing Chat Requests</h3>
+<p>When PircBotX wants to create a DCC chat with another user, you must send a request with <a href="http://pircbotx.github.io/pircbotx/latest/apidocs/org/pircbotx/output/OutputUser.html#dccChat%28%29" rel="nofollow">user.send().dccChat()</a>.</p>
+<p>Following is some example code on how to use this. Note that here its triggered when a user says <code>?chat</code> in a channel.</p>
+<pre><code>public class DccOutgoingChatExample extends ListenerAdapter {
+	@Override
+	public void onMessage(MessageEvent event) throws Exception {
+		//Only trigger when the user says ?chat
+		if (!event.getMessage().startsWith("?chat"))
+			return;
+		
+		//Attempt to get a DCC chat with the user
+		SendChat chat = event.getUser().send().dccChat();
+		
+		//Were now connected to the user
+		//In this example do the same thing as the IncommingChatRequest example
+		String line;
+		while ((line = chat.readLine()) != null) {
+			String response = "You said " + line;
+			chat.sendLine(response);
+			System.out.println("Sent line: " + response);
+		}
+	}
+}
+</code></pre>
+<h2>
+<a aria-hidden="true" class="anchor" href="#dcc-filesharing" id="user-content-dcc-filesharing"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>DCC Filesharing</h2>
+<p>DCC Filesharing is another useful feature of DCC for some bots. It allows PircBotX to send and receive files directly without any intervention by the IRC server. It can be useful as a cheap way to distribute files to users or to have users submit files to your bot.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#warnings" id="user-content-warnings"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Warnings</h3>
+<ol>
+<li>DCC Filesharing is much more dangerous than chat simply because your letting another user access your hard drive. Please be careful</li>
+<li>Some IRC servers have policies against file sharing bots. Be sure to check your IRC server's rules to prevent your bot from being banned</li>
+<li>Treat accepted files cautiously. Users may attempt to upload malware or massive files to fill up your server's hard drive. Verify all accepted files. Failure to do so may cause your server to get compromised.</li>
+</ol>
+<h3>
+<a aria-hidden="true" class="anchor" href="#accepting-incoming-files" id="user-content-accepting-incoming-files"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Accepting Incoming Files</h3>
+<p>When a user is attempting to send PircBotX a file, a <a href="http://pircbotx.github.io/pircbotx/latest/apidocs/org/pircbotx/hooks/events/IncomingFileTransferEvent.html" rel="nofollow">IncomingFileTransferEvent</a> is dispatched. You simply need to give a file for PircBotX to write to.</p>
+<p>The following example will accept <em>any</em> file and write it to the temp directory. Note that this method blocks until the file is finished writing. From another thread you can get status information like progress, size, transfer rate, etc from <a href="http://pircbotx.github.io/pircbotx/latest/apidocs/org/pircbotx/dcc/ReceiveFileTransfer.html" rel="nofollow">ReceiveFileTransfer</a>.</p>
+<pre><code>public class DccOutgoingChatExample extends ListenerAdapter {
+	@Override
+	public void onIncomingFileTransfer(IncomingFileTransferEvent event) throws Exception {
+		//Generate a file prefix
+		String prefix = "pircbotxFile" + System.currentTimeMillis() + "-";
+		//File suffix is the original filename plus .txt to prevent executables
+		String suffix = event.getSafeFilename() + ".txt";
+		//Create this file in the temp directory
+		File file = File.createTempFile(prefix, suffix);
+		
+		//Receive the file from the user
+		event.accept(file).transfer();
+	}
+}
+</code></pre>
+<p>Some important notes</p>
+<ol>
+<li>Watch out for executable files -  Its highly recommended to block files that end with <code>.exe</code> or <code>.sh</code>. There are very few reasons why your bot should accept executable files. On linux, make sure uploaded don't have the executable permission</li>
+<li>You can put files anywhere, not just the temp directory. For example you can put them in a <code>/upload</code> folder in your bot's folder.</li>
+<li>Watch out for duplicate file names - Sometimes you may get filenames that already exist in your directory. Its therefore recommended to add some kind of prefix or suffix, eg a file ID that's incremented each time a file is uploaded</li>
+</ol>
+<h3>
+<a aria-hidden="true" class="anchor" href="#sending-files" id="user-content-sending-files"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Sending Files</h3>
+<p>To send a file, you must send the The only information you need is the file to send and the target user. Simply call <a href="http://pircbotx.github.io/pircbotx/latest/apidocs/org/pircbotx/PircBotX.html#dccSendFile%28java.io.File,%20org.pircbotx.User,%20int%29" rel="nofollow">PircBotX.dccSendFile()</a>.</p>
+<p>Following is an example that sends a file when the user says <code>?sendFile</code> in the channel</p>
+<pre><code>public class DccOutgoingChatExample extends ListenerAdapter {
+	@Override
+	public void onMessage(MessageEvent event) throws Exception {
+		//Only trigger when the user says ?sendFile
+		if (event.getMessage().startsWith("?sendFile"))
+			//Send the file output.txt
+			event.getUser().send().dccFile(new File("C:/output.txt")).transfer();
+	}
+}
+</code></pre>
+<p>Some important notes</p>
+<ol>
+<li>Watch out for attacks if the user selects a file by filename - For example if the user says <code>?sendFile output.txt</code> to get the <code>output.txt</code> file, be sure the user doesn't say <code>?sendfile ../../somefile.txt</code> to get the <code>somefile.txt</code> file 2 directories up from your upload folder. Either strip out everything but the filename or do some checks on the file making sure its coming from a directory you expect it to come from</li>
+<li>Be careful distributing uploaded files - Even if you don't execute user submitted files (preventing executing viruses), storing and sharing viruses isn't much better. Make sure the files your sharing are files you really want to share.</li>
+</ol>
+<h1>
+<a aria-hidden="true" class="anchor" href="#support-for-operators-voice-halfops-superops-and-owners" id="user-content-support-for-operators-voice-halfops-superops-and-owners"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Support for Operators, Voice, HalfOps, SuperOps and Owners</h1>
+<p>PircBotX fully supports <a href="http://pircbotx.github.io/pircbotx/latest/apidocs/org/pircbotx/hooks/events/OpEvent.html" rel="nofollow">Operator (+o)</a>, <a href="http://pircbotx.github.io/pircbotx/latest/apidocs/org/pircbotx/hooks/events/VoiceEvent.html" rel="nofollow">Voice (+v)</a>, <a href="http://pircbotx.github.io/pircbotx/latest/apidocs/org/pircbotx/hooks/events/HalfOpEvent.html" rel="nofollow">HalfOp (+h)</a>, <a href="http://pircbotx.github.io/pircbotx/latest/apidocs/org/pircbotx/hooks/events/SuperOpEvent.html" rel="nofollow">SuperOp (+a)</a>, and <a href="http://pircbotx.github.io/pircbotx/latest/apidocs/org/pircbotx/hooks/events/OwnerEvent.html" rel="nofollow">Owner (+q)</a> user modes.</p>
+<p>Note that the latter 3 (Halfop, Superop, and Owner) are non-standard and might not be supported on every IRC server. On some server the mode letter could mean something entirely different.</p>
+<h1>
+<a aria-hidden="true" class="anchor" href="#cap-support" id="user-content-cap-support"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>CAP Support</h1>
+<p>CAP is part of the <a href="http://ircv3.atheme.org" rel="nofollow">IRCv3 extension</a> to the IRC protocol that allows you to selectively enable certain features at connect.</p>
+<p>CAP is handled by the CapHandler interface which are added to the configuration with <code>configBuilder.addCapHandler()</code>.</p>
+<p>By default PircBotX will attempt to enable the following CAP features</p>
+<ul>
+<li><a href="http://ircv3.atheme.org/extensions/multi-prefix-3.1" rel="nofollow">multi-prefix</a></li>
+<li><a href="http://ircv3.atheme.org/extensions/away-notify-3.1" rel="nofollow">away-notify</a></li>
+</ul>
+<h2>
+<a aria-hidden="true" class="anchor" href="#sasl-authentication" id="user-content-sasl-authentication"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>SASL Authentication</h2>
+<p>SASL authentication allows NickServ authentication before the server accepts your connection. For example, <a href="http://freenode.net/sasl/" rel="nofollow">Freenode</a> requires SASL authentication for all tor users due to abuse. This allows them to reject users who aren't registered with nickserv before they have a chance to join a channel and send messages</p>
+<p>To authenticate against a server</p>
+<pre><code>configBuilder.addCapHandler(new SASLCapHandler("myUser", "myPassword"));
+</code></pre>
+<p>If authentication fails or the server doesn't support SASL a CAPException will be thrown. If you do not care about these cases, you can turn off throwing exceptions with the other constructor <code>new SASLCapHandler("yourUsername", "yourPassword", true)</code></p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#other-cap-features" id="user-content-other-cap-features"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Other CAP Features</h2>
+<p>To enable most other CAP features you generally just need to tell the server you want to use them with EnableCapHandler.</p>
+<pre><code>configBuilder.addCapHandler(new EnableCapHandler("aCapFeature"));
+</code></pre>
+<p>If the server doesn't support the requested CAP feature, a CAPException is thrown. Again, if you do not care if the server supports it you can use the other constructor <code>new EnableCapHandler("aCapFeature", true)</code></p>
+<h1>
+<a aria-hidden="true" class="anchor" href="#notable-features" id="user-content-notable-features"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Notable Features</h1>
+<h2>
+<a aria-hidden="true" class="anchor" href="#easy-multi-threading-support" id="user-content-easy-multi-threading-support"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Easy Multi-Threading Support</h2>
+<p>A common issue with PircBot stems from the lack of multithreading. People write bots that use <a href="http://download.oracle.com/javase/1.5.0/docs/api/java/lang/Thread.html#sleep%28long%29" rel="nofollow">Thread.sleep()</a> to wait a few seconds for something else to happen only to realize that they've frozen the entire bot or that the bot simply doesn't work. This and other multithreading issues making it difficult to write more complex bots or to handle lots of load.</p>
+<p>By default all Listeners run in their own separate threads. This means that you can run Thread.sleep(), doLongOperation(), and doLongExpensiveOperation() as much as you want without affecting other Listeners or normal bot operation.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#easily-handle-multi-line-situations" id="user-content-easily-handle-multi-line-situations"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Easily Handle Multi-Line Situations</h2>
+<p>Lets say that you want to have a conversation with a user or want to get multiple lines from someone or something in one batch (NickServ help for example). In PircBot there isn't a clear, easy way to accomplish this (create a field that holds the content, onMessage adds to it, somehow figures out that its finished + figuring out how to prevent other unrelated onMessage from adding)</p>
+<p>PircBotX 1.9 introduces a new class called <a href="http://pircbotx.github.io/pircbotx/latest/apidocs/org/pircbotx/hooks/WaitForQueue.html" rel="nofollow">WaitForQueue</a> to solve this problem, which queues up received events for later processing.</p>
+<p>Following is a simple listener to demonstrate this (This is also in the <a href="https://github.com/TheLQ/pircbotx/blob/latest/src/test/java/org/pircbotx/impl/PircBotXExample.java">PircBotXExample class</a>:</p>
+<pre><code>public void onMessage(MessageEvent event) throws Exception {
+	//If this isn't a waittest, ignore
+	//This way to handle commands is useful for listers that only listen for one command
+	if (!event.getMessage().startsWith("?waitTest start"))
+		return;
+
+	//WaitTest has started
+	event.respond("Started...");
+	WaitForQueue queue = new WaitForQueue(event.getBot());
+	//Infinate loop since we might recieve messages that aren't WaitTest's.
+	while (true) {
+		//Use the waitFor() method to wait for a MessageEvent.
+		//This will block (wait) until a message event comes in, ignoring
+		//everything else
+		MessageEvent currentEvent = queue.waitFor(MessageEvent.class);
+		//Check if this message is the "ping" command
+		if (currentEvent.getMessage().startsWith("?waitTest ping"))
+			event.respond("pong");
+		//Check if this message is the "end" command
+		else if (currentEvent.getMessage().startsWith("?waitTest end")) {
+			event.respond("Stopping");
+			queue.close();
+			//Very important that we end the infinate loop or else the test
+			//will continue forever!
+			return;
+		}
+	}
+}
+</code></pre>
+<p>While this is only an example it can be extended to other senarios as well. You can, for example, parse output from someone or something (eg Nickserv help) very easily by just adding to a variable. The possibilities are endless</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#current-bot-information-in-slf4js-mdc" id="user-content-current-bot-information-in-slf4js-mdc"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Current Bot information in Slf4j's MDC</h2>
+<p>Mainly useful for loggers, information about the current bot is stored in Slf4j's MDC. This can be useful in debugging situations or even to clean up logs by separating by server, port, and bot id</p>
+<pre><code>int botId = Integer.valueOf(MDC.get("pircbotx.id"));
+String botServer = MDC.get("pircbotx.server");
+int botPort = Integer.valueOf(MDC.get("pircbotx.port"));
+</code></pre>
+<h2>
+<a aria-hidden="true" class="anchor" href="#framework-friendly" id="user-content-framework-friendly"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Framework Friendly</h2>
+<p>With the Listener and Event system you now have the power to easily and cleanly integrate into a higher level framework. You can wrap functionality of events and even do most of your work by just implementing the <a href="http://pircbotx.github.io/pircbotx/latest/apidocs/org/pircbotx/hooks/managers/ListenerManager.html" rel="nofollow">ListenerManager interface</a> or by extending one of the existing ListenerManagers.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#support-for-maven" id="user-content-support-for-maven"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Support for Maven</h2>
+<p>PircBot didn't provide any Maven support, making life difficult for Maven users and projects. PircBotX though is built entirely with Maven and is available in Maven central (see the downloading section on the Home Page)</p>
+<p>Using Maven has the added benefit of automatically getting the latest and greatest version by using SNAPSHOT builds. See <a href="DevVersion.md">DevVersion</a> for more information.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#simple-eventrespond" id="user-content-simple-eventrespond"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Simple event.respond()</h2>
+<p>There are multiple ways to send messages to a channel</p>
+<pre><code>bot.sendMessage(channel, "Some Message"); //Sends "Some Message" to channel"
+bot.sendMessage(channel, user, "Some Message"); //Sends "User: Some Message" to channel
+//Don't do this, completely unnecessary
+bot.sendRawLine("PRIVMSG #channel :Some Message");
+</code></pre>
+<p>However an even easier way is provided by PircBotX: <a href="http://pircbotx.github.io/pircbotx/latest/apidocs/org/pircbotx/hooks/Event.html#respond%28java.lang.String%29" rel="nofollow">event.respond()</a>.</p>
+<p>Consider the following Listener</p>
+<pre><code>public void onMessage(MessageEvent event) {
+	if (event.getMessage().equals(".time"))
+		bot.sendMessage(event.getChannel(), event.getUser(), "The current time is " + new Date());
+}
+</code></pre>
+<p>The <a href="http://pircbotx.github.io/pircbotx/latest/apidocs/org/pircbotx/PircBotX.html#sendMessage%28org.pircbotx.Channel,%20org.pircbotx.User,%20java.lang.String%29" rel="nofollow">bot.sendMessage()</a> line looks very ugly. And it can get uglier with different parameters, different ways to get a user, and longer messages.</p>
+<p>The fix? Simply replace that line with this</p>
+<pre><code>event.respond("The current time is " + new Date());
+</code></pre>
+<p>Here <a href="http://pircbotx.github.io/pircbotx/latest/apidocs/org/pircbotx/hooks/events/MessageEvent.html" rel="nofollow">MessageEvent</a> already knows where most people are going to send a message when they receive a MessageEvent: To the channel that the message came from in "Username: Message" format. The respond() method prvoides a simple quick shortcut to that long line. And when the event doesn't send it to where you want the message to go (perhaps you want to private message a user for using bad language in the channel), you can call the longer version instead</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#unified-exception-handling" id="user-content-unified-exception-handling"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Unified Exception Handling</h2>
+<p>Exception handling is something that needs to be treated very specially. When PircBot encounters a problem, it just prints to the console without giving much room for handling. When PircBotX encounters a problem, it gives you a chance to catch and handle the Exception <em>before</em> printing it to the console (the default action, which is easily changeable)</p>
+<p>By extending an existing <a href="http://pircbotx.github.io/pircbotx/latest/apidocs/org/pircbotx/hooks/managers/ListenerManager.html" rel="nofollow">ListenerManager</a> or creating your own you can capture all the Exceptions that are thrown by your Listeners. Then you queue them up to be sent via a PM to you, an email, or some other system. You can also respond to the user telling them that the bot isn't working right now. This allows you to get and handle Exceptions immediately instead of discovering them when going over your logs after many user complaints.</p>
+<h1>
+<a aria-hidden="true" class="anchor" href="#pircbotx-lifecycle" id="user-content-pircbotx-lifecycle"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>PircBotX Lifecycle</h1>
+<p>(This section is on PircBotX internals and can be skipped)</p>
+<p>This is a rough overview of the lifecycle as of 2.0.1</p>
+<ol>
+<li>IdentServer</li>
+</ol>
+<ul>
+<li>Optional IDENT complaint server. If ident is enabled in the configuration Ident.startServer() must be called</li>
+</ul>
+<ol>
+<li>PircBotX.startBot()</li>
+<li>Continuusly calls connect if autoReconnect is true. If autoReconnect is false, call once</li>
+<li>PircBotX.connect()</li>
+<li>Verify and setup state</li>
+<li>Query DNS for all IP records for the server hostname</li>
+<li>Attempt to connect to the first IP. If it fails, dispatch a ConnectAttemptFailedEvent and try the next IP</li>
+<li>If all IPs fail stop execution and throw an IOException</li>
+<li>If were connected, dispatch a SocketConnectEvent</li>
+<li>Adds ident entry if configured</li>
+<li>Send client information to server: NICK, USER, PASS, WEBIRC</li>
+<li>called startLineProcessing()</li>
+<li>PircBotX.startLineProcessing()</li>
+<li>Runs all the following in an infinate loop. When it breaks, calls shutdown()</li>
+<li>Listen for lines from the IRC server</li>
+<li>Sometimes when waiting for lines the socket times out. Sind a PING request to see if the connecting is still alive</li>
+<li>call InpurParser</li>
+<li>InputParser</li>
+</ol>
+<ul>
+<li>The "core" of PircBotX that parses raw data sent from the IRC server into nice, easy to handle events</li>
+<li>In broad terms, IRC lines fall under
+<ul>
+<li>User commands - NICK, JOIN, PART, QUIT, etc</li>
+<li>Server information - MOTD, server stats and options. Also esults of WHOIS, WHO, MODE, etc</li>
+</ul>
+</li>
+<li>A broad overview of the IRC protocol and how PircBotX interacts with the IRC server
+<ol>
+<li>On connect immediately send NICK, USER, CAP LS, etc</li>
+<li>Server will respond with its looking up our IP and (usually) attempt to connect to our IdentServer</li>
+<li>If the server supports IRCv3 CAP it will respond with enabled capabilities. PircBotX will call any added CapHandler's which talk to the server on their own. When all CapHandler's report being done, sends CAP END</li>
+<li>Server starts sending us 001-005 reponses with name, server header and info, and protocol information. At 001 PircBotX considers itself fully connected to the IRC server and dispatches a ConnectEvent. Any autoJoinChannel commands are send</li>
+<li>Server sends various server statistics, MOTD, and other information</li>
+<li>Server sends us our usermode</li>
+<li>Server registers our Join commands we sent earlier. PircBotX sends WHO and MODE command to insert into PircBotX</li>
+<li>Server sends channel statistics, WHO list, mode, topic, etc</li>
+<li>We have now fully joined a channel(s). At this point we've made the client's precense known on the network. Users start sending messages, dcc requests (DCC CHAT, DCC FILE), ctcp requests ("/me likes PircBotX"), and other IRC commands</li>
+<li>Eventually, we have to quit the server with QUIT, be kicked out with ERROR.</li>
+</ol>
+</li>
+<li>Once a line is fully understood the relevant Event is dispatched to the ListenerManager</li>
+</ul>
+<ol>
+<li>DccHandler</li>
+</ol>
+<ul>
+<li>An implementation of the DCC protocol. Due to the protocols complexity, it is an independant package</li>
+<li>The DCC protocol itself is split into 2 parts, and has 2 ways of connecting: us to the user (standard), or the user to us (passive/reverse)
+<ul>
+<li>Standard DCC File
+<ul>
+<li>User sends DCC SEND request with filename, size, their ip address and open port</li>
+<li>Dispatch IncommingFileTransferEvent</li>
+<li>When accepted, reply with</li>
+</ul>
+</li>
+<li>Passive DCC File
+<ul>
+<li>User sends DCC SEND request with filename, size, and 0 for the port, indicating passive request</li>
+<li>Dispatch IncommingFileTransferEvent</li>
+<li>When accepted, reply with DCC SEND with our ip and open port the user connects to</li>
+<li>Wait for user to connect</li>
+<li>User sends file contents, PircBotX writes output to a file and closes connection when finishe</li>
+</ul>
+</li>
+<li>...</li>
+</ul>
+</li>
+<li>...</li>
+</ul>
+<ol>
+<li>ListenerManager</li>
+</ol>
+<ul>
+<li>Recieves an Event and calls all added Listeners</li>
+<li>Very important to be Multi-threaded. Some internal listeners rely on being able to block until they get the event their looking for</li>
+</ul>
+<ol>
+<li>Listener</li>
+</ol>
+<ul>
+<li>Recieved an Event and does user's work</li>
+<li>Usually use ListenerAdapter for its nicer API</li>
+</ul>
+<ol>
+<li>PircBotX.shutdown()</li>
+<li>Called anytime we disconnect from the server</li>
+<li>Closes socket, removes IdentEntry if configured</li>
+<li>Resets internal state</li>
+<li>Dispatches DisconnectEvent</li>
+</ol>
+
+        </div>
+
+    </div>]

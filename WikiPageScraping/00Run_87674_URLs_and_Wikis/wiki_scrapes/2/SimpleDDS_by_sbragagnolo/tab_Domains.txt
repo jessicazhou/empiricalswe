@@ -1,0 +1,152 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>#Domain</p>
+<p>In the publisher/subscriber world, there is a concept called Domain. The Domain concept is the realm where everything is happening, as the court yard is to a football match, the domain is to the publishers and subscribers.
+The domain is based in a master/slave IDEA, where there is a place for registering and quering information about the Domain it self.
+With this restrictions and knowledge, there are many conceptualizations of Domain:</p>
+<blockquote>
+<ul>
+<li>A domain description for tracking down all the domain facts</li>
+<li>A domain reification for the participants for being able to relate with the domain descriptor as the object way.</li>
+<li>A domain facade for exposing the mechanisms as a service.</li>
+<li>A server for serving the facade to the different participants</li>
+<li>A proxy for accessing the domain as a service.</li>
+</ul>
+</blockquote>
+<p>This many aspects are reflected as different kinds of domains or services of domain:</p>
+<blockquote>
+<ul>
+<li>
+<strong>MDDSProtoDomain</strong>
+" Proto domain defines some common behavior and defines the meta concept"
+<ul>
+<li>
+<strong>MDDSDomain</strong>
+" Domain represents the object that the participant deal with. (So, it exist in the participant image)"
+<ul>
+<li>
+<strong>MDDSInternallyDefinedDomain</strong>
+" This domain reification have not contact with any other domain, is fully defined in the image. Is for experiments and testing mainly and for ilustrate the concept "</li>
+<li>
+<strong>MDDSExternallyDefinedDomain</strong>
+" This domain reification defines a similar behavior as the internal one, but delegating in a domain mirror. Its main reason of existance is to transform mirrored objects into local objects"
+<ul>
+<li>
+<strong>DDSExternallyDefinedDomain</strong>
+" This domain is the same as the MDDS version, but it also supports parameters and type registering"</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+<strong>MDDSAbstractDomainMirror</strong>
+" This domain mirror defines the basic expected API for a domain mirror "
+<ul>
+<li>
+<strong>MDDSRemoteDomainMirror</strong>
+" This Domain mirror defines a mirror accesable through a proxy object. It uses a domain proxy for accessing services, but it acts as a mirror"
+<ul>
+<li>
+<strong>DDSRemoteDomainMirror</strong>
+" This domain mirror is the same as the MDDS version, but it also supports parameters and type registering"</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+<strong>MDDSAbstractDomainDescriptor</strong>
+" This domain descriptor defines the basic expected API for a domain descriptor "
+<ul>
+<li>
+<strong>DDSDomainDescriptor</strong>
+" This domain descriptor defines the way to create a participant and manages some extra events. Is a usable class of Domain descriptor"</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</blockquote>
+<p>All these listed classes of the <strong>MDDSProtoDomain</strong> hierarchy are only for domain reification. No class of this hierarchy has anything to do with the connections to outsideimage.  For that the construction may variate in each case.</p>
+<p>##Local defined Domain</p>
+<p>If the domain is entirely local, the definition cannot go out of the image. In this case then publishers and subscribers will be local to image, and since the domain is not being served it information will not be reachable for any kind of network discovery.</p>
+<p>This case was developed as a concept and for testing improvements. It makes not much sense to have all this architecture for local messages.</p>
+<p>Since there is not much to configure in this kind of domain, the way to create a new one is:</p>
+<pre><code>localDomain := MDDSInternallyDefinedDomain new.
+</code></pre>
+<p>##External &amp; mirror domain</p>
+<p>If the domain is described in a remote entity, accesible through network then we have several objects to instanciate, and two flavors</p>
+<p>###MDDS Flavor</p>
+<p>This flavor is based strictly in making available the publisher subscriber  feature, nothing else.  The type registration is local, each participant should know the type definition.</p>
+<pre><code>realProxy := DDSXMLRPCDomainProxy url: 'http://ip:port'.
+proxy := DDSDomainProxy onProxy: realProxy.
+mirror := MDDSRemoteDomainMirror on: proxy.
+externallyDefinedDomain := MDDSExternallyDefinedDomain on: mirror.
+</code></pre>
+<p>In this case, the realProxy is an instance that connects directly with the remote domain. Is a reification of the remote service. In this case the proxy is based on XMLRPC technology, but it can be what ever it is needed. It just need to respect the interface, and it must be synchronous.</p>
+<p>The <strong>DDSDomainProxy</strong> is a generic proxy that transforms the real proxy answers, that are usually basic values into objects.  The Type loader / registry is configured in this objects. By default is used an instance of MDDSTypeLoader lazily created. This class relies on a dictionary for registring and loading type definitions.</p>
+<p>The <strong>MDDSRemoteDomainMirror</strong> takes meaningful objects that it got from <strong>DDSDomainProxy</strong> and tie them to the domain mechanisms, relating them and caching them if needed.</p>
+<p>Finally the externally defined domain, by default it delegates all to the mirror.</p>
+<p>In any case, <strong>MDDSRemoteDomainMirror</strong> do not expose any other thing of the real domain but topics and subscription and publishing of topics.</p>
+<p>###DDS Flavor</p>
+<p>This flavor is directly based on MDDS, but it ads support for bindable parameters in the remote domain, and throught that, remote type registration.</p>
+<p>There are two ways to create this kind of domain, one is similar to the MetaDDS one</p>
+<pre><code>realProxy := DDSXMLRPCDomainProxy url: 'http://ip:port'.
+proxy := DDSDomainProxy onProxy: realProxy.
+mirror := DDSRemoteDomainMirror on: proxy.
+externallyDefinedDomain := DDSExternallyDefinedDomain on: mirror.
+</code></pre>
+<p>The other one is easier, taking in care several defaults</p>
+<pre><code>externallyDefinedDomain  := DDSExternallyDefinedDomain onSimpleDDS: 'http://ip:port'.
+</code></pre>
+<h2>
+<a aria-hidden="true" class="anchor" href="#domain-descriptor" id="user-content-domain-descriptor"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Domain descriptor</h2>
+<p>Finally the domain descriptor is what can be used as backend of the externally defined domain.
+Since this object is in charge for tracking events and not much more else, the creation is quite simple</p>
+<pre><code>domainDescriptor := DDSDomainDescriptor new.
+</code></pre>
+<p>After this, the only thing left is to expose this domain    served some how. For doing this we have a class and it super BasicBehaviorClassMetaclassTest</p>
+<blockquote>
+<ul>
+<li>
+<strong>DDSDomainDescriptorServer</strong>
+" This class has to have the same or a superset of the public API used by the proxies detailed before. In any case, this is an abstract server, it should be subclassed and define the #serveAt: aPort  method "
+<ul>
+<li>
+<strong>DDSDomainDescriptorXMLRPCServer</strong>
+" This class implements the #serveAt: aPort method, by creating a XMLRPC service and delegating the expected service names to the correspondant methods defined in the super class  "</li>
+</ul>
+</li>
+</ul>
+</blockquote>
+<p>Finally then, for creating a domain descriptor server and serve the domain descriptor we have created, we just need to</p>
+<blockquote>
+<p>server := DDSDomainDescriptorServer xmlrpcServerOn: domainDescriptor.
+server serveAt: 11311.</p>
+</blockquote>
+<p>As expected, in order to reset the domain, for our clients, we can set a new empty descriptor</p>
+<pre><code>server domain: DDSDomainDescriptor new.
+</code></pre>
+<h2>
+<a aria-hidden="true" class="anchor" href="#mixing-things-up" id="user-content-mixing-things-up"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Mixing things up</h2>
+<p>Finally, if you had read carefully, you should get the fact that the  real proxy in between client and remote domain public API is a subset of the  domain descriptor server public API. And actually the responses are exactly the same.</p>
+<p>Then if we want to serve a domain descriptor and define one of the several domain clients in the same image, without needing to go out-inside the network, and need to deal with frustrating io locks, we must create our domain like following</p>
+<blockquote>
+<p>server := DDSDomainDescriptorServer xmlrpcServerOn: DDSDomainDescriptor new.
+server domain: DDSDomainDescriptor new.
+server serveAt: 11311.
+domain := DDSExternallyDefinedDomain onLocalSimpleDDS: server.</p>
+</blockquote>
+<p>Or, for having a better idea of what is happening in the construction time</p>
+<pre><code>proxy := DDSDomainProxy onProxy: server.
+mirror := DDSRemoteDomainMirror on: proxy.
+externallyDefinedDomain := DDSExternallyDefinedDomain on: mirror.
+</code></pre>
+<p>Finally, in for all the domains it is needed to define the supported protocols. Since protocols are something that has nothing to do with the over all structure, and since each participan may have different needs, protocols are defined as pluggable.</p>
+<p>No one of the domains have any default protocol, because each distribution has its own definitions.</p>
+<p>For SimpleDDS, after defining the wanted domain</p>
+<pre><code>domain addProtocol: (DDSTCPProtocol encoding: MDDSEncoder  decoding: MDDSDecoder)
+</code></pre>
+
+        </div>
+
+    </div>]

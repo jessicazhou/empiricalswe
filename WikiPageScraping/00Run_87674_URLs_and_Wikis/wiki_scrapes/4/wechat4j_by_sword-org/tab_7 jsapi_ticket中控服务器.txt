@@ -1,0 +1,77 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>jsapi_ticket是使用js-sdk必须要的一个凭证，需要配置在js中。</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#jsapi_ticket%E8%8E%B7%E5%8F%96" id="user-content-jsapi_ticket获取"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>jsapi_ticket获取</h2>
+<p>要获取jsapi_ticket可以使用如下的方法</p>
+<div class="highlight highlight-source-java"><pre><span class="pl-smi">String</span> jsapi_ticket <span class="pl-k">=</span> <span class="pl-smi">TokenProxy</span><span class="pl-k">.</span>jsApiTicket();</pre></div>
+<h2>
+<a aria-hidden="true" class="anchor" href="#jsapi_ticket%E4%B8%AD%E6%8E%A7%E6%9C%8D%E5%8A%A1%E5%99%A8" id="user-content-jsapi_ticket中控服务器"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>jsapi_ticket中控服务器</h2>
+<p>jsapi_ticket每日有一个次数限制，所以客户服务器不能每次是都去请求一个新的jsapi_ticket，每次请求之后，jsapi_ticket都有一个过期时间。因此微信平台建议你使用一个中控服务器来定时刷新jsapi_ticket，取得之后存起来不用再去请求jsapi_ticket，因为jsapi_ticket请求有次数限制。 这样处理只有有两个好处：</p>
+<ol>
+<li>保证jsapi_ticket每日都不会超出访问限制，保证服务的正常。</li>
+<li>提高服务的性能，不用每次发送业务请求之前都先发送一次jsapi_ticket获取请求。</li>
+</ol>
+<p>wechat4j获取jsapi_ticket是通过jsapi_ticket的代理TokenProxy来获取，而此代理封装了jsapi_ticket的中控服务器。对jsapi_ticket的保存有两种方式，一种是内存保存，一种是持久化保存（数据库或者文件）。内存保存方式的中控服务器由wehcat4j实现，客户不做任何操作。如果客户要使用持久化保存，那么就需要自己去定义中控服务器。所以有如下两种中控服务器：</p>
+<ul>
+<li>jsapi_ticket默认中控服务器</li>
+<li>jsapi_ticket自定义中控服务器</li>
+</ul>
+<h2>
+<a aria-hidden="true" class="anchor" href="#%E9%BB%98%E8%AE%A4%E4%B8%AD%E6%8E%A7%E6%9C%8D%E5%8A%A1%E5%99%A8" id="user-content-默认中控服务器"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>默认中控服务器</h2>
+<p>wechat4j的默认中控服务器是内存模式，即将jsapi_ticket保存在内存中，直到过期的时候再去请求一个新的来替代。默认中控服务器对应的类是JsApiTicketMemServer。</p>
+<ul>
+<li>
+<em>优点</em>：此模式的中控服务器有点是效率高，使用方便，客户不用关心。</li>
+<li>
+<em>缺点</em>：无法支持多服务器的集群，如果多个服务器的时候，此方式将不被支持。</li>
+</ul>
+<h2>
+<a aria-hidden="true" class="anchor" href="#%E8%87%AA%E5%AE%9A%E4%B9%89%E4%B8%AD%E6%8E%A7%E6%9C%8D%E5%8A%A1%E5%99%A8" id="user-content-自定义中控服务器"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>自定义中控服务器</h2>
+<p>如果你需要将jsapi_ticket保存在数据库或者文件中，那么就需要使用自定义的中控服务器。自定义的服务器需要客户自己完成，必须继承抽象类CustomerServer，完成其中的保存和查询方法即可，同时自定义的服务器是由定时器来驱动操作的，需要配置监听器。
+配置自定义jsapi_ticket服务器的详细步骤：</p>
+<ul>
+<li>创建自己的服务器类，需要继承wechat4j的CustomerServer类，实现save和find方法，前者是将jsapi_ticket保存到数据库的操作，后者是从数据库中查询jsapi_ticket的方法，里面可以是一个sql操作之类的。</li>
+</ul>
+<div class="highlight highlight-source-java"><pre><span class="pl-k">public</span> <span class="pl-k">class</span> <span class="pl-en">CustomerJsApiTicketServer</span> <span class="pl-k">extends</span> <span class="pl-e">CustomerServer</span>{
+
+	<span class="pl-c"><span class="pl-c">/*</span> (non-Javadoc)</span>
+<span class="pl-c">	 * @see org.sword.wechat4j.token.DbAccessTokenServer#find()</span>
+<span class="pl-c">	 <span class="pl-c">*/</span></span>
+	<span class="pl-k">@Override</span>
+	<span class="pl-k">public</span> <span class="pl-smi">String</span> <span class="pl-en">find</span>() {
+		<span class="pl-smi">String</span> accessToken <span class="pl-k">=</span> <span class="pl-c1">null</span>;
+		<span class="pl-c"><span class="pl-c">//</span>执行数据库操作</span>
+<span class="pl-c"><span class="pl-c">//</span>		String sql = "select cfgValue from cfg where cfg.cfgKey = 'jsapi_ticket'";</span>
+<span class="pl-c"><span class="pl-c">//</span>		accessToken = DBUtil.query(sql);</span>
+		<span class="pl-k">return</span> accessToken;
+	}
+
+	<span class="pl-c"><span class="pl-c">/*</span> (non-Javadoc)</span>
+<span class="pl-c">	 * @see org.sword.wechat4j.token.DbAccessTokenServer#save()</span>
+<span class="pl-c">	 <span class="pl-c">*/</span></span>
+	<span class="pl-k">@Override</span>
+	<span class="pl-k">public</span> <span class="pl-k">boolean</span> <span class="pl-en">save</span>(<span class="pl-smi">Token</span> <span class="pl-v">jsapiTicket</span>) {
+		<span class="pl-c"><span class="pl-c">//</span>如果没有需要插入，如果有的就更新，假设已经有了数据库配置项</span>
+<span class="pl-c"><span class="pl-c">//</span>		String sql = "update cfg set cfg.cfgValue=" + jsapiTicket.getToken() + </span>
+<span class="pl-c"><span class="pl-c">//</span>				" where cfg.cfgKey= 'jsapi_ticket'";</span>
+<span class="pl-c"><span class="pl-c">//</span>		DBUtil.execute(sql);</span>
+		<span class="pl-k">return</span> <span class="pl-c1">true</span>;
+	}
+}</pre></div>
+<ul>
+<li>在wechat4j.properties配置文件中配置wechat.ticket.jsapi.server.class项，配上刚才新建的服务器类的路径,示例如下：</li>
+</ul>
+<div class="highlight highlight-source-ini"><pre> <span class="pl-k">wechat.ticket.jsapi.server.class</span>=com.sample.wechat.CustomerJsApiTicketServer </pre></div>
+<ul>
+<li>在web.xml中配置wechat4j的监听器。代码如下：</li>
+</ul>
+<div class="highlight highlight-text-xml"><pre>  	&lt;<span class="pl-ent">listener</span>&gt;
+		&lt;<span class="pl-ent">listener-class</span>&gt;org.sword.wechat4j.token.TokenListener&lt;/<span class="pl-ent">listener-class</span>&gt;
+	&lt;/<span class="pl-ent">listener</span>&gt;</pre></div>
+<p>通过如上三步就能配置好自己的数据库jsapi_ticket服务器。这样由中控服务器定时去刷新jsapi_ticket,然后保存到数据库中，业务逻辑中要使用jsapi_ticket的时候，是通过代理去数据库拿到数据。
+定时刷新任务会<em>提前200秒</em>运行，防止到有效期之后运行过程中新jsapi_ticket没有取得旧的jsapi_ticket过期的情况发生。</p>
+
+        </div>
+
+    </div>]

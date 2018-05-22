@@ -1,0 +1,255 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>NOTE: These are basic installation instructions.  Properly configuring a production server would require additional work.</p>
+<p>The installation will require the installation of the following components</p>
+<ol>
+<li>
+<p>Ubuntu (these instructions are for Ubuntu version 14.04 LTS)</p>
+</li>
+<li>
+<p>Configure Proxy Settings</p>
+</li>
+<li>
+<p>Git</p>
+</li>
+<li>
+<p>RVM and Ruby 2</p>
+</li>
+<li>
+<p>MongoDB</p>
+</li>
+<li>
+<p>Crucible Source Code</p>
+</li>
+<li>
+<p>Configure Passenger / Apache</p>
+</li>
+<li>
+<p>Installing Ubuntu</p>
+</li>
+</ol>
+<hr/>
+<p>The ISO for ubuntu 14.04 LTS can be downloaded from the following URL:
+<a href="http://releases.ubuntu.com/14.04/" rel="nofollow">http://releases.ubuntu.com/14.04/</a></p>
+<p>Installing Ubuntu is a fairly straight-forward process, but for more details on installing Ubuntu please visit the following URLs:</p>
+<p><strong>Graphical install using the desktop CD:</strong>
+<a href="https://help.ubuntu.com/community/GraphicalInstall" rel="nofollow">https://help.ubuntu.com/community/GraphicalInstall</a></p>
+<p><strong>Installation using the Alternate CD (more configuration options):</strong>
+<a href="https://help.ubuntu.com/14.04/installation-guide/index.html" rel="nofollow">https://help.ubuntu.com/14.04/installation-guide/index.html</a></p>
+<p>Once Ubuntu has been installed you need to update the Apt packages.  Apt is a software package management system used by Ubuntu.  Note: the last command in the group below is only necessary if any packages were actually upgraded.</p>
+<pre><code>sudo apt-get update
+sudo apt-get upgrade
+sudo shutdown -r now
+</code></pre>
+<p>Once the machine reboots you will likely want to install an SSH server.  This will allow you to connect remotely to the machine.</p>
+<pre><code>sudo apt-get install openssh-server
+</code></pre>
+<p>Once SSH is installed, you can determine the IP address of the machine using the command</p>
+<pre><code>ifconfig
+</code></pre>
+<p>In the output of this command, look under the block labelled eth0, you should find an IP address after the label <strong>inet addr:</strong>.</p>
+<ol start="2">
+<li>Configure Proxy Settings</li>
+</ol>
+<hr/>
+<p>This step is only required if the server you are installing Crucible onto needs to go through an HTTP proxy server to reach the internet.  These steps will ensure that the appropriate proxy settings are in place for every user that logs into the system.</p>
+<p>Use your favourite text editor to create a file in <em>/etc/profile.d</em> named <strong>http_proxy.sh</strong> with the following contents.  In the sample below, replace <em>your.proxy.host.com</em> with the fully-qualified host name of your proxy server, and <em>your.proxy.port</em> with the port number that the proxy server uses.</p>
+<pre><code># Set up system-wide HTTP proxy settings for all users
+http_proxy='http://your.proxy.host.com:your.proxy.port/'
+https_proxy='http://your.proxy.host.com:your.proxy.port/'
+export http_proxy https_proxy
+</code></pre>
+<p>Set proper permissions on the new file, and load the settings into the current environment.  NOTE: the proxy settings will automatically be loaded when a user logs in, but we are manually loading them here, to avoid having to log out and log back in again.</p>
+<pre><code>sudo chmod 0644 /etc/profile.d/http_proxy.sh
+source /etc/profile.d/http_proxy.sh
+</code></pre>
+<p>Make sure that the <em>sudo</em> command will allow the new proxy settings to be passed to commands it launches. This is done by using your text editor to create a file in <em>the /etc/sudoers.d</em> directory named <strong>http_proxy</strong> (no extension) with the following contents:</p>
+<pre><code># keep http_proxy environment variables.
+Defaults env_keep += "http_proxy https_proxy"
+</code></pre>
+<p>Set proper permissions on the new file:</p>
+<pre><code>sudo chmod 0440 /etc/sudoers.d/http_proxy
+</code></pre>
+<ol start="3">
+<li>Installing Git</li>
+</ol>
+<hr/>
+<p>Git is a source control system.  It will be used later to download the Crucible source code.</p>
+<pre><code>sudo apt-get install git-core
+</code></pre>
+<ol start="4">
+<li>Installing RVM and Ruby 2.0</li>
+</ol>
+<hr/>
+<p>RVM is a system that allows managing different versions of Ruby.  It will allow the correct version of ruby to be easily installed on the system.  Ruby is the development language used for the Crucible application.</p>
+<p>First we will need to install some dependencies:</p>
+<pre><code>sudo apt-get install build-essential openssl libssl-dev libreadline6 libreadline6-dev curl zlib1g zlib1g-dev libyaml-dev libsqlite3-dev sqlite3 libxml2-dev libxslt-dev autoconf libc6-dev ncurses-dev automake libtool bison subversion pkg-config
+</code></pre>
+<p>Next install Ruby.</p>
+<pre><code>cd
+git clone git://github.com/sstephenson/rbenv.git .rbenv
+echo 'export PATH="$HOME/.rbenv/bin:$PATH"' &gt;&gt; ~/.bashrc
+echo 'eval "$(rbenv init -)"' &gt;&gt; ~/.bashrc
+exec $SHELL
+
+git clone git://github.com/sstephenson/ruby-build.git ~/.rbenv/plugins/ruby-build
+echo 'export PATH="$HOME/.rbenv/plugins/ruby-build/bin:$PATH"' &gt;&gt; ~/.bashrc
+exec $SHELL
+
+git clone https://github.com/sstephenson/rbenv-gem-rehash.git ~/.rbenv/plugins/rbenv-gem-rehash
+
+rbenv install 2.2.3
+rbenv global 2.2.3
+ruby -v
+</code></pre>
+<p>Install bundler.  Bundler is a Ruby Gem that allows downloading additional dependencies once we have the Crucible source code:</p>
+<pre><code>gem install bundler
+</code></pre>
+<ol start="5">
+<li>Installing MongoDB</li>
+</ol>
+<hr/>
+<p>MongoDB is the database used by Crucible.  To install MongoDB run the commands:</p>
+<pre><code>sudo sh -c "echo 'deb http://repo.mongodb.org/apt/ubuntu trusty/mongodb-org/3.0 multiverse' &gt;&gt; /etc/apt/sources.list"
+sudo apt-key adv --keyserver keyserver.ubuntu.com --recv 7F0CEB10
+sudo apt-get update
+sudo apt-get install -y mongodb-org=3.0.12 mongodb-org-server=3.0.12 mongodb-org-shell=3.0.12 mongodb-org-mongos=3.0.12 mongodb-org-tools=3.0.12
+echo "mongodb-org hold" | sudo dpkg --set-selections
+echo "mongodb-org-server hold" | sudo dpkg --set-selections
+echo "mongodb-org-shell hold" | sudo dpkg --set-selections
+echo "mongodb-org-mongos hold" | sudo dpkg --set-selections
+echo "mongodb-org-tools hold" | sudo dpkg --set-selections
+</code></pre>
+<p>To test connection (wait at least 15 seconds to let the db start up), run the command below.  If the command exits with a error about not being able to connect, then reboot, and log back in as the admin user.  Sometimes mongodb fails to create a network socket when it is started immediately after installation.  It should automatically start when the system is rebooted.</p>
+<pre><code>mongo
+</code></pre>
+<p>This should output
+<strong><em>MongoDB shell version: 3.0.x</em></strong></p>
+<p>Type 'exit' to exit the mongo shell</p>
+<pre><code>exit
+</code></pre>
+<ol start="6">
+<li>Crucible Source Code</li>
+</ol>
+<hr/>
+<p><strong>Install Bower</strong></p>
+<pre><code>sudo apt-get install nodejs
+sudo apt-get install npm
+sudo npm install bower -g
+sudo ln -s /usr/bin/nodejs /usr/bin/node
+</code></pre>
+<p><strong>Getting the Crucible code</strong></p>
+<pre><code>git clone https://github.com/fhir-crucible/crucible.git
+cd crucible
+bundle install
+bower install
+bundle exec rake assets:precompile RAILS_ENV=production
+</code></pre>
+<ol start="7">
+<li>Configure Passenger / Apache</li>
+</ol>
+<hr/>
+<p>Install apache and passenger with the following commands:</p>
+<pre><code>sudo apt-get install apache2
+gem install passenger
+</code></pre>
+<p>These should be the dependencies required for passenger:</p>
+<pre><code>sudo apt-get install libcurl4-openssl-dev apache2-prefork-dev libapr1-dev libaprutil1-dev
+</code></pre>
+<p>Install the apache passenger module.  NOTE the configuration at the end. If you need other dependencies, the installer will tell you:</p>
+<pre><code>passenger-install-apache2-module
+</code></pre>
+<p>Add a file for passenger configuration</p>
+<p>sudo nano /etc/apache2/conf-available/passenger.conf</p>
+<p>Add the contents from the end of the passenger-install-apache2-module command... they should look something like:</p>
+<p>LoadModule passenger_module /home/ubuntu/.rbenv/versions/2.2.3/lib/ruby/gems/2.2.0/gems/passenger-5.0.22/buildout/apache2/mod_passenger.so
+
+PassengerRoot /home/ubuntu/.rbenv/versions/2.2.3/lib/ruby/gems/2.2.0/gems/passenger-5.0.22
+PassengerDefaultRuby /home/ubuntu/.rbenv/versions/2.2.3/bin/ruby
+</p>
+<p>turn on the configuration</p>
+<pre><code>sudo ln -s /etc/apache2/conf-available/passenger.conf /etc/apache2/conf-enabled/passenger.conf
+</code></pre>
+<p>Add a file for config info</p>
+<pre><code>sudo nano /etc/apache2/sites-available/crucible.conf
+</code></pre>
+<p>With the following content (changing the path appropriately):</p>
+<pre><code>&lt;VirtualHost *:80&gt;
+        DocumentRoot &lt;path&gt;/crucible/public
+        &lt;Directory &lt;path&gt;/crucible/public&gt;
+                Require all granted
+                AllowOverride all
+                Options -MultiViews
+                # Compress css and js
+                AddOutputFilterByType DEFLATE text/css application/x-javascript application/javascript text/javascript
+        &lt;/Directory&gt;
+&lt;/VirtualHost&gt;
+</code></pre>
+<p>Make the default apache site be the crucible provided content:</p>
+<pre><code>sudo rm /etc/apache2/sites-enabled/000-default.conf
+sudo ln -s /etc/apache2/sites-available/crucible.conf /etc/apache2/sites-enabled/crucible.conf
+</code></pre>
+<p>Set the secret token. Edit the following file and replace &lt;%= ENV["SECRET_KEY_BASE"] %&gt; with a secret key.  You can also set this through the environment if you choose.
+nano config/secrets.yml</p>
+<p>Restart apache:</p>
+<pre><code>sudo service apache2 restart
+</code></pre>
+<p>Set up job runner
+sudo nano /etc/init.d/delayed-job</p>
+<p>Enter the following contents (NOTE: you will have to update the path from /home/ubuntu to your user home)</p>
+<pre><code>#!/bin/bash
+#
+# delayed job
+#
+# chkconfig: - 99 15
+# description: start, stop, restart God (bet you feel powerful)
+#
+
+RETVAL=0
+
+case "$1" in
+    start)
+      cd /home/ubuntu/crucible
+      su ubuntu -c 'export PATH=$PATH:/home/ubuntu/.rbenv/versions/2.2.3/bin/ ; RAILS_ENV=production bin/delayed_job -n3 start'
+      RETVAL=$?
+      ;;
+    stop)
+      cd /home/ubuntu/crucible
+      su ubuntu -c 'export PATH=$PATH:/home/ubuntu/.rbenv/versions/2.2.3/bin/ ; RAILS_ENV=production bin/delayed_job stop'
+      RETVAL=$?
+      ;;
+    restart)
+      cd /home/ubuntu/crucible
+      su ubuntu -c 'export PATH=$PATH:/home/ubuntu/.rbenv/versions/2.2.3/bin/ ; RAILS_ENV=production bin/delayed_job restart'
+      RETVAL=$?
+      ;;
+    status)
+      cd /home/ubuntu/crucible
+      su ubuntu -c 'export PATH=$PATH:/home/ubuntu/.rbenv/versions/2.2.3/bin/ ; RAILS_ENV=production bin/delayed_job status'
+      RETVAL=$?
+      ;;
+    *)
+      echo "Usage: delayed-job {start|stop|restart|status}"
+      exit 1
+  ;;
+esac
+
+exit $RETVAL
+</code></pre>
+<p>Allow execution</p>
+<pre><code>sudo chmod a+x /etc/init.d/delayed-job
+</code></pre>
+<p>Set Delayed Job to start up automatically</p>
+<pre><code>sudo update-rc.d delayed-job defaults
+</code></pre>
+<p>Then start the Delayed Job:</p>
+<pre><code>sudo /etc/init.d/delayed-job start
+</code></pre>
+<p>To open the Crucible web app you'll need the server IP address from step 1.  The server IP address was found
+from the ifconfig command.  Open a web browser and enter</p>
+<p>http://&lt;server_ip_address from step 1&gt;/</p>
+<p>This should open the Crucible web application.  Add a server url to begin testing FHIR.</p>
+
+        </div>
+
+    </div>]

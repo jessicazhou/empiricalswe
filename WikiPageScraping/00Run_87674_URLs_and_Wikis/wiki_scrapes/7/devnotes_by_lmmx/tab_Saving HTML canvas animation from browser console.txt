@@ -1,0 +1,104 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <h3>
+<a aria-hidden="true" class="anchor" href="#no-cross-origin-scripts-image-download-post-processing-guide" id="user-content-no-cross-origin-scripts-image-download-post-processing-guide"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>No cross origin scripts, image download post processing guide</h3>
+<p>...but otherwise only a slightly modified version of <a href="http://stackoverflow.com/a/3515279/2668831" rel="nofollow">this wonderful answer</a> to a StackOverflow question on how to reproduce a HTML canvas locally using javascript.</p>
+<p><strike>Below</strike> <a href="https://gist.github.com/lmmx/04a87c473df61d2f3696">gisted here</a> is the same code, with actual JS in place of cross-site calls to <code>raw.github...</code> links, which Google Chrome is blocking. Anyone else using this should probably verify their contents (see original question) rather than take my word though! :-) For my own reference.</p>
+<p>Click <a href="#saving-images">here</a> to jump down to code for saving the images</p>
+<div class="highlight highlight-source-js"><pre><span class="pl-k">var</span> jsf  <span class="pl-k">=</span> [<span class="pl-s"><span class="pl-pds">"</span>/Demos/b64.js<span class="pl-pds">"</span></span>, <span class="pl-s"><span class="pl-pds">"</span>LZWEncoder.js<span class="pl-pds">"</span></span>, <span class="pl-s"><span class="pl-pds">"</span>NeuQuant.js<span class="pl-pds">"</span></span>, <span class="pl-s"><span class="pl-pds">"</span>GIFEncoder.js<span class="pl-pds">"</span></span>];
+
+<span class="pl-c"><span class="pl-c">/*</span></span>
+<span class="pl-c">   Edit: I've removed the cross-origin call to get github files, and entered here.</span>
+<span class="pl-c">   You may want to verify their contents!</span>
+<span class="pl-c"><span class="pl-c">*/</span></span>
+
+<span class="pl-c"><span class="pl-c">//</span> JSF JAVASCRIPT BEGINS HERE</span>
+
+<span class="pl-c"><span class="pl-c">//</span> truncated for readability: see https://gist.github.com/lmmx/04a87c473df61d2f3696</span>
+
+<span class="pl-c"><span class="pl-c">//</span> JSF JAVASCRIPT ENDS HERE</span>
+
+<span class="pl-c"><span class="pl-c">//</span> This post was very helpful!</span>
+<span class="pl-c"><span class="pl-c">//</span> http://antimatter15.com/wp/2010/07/javascript-to-animated-gif/</span>
+
+<span class="pl-k">var</span> w <span class="pl-k">=</span> <span class="pl-c1">setTimeout</span>(<span class="pl-k">function</span>() { <span class="pl-c"><span class="pl-c">//</span> give external JS 1 second of time to load</span>
+
+    <span class="pl-en">console</span>.<span class="pl-c1">log</span>(<span class="pl-s"><span class="pl-pds">'</span>Starting<span class="pl-pds">'</span></span>);
+
+    <span class="pl-k">var</span> canvas <span class="pl-k">=</span> <span class="pl-c1">document</span>.<span class="pl-c1">getElementById</span>(<span class="pl-s"><span class="pl-pds">"</span>mycanvas<span class="pl-pds">"</span></span>);
+    <span class="pl-k">var</span> context <span class="pl-k">=</span> <span class="pl-smi">canvas</span>.<span class="pl-c1">getContext</span>(<span class="pl-s"><span class="pl-pds">'</span>2d<span class="pl-pds">'</span></span>);
+    <span class="pl-k">var</span> shots  <span class="pl-k">=</span> [];
+    <span class="pl-k">var</span> grabLimit <span class="pl-k">=</span> <span class="pl-c1">100</span>;  <span class="pl-c"><span class="pl-c">//</span> Number of screenshots to take</span>
+    <span class="pl-k">var</span> grabRate  <span class="pl-k">=</span> <span class="pl-c1">100</span>; <span class="pl-c"><span class="pl-c">//</span> Miliseconds. 500 = half a second</span>
+    <span class="pl-k">var</span> count     <span class="pl-k">=</span> <span class="pl-c1">0</span>;
+
+    <span class="pl-k">function</span> <span class="pl-en">showResults</span>() {
+        <span class="pl-en">console</span>.<span class="pl-c1">log</span>(<span class="pl-s"><span class="pl-pds">'</span>Finishing<span class="pl-pds">'</span></span>);
+        <span class="pl-smi">encoder</span>.<span class="pl-en">finish</span>();
+        <span class="pl-k">var</span> binary_gif <span class="pl-k">=</span> <span class="pl-smi">encoder</span>.<span class="pl-en">stream</span>().<span class="pl-en">getData</span>();
+        <span class="pl-k">var</span> data_url <span class="pl-k">=</span> <span class="pl-s"><span class="pl-pds">'</span>data:image/gif;base64,<span class="pl-pds">'</span></span><span class="pl-k">+</span><span class="pl-en">encode64</span>(binary_gif);
+        <span class="pl-c1">document</span>.<span class="pl-c1">write</span>(<span class="pl-s"><span class="pl-pds">'</span>&lt;img src="<span class="pl-pds">'</span></span> <span class="pl-k">+</span>data_url <span class="pl-k">+</span> <span class="pl-s"><span class="pl-pds">'</span>"/&gt;<span class="pl-cce">\n</span><span class="pl-pds">'</span></span>);
+    }
+
+    <span class="pl-k">var</span> encoder <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-en">GIFEncoder</span>();
+    <span class="pl-smi">encoder</span>.<span class="pl-en">setRepeat</span>(<span class="pl-c1">0</span>);  <span class="pl-c"><span class="pl-c">//</span>0  -&gt; loop forever, 1+ -&gt; loop n times then stop</span>
+    <span class="pl-smi">encoder</span>.<span class="pl-en">setDelay</span>(<span class="pl-c1">500</span>); <span class="pl-c"><span class="pl-c">//</span>go to next frame every n milliseconds</span>
+    <span class="pl-smi">encoder</span>.<span class="pl-c1">start</span>();
+
+    <span class="pl-k">var</span> grabber <span class="pl-k">=</span> <span class="pl-c1">setInterval</span>(<span class="pl-k">function</span>(){
+      <span class="pl-en">console</span>.<span class="pl-c1">log</span>(<span class="pl-s"><span class="pl-pds">'</span>Grabbing <span class="pl-pds">'</span></span><span class="pl-k">+</span>count);
+      count<span class="pl-k">++</span>;
+
+      <span class="pl-k">if</span> (count<span class="pl-k">&gt;</span>grabLimit) {
+        <span class="pl-c1">clearInterval</span>(grabber);
+        <span class="pl-en">showResults</span>();
+      }
+
+      <span class="pl-k">var</span> imdata <span class="pl-k">=</span> <span class="pl-smi">context</span>.<span class="pl-en">getImageData</span>(<span class="pl-c1">0</span>,<span class="pl-c1">0</span>,<span class="pl-smi">canvas</span>.<span class="pl-c1">width</span>,<span class="pl-smi">canvas</span>.<span class="pl-c1">height</span>);
+      <span class="pl-smi">encoder</span>.<span class="pl-en">addFrame</span>(context);
+
+    }, grabRate);
+
+}, <span class="pl-c1">1000</span>);</pre></div>
+<h2>
+<a aria-hidden="true" class="anchor" href="#saving-images" id="user-content-saving-images"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Saving images</h2>
+<ul>
+<li>Use <code>Ctrl</code> + <code>C</code> in Chrome to select the elements (find the first in the sequence, remove all others, same for the end to give a full sequence)</li>
+</ul>
+<p>Run a loop over these elements, open them in new tabs with <strike><a href="https://chrome.google.com/webstore/detail/openlist/nkpjembldfckmdchbdiclhfedcngbgnl?hl=en" rel="nofollow">OpenList</a> and</strike> save with (my extension!) <a href="https://chrome.google.com/webstore/detail/tab-save/lkngoeaeclaebmpkgapchgjdbaekacki?hl=en" rel="nofollow">TabSave</a> <img align="absmiddle" alt=":smiley:" class="emoji" data-canonical-src="https://assets-cdn.github.com/images/icons/emoji/unicode/1f603.png" height="20" src="https://camo.githubusercontent.com/11be4fdc31bbe050d5341c53d075a3bf846310f0/68747470733a2f2f6173736574732d63646e2e6769746875622e636f6d2f696d616765732f69636f6e732f656d6f6a692f756e69636f64652f31663630332e706e67" title=":smiley:" width="20"/></p>
+<p><sup>Actually there's no need to open the images in tabs, just go straight to saving by clicking the pencil icon in <em>TabSave</em></sup></p>
+<p><a href="https://github.com/lmmx/devnotes/blob/master/TabSave%20data%20uri%20download%20screenshot.png?raw=true"><img alt="" src="https://github.com/lmmx/devnotes/raw/master/TabSave%20data%20uri%20download%20screenshot.png?raw=true"/></a></p>
+<div class="highlight highlight-source-js"><pre><span class="pl-c"><span class="pl-c">//</span> process the resultant images by pasting into OneList, then let TabSave do the downloading</span>
+
+imgs <span class="pl-k">=</span> <span class="pl-c1">document</span>.<span class="pl-c1">querySelectorAll</span>(<span class="pl-s"><span class="pl-pds">'</span>img<span class="pl-pds">'</span></span>);
+imglinks <span class="pl-k">=</span> [];
+<span class="pl-k">for</span> (i<span class="pl-k">=</span><span class="pl-c1">0</span>;i<span class="pl-k">&lt;</span><span class="pl-smi">imgs</span>.<span class="pl-c1">length</span>;i<span class="pl-k">++</span>) {
+  <span class="pl-smi">imglinks</span>.<span class="pl-c1">push</span>(imgs[i].<span class="pl-smi">src</span>);
+}</pre></div>
+<p>If you've got ∞ RAM and/or just a few frames, just <code>copy(imglinks.join('\n'))</code>, else slice the array into manageable windows (opening too many tabs in a window can make Chrome croak)</p>
+<pre><code>imglinks1 = imglinks.slice(0,20);
+imglinks2 = imglinks.slice(21,40);
+imglinks3 = imglinks.slice(41,60);
+imglinks4 = imglinks.slice(61,80);
+imglinks5 = imglinks.slice(81,100);
+imglinks6 = imglinks.slice(101,imglinks.length);
+
+copy(imglinks1.join('\n'));
+// etc.
+</code></pre>
+<p>Paste into <strike>OpenList</strike> <em>TabSave</em> (OpenList actually Googles the data-uri...) to have all images download (on my computer the default filename for these data-uri images is <code>download</code>).</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#rendering-animation" id="user-content-rendering-animation"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Rendering animation</h2>
+<p>GIMP: <code>Ctrl</code> + <code>Alt</code> + <code>O</code> to add on top of an original layer <img align="absmiddle" alt=":+1:" class="emoji" data-canonical-src="https://assets-cdn.github.com/images/icons/emoji/unicode/1f44d.png" height="20" src="https://camo.githubusercontent.com/a2840914d539225aaf8d395397d8dbc488a0740d/68747470733a2f2f6173736574732d63646e2e6769746875622e636f6d2f696d616765732f69636f6e732f656d6f6a692f756e69636f64652f31663434642e706e67" title=":+1:" width="20"/></p>
+<p><img alt="" src="https://github.com/lmmx/devnotes/raw/master/FTanimation.gif?raw=true"/></p>
+<p><sup>Example animation generated this way, from <a href="http://hascanvas.com/fftvisualize2" rel="nofollow">this canvas</a></sup></p>
+
+        </div>
+
+        <div class="wiki-footer gollum-markdown-content boxed-group" id="wiki-footer">
+          <div class="boxed-group-inner wiki-auxiliary-content markdown-body">
+            <p><a href="https://github.com/lmmx/devnotes/wiki">Main page</a></p>
+
+          </div>
+        </div>
+    </div>]

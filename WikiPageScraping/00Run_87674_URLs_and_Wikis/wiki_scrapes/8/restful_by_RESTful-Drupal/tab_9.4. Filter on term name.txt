@@ -1,0 +1,59 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <h3>
+<a aria-hidden="true" class="anchor" href="#problem" id="user-content-problem"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Problem:</h3>
+<p>You know the machine name of a term, but you do not know the term ID.  Currently, you can only filter on term ID</p>
+<p><strong>Works:</strong>
+<code>[site]/api/v1.0/[resource-name]?filter[issues]=[tid]</code></p>
+<p><strong>Does Not Work:</strong>
+<code>[site]/api/v1.0/[resource-name]?filter[issues]=[term-name]</code></p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#background" id="user-content-background"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Background:</h3>
+<p>You have a publication website.
+The publication website has issues, with a vocabulary name publication_issue
+You have setup and endpoint @ [site]/api/v1.0/publication_issues</p>
+<p>Say you have a URL alias of <code>http://[site]/issues/[term-name]</code> and you want to load the load the term.  Right now you you only know the term's name.  You sent an API call to <code>http://[site]/api/v1.0/publication_issues?filter[issue]=[term-name]</code> with the following code inside your publication_issues class.</p>
+<div class="highlight highlight-text-html-php"><pre><span class="pl-s1">  <span class="pl-c"><span class="pl-c">/**</span></span></span>
+<span class="pl-s1"><span class="pl-c">   * Overrides RestfulEntityBaseNode::publicFieldsInfo().</span></span>
+<span class="pl-s1"><span class="pl-c">   <span class="pl-c">*/</span></span></span>
+<span class="pl-s1">  <span class="pl-k">public</span> <span class="pl-k">function</span> <span class="pl-en">publicFieldsInfo</span>() {</span>
+<span class="pl-s1">    <span class="pl-smi">$public_fields</span>[<span class="pl-s"><span class="pl-pds">'</span>issue<span class="pl-pds">'</span></span>] <span class="pl-k">=</span> <span class="pl-c1">array</span>(</span>
+<span class="pl-s1">      <span class="pl-s"><span class="pl-pds">'</span>property<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-s"><span class="pl-pds">'</span>field_issue<span class="pl-pds">'</span></span>,</span>
+<span class="pl-s1">    );</span>
+<span class="pl-s1">  <span class="pl-k">....</span></span>
+<span class="pl-s1"></span>
+<span class="pl-s1">  }</span>
+<span class="pl-s1">  <span class="pl-c"><span class="pl-c">/**</span></span></span>
+<span class="pl-s1"><span class="pl-c">   * Overrides parent filter the query for list.</span></span>
+<span class="pl-s1"><span class="pl-c">   *</span></span>
+<span class="pl-s1"><span class="pl-c">   * <span class="pl-k">@param</span> \entityfieldquery $query</span></span>
+<span class="pl-s1"><span class="pl-c">   *   the query object.</span></span>
+<span class="pl-s1"><span class="pl-c">   *</span></span>
+<span class="pl-s1"><span class="pl-c">   * <span class="pl-k">@throws</span> \restfulbadrequestexception</span></span>
+<span class="pl-s1"><span class="pl-c">   *</span></span>
+<span class="pl-s1"><span class="pl-c">   * <span class="pl-k">@see</span> \restfulentitybase::getqueryforlist</span></span>
+<span class="pl-s1"><span class="pl-c">   <span class="pl-c">*/</span></span></span>
+<span class="pl-s1">  <span class="pl-k">protected</span> <span class="pl-k">function</span> <span class="pl-en">queryforlistfilter</span>(<span class="pl-c1">\</span><span class="pl-c1">entityfieldquery</span> <span class="pl-smi">$query</span>) {</span>
+<span class="pl-s1">    <span class="pl-k">foreach</span> (<span class="pl-smi">$this</span><span class="pl-k">-&gt;</span>parserequestforlistfilter() <span class="pl-k">as</span> <span class="pl-smi">$filter</span>) {</span>
+<span class="pl-s1">      <span class="pl-k">if</span> (<span class="pl-smi">$filter</span>[<span class="pl-s"><span class="pl-pds">'</span>public_field<span class="pl-pds">'</span></span>] <span class="pl-k">==</span> <span class="pl-s"><span class="pl-pds">'</span>issue<span class="pl-pds">'</span></span> <span class="pl-k">&amp;&amp;</span> <span class="pl-k">!</span><span class="pl-c1">is_numeric</span>(<span class="pl-smi">$filter</span>[<span class="pl-s"><span class="pl-pds">'</span>value<span class="pl-pds">'</span></span>][<span class="pl-c1">0</span>])) {</span>
+<span class="pl-s1">        <span class="pl-c"><span class="pl-c">//</span> Issue is the url friend machine name.  Replace it with its tid.</span></span>
+<span class="pl-s1">        <span class="pl-smi">$request</span> <span class="pl-k">=</span> <span class="pl-smi">$this</span><span class="pl-k">-&gt;</span>getRequest();</span>
+<span class="pl-s1">        <span class="pl-smi">$term</span> <span class="pl-k">=</span> taxonomy_term_machine_name_load(<span class="pl-c1">str_replace</span>(<span class="pl-s"><span class="pl-pds">'</span>-<span class="pl-pds">'</span></span>, <span class="pl-s"><span class="pl-pds">'</span>_<span class="pl-pds">'</span></span>, <span class="pl-smi">$filter</span>[<span class="pl-s"><span class="pl-pds">'</span>value<span class="pl-pds">'</span></span>][<span class="pl-c1">0</span>]), <span class="pl-s"><span class="pl-pds">'</span>publication_issue<span class="pl-pds">'</span></span>);</span>
+<span class="pl-s1">        <span class="pl-smi">$request</span>[<span class="pl-s"><span class="pl-pds">'</span>filter<span class="pl-pds">'</span></span>][<span class="pl-s"><span class="pl-pds">'</span>issue<span class="pl-pds">'</span></span>] <span class="pl-k">=</span> <span class="pl-smi">$term</span><span class="pl-k">-&gt;</span><span class="pl-smi">tid</span>;</span>
+<span class="pl-s1">        <span class="pl-smi">$this</span><span class="pl-k">-&gt;</span>setRequest(<span class="pl-smi">$request</span>);</span>
+<span class="pl-s1">      }</span>
+<span class="pl-s1">    <span class="pl-k">parent</span><span class="pl-k">::</span>queryforlistfilter(<span class="pl-smi">$query</span>);;</span>
+<span class="pl-s1">  } </span>
+<span class="pl-s1"></span></pre></div>
+<p>This is dependent on having <a href="https://www.drupal.org/project/taxonomy_machine_name" rel="nofollow">https://www.drupal.org/project/taxonomy_machine_name</a> installed and enabled.</p>
+<p>If you have a url <code>http://[site]/issues/report-on-giving</code> then it returns the term with a machine name match of <code>report_on_giving</code>.</p>
+<p>Note: The term's machine name does not always match the URL.  By default if a term name is "Report on Giving", then the machine name will be "report_on_giving" however the url pattern will strip the "on" out, and the url alias will be "http://[site]/issues/report-giving".  To get around this you have to do one of the follow:</p>
+<ul>
+<li>make the machine different from the term name.</li>
+<li>Create a custom hook on term_save() where you strip out the path alias patterns from the machine name.</li>
+<li>Disable stripping of common words from the url alias.</li>
+</ul>
+
+        </div>
+
+    </div>]

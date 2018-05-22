@@ -1,0 +1,55 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>$E3 <strong>INTERSEG</strong> - This record is used in the relocation dictionary of a load segment, and contains a patch to a long call to an external reference. The <a class="internal present" href="/ksherlock/java-libomf/wiki/INTERSEG">INTERSEG</a> record is used to patch an address in a load segment with a reference to another address in a different load segment. It contains two 1-byte counts followed by an offset, a 2-byte file number, a 2-byte segment number, and a second offset. The first count is the number of bytes to be relocated, and the second count is a bit- shift operator, telling how many times to shift the relocated address before inserting the result into memory. If the bit-shift operator is positive, then the number is shifted to the left, filling vacated bit positions with 0’s. If the bit- shift operator is negative, then the number is shifted right.</p>
+<p>The first offset is the location, relative to the start of the segment, of the number that is to be relocated. If the reference is to a static segment, then the file number, segment number, and second offset correspond to the subroutine referenced. The file number is always one.</p>
+<p>For example, suppose the segment includes an instruction like</p>
+<pre><code>        jsl ext
+</code></pre>
+<p>where the label <code>ext</code> is an external reference to a location in a static segment. If this instruction is at relative address $720 within its segment and ext is at relative address $345 in segment $000A in file $0001, then the linker creates an <a class="internal present" href="/ksherlock/java-libomf/wiki/INTERSEG">INTERSEG</a> record in the relocation dictionary that looks like this (note that the values are stored low-byte first, as specified by <code>NUMSEX</code>):</p>
+<pre><code>E3030020 07000001 000A0045 030000
+</code></pre>
+<p>which corresponds to the following values:</p>
+<table>
+<thead>
+<tr>
+<th align="left"></th>
+<th align="left"></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="left">$E3</td>
+<td align="left">operation code</td>
+</tr>
+<tr>
+<td align="left">$03</td>
+<td align="left">number of bytes to be relocated</td>
+</tr>
+<tr>
+<td align="left">$00</td>
+<td align="left">bit-shift operator</td>
+</tr>
+<tr>
+<td align="left">$00000720</td>
+<td align="left">offset of instruction</td>
+</tr>
+<tr>
+<td align="left">$0001</td>
+<td align="left">file number</td>
+</tr>
+<tr>
+<td align="left">$000A</td>
+<td align="left">segment number</td>
+</tr>
+<tr>
+<td align="left">$00000345</td>
+<td align="left">offset of subroutine referenced</td>
+</tr>
+</tbody>
+</table>
+<p>When the loader processes the relocation dictionary, it uses the second offset to find the <code>JSL</code>, and patches in the address corresponding to the file number, segment number, and offset of the referenced subroutine.</p>
+<p><code>INTERSEG</code> records are used for any long-address reference to a static segment</p>
+
+        </div>
+
+    </div>]

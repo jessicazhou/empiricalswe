@@ -1,0 +1,136 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>Welcome to the ColonyGame wiki!</p>
+<p>#QuickView
+###Entity Events</p>
+<ul>
+<li>"collide_start"</li>
+<li>"collide_end"</li>
+<li>"damage"</li>
+<li>"attacking_group"</li>
+<li>"added_item"</li>
+<li>"removed_item"</li>
+</ul>
+<p>###Game Events</p>
+<ul>
+<li>"entity_created"</li>
+</ul>
+<p>###Tags
+#####Entity tags</p>
+<ul>
+<li>"colonist"</li>
+<li>"animal"</li>
+<li>"boss"</li>
+<li>"alive"</li>
+<li>"resource"</li>
+<li>"humanoid"</li>
+<li>"projectile"</li>
+<li>"building"</li>
+<li>"selectable"</li>
+<li>"main" (used for the main building of the colony)</li>
+<li>"storage" (used for indicating that a building is general storage)</li>
+<li>"equipment" (used for indicating a storage specifically holds equipment)</li>
+</ul>
+<p>#####ColliderInfo tags</p>
+<ul>
+<li>"entity"</li>
+<li>"attack_sensor"</li>
+</ul>
+<h1>
+<a aria-hidden="true" class="anchor" href="#event-system" id="user-content-event-system"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Event System</h1>
+<p>Events are handled by the EventSystem class and are executed through anonymous functions (Consumer class).
+There are currently two types of events:</p>
+<ul>
+<li>
+<strong>Game events</strong>, not tied to an Entity but rather to some event that happened globally.</li>
+<li>
+<strong>Entity events</strong>, tied to an Entity.</li>
+</ul>
+<h3>
+<a aria-hidden="true" class="anchor" href="#game-events" id="user-content-game-events"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Game Events</h3>
+<p>Game events are events that are not tied to an entity. For example, when an entity is created, an event is fired with the name <code>"entity_created"</code>. These events are fired using <code>EventSystem.notifyGameEvent(String eventName, Object... args)</code> which will in turn execute any registered events that are tied to that game event. To register an event, use <code>EventSystem.registerGameEvent(String eventName, Consumer&lt;Object[]&gt; function)</code>. Here is an example of how to register and notify a game event:</p>
+<p>######register</p>
+<pre><code>EventSystem.registerGameEvent("entity_created", args -&gt; {
+    Entity ent = (Entity)args[0];
+    //Do something with the Entity
+    ent.name = "I was changed!";
+});
+</code></pre>
+<p>######notify</p>
+<pre><code>EventSystem.notifyGameEvent("entity_created", entityCreated);
+</code></pre>
+<h3>
+<a aria-hidden="true" class="anchor" href="#entity-events" id="user-content-entity-events"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Entity Events</h3>
+<p>An Entity event is tied to an Entity. The Entity is represented by a unique ID and is placed in the event System using the unique ID. When an Entity event is called, the Entity's ID is referenced and used to fire the event using <code>EventSystem.notifyEntityEvent(Entity entity, String eventName, Object... args)</code>. The Object... args allows any number of Object arguments to be used. For instance, <code>EventSystem.notifyEntityEvent(entity, "damage", damagingEntity, damageAmount)</code> is used to tell the <code>entity</code> that is being damaged by <code>damagingEntity</code> for <code>damageAmount</code>.</p>
+<p>The way to submit events to the system is by using <code>EventSystem.registerEntityEvent(Entity entity, String eventName, Consumer&lt;Object[]&gt; function)</code>. The <code>Consumer&lt;Object[]&gt; function</code> will have a structure such as</p>
+<pre><code> Consumer&lt;Object[]&gt; function = args -&gt; {
+     Entity ent = (Entity)args[0];
+     float damage = (float)args[1];
+     //Do something here...
+ };
+</code></pre>
+<p>#Events
+These are the events currently supported:</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#collide_start" id="user-content-collide_start"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>collide_start</h2>
+<ul>
+<li>args[0]: Fixture (my fixture, the one I own)</li>
+<li>args[1]: Fixture (the other fixture that I collided with)</li>
+</ul>
+<h2>
+<a aria-hidden="true" class="anchor" href="#collide_end" id="user-content-collide_end"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>collide_end</h2>
+<ul>
+<li>args[0]: Fixture (my fixture, the one I own)</li>
+<li>args[1]: Fixture (the other fixture that I collided with)</li>
+</ul>
+<h2>
+<a aria-hidden="true" class="anchor" href="#entity_created" id="user-content-entity_created"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>entity_created</h2>
+<ul>
+<li>args[0]: Entity (The Entity that was created).</li>
+</ul>
+<h2>
+<a aria-hidden="true" class="anchor" href="#damage" id="user-content-damage"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>damage</h2>
+<ul>
+<li>args[0]: Entity (The Entity that applied damage to me. This could be a bullet/weapon/Entity melee)</li>
+<li>args[1]: float(The amount of damage that the other Entity is trying to apply to me!)</li>
+</ul>
+<h2>
+<a aria-hidden="true" class="anchor" href="#added_item" id="user-content-added_item"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>added_item</h2>
+<ul>
+<li>args[0]: JsonItem (The item definition from Json that was added to the inventory.)</li>
+<li>args[1]: integer (The amount of the item that was added to the inventory.)</li>
+</ul>
+<h2>
+<a aria-hidden="true" class="anchor" href="#removed_item" id="user-content-removed_item"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>removed_item</h2>
+<ul>
+<li>args[0]: JsonItem (The item definition from Json that was removed from the inventory.)</li>
+<li>args[1]: integer (The amount of the item that was removed from the inventory.)</li>
+</ul>
+<h2>
+<a aria-hidden="true" class="anchor" href="#crafting_job_switched" id="user-content-crafting_job_switched"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>crafting_job_switched</h2>
+<ul>
+<li>args[0]: String (Where it is coming from, ie: 'available'. All choices are 'available', 'inProgress', 'stalled')</li>
+<li>args[1]: String (Where it is going, ie: 'inProgress')</li>
+<li>args[2]: CraftingJob (The actual CraftingJob)</li>
+</ul>
+<h2>
+<a aria-hidden="true" class="anchor" href="#task_started" id="user-content-task_started"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>task_started</h2>
+<ul>
+<li>args[0]: Task (the task that was started)</li>
+</ul>
+<h2>
+<a aria-hidden="true" class="anchor" href="#component_created" id="user-content-component_created"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>component_created</h2>
+<ul>
+<li>args[0]: Class (The class of the Component)</li>
+<li>args[1]: Component (The actual component)</li>
+</ul>
+<h2>
+<a aria-hidden="true" class="anchor" href="#component_started" id="user-content-component_started"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>component_started</h2>
+<ul>
+<li>args[0]: Class (The class of the Component)</li>
+<li>args[1]: Component (The actual component)</li>
+</ul>
+
+        </div>
+
+    </div>]

@@ -1,0 +1,56 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <h1>
+<a aria-hidden="true" class="anchor" href="#doi-rescue" id="user-content-doi-rescue"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>DOI Rescue</h1>
+<p>Browser extension that kicks in on <code>dx.doi.org/*</code> and <code>doi.org/*</code> when a DOI hasn't been registered yet, redirects to the website and uses its search function</p>
+<ul>
+<li>
+<p>I wrote an example for Nature 10 months ago, would not be hard to programmatically pull in all others for which this could happen - <a href="https://gist.github.com/lmmx/4dafda42f50514f2de9a">https://gist.github.com/lmmx/4dafda42f50514f2de9a</a></p>
+</li>
+<li>
+<p>extensible table of URLs and search pages, using the DOI of the publication.</p>
+</li>
+</ul>
+<div class="highlight highlight-source-json"><pre>[
+  <span class="pl-s"><span class="pl-pds">"</span>Nature<span class="pl-pds">"</span></span><span class="pl-ii">:</span> { <span class="pl-ii">DOI_prefix</span>: <span class="pl-s"><span class="pl-pds">"</span>10.1038/nature<span class="pl-pds">"</span></span>,
+              <span class="pl-ii">URL</span>: <span class="pl-s"><span class="pl-pds">"</span>http://www.nature.com/search?q=<span class="pl-pds">"</span></span> },
+  <span class="pl-s"><span class="pl-pds">"</span>Nature Chemistry<span class="pl-pds">"</span></span><span class="pl-ii">:</span> { <span class="pl-ii">DOI_prefix</span>: <span class="pl-s"><span class="pl-pds">"</span>10.1038/nchem<span class="pl-pds">"</span></span>,
+                        <span class="pl-ii">URL</span>: <span class="pl-s"><span class="pl-pds">"</span><span class="pl-pds">"</span></span> },
+  <span class="pl-s"><span class="pl-pds">"</span>Nature Genetics<span class="pl-pds">"</span></span><span class="pl-ii">:</span>  { <span class="pl-ii">DOI_prefix</span>: <span class="pl-s"><span class="pl-pds">"</span>10.1038/ng<span class="pl-pds">"</span></span>,
+                        <span class="pl-ii">URL</span>: <span class="pl-s"><span class="pl-pds">"</span><span class="pl-pds">"</span></span> }
+]              </pre></div>
+<p>etc.</p>
+<p>Below this is the basic code to handle it, currently a bookmarklet but better as a minimal browser extension [i.e. one with no user activity required, like <a href="https://github.com/vsbuffalo/gmtfPDF">gmtfPDF</a>]</p>
+<ul>
+<li>could be an extension to gmtfPDF...!</li>
+</ul>
+<hr/>
+<p>Bookmarklet:</p>
+<div class="highlight highlight-source-js"><pre>javascript<span class="pl-k">:</span>(<span class="pl-k">function</span>(){<span class="pl-k">if</span> (<span class="pl-c1">window</span>.<span class="pl-c1">location</span>.<span class="pl-c1">href</span>.<span class="pl-c1">indexOf</span>(<span class="pl-s"><span class="pl-pds">'</span>nature.com/doifinder/<span class="pl-pds">'</span></span>) <span class="pl-k">&gt;</span> <span class="pl-k">-</span><span class="pl-c1">1</span> <span class="pl-k">&amp;&amp;</span> <span class="pl-c1">document</span>.<span class="pl-c1">querySelector</span>(<span class="pl-s"><span class="pl-pds">'</span>span.largeParagraph &gt; p<span class="pl-pds">'</span></span>).<span class="pl-smi">innerText</span>.<span class="pl-c1">indexOf</span>(<span class="pl-s"><span class="pl-pds">'</span>DOI Handle<span class="pl-pds">'</span></span>) <span class="pl-k">&gt;</span> <span class="pl-k">-</span><span class="pl-c1">1</span>) { doi <span class="pl-k">=</span> <span class="pl-c1">window</span>.<span class="pl-c1">location</span>.<span class="pl-c1">href</span>.<span class="pl-c1">split</span>(<span class="pl-s"><span class="pl-pds">'</span>doifinder/<span class="pl-pds">'</span></span>)[<span class="pl-c1">1</span>]; <span class="pl-k">var</span> naturexhr <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-en">XMLHttpRequest</span>(); <span class="pl-smi">naturexhr</span>.<span class="pl-c1">open</span>(<span class="pl-s"><span class="pl-pds">"</span>GET<span class="pl-pds">"</span></span>,<span class="pl-s"><span class="pl-pds">"</span>http://www.nature.com/search/executeSearch?sp-q=<span class="pl-pds">"</span></span><span class="pl-k">+</span><span class="pl-smi">doi</span>.<span class="pl-c1">replace</span>(<span class="pl-s"><span class="pl-pds">'</span>/<span class="pl-pds">'</span></span>,<span class="pl-s"><span class="pl-pds">'</span>%2F<span class="pl-pds">'</span></span>)<span class="pl-k">+</span><span class="pl-s"><span class="pl-pds">"</span>&amp;sp-p=all&amp;pag-start=1&amp;sp-c=25&amp;sp-m=0&amp;sp-s=&amp;siteCode=default,true<span class="pl-pds">"</span></span>); <span class="pl-smi">naturexhr</span>.<span class="pl-c1">send</span>(); <span class="pl-smi">naturexhr</span>.<span class="pl-en">onreadystatechange</span> <span class="pl-k">=</span> <span class="pl-k">function</span>(){ <span class="pl-k">if</span> (<span class="pl-smi">naturexhr</span>.<span class="pl-c1">readyState</span> <span class="pl-k">===</span> <span class="pl-c1">4</span> <span class="pl-k">&amp;&amp;</span> <span class="pl-smi">naturexhr</span>.<span class="pl-c1">status</span><span class="pl-k">==</span><span class="pl-c1">200</span>){ redirURL <span class="pl-k">=</span> <span class="pl-smi">naturexhr</span>.<span class="pl-smi">response</span>.<span class="pl-c1">match</span>(<span class="pl-sr"><span class="pl-pds">/</span>&lt;h2 class="atl"&gt;&lt;a href="(<span class="pl-c1">.</span><span class="pl-k">*?</span>)"<span class="pl-pds">/</span></span>)[<span class="pl-c1">1</span>]; <span class="pl-c1">window</span>.<span class="pl-c1">location</span>.<span class="pl-c1">href</span> <span class="pl-k">=</span> redirURL; } } } <span class="pl-k">else</span> { <span class="pl-en">alert</span>(<span class="pl-s"><span class="pl-pds">'</span>You need to be on the error page to do page redirect from the "invalid DOI" page<span class="pl-pds">'</span></span>); }
+})();</pre></div>
+<p>Full script:</p>
+<div class="highlight highlight-source-js"><pre><span class="pl-k">if</span> (<span class="pl-c1">window</span>.<span class="pl-c1">location</span>.<span class="pl-c1">href</span>.<span class="pl-c1">indexOf</span>(<span class="pl-s"><span class="pl-pds">'</span>http://www.nature.com/doifinder/<span class="pl-pds">'</span></span>) <span class="pl-k">&gt;</span> <span class="pl-k">-</span><span class="pl-c1">1</span> <span class="pl-k">&amp;&amp;</span> <span class="pl-c1">document</span>.<span class="pl-c1">querySelector</span>(<span class="pl-s"><span class="pl-pds">'</span>span.largeParagraph &gt; p<span class="pl-pds">'</span></span>).<span class="pl-smi">innerText</span>.<span class="pl-c1">indexOf</span>(<span class="pl-s"><span class="pl-pds">'</span>DOI Handle<span class="pl-pds">'</span></span>) <span class="pl-k">&gt;</span> <span class="pl-k">-</span><span class="pl-c1">1</span>) {
+	doi <span class="pl-k">=</span> <span class="pl-c1">window</span>.<span class="pl-c1">location</span>.<span class="pl-c1">href</span>.<span class="pl-c1">split</span>(<span class="pl-s"><span class="pl-pds">'</span>doifinder/<span class="pl-pds">'</span></span>)[<span class="pl-c1">1</span>];
+	<span class="pl-k">var</span> naturexhr <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-en">XMLHttpRequest</span>();
+	<span class="pl-smi">naturexhr</span>.<span class="pl-c1">open</span>(<span class="pl-s"><span class="pl-pds">"</span>GET<span class="pl-pds">"</span></span>,<span class="pl-s"><span class="pl-pds">"</span>http://www.nature.com/search/executeSearch?sp-q=<span class="pl-pds">"</span></span><span class="pl-k">+</span><span class="pl-smi">doi</span>.<span class="pl-c1">replace</span>(<span class="pl-s"><span class="pl-pds">'</span>/<span class="pl-pds">'</span></span>,<span class="pl-s"><span class="pl-pds">'</span>%2F<span class="pl-pds">'</span></span>)<span class="pl-k">+</span><span class="pl-s"><span class="pl-pds">"</span>&amp;sp-p=all&amp;pag-start=1&amp;sp-c=25&amp;sp-m=0&amp;sp-s=&amp;siteCode=default,true<span class="pl-pds">"</span></span>);
+	<span class="pl-smi">naturexhr</span>.<span class="pl-c1">send</span>();
+	<span class="pl-smi">naturexhr</span>.<span class="pl-en">onreadystatechange</span> <span class="pl-k">=</span> <span class="pl-k">function</span>(){
+		<span class="pl-k">if</span> (<span class="pl-smi">naturexhr</span>.<span class="pl-c1">readyState</span> <span class="pl-k">===</span> <span class="pl-c1">4</span> <span class="pl-k">&amp;&amp;</span> <span class="pl-smi">naturexhr</span>.<span class="pl-c1">status</span><span class="pl-k">==</span><span class="pl-c1">200</span>){
+			redirURL <span class="pl-k">=</span> <span class="pl-smi">naturexhr</span>.<span class="pl-smi">response</span>.<span class="pl-c1">match</span>(<span class="pl-sr"><span class="pl-pds">/</span>&lt;h2 class="atl"&gt;&lt;a href="(<span class="pl-c1">.</span><span class="pl-k">*?</span>)"<span class="pl-pds">/</span></span>)[<span class="pl-c1">1</span>];
+			<span class="pl-c1">window</span>.<span class="pl-c1">location</span>.<span class="pl-c1">href</span> <span class="pl-k">=</span> redirURL;
+		}
+	}
+}
+<span class="pl-k">else</span> {
+	<span class="pl-en">alert</span>(<span class="pl-s"><span class="pl-pds">'</span>You need to be on the error page to do page redirect from the "invalid DOI" page<span class="pl-pds">'</span></span>);
+}</pre></div>
+
+        </div>
+
+        <div class="wiki-footer gollum-markdown-content boxed-group" id="wiki-footer">
+          <div class="boxed-group-inner wiki-auxiliary-content markdown-body">
+            <p><a href="https://github.com/lmmx/devnotes/wiki">Main page</a></p>
+
+          </div>
+        </div>
+    </div>]

@@ -1,0 +1,67 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <h1>
+<a aria-hidden="true" class="anchor" href="#model-behaviors" id="user-content-model-behaviors"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Model behaviors</h1>
+<p>Behaviors provide a way to encapsulate functionality that can be shared among models. Examples include a way to automatically add the current timestamp or provide a unique slug to a record.</p>
+<p>You can register behaviors as observers to models. They listen to <a href="model-events">certain events</a> and act upon them. Note that you can spawn behaviors to register them automatically. See the <a href="spawn">spawner config</a> for that.</p>
+<p><a href="model-behavior-draftable">Draftable</a> enables users to schedule their posts to be published online at a later time.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#behavior-basics" id="user-content-behavior-basics"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Behavior basics</h2>
+<p>Registering behaviors to react to model events is easy. In the init() method of the model, simply call the registerObserver() method and pass in an instance of the behavior. Behaviors take one argument; an array of configuration data that is specific to that behavior. An example:</p>
+<pre><code>&lt;?php
+$this-&gt;registerObserver(
+    new Garp_Model_Behavior_Sluggable(array(
+        'baseField' =&gt; 'name'
+    ))
+);
+?&gt;
+</code></pre>
+<h2>
+<a aria-hidden="true" class="anchor" href="#event-listening" id="user-content-event-listening"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Event listening</h2>
+<p>Behaviors all inherit from Garp_Model_Helper, which itself inherits from the utility class Garp_Util_ObserverAbstract. This means an observer can simply implement certain methods that are automatically called by the model when certain events happen. The behavior may then alter the given arguments in any way they see fit. That way it's possible to change the Select object given to a fetch() call, or execute some cleanup functionality after a delete() call.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#removing-behaviors" id="user-content-removing-behaviors"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Removing behaviors</h2>
+<p>Behaviors can be easily removed by calling <strong>unregisterObserver()</strong>:</p>
+<pre><code>&lt;?php
+$this-&gt;unregisterObserver('Sluggable');
+// alternatively you may use an instance of the observer class:
+$this-&gt;unregisterObserver($sluggable);
+?&gt;
+</code></pre>
+<hr/>
+<h2>
+<a aria-hidden="true" class="anchor" href="#core-behaviors" id="user-content-core-behaviors"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Core behaviors</h2>
+<p>Core behaviors are behaviors that need not be registered, they are always available and registered by the model itself because they are part of Garp core functionality. Examples include Cachable, DefaultSortable and Bindable.</p>
+<p>Another feature exclusive to Core behaviors is that these behaviors may define when they are executed. Core behaviors have a property called $_executionPosition. It may contain one of two properties; "first" or "last" (defined as class constants Garp_Model_Helper_Core::EXECUTE_FIRST and Garp_Model_Helper_Core::EXECUTE_LAST).</p>
+<p>Depending on this value they are either executed before or after all other behaviors (relative to the order in which they are defined, when the values of two behaviors match).</p>
+<p><strong>Garp_Model_Helper_Core::EXECUTE_LAST</strong> is the default value.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#writing-custom-behaviors" id="user-content-writing-custom-behaviors"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Writing custom behaviors</h2>
+<p>It's easy to add new behaviors. Create a class that extends from Garp_Model_Behavior_Abstract, create a _setup() method and implement any of the above mentioned callback methods:</p>
+<pre><code>&lt;?php
+class App_My_Behavior extends Garp_Model_Behavior_Abstract {
+    protected function $_setup($config) {
+        // …
+    }
+
+    public function beforeFetch(&amp;$args) {
+        // …
+    }
+}
+?&gt;
+</code></pre>
+<p>It's as simple as that, just implement any callback method you like and act upon the various arguments you receive.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#writing-custom-core-behaviors" id="user-content-writing-custom-core-behaviors"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Writing custom core behaviors</h2>
+<p>Writing custom core behaviors works exactly the same way as regular behaviors. The only two differences are that they must extend from Garp_Model_Behavior_Core and that they may define an execute position (if not, Garp_Model_Behavior_Core::EXECUTE_LAST is used).</p>
+<p>Core behaviors must be registered within Garp_Model_Db::init() in order to be used automatically.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#garp-behaviors" id="user-content-garp-behaviors"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Garp behaviors</h2>
+<ul>
+<li><a href="model-behavior-weighable">Weighable</a></li>
+<li><a href="model-behavior-youtubeable">Youtubeable</a></li>
+</ul>
+
+        </div>
+
+    </div>]

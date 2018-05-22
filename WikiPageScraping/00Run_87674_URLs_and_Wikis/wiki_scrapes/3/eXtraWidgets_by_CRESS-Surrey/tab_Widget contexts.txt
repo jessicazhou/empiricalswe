@@ -1,0 +1,36 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>The semantics of widget manipulation in the eXtraWidgets extension are very much inspired by the semantics of agent manipulation in NetLogo.</p>
+<p>Just like you can <a href="http://ccl.northwestern.edu/netlogo/docs/dictionary.html#ask" rel="nofollow"><code>ask</code></a> turtles, patches and links to run commands, you can <a href="Primitives#xwask"><code>xw:ask</code></a> widgets to run commands. Just like you can use <a href="http://ccl.northwestern.edu/netlogo/docs/dictionary.html#of" rel="nofollow"><code>of</code></a> to extract information from an agent or agentset, you can use <a href="Primitives#xwof"><code>xw:of</code></a> to do the same with widgets. Finally, just like <a href="http://ccl.northwestern.edu/netlogo/docs/dictionary.html#with" rel="nofollow"><code>with</code></a> can be used to filter an agentset, <a href="Primitives#xwwith"><code>xw:with</code></a> can be used to filter a list of widget keys.</p>
+<p>All three primitives use code blocks: a command block for <a href="Primitives#xwask"><code>xw:ask</code></a> and reporter blocks for <a href="Primitives#xwof"><code>xw:of</code></a> and <a href="Primitives#xwwith"><code>xw:with</code></a>. The important thing to understand is that each of these code blocks introduce a new "widget context" and that the behavior of some other primitives is affected by the current context: they operate on the current widget. Other primitives that introduce a new widget context are widget constructors (<a href="Primitives#xwcreate-kind"><tt>xw:create-<i>&lt;kind&gt;</i></tt></a>).</p>
+<p>The primitives affected by the widget context are the property getters (<a href="Primitives#xwproperty"><tt>xw:<i>&lt;property&gt;</i></tt></a>) and setters (<a href="Primitives#xwset-property"><tt>xw:set-<i>&lt;property&gt;</i></tt></a>).</p>
+<p>Suppose that you create a tab with three sliders on it:</p>
+<pre><code>to startup
+  xw:clear-all
+  xw:create-tab "t1"
+  foreach ["alpha" "beta" "gamma"] [
+    xw:create-slider ? [
+      xw:set-color one-of base-colors
+      xw:set-label xw:key
+    ]
+  ]
+end
+</code></pre>
+<p>Here, we are using NetLogo's <a href="http://ccl.northwestern.edu/netlogo/docs/dictionary.html#foreach" rel="nofollow"><code>foreach</code></a> command to avoid repeating ourselves three times. Inside the <code>foreach</code> block, the <code>?</code> character stands, in turn, for each member of the list <code>["alpha" "beta" "gamma"]</code>, so we create a new slider for each of these three keys. The <code>xw:create-slider</code> statement is followed by a command block that introduces a new widget context, where getters and setters will operate on the widget that is being created. The <code>xw:set-color one-of base-colors</code> statement will thus set the color of that particular widget to a random color amongst NetLogo's base colors. The <code>xw:set-label xw:key</code> statement uses both a setter (<code>xw:set-label</code>) and a getter (<code>xw:key</code>) to set the label of that widget to the key of that widget.</p>
+<p>Widget contexts can also be nested. You may have noticed that the <code>startup</code> procedure shown above creates all three sliders on top of one another. You could, of course, remedy to this by setting the <code>y</code> property of <code>"beta"</code> and <code>"gamma"</code> to an appropriate absolute value, but it may be wiser to position them <em>relative</em> to the widget above them. Here is how to do it for <code>"beta"</code>:</p>
+<pre><code>xw:ask "beta" [ xw:set-y [ xw:y + xw:height + 10 ] xw:of "alpha" ]
+</code></pre>
+<p>Notice the two nested code blocks. The first one is introduced by <code>xw:ask</code> and puts us in the context of <code>"beta"</code>, so <code>xw:set-y</code> will set the <code>y</code> property of <code>"beta"</code>. The inner code block, introduced with <code>xw:of</code>, puts us in the context of <code>"alpha"</code> instead, so the <code>xw:y + xw:height + 10</code> expression reports a <code>y</code> coordinate that is 10 points below the bottom of <code>"alpha"</code> (and this is where we place the top of <code>"beta"</code>, using <code>xw:set-y</code>).</p>
+<p>You would do the same thing for <code>"gamma"</code>, setting its <code>y</code> property relative to the bottom of <code>"beta"</code>:</p>
+<pre><code>xw:ask "gamma" [ xw:set-y [ xw:y + xw:height + 10 ] xw:of "beta" ]
+</code></pre>
+<p>By the way, if you had many different sliders (or other widgets) that you wanted to lay out this way, you could generalize this pattern to something like:</p>
+<pre><code>(foreach (but-last xw:sliders) (but-first xw:sliders) [
+  xw:ask ?2 [ xw:set-y [ xw:y + xw:height + 10 ] xw:of ?1 ]
+])
+</code></pre>
+<p>(Note that we've used the <code>xw:sliders</code> reporter to list all our sliders. It worked for us because <a href="Primitives#xwkinds"><tt>xw:<i>&lt;kinds&gt;</i></tt></a> reporters like <code>xw:sliders</code> always list widgets in alphabetical order and that happened to be the order we wanted. In a real-life model, though, it is unlikely to be the case, so you may have to create a list where you explicitly place your widgets in the order you want them.)</p>
+
+        </div>
+
+    </div>]

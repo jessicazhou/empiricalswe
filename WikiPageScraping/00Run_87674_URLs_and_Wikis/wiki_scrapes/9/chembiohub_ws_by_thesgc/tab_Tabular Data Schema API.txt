@@ -1,0 +1,172 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>The tabular data schema API is used to combine together the chemistry and other calculated data from the ChemBio Hub backend with the uploaded user generated data.</p>
+<p><strong>Tests</strong></p>
+<p>There are some tests just to see the right sort of things are returned in the structure of this API. These are located <a href="../blob/master/cbh_tests/features/tabular_schema.feature">here</a></p>
+<p>It is also used to template the table view in the front end, including configuring which fields are hidden and which fields are highlighted.</p>
+<p><img alt="" src="https://raw.githubusercontent.com/thesgc/chembiohub_ws/master/wiki-images/tableview.png"/></p>
+<p>The tabular data schema is delivered as part of the <a class="internal present" href="/thesgc/chembiohub_ws/wiki/Project-API">Project API</a>.</p>
+<p>It has the following attributes:</p>
+<table>
+<thead>
+<tr>
+<th>Attribute</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>included_in_tables</td>
+<td>the ordered lists of fields as they are included in the different use cases around the system</td>
+</tr>
+<tr>
+<td>included_in_tables.add_page.default</td>
+<td>The order of fields on the add page (not yet implemented)</td>
+</tr>
+<tr>
+<td>included_in_tables["cbh.archiveitems"].default</td>
+<td>The order of fields used on the archiveitems page</td>
+</tr>
+<tr>
+<td>included_in_tables["cbh.restoreitems"].default</td>
+<td>The order of fields used on the restoreitems page</td>
+</tr>
+<tr>
+<td>included_in_tables["cbh.searchv2"].default</td>
+<td>The order of fields used on the search page</td>
+</tr>
+<tr>
+<td>included_in_tables["export"].default</td>
+<td>The order of fields used when exporting data</td>
+</tr>
+<tr>
+<td>included_in_tables["indexing"].default</td>
+<td>The order of fields used when indexing data</td>
+</tr>
+<tr>
+<td>schema</td>
+<td>The unique field schemata as used by handsontable</td>
+</tr>
+</tbody>
+</table>
+<p>Within each field schema there are a set of options as demonstrated by the field schemata for "canonical_smiles"
+and "custom_fields.Barcode" below.</p>
+<table>
+<thead>
+<tr>
+<th>Attribute</th>
+<th>Example</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>className</td>
+<td>htCenter htMiddle</td>
+<td>The handontable style name for the particular field</td>
+</tr>
+<tr>
+<td>data</td>
+<td>canonical_smiles</td>
+<td>The JSON pointer for the attribute that is used when extracting this field from the output data</td>
+</tr>
+<tr>
+<td>editable</td>
+<td>false</td>
+<td>Whether you want this field to be editable when displayed on the front end - currently the system is set up to make only the project data fields editable, not the system generated ones</td>
+</tr>
+<tr>
+<td>field_type</td>
+<td>string</td>
+<td>The original field type (used in the indexing code)</td>
+</tr>
+<tr>
+<td>knownBy</td>
+<td>SMILES</td>
+<td>The name that is used in the front end tables and in the back end when exporting to Excel</td>
+</tr>
+<tr>
+<td>noSort</td>
+<td>true</td>
+<td>Whether sort is disabled for this field (currently not working)</td>
+</tr>
+<tr>
+<td>searchFormType</td>
+<td>pick_from_list</td>
+<td>the type of search form to make default - (not yet completed feature but used for chemical search <a href="https://github.com/thesgc/ng-chem/search?utf8=%E2%9C%93&amp;q=searchFormType">https://github.com/thesgc/ng-chem/search?utf8=%E2%9C%93&amp;q=searchFormType</a>)</td>
+</tr>
+<tr>
+<td>renderer_named</td>
+<td>customFieldRenderer</td>
+<td>The renderer to be used for the handsontable field associated with this schema</td>
+</tr>
+<tr>
+<td>project_specific_schema</td>
+<td>"16": { <br/>"field_type": "char",<br/>"open_or_restricted": "open",<br/> "renderer_named": "defaultCustomFieldRenderer"<br/>}</td>
+<td>Per project ID variations on the schema which is used when displaying the data - this is used to ensure that each user generated field type is displayed correctly even if the user has two different projects where the same field name has different meanings</td>
+</tr>
+</tbody>
+</table>
+<p>Below is an example schema</p>
+<pre><code>        "tabular_data_schema": {
+            "included_in_tables": {
+                "add_page": {
+                    "default": ["project_counter", "image", "id", "originalSmiles", "properties.action", "standardInchiKey", "custom_fields.Description", "custom_fields.Barcode", "custom_fields.Attachments", "custom_fields.Name"]
+                },
+                "cbh.archiveitems": {
+                    "default": ["project_counter", "properties.archived", "image", "uuid", "projectfull.name", "custom_fields.Description", "custom_fields.Barcode", "custom_fields.Attachments", "custom_fields.Name", "created_by", "timestamp", "id", "multiple_batch_id"]
+                },
+                "cbh.restoreitems": {
+                    "default": ["project_counter", "properties.archived", "image", "uuid", "projectfull.name", "custom_fields.Description", "custom_fields.Barcode", "custom_fields.Attachments", "custom_fields.Name", "created_by", "timestamp", "id", "multiple_batch_id"]
+                },
+                "cbh.searchv2": {
+                    "default": ["project_counter", "clone", "image", "uuid", "projectfull.name", "custom_fields.Description", "custom_fields.Barcode", "custom_fields.Attachments", "custom_fields.Name", "created_by", "timestamp", "id", "multiple_batch_id", "canonical_smiles", "standard_inchi", "standard_inchi_key", "related_molregno.compoundproperties.full_mwt", "related_molregno.compoundproperties.full_molformula", "related_molregno.compoundproperties.alogp"]
+                },
+                "export": {
+                    "default": ["project_counter", "image", "uuid", "projectfull.name", "custom_fields.Description", "custom_fields.Barcode", "custom_fields.Attachments", "custom_fields.Name", "created_by", "timestamp", "id", "multiple_batch_id", "canonical_smiles", "standard_inchi", "standard_inchi_key", "related_molregno.compoundproperties.full_mwt", "related_molregno.compoundproperties.full_molformula", "related_molregno.compoundproperties.alogp"]
+                },
+                "indexing": {
+                    "default": ["project_counter", "uuid", "projectfull.name", "properties.archived", "projectfull.project_type.saved_search_project_type", "custom_fields.Description", "custom_fields.Barcode", "custom_fields.Attachments", "custom_fields.Name", "created_by", "timestamp", "id", "multiple_batch_id", "canonical_smiles", "standard_inchi", "standard_inchi_key", "related_molregno.compoundproperties.full_mwt", "related_molregno.compoundproperties.full_molformula", "related_molregno.compoundproperties.alogp"]
+                },
+                "indexing_temp": {
+                    "default": ["row", "originalSmiles", "properties.action", "standardInchiKey", "custom_fields.Description", "custom_fields.Barcode", "custom_fields.Attachments", "custom_fields.Name", "created_by", "timestamp", "id", "multiple_batch_id"]
+                },
+                "seach_page_edit_mode": {
+                    "default": ["project_counter", "properties.archived", "clone", "image", "uuid", "projectfull.name", "custom_fields.Description", "custom_fields.Barcode", "custom_fields.Attachments", "custom_fields.Name"]
+                }
+            },
+            "schema": {
+                "canonical_smiles": {
+                    "className": "htCenter htMiddle ",
+                    "data": "canonical_smiles",
+                    "editable": false,
+                    "field_type": "string",
+                    "knownBy": "SMILES",
+                    "noSort": true,
+                    "searchFormType": "pick_from_list"
+                },
+                ...,
+                "custom_fields.Barcode": {
+                    "className": "htCenter htMiddle ",
+                    "data": "custom_fields.Barcode",
+                    "editable": true,
+                    "editor": false,
+                    "knownBy": "Barcode",
+                    "project_specific_schema": {
+                        "16": {
+                            "field_type": "char",
+                            "open_or_restricted": "open",
+                            "renderer_named": "defaultCustomFieldRenderer"
+                        }
+                    },
+                    "projects": [],
+                    "renderer_named": "customFieldRenderer"
+                },
+               ...
+            }
+        },
+</code></pre>
+
+        </div>
+
+    </div>]

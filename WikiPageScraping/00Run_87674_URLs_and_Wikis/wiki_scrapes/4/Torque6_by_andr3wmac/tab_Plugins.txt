@@ -1,0 +1,48 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>Plugins are written in C++ and compiled separately from the engine into a DLL to be distributed with projects. Source code for plugins does not need to be distributed with the plugins.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#creating-a-new-plugin" id="user-content-creating-a-new-plugin"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Creating a New Plugin</h2>
+<p>For now it's recommended to make your plugin in Visual Studio 2012. It must be compiled as a Dynamic Library. When creating a plugin you will need add Torque6.lib to the Additional Dependencies, and the following directories to Additional Includes:</p>
+<ul>
+<li>engine/source/</li>
+<li>engine/lib/assimp/include</li>
+<li>engine/lib/bgfx/include</li>
+<li>engine/lib/bgfx/common/imgui</li>
+<li>engine/lib/bgfx/common/nanovg</li>
+<li>engine/lib/openal/win32</li>
+</ul>
+<h2>
+<a aria-hidden="true" class="anchor" href="#predefined-functions" id="user-content-predefined-functions"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Predefined Functions</h2>
+<p>In order to drive the plugin system Torque 6 looks for certain predefined functions in the plugin DLL. These functions must be declared for external use.</p>
+<p>You may define and utilize the following predefined functions:</p>
+<ul>
+<li>void create(Plugins::PluginLink _link);</li>
+<li>void processTick();</li>
+<li>void preRender();</li>
+<li>void render();</li>
+<li>void postRender();</li>
+</ul>
+<p>They must be defined in the following manner to be exposed to Torque 6 from the DLL:</p>
+<pre><code>extern "C" 
+{
+   PLUGIN_FUNC void create(Plugins::PluginLink _link);
+   PLUGIN_FUNC void processTick();
+   PLUGIN_FUNC void preRender();
+   PLUGIN_FUNC void render();
+   PLUGIN_FUNC void postRender();
+}
+</code></pre>
+<p>Their usage should be fairly obvious. Create is called when the plugin is first loaded. ProcessTick occurs every tick, and preRender, render, and postRender occur per frame. Create is the only one that needs to be defined. Without create there is no entry point and the plugin will do nothing.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#plugin-link" id="user-content-plugin-link"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Plugin Link</h2>
+<p>You may have noticed the create function comes with a PluginLink argument. This is a necessary part of the plugin system. In order to communicate with the main engine you must do so through the PluginLink. During the create function you must store the PluginLink for later usage as it is only provided during creation. Here is an example of printing text to the console:</p>
+<pre><code>void create(PluginLink _link)
+{
+   _link.Con.printf("Hello World!");
+}
+</code></pre>
+
+        </div>
+
+    </div>]

@@ -1,0 +1,122 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p><img alt="RDF Resource Description Framework Icon" data-canonical-src="http://www.w3.org/RDF/icons/rdf_w3c_icon.96.gif" src="https://camo.githubusercontent.com/392ad5304490e9eb055d798b3f843db746f1db4d/687474703a2f2f7777772e77332e6f72672f5244462f69636f6e732f7264665f7733635f69636f6e2e39362e676966"/></p>
+<p>Welcome to the <em>Cheló̱na</em> wiki!</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#do-it-yourself-output-format" id="user-content-do-it-yourself-output-format"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Do It Yourself Output Format</h2>
+<p><em>Cheló̱na</em> supports the building of your own output format. This self created format can be written to a file, it can be stored in a database or transferred via actors.
+The Turtle and TriG format expect a function of type <code>List[SPOReturnValue] ⇒ Int</code>.
+One Turtle or TriG input statement can result in one to n triples respectively quadruples being generated. The generated triples respectively quadruples for a single Turtle or TriG statement are assembled in the list of SPOReturnValues. Each Turtle or TriG statement fills the list anew.
+The Int return value of the output function should return the number of output statements generated for each Turtle or TriG statement.
+A few examples will show how to proceed.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#standard-ntriple-format" id="user-content-standard-ntriple-format"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Standard NTriple Format</h2>
+<p>The <em>Cheló̱na</em> <code>main</code> routine contains the following output definition:</p>
+<pre><code>def tripleWriter(bo: Writer)(triple: List[SPOReturnValue]): Int = {
+  triple.asInstanceOf[List[SPOTriple]].map(t ⇒ bo.write(t.s + " " + t.p + " " + t.o + " .\n")).length
+}
+</code></pre>
+<p>With a <code>writer</code> stream passed to <code>tripleWriter</code> the required signature for the output function is achieved</p>
+<pre><code>val output = new BufferedWriter(new OutputStreamWriter(System.out, StandardCharsets.UTF_8))
+val parser = ChelonaParser(input, tripleWriter(output)_, validate, base, label)
+</code></pre>
+<h2>
+<a aria-hidden="true" class="anchor" href="#simple-html-output-for-chel%C3%B3%CC%B1na" id="user-content-simple-html-output-for-cheló̱na"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Simple HTML-Output for Cheló̱na##</h2>
+<p>There are a few things to consider when defining a simple HTML-table output format.
+Angle brackets '&lt;', '&gt;' have to be substituted by <code>&amp;lt;</code> and <code>&amp;gt;</code> and string literals can be followed by an iri (URI).</p>
+<p>A complete example shows the usage of the HTML output definition:</p>
+<pre><code> import java.io.{StringWriter, Writer}
+   
+ import org.chelona.SPOReturnValue.SPOTriple
+ import org.chelona.{ChelonaParser, SPOReturnValue}
+ 
+ import org.parboiled2.ParseError
+  
+ import scala.util.{Failure, Success}
+  
+ object Main extends App {
+ 
+ val input =
+   """@base &lt;http://example.org/&gt; .
+      @prefix rdf: &lt;http://www.w3.org/1999/02/22-rdf-syntax-ns#&gt; .
+      @prefix rdfs: &lt;http://www.w3.org/2000/01/rdf-schema#&gt; .
+      @prefix foaf: &lt;http://xmlns.com/foaf/0.1/&gt; .
+      @prefix rel: &lt;http://www.perceive.net/schemas/relationship/&gt; .
+ 
+      &lt;#green-goblin&gt; rel:enemyOf    &lt;#spiderman&gt; 	;
+         a foaf:Person ;    # in the context of the Marvel universe
+         foaf:name 'Green Goblin' ;
+         foaf:mail 'GreenGoblin@marvel.com' .
+ 
+      &lt;#spiderman&gt;
+         rel:enemyOf &lt;#green-goblin&gt; ;
+         a foaf:Person ;
+         foaf:name 'Spiderman', 'Человек-паук'@ru ."""
+
+ val output = new StringWriter()
+
+ def tripleHTMLWriter(bo: Writer)(triple: List[SPOReturnValue]): Int = {
+   triple.asInstanceOf[List[SPOTriple]].map(
+     t ⇒ {
+       val s = if (t.s.startsWith("&lt;") &amp;&amp; t.s.endsWith("&gt;"))
+                 "&amp;lt;" + t.s.substring(1, t.s.length - 1) + "&amp;gt;"
+               else
+                 t.s
+       val p = if (t.p.startsWith("&lt;") &amp;&amp; t.p.endsWith("&gt;"))
+                 "&amp;lt;" + t.p.substring(1, t.p.length - 1) + "&amp;gt;"
+               else
+                 t.p
+       val o = if (t.o.startsWith("&lt;") &amp;&amp; t.o.endsWith("&gt;"))
+                 "&amp;lt;" + t.o.substring(1, t.o.length - 1) + "&amp;gt;"
+               else if (t.o.endsWith("&gt;")) {
+                 val i = t.o.lastIndexOf('&lt;')
+                 t.o.substring(0, i) + "&amp;lt;" + t.o.substring(i + 1, t.o.length - 1) + "&amp;gt;"
+               }
+               else
+                 t.o
+       bo.write("&lt;tr&gt;&lt;td&gt;&lt;code&gt;" + s + "&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;" + p + "&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;" + o + "&lt;/code&gt;&lt;/td&gt;&lt;/tr&gt;\n")
+     }
+   ).length
+ }
+
+ val parser = ChelonaParser(input, tripleHTMLWriter(output)_)
+
+ parser.turtleDoc.run() match {
+   case Success(tripleCount) ⇒
+     System.err.println("Input converted to " + tripleCount + " triples.")
+     println(output)
+   case Failure(e: ParseError) ⇒ System.err.println("Unexpected error during parsing run: " + parser.formatError(e))
+   case Failure(e) ⇒ System.err.println("Unexpected error during parsing run: " + e)
+  }
+}
+</code></pre>
+<h2>
+<a aria-hidden="true" class="anchor" href="#adding-state-to-simple-html-output-for-chel%C3%B3%CC%B1na" id="user-content-adding-state-to-simple-html-output-for-cheló̱na"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Adding State to Simple HTML-Output for Cheló̱na</h2>
+<p>A counter is induced into the output function.</p>
+<pre><code>object myCount { var counter = 0 }
+
+def tripleHTMLWriter(counterObject: myCount.type)(bo: Writer)(triple: List[SPOReturnValue]): Int = {
+  triple.asInstanceOf[List[SPOTriple]].map(
+    t ⇒ {
+      myCount.counter = myCount.counter + 1
+      val s = if (t.s.startsWith("&lt;") &amp;&amp; t.s.endsWith("&gt;")) "&amp;lt;" + t.s.substring(1, t.s.length - 1) + "&amp;gt;" else t.s
+      val p = if (t.p.startsWith("&lt;") &amp;&amp; t.p.endsWith("&gt;")) "&amp;lt;" + t.p.substring(1, t.p.length - 1) + "&amp;gt;" else t.p
+      val o = if (t.o.startsWith("&lt;") &amp;&amp; t.o.endsWith("&gt;")) "&amp;lt;" + t.o.substring(1, t.o.length - 1) + "&amp;gt;" 
+              else if (t.o.endsWith("&gt;")) { val i = t.o.lastIndexOf('&lt;'); t.o.substring(0, i) + "&amp;lt;" + t.o.substring(i + 1, t.o.length - 1) + "&amp;gt;" }
+              else t.o
+     bo.write("&lt;tr&gt;&lt;td&gt;&lt;code&gt;" + myCount.counter + "&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;" +
+                s + "&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;" +
+                p + "&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;" +
+                o + "&lt;/code&gt;&lt;/td&gt;&lt;/tr&gt;\n")
+    }
+  ).length
+}
+
+val parser = ChelonaParser(input, tripleHTMLWriter(myCount)(output)_, validate, base, label)
+</code></pre>
+<h2>
+<a aria-hidden="true" class="anchor" href="#generate-csv-format" id="user-content-generate-csv-format"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Generate CSV format</h2>
+
+        </div>
+
+    </div>]

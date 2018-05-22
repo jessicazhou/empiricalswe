@@ -1,0 +1,37 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>这是一个用于访问类的私有方法或属性的工具，当然也可以用来访问非私有的方法或属性。</p>
+<p>主要用途就是在单元测试时测试私有方法，初始化私有属性，或验证私有属性的值是否正确。</p>
+<p>本项目中只有一个类“tool.PrivateAccessor"，不需要其它jar包(运行测试需要junit)，编译器最低要求jdk1.5。不过几乎没有太多1.5的语法，只需要去掉开头的@SuppressWarnings，以及把动态参数Object...改为数组Object[]就能用1.4编译了。</p>
+<p>使用样例如下：</p>
+<p>首先引入所有的静态方法</p>
+<pre><code>import static tool.PrivateAccessor.*;
+</code></pre>
+<p>设置私有属性</p>
+<pre><code>set(obj, "fieldName", value);
+</code></pre>
+<p>获取私有属性</p>
+<pre><code>value = get(obj, "fieldName");
+</code></pre>
+<p>调用私有方法</p>
+<pre><code>returnValue = invoke(obj, "methodName", p1, p2, ...);
+</code></pre>
+<p>看到上面这段代码也许你会发现这里不需要指定参数类型吗？
+是的这里的确不需要指定参数类型，也是和junitx中那个同名的类最大的区别。指定参数类型代码实现起来更方便，执行效率也会更高，但是使用起来就比较麻烦。在测试时并不关心调用私有方法的效率，测试代码能写得更简洁才是更重要的。</p>
+<p>不过直接通过参数类型来匹配会有一个其他问题，就是多个同名且参数个数相同匹配度相同的方法。如果在集成开发环境中会报语法错误，而这里是不会报错的，会直接调用第一个找到的那个方法。如果这不是你想要的结果，你可以通过cast方法进行强制类型转换，来指定参数的类型。样例如下：</p>
+<pre><code>// 下面是要测试的两个方法
+void sampleMethod(CharSequence obj) {}
+void sampleMethod(Comparable obj) {}
+
+// 这时如果你直接传入一个String对象
+invoke(obj, "sampleMethod", "str");
+// 由于这两个sampleMethod方法参数对String类型的匹配度是相同的
+// 所以调用的是定义在前面的方法，因为这个方法是先被找到的
+
+// 这时你可以使用cast方法来指定类型
+invoke(obj, "sampleMethod", cast(Comparable.class, "str"));
+</code></pre>
+
+        </div>
+
+    </div>]

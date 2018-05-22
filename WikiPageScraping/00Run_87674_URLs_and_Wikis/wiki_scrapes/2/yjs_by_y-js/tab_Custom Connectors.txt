@@ -1,0 +1,112 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p><em>Note: these docs may be outdated. Please feel free to contact <a href="yjs@dbis.rwth-aachen.de">us</a> if you need help.</em></p>
+<p>If you want to integrate Yjs in you existing project, you most likely already set up some infrastructure to communicate with your clients. Maybe you have a paid plan at <a href="https://pusher.com/" rel="nofollow">pusher</a>, or you are really into <a href="http://socket.io" rel="nofollow">Socket.io</a>, or you rather want to use <a href="http://matrix.org/" rel="nofollow">Matrix</a> as an underlying communication protocol. You can build your own connector! It's easy!</p>
+<p>In this article I'll explain how you can create your own connector. You can use <em>any</em> communication protocol - whether it is P2P based, federated, or client-server.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#choose-a-sync-method" id="user-content-choose-a-sync-method"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Choose a Sync Method</h2>
+<p>There are two ways how your clients can synchronize with each other. The XMPP connector actually supports both sync methods. But it is totally fine if you only choose one of them:</p>
+<dl>
+  <dt>SyncAll Sync Method</dt>
+  <dd>
+This sync method originates from the original WebRTC connector. Everyone synchronizes with each other: Right after the connection is created, the peers exchange a state vector, and then send all the remaining Operations to the other users. After that, the connector only has to make sure that all sent operations reach all the other peers. I got feedback that this is the prefferred method to use, because there is no set-up involved when using a connector that implements this sync method. This method is fine and efficient for small networks, but is not well suited for a lot of users.
+  </dd>
+  <dt>Master-Slave Sync Method</dt>
+  <dd>
+Here, we have one or several *master* clients online that serve as the endpoint for the syncing process of the *slaves*. Therefore, you only have to sync once, even if there are thousands of users online. Still, operations can be published p2p (they don't have to go through the master-client). But you have to make sure that the master client(s) have a high uptime. They should not leave the session while a user syncs with it. If you want to implement a nodejs server, that runs on your server/cloud to preserve the state of the shared document, this method is a very good choice.
+  </dd>
+</dl>
+<h3>
+<a aria-hidden="true" class="anchor" href="#implement-a-connector" id="user-content-implement-a-connector"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Implement a Connector</h3>
+<p>When you decided which method to use, you can start to implement it.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#initializing-the-connector" id="user-content-initializing-the-connector"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Initializing the Connector</h3>
+<p>As you probably know, you initialize an instance of Y like this:</p>
+<div class="highlight highlight-source-js"><pre>  <span class="pl-k">var</span> y <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-en">Y</span>(connector)</pre></div>
+<p>We say, that the connector is now bound to Y. This process involves copying all the properties of the <a href="https://github.com/y-js/yjs/blob/master/lib/ConnectorClass.coffee">ConnectorClass</a> to the <code>connector</code>. At some point you have to <em>initialize</em> the connector with the chosen sync method, the <em>role</em>, and a unique <em>user_id</em>. You can do this at any moment, even after the user created properties on the shared document.</p>
+<div class="highlight highlight-source-js"><pre><span class="pl-c"><span class="pl-c">//</span> call this when the communication protocol is completely set up</span>
+<span class="pl-c"><span class="pl-c">//</span> and is ready to propagate messages</span>
+<span class="pl-k">var</span> <span class="pl-en">when_bound_to_y</span> <span class="pl-k">=</span> <span class="pl-k">function</span>(){
+  <span class="pl-c"><span class="pl-c">//</span> when the connector is bound to Y,</span>
+  <span class="pl-c"><span class="pl-c">//</span> e.g. by creating a new instance of Y,</span>
+  <span class="pl-c"><span class="pl-c">//</span> initialize the connector with the required parameters.</span>
+  <span class="pl-c"><span class="pl-c">//</span> You must specify `role`, `syncMethod`, and `user_id`</span>
+  <span class="pl-smi">connector</span>.<span class="pl-en">init</span>({
+    role <span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">"</span>slave<span class="pl-pds">"</span></span>, <span class="pl-c"><span class="pl-c">//</span> or "master"</span>
+    syncMethod <span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">"</span>syncAll<span class="pl-pds">"</span></span>, <span class="pl-c"><span class="pl-c">//</span> or "master-slave"</span>
+    user_id <span class="pl-k">:</span> user_id
+  });
+};
+
+<span class="pl-k">if</span>(<span class="pl-smi">connector</span>.<span class="pl-smi">is_bound_to_y</span>){
+  <span class="pl-c"><span class="pl-c">//</span> The connector is already bound to Y, so we can execute</span>
+  <span class="pl-c"><span class="pl-c">//</span> `when_bound_to_y` immediately</span>
+  <span class="pl-en">when_bound_to_y</span>();
+} <span class="pl-k">else</span> {
+  <span class="pl-c"><span class="pl-c">//</span> The connector has not yet been bound to Y</span>
+  <span class="pl-c"><span class="pl-c">//</span> on_bound_to_y is called when the connector is bound to Y</span>
+  <span class="pl-smi">connector</span>.<span class="pl-smi">on_bound_to_y</span> <span class="pl-k">=</span> when_bound_to_y;
+}</pre></div>
+<h3>
+<a aria-hidden="true" class="anchor" href="#collaborator-joins--leaves-a-session" id="user-content-collaborator-joins--leaves-a-session"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Collaborator joins / leaves a session</h3>
+<p>Whenever a user joins or leaves a session, you have to notify the connector class that it happened.</p>
+<p>Let the <code>protocol</code> variable be some communication protocol that supports events.</p>
+<div class="highlight highlight-source-js"><pre><span class="pl-smi">protocol</span>.<span class="pl-en">on</span>(<span class="pl-s"><span class="pl-pds">"</span>userJoinedSession<span class="pl-pds">"</span></span>, <span class="pl-k">function</span>(<span class="pl-smi">user</span>){
+  <span class="pl-c"><span class="pl-c">//</span> a new user joined the session.</span>
+  <span class="pl-c"><span class="pl-c">//</span> Notify the connector class, if the connector</span>
+  <span class="pl-c"><span class="pl-c">//</span> is already initialized</span>
+  <span class="pl-k">if</span>(<span class="pl-smi">connector</span>.<span class="pl-smi">is_initialized</span>){
+    <span class="pl-c"><span class="pl-c">//</span> you must specify the id and</span>
+    <span class="pl-c"><span class="pl-c">//</span> the role ("master" or "slave") of the user</span>
+    <span class="pl-smi">connector</span>.<span class="pl-en">userJoined</span>(<span class="pl-smi">user</span>.<span class="pl-c1">id</span>, <span class="pl-smi">user</span>.<span class="pl-smi">role</span>);
+  }
+});</pre></div>
+<div class="highlight highlight-source-js"><pre><span class="pl-smi">protocol</span>.<span class="pl-en">on</span>(<span class="pl-s"><span class="pl-pds">"</span>userLeftSession<span class="pl-pds">"</span></span>, <span class="pl-k">function</span>(<span class="pl-smi">user</span>){
+  <span class="pl-c"><span class="pl-c">//</span> a user left the session.</span>
+  <span class="pl-c"><span class="pl-c">//</span> Notify the connector class, if the connector</span>
+  <span class="pl-c"><span class="pl-c">//</span> is already initialized</span>
+  <span class="pl-k">if</span>(<span class="pl-smi">connector</span>.<span class="pl-smi">is_initialized</span>){
+    <span class="pl-c"><span class="pl-c">//</span> you must specify the id</span>
+    <span class="pl-smi">connector</span>.<span class="pl-en">userLeft</span>(<span class="pl-smi">user</span>.<span class="pl-c1">id</span>);
+  }
+});</pre></div>
+<h3>
+<a aria-hidden="true" class="anchor" href="#specify-how-to-send-and-receive-messages" id="user-content-specify-how-to-send-and-receive-messages"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Specify how to send and receive messages</h3>
+<p>You must specify how to <em>send</em>, <em>broadcast</em>, and how to <em>receive</em> messages. A message is a json object that may contain numbers, and strings. It is your responsibility that they arrive. In order to prevent encoding issues you may want to transform the object to a string with <code>JSON.stringify(message)</code> and parse it back with <code>JSON.parse(string_message)</code>.</p>
+<h5>
+<a aria-hidden="true" class="anchor" href="#1-how-to-send-a-message-to-a-specific-user" id="user-content-1-how-to-send-a-message-to-a-specific-user"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>1. How to send a message to a specific user</h5>
+<div class="highlight highlight-source-js"><pre><span class="pl-smi">connector</span>.<span class="pl-en">send</span> <span class="pl-k">=</span> <span class="pl-k">function</span>(<span class="pl-smi">user_id</span>, <span class="pl-smi">message</span>){
+  <span class="pl-smi">protocol</span>.<span class="pl-c1">send</span>(user_id, <span class="pl-c1">JSON</span>.<span class="pl-c1">stringify</span>(message));
+}</pre></div>
+<h5>
+<a aria-hidden="true" class="anchor" href="#2-how-to-broadcast-a-message-to-all-users" id="user-content-2-how-to-broadcast-a-message-to-all-users"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>2. How to broadcast a message to all users</h5>
+<p>Maybe your protocol supports broadcasting. Otherwise you could send the message to all users directly too.</p>
+<div class="highlight highlight-source-js"><pre><span class="pl-smi">connector</span>.<span class="pl-en">broadcast</span> <span class="pl-k">=</span> <span class="pl-k">function</span>(<span class="pl-smi">message</span>){
+  <span class="pl-smi">protocol</span>.<span class="pl-en">broadcast</span>(<span class="pl-c1">JSON</span>.<span class="pl-c1">stringify</span>(message));
+}</pre></div>
+<h5>
+<a aria-hidden="true" class="anchor" href="#3-how-to-receive-a-message" id="user-content-3-how-to-receive-a-message"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>3. How to receive a message</h5>
+<p>You have to check if the connector is already initialized, otherwise the <code>receiveMessage</code> method may not exist yet!</p>
+<div class="highlight highlight-source-js"><pre><span class="pl-smi">protocol</span>.<span class="pl-en">on</span>(<span class="pl-s"><span class="pl-pds">"</span>message<span class="pl-pds">"</span></span>, <span class="pl-k">function</span>(<span class="pl-smi">message</span>){
+  <span class="pl-c"><span class="pl-c">//</span> The client received a message</span>
+  <span class="pl-c"><span class="pl-c">//</span> Check if the connector is already initialized,</span>
+  <span class="pl-c"><span class="pl-c">//</span> only then forward the message to the connector class</span>
+  <span class="pl-k">if</span>(<span class="pl-smi">connector</span>.<span class="pl-smi">is_initialized</span>){
+    <span class="pl-smi">connector</span>.<span class="pl-en">receiveMessage</span>(user_id, <span class="pl-c1">JSON</span>.<span class="pl-c1">parse</span>(message));
+  }
+})</pre></div>
+<h1>
+<a aria-hidden="true" class="anchor" href="#conclusion" id="user-content-conclusion"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Conclusion</h1>
+<p>Creating a connector isn't that hard. It is something that distinguishes Yjs from similar frameworks. You can choose a communication protocol that fits your requirements, and integrates well into your existing infrastructure.</p>
+<p>The <a href="https://github.com/y-js/y-webrtc">webrtc connector</a> is a great starting point for your connector project, because it is pretty well documented. You can use it even if you choose the master-slave sync method.</p>
+<p>Furthermore, if you are a fan of AngularJs, you may want to check out @cphyc's <a href="https://gist.github.com/cphyc/03f153ebf4ccf265805e">gist</a> on how to implement Yjs, and an EasyRTC connector as an AngularJs module.</p>
+
+        </div>
+
+        <div class="wiki-footer gollum-markdown-content boxed-group" id="wiki-footer">
+          <div class="boxed-group-inner wiki-auxiliary-content markdown-body">
+            <p>Everything you find here is Creative Commons (CC BY 4.0)</p>
+
+          </div>
+        </div>
+    </div>]

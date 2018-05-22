@@ -1,0 +1,70 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <h1>
+<a aria-hidden="true" class="anchor" href="#conan-introduction" id="user-content-conan-introduction"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><a href="https://www.conan.io/" rel="nofollow">Conan</a> Introduction</h1>
+<p>For our package manager we provide some packages as conan is pretty new and not all our dependencies are covered from other maintainers.</p>
+<p>Basically you have a <code>conanfile.py</code> in which you can do various things to build a dependency.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#the-problems-it-solves" id="user-content-the-problems-it-solves"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>The problems it solves</h2>
+<ol>
+<li>Binary incompatibility
+<ul>
+<li>a library built for x86 can not be linked into an executable of x86_64 (<strong>32 bit</strong> vs <strong>64 bit</strong>)</li>
+<li><em>[on Windows: a lib built for <strong>Debug</strong> can not be linked into an exe of build type <strong>Release</strong>]</em></li>
+<li><em>[on Windows: a lib built with the setting MT (static runtime) can not be linked into a MD binary]</em></li>
+<li><em>[on Linux: a lib built with a new GCC can (often) not be linked with an old GCC (vice versa its possible though)]</em></li>
+<li><em>[on Windows: until Visual Studio 2017 every release broke the ABI -&gt; you can't link VS 2013 built binaries when building with VS 2015]</em></li>
+</ul>
+</li>
+<li>Dependency version conflicts
+<ul>
+<li>You got <code>libgcrypt</code> version 2.0 installed, the library <code>CEF</code> depends on <code>libgcrypt</code> version 1.0
+<ul>
+<li>oftentimes you can't install both in parallel and more problematically: make it findable by your build tool</li>
+</ul>
+</li>
+</ul>
+</li>
+</ol>
+<p>These are the very crucial points which will break you neck several times as you develop in a team with several different machines. And they did to us.</p>
+<p>But that's not even all! As soon as you invented a non-standard way of build procedure automation to get everyone on any machine building with consistent settings, you will face the situation that building those dependencies takes forever.</p>
+<hr/>
+<ol start="3">
+<li>Cache the packages on conan.io
+<ul>
+<li>If the settings are guaranteed to be compatible -&gt; Download a prebuilt package from conan.io</li>
+</ul>
+</li>
+</ol>
+<h1>
+<a aria-hidden="true" class="anchor" href="#best-practices-for-creating-a-package" id="user-content-best-practices-for-creating-a-package"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Best practices for creating a package</h1>
+<p><a href="http://docs.conan.io/en/latest/reference/conanfile.html" rel="nofollow">http://docs.conan.io/en/latest/reference/conanfile.html</a> gives you the basics.</p>
+<p>Note: We assume cmake and git being installed on any machine</p>
+<ul>
+<li>Export <code>.pdb</code> files on windows
+<ul>
+<li>A linker warning will occur <a href="http://www.bfilipek.com/2015/04/pdb-was-not-found-linker-warning.html" rel="nofollow">(which can't be turned off)</a> if you did not export them</li>
+</ul>
+</li>
+<li>Fix absolute paths on Mac
+<ul>
+<li><a href="https://conanio.readthedocs.io/en/latest/manage_deps/conanfile_txt.html#imports" rel="nofollow">See the "Tip" section here</a></li>
+</ul>
+</li>
+<li>Avoid <code>apt-get</code>
+<ul>
+<li>using apt is a) OS dependent b) gives you back all the problems we wanted to solve.</li>
+</ul>
+</li>
+<li>.. more to come</li>
+</ul>
+
+        </div>
+
+        <div class="wiki-footer gollum-markdown-content boxed-group" id="wiki-footer">
+          <div class="boxed-group-inner wiki-auxiliary-content markdown-body">
+            <p>Need help? <a class="internal present" href="/inexorgame/inexor-core/wiki/Contact">Contact</a> us.</p>
+
+          </div>
+        </div>
+    </div>]

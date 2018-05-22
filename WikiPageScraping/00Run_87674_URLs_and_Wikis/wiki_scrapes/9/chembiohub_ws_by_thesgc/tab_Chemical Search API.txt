@@ -1,0 +1,361 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>For a more general explanation of how chemical searching works from end to end see <a class="internal present" href="/thesgc/chembiohub_ws/wiki/Chemical-Search">Chemical Search</a></p>
+<ul>
+<li><strong><a href="#post-chemical-search">POST Chemical Search</a></strong></li>
+<li><strong><a href="#get-chemical-search">GET Chemical Search</a></strong></li>
+</ul>
+<h2>
+<a aria-hidden="true" class="anchor" href="#post-chemical-search" id="user-content-post-chemical-search"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><strong>POST Chemical Search</strong>
+</h2>
+<p>Send a molfile to the chemical search backend and get back a chemical search ID. The search is then done in the background so that the IDs referred to can be retrieved when the user clicks "Apply". The background task is done by django q.</p>
+<ul>
+<li>
+<p><strong>Tests</strong></p>
+<ul>
+<li>This API is tested <a href="https://github.com/thesgc/chembiohub_ws/blob/master/cbh_tests/features/chemical_search.feature">here</a>. Note that django q is required.</li>
+</ul>
+</li>
+<li>
+<p><strong>Source Code links</strong></p>
+<ul>
+<li>**This API is used in the front end to send the molfile each time the chemdoodle window is changed via the  <a href="https://github.com/thesgc/ng-chem/blob/master/app/scripts/controllers/compoundbatchv2.js#L58">compound batch controller</a> **</li>
+<li><strong><a href="https://github.com/thesgc/chembiohub_ws/blob/master/cbh_chem_api/resources.py#L147">Back end code</a> in the post_list method</strong></li>
+</ul>
+</li>
+<li>
+<p><strong>URL</strong></p>
+<p>/{namespace}/api/cbh_chemical_search/</p>
+</li>
+<li>
+<p><strong>Method:</strong></p>
+<p><code>POST</code></p>
+</li>
+<li>
+<p><strong>URL Params</strong></p>
+<p><strong>Required:</strong></p>
+</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th align="center">Param</th>
+<th>Default</th>
+<th>Description</th>
+<th>options</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="center">namespace</td>
+<td>Default for your installation is chembiohub</td>
+<td>the URL path, conda environment name etc.</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Optional:</strong></p>
+<p>None</p>
+<ul>
+<li><strong>POST data</strong></li>
+</ul>
+<table>
+<thead>
+<tr>
+<th align="center">Param</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="center">molfile</td>
+<td>The mdl mofile representation of this search</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li>
+<p><strong>Success Response:</strong></p>
+<ul>
+<li>
+<p><strong>Code:</strong> 201 <br/></p>
+</li>
+<li>
+<p><strong>Notable response attributes</strong></p>
+</li>
+</ul>
+</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th align="center">Param</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="center">error</td>
+<td>Whether there was an error - true or false</td>
+</tr>
+<tr>
+<td align="center">filter_is_applied</td>
+<td>Used by the front end to determin if the filter is applied or not, set to false by default then changed on the front end</td>
+</tr>
+<tr>
+<td align="center">id</td>
+<td>The chemical_search_id requested</td>
+</tr>
+<tr>
+<td align="center">image</td>
+<td>base64 encoded image for the the compound to display oin the front end</td>
+</tr>
+<tr>
+<td align="center">inprogress</td>
+<td>To determin if the search is in progress - another front end variable</td>
+</tr>
+<tr>
+<td align="center">molfile</td>
+<td>The mdl mofile representation of this search</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li><strong>Content:</strong></li>
+</ul>
+
+<pre><code>  {
+"error": false,
+"filter_is_applied": false,
+"id": "3a98ecd6c6af4b8d9264edf4822fb786",
+"image": "iVBORw0KGgoAAZC/qa4Y44VQD6Tb9G1A/gPGErKVZ++gnwAAAABJRU5ErkJggg==",
+"inprogress": false,
+"molfile": "Molecule from ChemDoodle Web Components\n\nhttp://www.ichemlabs.com\n  6  6  0  0  0  0            999 V2000\n    0.0000    1.0000    0.0000 C   0  0  0  0  0  0\n    0.8660    0.5000    0.0000 C   0  0  0  0  0  0\n    0.8660   -0.5000    0.0000 C   0  0  0  0  0  0\n    0.0000   -1.0000    0.0000 C   0  0  0  0  0  0\n   -0.8660   -0.5000    0.0000 C   0  0  0  0  0  0\n   -0.8660    0.5000    0.0000 C   0  0  0  0  0  0\n  1  21  0     0  0\n  2  32  0     0  0\n  3  41  0     0  0\n  4  52  0     0  0\n  5  61  0     0  0\n  6  12  0     0  0\nM  END",
+"query_type": "with_substructure",
+"smiles": "c1ccccc1"
+</code></pre>
+<p>}</p>
+<ul>
+<li>
+<p><strong>Response Schema</strong></p>
+<ul>
+<li>No Schema available</li>
+</ul>
+</li>
+<li>
+<p><strong>Error Response:</strong></p>
+<p>If you are not logged in to the application</p>
+<ul>
+<li>
+<strong>Code:</strong> 401 UNAUTHORIZED <br/>
+<strong>Content:</strong> ``</li>
+</ul>
+<p>OR</p>
+<ul>
+<li>
+<strong>Code:</strong> 403 BAD REQUEST <br/>
+<strong>Content:</strong>
+</li>
+</ul>
+</li>
+</ul>
+
+<pre><code>   { error : "The error name from the back end" , traceback : "The traceback in python"}
+</code></pre>
+<ul>
+<li>
+<strong>Code:</strong> 500 INTERNAL SERVER ERROR <br/>
+<strong>Content:</strong>
+</li>
+</ul>
+
+<pre><code>    { error : "The error name from the back end" , traceback : "The traceback in python"}
+</code></pre>
+<ul>
+<li>
+<p><strong>Sample Call:</strong></p>
+<pre><code>  See code links
+</code></pre>
+</li>
+<li>
+<p><strong>Notes:</strong></p>
+</li>
+</ul>
+<h2>
+<a aria-hidden="true" class="anchor" href="#get-chemical-search" id="user-content-get-chemical-search"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><strong>GET Chemical Search</strong>
+</h2>
+<p>Returns a single chemical search's metadata - the image to be shown on the front end and the molecule to be inserted to the ChemDoodle sketcher.</p>
+<ul>
+<li>
+<p><strong>Tests</strong></p>
+<ul>
+<li>This API is tested <a href="https://github.com/thesgc/chembiohub_ws/blob/master/cbh_tests/features/chemical_search.feature">here</a>. Note that django q is required.</li>
+</ul>
+</li>
+<li>
+<p><strong>Source Code links</strong></p>
+<ul>
+<li><strong>This API is used in the front end to retrieve structure metadata from a search that was run before, for example when the user reloads the search page. This reloading of data from a URL is done by the <a href="https://github.com/thesgc/ng-chem/blob/master/app/scripts/services/searchurlparamsv2.js#L101">searchurlparams</a> service</strong></li>
+<li><strong><a href="https://github.com/thesgc/chembiohub_ws/blob/master/cbh_chem_api/resources.py#L117">Back end code</a> in the get_detail method</strong></li>
+</ul>
+</li>
+<li>
+<p><strong>URL</strong></p>
+<p>/{namespace}/api/cbh_chemical_search/{chemical_search_id}</p>
+</li>
+<li>
+<p><strong>Method:</strong></p>
+<p><code>GET</code></p>
+</li>
+<li>
+<p><strong>URL Params</strong></p>
+<p><strong>Required:</strong></p>
+</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th align="center">Param</th>
+<th>Default</th>
+<th>Description</th>
+<th>options</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="center">namespace</td>
+<td>Default for your installation is chembiohub</td>
+<td>the URL path, conda environment name etc.</td>
+<td></td>
+</tr>
+<tr>
+<td align="center">format</td>
+<td>json if Ajax</td>
+<td>Data format to return</td>
+<td>json, xml, yaml</td>
+</tr>
+<tr>
+<td align="center">chemical_search_id</td>
+<td>None</td>
+<td>The ID of the chemical search to return</td>
+<td>json, xml, yaml</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Optional:</strong></p>
+<p>None</p>
+<ul>
+<li>
+<p><strong>Success Response:</strong></p>
+<ul>
+<li>
+<p><strong>Code:</strong> 200 <br/></p>
+</li>
+<li>
+<p><strong>Notable response attributes</strong></p>
+</li>
+</ul>
+</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th align="center">Param</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="center">error</td>
+<td>Whether there was an error - true or false</td>
+</tr>
+<tr>
+<td align="center">filter_is_applied</td>
+<td>Used by the front end to determin if the filter is applied or not, set to false by default then changed on the front end</td>
+</tr>
+<tr>
+<td align="center">id</td>
+<td>The chemical_search_id requested</td>
+</tr>
+<tr>
+<td align="center">image</td>
+<td>base64 encoded image for the the compound to display oin the front end</td>
+</tr>
+<tr>
+<td align="center">inprogress</td>
+<td>To determin if the search is in progress - another front end variable</td>
+</tr>
+<tr>
+<td align="center">molfile</td>
+<td>The mdl mofile representation of this search as found by</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li><strong>Content:</strong></li>
+</ul>
+
+<pre><code>  {
+"error": false,
+"filter_is_applied": false,
+"id": "3a98ecd6c6af4b8d9264edf4822fb786",
+"image": "iVBORw0KGgoAAZC/qa4Y44VQD6Tb9G1A/gPGErKVZ++gnwAAAABJRU5ErkJggg==",
+"inprogress": false,
+"molfile": "Molecule from ChemDoodle Web Components\n\nhttp://www.ichemlabs.com\n  6  6  0  0  0  0            999 V2000\n    0.0000    1.0000    0.0000 C   0  0  0  0  0  0\n    0.8660    0.5000    0.0000 C   0  0  0  0  0  0\n    0.8660   -0.5000    0.0000 C   0  0  0  0  0  0\n    0.0000   -1.0000    0.0000 C   0  0  0  0  0  0\n   -0.8660   -0.5000    0.0000 C   0  0  0  0  0  0\n   -0.8660    0.5000    0.0000 C   0  0  0  0  0  0\n  1  21  0     0  0\n  2  32  0     0  0\n  3  41  0     0  0\n  4  52  0     0  0\n  5  61  0     0  0\n  6  12  0     0  0\nM  END",
+"query_type": "with_substructure",
+"smiles": "c1ccccc1"
+</code></pre>
+<p>}</p>
+<ul>
+<li>
+<p><strong>Response Schema</strong></p>
+</li>
+<li>
+<p>No schema available</p>
+</li>
+<li>
+<p><strong>Error Response:</strong></p>
+<p>If you are not logged in to the application</p>
+<ul>
+<li>
+<strong>Code:</strong> 401 UNAUTHORIZED <br/>
+<strong>Content:</strong> ``</li>
+</ul>
+<p>OR</p>
+<ul>
+<li>
+<strong>Code:</strong> 403 BAD REQUEST <br/>
+<strong>Content:</strong>
+</li>
+</ul>
+</li>
+</ul>
+
+<pre><code>   { error : "The error name from the back end" , traceback : "The traceback in python"}
+</code></pre>
+<ul>
+<li>
+<strong>Code:</strong> 500 INTERNAL SERVER ERROR <br/>
+<strong>Content:</strong>
+</li>
+</ul>
+
+<pre><code>    { error : "The error name from the back end" , traceback : "The traceback in python"}
+</code></pre>
+<ul>
+<li>
+<p><strong>Sample Call:</strong></p>
+<pre><code>  $http.get( configuration.cbh_chemical_search.list_endpoint + chem_search_id ,
+              function(data){
+                 //do something with data.data
+  } );
+</code></pre>
+</li>
+<li>
+<p><strong>Notes:</strong></p>
+</li>
+</ul>
+
+        </div>
+
+    </div>]

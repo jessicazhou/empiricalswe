@@ -1,0 +1,145 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>Display an animated spinner until a background process has terminated and check for a time out, like 42FileChecker does.</p>
+<hr/>
+<h3>
+<a aria-hidden="true" class="anchor" href="#sample-code" id="user-content-sample-code"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><a name="user-content-code"></a>Sample code</h3>
+<p>Credits for this tip: <a href="http://fitnr.com/showing-a-bash-spinner.html" rel="nofollow">Bash Spinner</a> (Author: LOUIS MARASCIO) to which I added the time-out feature.</p>
+<div class="highlight highlight-source-shell"><pre><span class="pl-k">function</span> <span class="pl-en">display_spinner</span>
+{
+    <span class="pl-k">local</span> PID=<span class="pl-smi">$1</span>             <span class="pl-c"><span class="pl-c">#</span> 1st argument: PID of the background process</span>
+    <span class="pl-k">local</span> TIMEOUT=<span class="pl-smi">$2</span>         <span class="pl-c"><span class="pl-c">#</span> 2st argument: Time out in seconds</span>
+
+    <span class="pl-k">local</span> DELAY=0.75         <span class="pl-c"><span class="pl-c">#</span> Delay for each frame of the animation</span>
+    <span class="pl-k">local</span> FRAMES=<span class="pl-s"><span class="pl-pds">'</span>|/-\<span class="pl-pds">'</span></span>      <span class="pl-c"><span class="pl-c">#</span> Each symbol is a frame of the animation</span>
+
+    <span class="pl-c"><span class="pl-c">#</span> Calculate the maximum number of loops (time out)</span>
+    <span class="pl-k">local</span> -i MAX_LOOP
+    MAX_LOOP=<span class="pl-s"><span class="pl-pds">$(</span>awk -v t=<span class="pl-smi">$TIMEOUT</span> -v d=<span class="pl-smi">$DELAY</span> <span class="pl-s"><span class="pl-pds">'</span>BEGIN {printf "%d", t/d}<span class="pl-pds">'</span></span><span class="pl-pds">)</span></span>
+
+    <span class="pl-c"><span class="pl-c">#</span> Start the loop until the background process $PID has terminated</span>
+    <span class="pl-k">while</span> [ <span class="pl-k">!</span> <span class="pl-k">-z</span> <span class="pl-s"><span class="pl-pds">"</span><span class="pl-s"><span class="pl-pds">$(</span>ps a <span class="pl-k">|</span> awk <span class="pl-s"><span class="pl-pds">'</span>{print $1}<span class="pl-pds">'</span></span> <span class="pl-k">|</span> grep <span class="pl-smi">$PID</span><span class="pl-pds">)</span></span><span class="pl-pds">"</span></span> ]<span class="pl-k">;</span>
+    <span class="pl-k">do</span>
+        <span class="pl-c"><span class="pl-c">#</span> If the time out has been reached:</span>
+        <span class="pl-c"><span class="pl-c">#</span> kill the process $PID and exit function</span>
+        <span class="pl-k">if</span> [ <span class="pl-s"><span class="pl-pds">"</span><span class="pl-smi">$MAX_LOOP</span><span class="pl-pds">"</span></span> <span class="pl-k">-le</span> 0 ]
+        <span class="pl-k">then</span>
+            <span class="pl-c1">kill</span> <span class="pl-smi">$PID</span>            <span class="pl-c"><span class="pl-c">#</span> Call the builtin kill</span>
+            <span class="pl-c1">wait</span> <span class="pl-smi">$!</span> <span class="pl-k">2&gt;</span>/dev/null  <span class="pl-c"><span class="pl-c">#</span> Wait for the killing process</span>
+            <span class="pl-k">return</span>               <span class="pl-c"><span class="pl-c">#</span> Exit the function</span>
+        <span class="pl-k">fi</span>
+
+        <span class="pl-c"><span class="pl-c">#</span> Display the current frame and the time out</span>
+        <span class="pl-c1">printf</span> <span class="pl-s"><span class="pl-pds">"</span> [%c] %-4d <span class="pl-pds">"</span></span> <span class="pl-s"><span class="pl-pds">"</span><span class="pl-smi">$FRAMES</span><span class="pl-pds">"</span></span> <span class="pl-s"><span class="pl-pds">"</span><span class="pl-smi">$MAX_LOOP</span><span class="pl-pds">"</span></span>
+
+        <span class="pl-c"><span class="pl-c">#</span> Move the current frame at the end of $FRAMES</span>
+        <span class="pl-k">local</span> TMP=<span class="pl-smi">${FRAMES<span class="pl-k">#</span>?}</span>
+        FRAMES=<span class="pl-smi">$TMP</span><span class="pl-smi">${FRAMES<span class="pl-k">%</span><span class="pl-s"><span class="pl-pds">"</span><span class="pl-smi">$TMP</span><span class="pl-pds">"</span></span>}</span>
+
+        <span class="pl-c"><span class="pl-c">#</span> Wait during the delay and erase the current frame</span>
+        sleep <span class="pl-smi">$DELAY</span>
+        <span class="pl-c1">printf</span> <span class="pl-s"><span class="pl-pds">"</span>\b\b\b\b\b\b\b\b\b\b<span class="pl-pds">"</span></span>
+
+        <span class="pl-c"><span class="pl-c">#</span> Decrement the time out</span>
+        <span class="pl-s"><span class="pl-pds">((</span> MAX_LOOP <span class="pl-k">-=</span> <span class="pl-c1">1</span> <span class="pl-pds">))</span></span>
+
+    <span class="pl-k">done</span>
+}
+
+(sleep 10) <span class="pl-k">&amp;</span>           <span class="pl-c"><span class="pl-c">#</span> Send a process to the background with '&amp;'</span>
+                       <span class="pl-c"><span class="pl-c">#</span> e.g.: (ft_ls -R /) &amp;</span>
+
+display_spinner <span class="pl-smi">$!</span> 60  <span class="pl-c"><span class="pl-c">#</span> Call the spinner animation with:</span>
+                       <span class="pl-c"><span class="pl-c">#</span> - 1st argument: the last PID</span>
+                       <span class="pl-c"><span class="pl-c">#</span> - 2nd argument: time out in seconds</span></pre></div>
+<hr/>
+<h3>
+<a aria-hidden="true" class="anchor" href="#tips" id="user-content-tips"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Tips</h3>
+<hr/>
+<h5>
+<a aria-hidden="true" class="anchor" href="#arithmetic-operation-with-floating-numbers" id="user-content-arithmetic-operation-with-floating-numbers"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><a name="user-content-tip1"></a>Arithmetic operation with floating numbers</h5>
+<p>Bash programming does not allow to manipulate floating numbers. When you assign a floating number to a variable, the Shell interprets this variable as a common string:</p>
+<div class="highlight highlight-source-shell"><pre><span class="pl-k">declare</span> FLOAT=0.75        <span class="pl-c"><span class="pl-c">#</span> These two commands are similar</span>
+<span class="pl-k">declare</span> FLOAT=<span class="pl-s"><span class="pl-pds">"</span>0.75<span class="pl-pds">"</span></span>
+
+<span class="pl-k">declare</span> -i FLOAT=0.75     <span class="pl-c"><span class="pl-c">#</span> This command results in syntax error!</span>
+                          <span class="pl-c"><span class="pl-c">#</span> 0.75 is not an integer</span></pre></div>
+<p>Doing an arithmetic operation with floating numbers and keep the precision can be done with an <code>awk</code> script (Note: Avoid the calculator <code>bc</code> because it is not available in all Unix distributions). The idea is first to pass our two floating numbers to the awk script with the option <code>-v</code>:</p>
+<div class="highlight highlight-source-shell"><pre><span class="pl-c"><span class="pl-c">#</span> Print 'n1' at the beginning of the script</span>
+awk -v n1=60 <span class="pl-s"><span class="pl-pds">'</span>BEGIN {print n1}<span class="pl-pds">'</span></span>
+
+<span class="pl-c"><span class="pl-c">#</span> Print 'n1' and 'n2' at the beginning of the script</span>
+awk -v n1=60 -v n2=0.75 <span class="pl-s"><span class="pl-pds">'</span>BEGIN {print n1, n2}<span class="pl-pds">'</span></span></pre></div>
+<p>Now we have <code>n1</code> and <code>n2</code> declared in the awk script, we can use <code>printf</code> and its float format <code>f</code> with precision and save the result in a variable $RESULT:</p>
+<div class="highlight highlight-source-shell"><pre><span class="pl-k">declare</span> N1=60
+<span class="pl-k">declare</span> N2=0.75
+<span class="pl-k">declare</span> RESULT
+
+RESULT=<span class="pl-s"><span class="pl-pds">$(</span>awk -v n1=<span class="pl-smi">$N1</span> -v n2=<span class="pl-smi">$N2</span> <span class="pl-s"><span class="pl-pds">'</span>BEGIN {printf "%.2f", n1/n2}<span class="pl-pds">'</span></span><span class="pl-pds">)</span></span>  <span class="pl-c"><span class="pl-c">#</span> Divide</span>
+RESULT=<span class="pl-s"><span class="pl-pds">$(</span>awk -v n1=<span class="pl-smi">$N1</span> -v n2=<span class="pl-smi">$N2</span> <span class="pl-s"><span class="pl-pds">'</span>BEGIN {printf "%.2f", n1*n2}<span class="pl-pds">'</span></span><span class="pl-pds">)</span></span>  <span class="pl-c"><span class="pl-c">#</span> Multiply</span>
+RESULT=<span class="pl-s"><span class="pl-pds">$(</span>awk -v n1=<span class="pl-smi">$N1</span> -v n2=<span class="pl-smi">$N2</span> <span class="pl-s"><span class="pl-pds">'</span>BEGIN {printf "%.2f", n1+n2}<span class="pl-pds">'</span></span><span class="pl-pds">)</span></span>  <span class="pl-c"><span class="pl-c">#</span> Add</span>
+RESULT=<span class="pl-s"><span class="pl-pds">$(</span>awk -v n1=<span class="pl-smi">$N1</span> -v n2=<span class="pl-smi">$N2</span> <span class="pl-s"><span class="pl-pds">'</span>BEGIN {printf "%.2f", n1-n2}<span class="pl-pds">'</span></span><span class="pl-pds">)</span></span>  <span class="pl-c"><span class="pl-c">#</span> Substract</span></pre></div>
+<hr/>
+<h5>
+<a aria-hidden="true" class="anchor" href="#check-if-a-process-id-has-terminated" id="user-content-check-if-a-process-id-has-terminated"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><a name="user-content-tip2"></a>Check if a process ID has terminated</h5>
+<p>The first idea is to send a process to the background by using the symbol <code>&amp;</code> at the end of the command line, and then to do something else until it has terminated. You must send the process to the background otherwise you won't be able to do anything:</p>
+<div class="highlight highlight-source-shell"><pre>ft_ls -R /            <span class="pl-c"><span class="pl-c">#</span> This process is executed normally</span>
+<span class="pl-c1">echo</span> <span class="pl-s"><span class="pl-pds">"</span>This line is printed after the preceding command has terminated<span class="pl-pds">"</span></span>
+
+(ft_ls -R /) <span class="pl-k">&amp;</span>        <span class="pl-c"><span class="pl-c">#</span> This process is sent to background</span>
+<span class="pl-c1">echo</span> <span class="pl-s"><span class="pl-pds">"</span>The PID of the background process is: <span class="pl-smi">$!</span><span class="pl-pds">"</span></span>
+<span class="pl-c1">echo</span> <span class="pl-s"><span class="pl-pds">"</span>The script does immediately continue its execution<span class="pl-pds">"</span></span>
+<span class="pl-c1">echo</span> <span class="pl-s"><span class="pl-pds">"</span>This line appears immediately!<span class="pl-pds">"</span></span></pre></div>
+<p>The <code>ps</code> utility (process status) enables you to see the list of processes that are currently running. If you know the PID (process ID) of a process, you can parse the <code>ps</code> result and check if it is still running, as following:</p>
+<div class="highlight highlight-source-shell"><pre><span class="pl-c"><span class="pl-c">#</span> Print the list of running processes</span>
+ps a                 
+
+<span class="pl-c"><span class="pl-c">#</span> Scan each line with 'awk' and print only the first column (PID)</span>
+ps a <span class="pl-k">|</span> awk <span class="pl-s"><span class="pl-pds">'</span>{print $1}<span class="pl-pds">'</span></span>
+
+<span class="pl-c"><span class="pl-c">#</span> Look for a PID with 'grep' and print it</span>
+ps a <span class="pl-k">|</span> awk <span class="pl-s"><span class="pl-pds">'</span>{print $1}<span class="pl-pds">'</span></span> <span class="pl-k">|</span> grep <span class="pl-smi">$PID</span></pre></div>
+<p>When the result is an empty string, that means the process $PID is not running and has terminated. Use this command in a loop and test if it is an empty string by using the zero test <code>-z</code>:</p>
+<div class="highlight highlight-source-shell"><pre>(ft_ls -R /) <span class="pl-k">&amp;</span>                   <span class="pl-c"><span class="pl-c">#</span> Send a process to background</span>
+<span class="pl-k">declare</span> PID=<span class="pl-smi">$!</span>                   <span class="pl-c"><span class="pl-c">#</span> And save its ID in a variable</span>
+
+<span class="pl-c"><span class="pl-c">#</span> Start a loop while $PID is found in the list of process status</span>
+<span class="pl-c"><span class="pl-c">#</span> '-z' is success if the string is empty, use '!' to inverse the status</span>
+<span class="pl-k">while</span> [ <span class="pl-k">!</span> <span class="pl-k">-z</span> <span class="pl-s"><span class="pl-pds">"</span><span class="pl-s"><span class="pl-pds">$(</span>ps a <span class="pl-k">|</span> awk <span class="pl-s"><span class="pl-pds">'</span>{print $1}<span class="pl-pds">'</span></span> <span class="pl-k">|</span> grep <span class="pl-smi">$PID</span><span class="pl-pds">)</span></span><span class="pl-pds">"</span></span> ]<span class="pl-k">;</span>
+<span class="pl-k">do</span>
+    <span class="pl-c1">echo</span> <span class="pl-s"><span class="pl-pds">"</span><span class="pl-smi">$PID</span> is still running<span class="pl-pds">"</span></span>
+    <span class="pl-c1">wait</span> 0.75                    <span class="pl-c"><span class="pl-c">#</span> Wait 0.75 seconds and re-loop</span>
+<span class="pl-k">done</span>
+<span class="pl-c1">echo</span> <span class="pl-s"><span class="pl-pds">"</span><span class="pl-smi">$PID</span> has terminated<span class="pl-pds">"</span></span>
+</pre></div>
+<hr/>
+<h5>
+<a aria-hidden="true" class="anchor" href="#move-the-first-character-to-the-end-of-a-string" id="user-content-move-the-first-character-to-the-end-of-a-string"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><a name="user-content-tip3"></a>Move the first character to the end of a string</h5>
+<p>Bash programming offers you a multitude of parameters for manipulating and/or expanding variables. Use a <strong>removal parameter</strong> <code>#</code> or <code>%</code> followed by a pattern for making a removing:</p>
+<ul>
+<li>#&lt;pattern&gt; removes the shortest match from the beginning</li>
+<li>##&lt;pattern&gt; removes the longest match from the beginning</li>
+<li>%&lt;pattern&gt; removes the shortest match from the end</li>
+<li>%%&lt;pattern&gt; removes the longest match from the end</li>
+</ul>
+<p>The symbol <code>?</code> inside a pattern means "Any one character", so that the substitution <code>#?</code> means "Remove one character from the beginning of the string":</p>
+<div class="highlight highlight-source-shell"><pre><span class="pl-k">declare</span> MY_STRING=<span class="pl-s"><span class="pl-pds">"</span>ABCDEF<span class="pl-pds">"</span></span>
+<span class="pl-c1">echo</span> <span class="pl-smi">$MY_STRING</span>                    <span class="pl-c"><span class="pl-c">#</span> Print "ABCDEF"</span>
+
+<span class="pl-k">declare</span> TMP=<span class="pl-smi">${MY_STRING<span class="pl-k">#</span>?}</span>
+<span class="pl-c1">echo</span> <span class="pl-smi">$TMP</span>                          <span class="pl-c"><span class="pl-c">#</span> Print "BCDEF"</span></pre></div>
+<p>Now, if you use the pattern $TMP with the removing parameter <code>%</code> applied to the string $MY_STRING, that means you want to remove the string "BCDEF" from the end of the string "ABCDEF", resulting in the character "A":</p>
+<div class="highlight highlight-source-shell"><pre><span class="pl-c1">echo</span> <span class="pl-smi">${MY_STRING<span class="pl-k">%</span><span class="pl-s"><span class="pl-pds">"</span><span class="pl-smi">$TMP</span><span class="pl-pds">"</span></span>}</span>           <span class="pl-c"><span class="pl-c">#</span> Print "A"</span></pre></div>
+<p>Finally, concatenate $TMP and ${MY_STRING%"$TMP"} results in moving the first character of $MY_STRING to the end of the string:</p>
+<div class="highlight highlight-source-shell"><pre>MY_STRING=<span class="pl-smi">$TMP</span><span class="pl-smi">${MY_STRING<span class="pl-k">%</span><span class="pl-s"><span class="pl-pds">"</span><span class="pl-smi">$TMP</span><span class="pl-pds">"</span></span>}</span>
+<span class="pl-c1">echo</span> <span class="pl-smi">$MY_STRING</span>                    <span class="pl-c"><span class="pl-c">#</span> Print "BCDEFA"</span></pre></div>
+
+        </div>
+
+        <div class="wiki-footer gollum-markdown-content boxed-group" id="wiki-footer">
+          <div class="boxed-group-inner wiki-auxiliary-content markdown-body">
+            <p><a href="https://github.com/jgigault/42FileChecker/wiki/"><strong>Back to summary</strong></a> - <a href="#"><strong>Back to top</strong></a></p>
+
+          </div>
+        </div>
+    </div>]

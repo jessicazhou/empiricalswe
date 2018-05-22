@@ -1,0 +1,97 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>GitHub Pages <a href="https://pages.github.com/versions/">does not currently support</a> Jekyll version 3 - 2.4 at time of writing, though v3 was recently released and <a href="https://github.com/github/pages-gem/pull/175">a pull request</a> to the <code>github/pages-gem</code> repo seems ready to roll any day now.</p>
+<p>To use Jekyll's collections (with the syntax currently documented on site), I need Jekyll 3, so will build the static site locally rather than let let GitHub do it for me, instead providing just the static site generated under the <code>_site</code> directory.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#to-switch-from-jekyll-24-to-jekyll-3-pre-built-site-version-the-_site-output-instead-of-the-jekyll-source" id="user-content-to-switch-from-jekyll-24-to-jekyll-3-pre-built-site-version-the-_site-output-instead-of-the-jekyll-source"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>To switch from Jekyll 2.4 to Jekyll 3 pre-built site, version the <code>_site</code> output instead of the Jekyll source</h3>
+<p><strong>Overall idea</strong>: fork from an organisational repo (in my case <a href="https://github.com/plotspot/plotspot.github.io">plotspot/plotspot.github.io</a>) to a personal repo (I renamed mine <a href="https://github.com/lmmx/plotspot-jekyll3">plotspot-jekyll3</a> as it no longer matters what you name it now it's no longer being used with GitHub Pages). Your personal fork has the site generator, the original (<code>*.github.io</code>) has the <em>generated</em> site, within Jekyll's <code>_site</code> (output destination) folder.</p>
+<ul>
+<li>
+<p>Push the current non-working state as of the Jekyll 3 version of your site (this will not build, and the prior 2.4 version will still be served) so that there's a backup before modifying the git tree</p>
+<ul>
+<li>At this point, I had removed the <code>_site</code> from my <code>.gitignore</code>, which simplifies a <code>git filter-branch</code> step at the end - <em>I recommend doing this!</em>
+</li>
+</ul>
+</li>
+<li>
+<p>Fork on GitHub to your personal account, and rename to <code>{site}-jekyll3</code> rather than <code>{site}.github.io</code></p>
+</li>
+<li>
+<p>Make this fork the new origin for the Jekyll project:</p>
+<pre><code></code></pre>
+</li>
+</ul>
+<p>git remote set-url origin git remote set-url origin <a href="mailto:git@github.com">git@github.com</a>:{user}/{site}-jekyll3.git</p>
+<pre><code>  or for HTTPS:
+</code></pre>
+<p>git remote set-url origin git remote set-url origin <a href="https://github.com/%7Buser%7D/%7Bsite%7D-jekyll3">https://github.com/{user}/{site}-jekyll3</a></p>
+<pre><code>
+(NB ensure you have `.git` in your `.gitignore`, I don't know how recursive `.git` directories would be handled)
+
+* Move down into the `_site` (generated static site) subdirectory and initialise a git repo for it (really only *re*initialising the existing repo on the organisational remote repo)
+
+</code></pre>
+<p>cd _site
+git init</p>
+<pre><code>
+  You'll see `Initialised empty Git repository in path/to/{*}.github.io/_site/.git/`
+
+* Set this fresh `.git` up with the remote URL of the original repo (if HTTPS, change the URL as above)
+
+</code></pre>
+<p>git remote add origin <a href="mailto:git@github.com">git@github.com</a>:{organisation}/{*.github.io}.git</p>
+<pre><code>* Step back up to the Jekyll site: `cd ..`
+
+If at any point `_site` was tracked (i.e. if at some point in time the `_site` directory has not been declared in `.gitignore`) then you may have to run `git rm -rf _site`. You will receive a `'_site' already exists in the index` error when trying the `git submodule add` command if so ([via StackOverflow](http://stackoverflow.com/q/20929336/2668831)).
+
+* Add the `{*.github.io}` site as a submodule of this parent local git repo in the `_site` folder, using the `-f` flag because you're forcibly adding a path in the `.gitignore`.
+
+</code></pre>
+<p>git submodule add -f git://github.com/{organisation}/{*.github.io}.git _site</p>
+<pre><code>  * you should see `Adding existing repo at '_site' to the index`
+
+* Git has now added a `.gitmodules` file in the parent repo (or "[_superproject_](http://schacon.github.io/gitbook/5_submodules.html)") - containing the references for the `_site` submodule (pointing to the `*.github.io` repo).
+
+</code></pre>
+<p>[submodule "_site"]
+path = _site
+url = git://github.com/{organisation}/{*.github.io}.git</p>
+<pre><code>
+* The submodule needs filling with the remote now (i.e. the original superproject) (see [e.g. SO](http://stackoverflow.com/questions/5828324/update-git-submodule-to-latest-commit-on-origin)). First run:
+</code></pre>
+<p>git submodule init</p>
+<pre><code>   to add the submodule repository URLs to `.git/config` ([via Scott Chacon](http://schacon.github.io/gitbook/5_submodules.html)). The head is now detached so you're not working on a branch - specify it and grab the code from remote (_assuming you're using master branch, NB [you won't be](https://help.github.com/articles/creating-project-pages-manually/#create-a-gh-pages-branch) if it's a project GitHub Page_):
+
+</code></pre>
+<p>git pull origin master</p>
+<pre><code>
+   The submodule is now up to date with the `origin master` branch, and you want to discard everything above it.
+
+* I used `git filter-branch --subdirectory-filter _site -- --all` to move all the files in `_site` up to the parent within the submodule (until now you've just put a copy of the whole Jekyll project inside itself under `_site`), and clean out the rest of the (submodule) repo. It did that, but then I was prompted to `git pull origin master`, which resulted in an apparent reversion to the original organisation. If you have all the Jekyll files then there's no need to pull here.
+* At this point there's an odd-looking setup with branches, but it's nothing to worry about. I attempted to commit and push the changed refs, then `git pull origin master` as prompted, but there is no need to.
+* Do this however you want to, but just retain the `.git` and `_site` folders from what was in the original repo, deleting everything else, then shift the contents of `_site/_site` out into just `_site` (i.e. make the submodule just contain the static site files). I did so by putting them in the parent and removing everything in the submodule, then bringing them back down &lt;sup&gt;([note RE: file deletion](http://unix.stackexchange.com/q/77127/89254))&lt;/sup&gt;:
+
+</code></pre>
+<p>mkdir movingstorage
+mv .git movingstorage
+mv _site/* movingstorage
+mv _site/.* movingstorage
+mv movingstorage ..
+rm -r ./*
+rm -r ./.*
+mv ../movingstorage/* .
+mv ../movingstorage/.* .
+rm -r ../movingstorage/</p>
+<pre><code>
+* Everything's looking good finally, so you can now build your site, files will be generated in `_site`, and versioned separately from the submodule there.
+</code></pre>
+
+        </div>
+
+        <div class="wiki-footer gollum-markdown-content boxed-group" id="wiki-footer">
+          <div class="boxed-group-inner wiki-auxiliary-content markdown-body">
+            <p><a href="https://github.com/lmmx/devnotes/wiki">Main page</a></p>
+
+          </div>
+        </div>
+    </div>]

@@ -1,0 +1,73 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <h2>
+<a aria-hidden="true" class="anchor" href="#google" id="user-content-google"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Google</h2>
+<ul>
+<li>UIImage with URL (fetch and cache)</li>
+<li>Encode and Decode ab10(cd) -&gt; abcdcdcd...</li>
+<li>Matrix rectangle</li>
+<li>Common ancestor of a list of nodes</li>
+<li>A list of emails, remove duplicated</li>
+</ul>
+<div class="highlight highlight-source-swift"><pre><span class="pl-k">class</span> <span class="pl-en">Solution</span> {
+    <span class="pl-k">func</span> <span class="pl-en">lengthLongestPath</span>(<span class="pl-en">_</span> <span class="pl-smi">input</span>: <span class="pl-c1">String</span>) <span class="pl-k">-&gt;</span> <span class="pl-c1">Int</span> {
+        <span class="pl-k">var</span> stack <span class="pl-k">=</span> [<span class="pl-c1">Int</span>]() <span class="pl-c"><span class="pl-c">//</span> stack stores length</span>
+<span class="pl-c"></span>        
+        <span class="pl-c"><span class="pl-c">//</span> dir \n           level: 0</span>
+<span class="pl-c"></span>        <span class="pl-c"><span class="pl-c">//</span> \t subdir2 \n    level: 1</span>
+<span class="pl-c"></span>        <span class="pl-c"><span class="pl-c">//</span>  0 1234567</span>
+<span class="pl-c"></span>        <span class="pl-c"><span class="pl-c">//</span> \t subdir1 \n    level: 1</span>
+<span class="pl-c"></span>        <span class="pl-c"><span class="pl-c">//</span> \t \t file.ext   level: 2</span>
+<span class="pl-c"></span>        
+        <span class="pl-k">var</span> maxLength <span class="pl-k">=</span> <span class="pl-c1">0</span>
+        <span class="pl-k">var</span> lines<span class="pl-k">:</span> [[<span class="pl-c1">Character</span>]] <span class="pl-k">=</span> input.<span class="pl-c1">characters</span>.<span class="pl-c1">split</span>(<span class="pl-c1">separator</span>: <span class="pl-s"><span class="pl-pds">"</span><span class="pl-cce">\n</span><span class="pl-pds">"</span></span>).<span class="pl-c1">map</span> { <span class="pl-c1">Array</span>(<span class="pl-c1">$0</span>) }
+        <span class="pl-k">for</span> line <span class="pl-k">in</span> lines {
+            <span class="pl-k">let</span> level <span class="pl-k">=</span> (<span class="pl-c1">findLastIndex</span>(<span class="pl-c1">of</span>: <span class="pl-s"><span class="pl-pds">"</span><span class="pl-cce">\t</span><span class="pl-pds">"</span></span>, <span class="pl-c1">in</span>: line) <span class="pl-k">??</span> <span class="pl-c1">-1</span>) <span class="pl-k">+</span> <span class="pl-c1">1</span> <span class="pl-c"><span class="pl-c">//</span> index starts from 0, + 1 corrects it's level</span>
+<span class="pl-c"></span>            
+            <span class="pl-c"><span class="pl-c">//</span> stack.count stands for level of current directory</span>
+<span class="pl-c"></span>            <span class="pl-c"><span class="pl-c">//</span> need to cd.. if current level is smaller than stack level</span>
+<span class="pl-c"></span>            <span class="pl-k">while</span> stack.<span class="pl-c1">count</span> <span class="pl-k">&gt;</span> level {
+                stack.<span class="pl-c1">popLast</span>()
+            }
+            
+            <span class="pl-k">let</span> parentPathLength<span class="pl-k">:</span> <span class="pl-c1">Int</span>
+            <span class="pl-c"><span class="pl-c">//</span> = stack.last ?? 0</span>
+<span class="pl-c"></span>            <span class="pl-k">if</span> <span class="pl-k">let</span> parent <span class="pl-k">=</span> stack.<span class="pl-c1">last</span> {
+                parentPathLength <span class="pl-k">=</span> parent <span class="pl-k">+</span> <span class="pl-c1">1</span> <span class="pl-c"><span class="pl-c">//</span> 1 is for "/"</span>
+<span class="pl-c"></span>            } <span class="pl-k">else</span> {
+                parentPathLength <span class="pl-k">=</span> <span class="pl-c1">0</span>
+            }
+            
+            <span class="pl-k">let</span> currentPathLength <span class="pl-k">=</span> line.<span class="pl-c1">count</span> <span class="pl-k">-</span> level <span class="pl-c"><span class="pl-c">//</span> 8 - 1 = 7</span>
+<span class="pl-c"></span>            <span class="pl-k">let</span> current <span class="pl-k">=</span> parentPathLength <span class="pl-k">+</span> currentPathLength
+            
+            stack.<span class="pl-c1">append</span>(current)
+            
+            <span class="pl-c"><span class="pl-c">//</span> If this is a file, record the max length</span>
+<span class="pl-c"></span>            <span class="pl-k">if</span> line.<span class="pl-c1">index</span>(<span class="pl-c1">of</span>: <span class="pl-s"><span class="pl-pds">"</span>.<span class="pl-pds">"</span></span>) <span class="pl-k">!=</span> <span class="pl-c1">nil</span> {
+                maxLength <span class="pl-k">=</span> <span class="pl-c1">max</span>(maxLength, current)
+            }
+        }
+        
+        <span class="pl-k">return</span> maxLength
+    }
+    
+    <span class="pl-k">func</span> <span class="pl-en">findLastIndex</span>(<span class="pl-en">of</span> <span class="pl-smi">target</span>: <span class="pl-c1">Character</span>, <span class="pl-en">in</span> <span class="pl-smi">array</span>: [<span class="pl-c1">Character</span>]) <span class="pl-k">-&gt;</span> <span class="pl-c1">Int</span><span class="pl-k">?</span> {
+        <span class="pl-k">for</span> i <span class="pl-k">in</span> <span class="pl-c1">stride</span>(<span class="pl-c1">from</span>: array.<span class="pl-c1">count</span> <span class="pl-k">-</span> <span class="pl-c1">1</span>, <span class="pl-c1">to</span>: <span class="pl-c1">-1</span>, <span class="pl-c1">by</span>: <span class="pl-c1">-1</span>) {
+            <span class="pl-k">if</span> array[i] <span class="pl-k">==</span> target {
+                <span class="pl-k">return</span> i
+            }
+        }
+        <span class="pl-k">return</span> <span class="pl-c1">nil</span>
+    }
+}</pre></div>
+
+        </div>
+
+        <div class="wiki-footer gollum-markdown-content boxed-group" id="wiki-footer">
+          <div class="boxed-group-inner wiki-auxiliary-content markdown-body">
+            <p>我是有底线的</p>
+
+          </div>
+        </div>
+    </div>]

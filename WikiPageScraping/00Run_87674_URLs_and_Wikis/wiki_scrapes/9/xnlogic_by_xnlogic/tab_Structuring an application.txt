@@ -1,0 +1,105 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>An XN application is structured by combining <strong>parts</strong> together into <strong>models</strong>. By structuring an application in this way, we can still get all of
+the benefits of an optimally designed class inheritance hierarchy, plus considerable flexibility to structure our data model in ways that would be
+impossible with simple class inheritance. Because records can be referenced by <strong>part</strong>, by <strong>multiple parts</strong>, or by <strong>model</strong>, we can perform
+queries across all of the relevant data to us, even if it cuts across many different types of models.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#modelling-with-parts" id="user-content-modelling-with-parts"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Modelling with Parts</h2>
+<p>I will use <a href="http://lightmesh.com" rel="nofollow">Lightmesh</a>'s datacenter management domain as the inspiration of my examples<a href="#f1"><sup>1</sup></a>. First, let's look at how we can create a variety of models by
+simply combining part types:</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Server</th>
+<th>Blade Server</th>
+<th>VM</th>
+<th>Rack</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Server</td>
+<td>X</td>
+<td>X</td>
+<td>X</td>
+<td></td>
+</tr>
+<tr>
+<td>Asset</td>
+<td>X</td>
+<td>X</td>
+<td>X</td>
+<td>X</td>
+</tr>
+<tr>
+<td>Rackable</td>
+<td>X</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>Blade</td>
+<td></td>
+<td>X</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>VM</td>
+<td></td>
+<td></td>
+<td>X</td>
+<td></td>
+</tr>
+<tr>
+<td>Rack</td>
+<td></td>
+<td></td>
+<td></td>
+<td>X</td>
+</tr>
+</tbody>
+</table>
+<p>Now that we have assembled some models, let's see how we can use them. First, we can request data by specific model and get its related software:</p>
+<pre><code>get /model/blade_server/rel/software
+</code></pre>
+<p>That can be useful, but often you need more flexibility. For instance, to find all software running on all of the devices in our datacenter, it would
+be a lot of work to get a list of all server device models, then query each one individually and finally combine the results on the client side. In
+addition, we would have to be careful not to introduce a subtle bug by hard-coding the list of server model types, which may change as new types of
+devices are introduced in the future. It would be better to simply query all servers for their software. By structuring your app the XN way, we can do
+that easily:</p>
+<pre><code>get /is/server/rel/software
+</code></pre>
+<p>Using the same model, we can also look at it from other angles. Here we query for the vm host of all vms, and the decommission date for all assets:</p>
+<pre><code>get /is/vm/rel/vm_host
+</code></pre>
+<pre><code>get /is/asset/properties/decommision_date
+</code></pre>
+<h4>
+<a aria-hidden="true" class="anchor" href="#model-specific-logic-is-still-possible" id="user-content-model-specific-logic-is-still-possible"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Model-specific logic is still possible</h4>
+<p>A common pattern that quickly emerged in the design of Lightmesh is visible in the bottom few rows of the table above. We can see that, at least for
+the Blade Server, VM, and Rack models, (if we assume that there is are no variations on these types) we have created parts that contain business logic
+specific to them. We thereby have access any benefits of model-specific logic without needing to have any actual logic defined on the model itself.
+That is fortunate, because it is in fact impossible to define model specific logic in any other way. By forcing the logic in the system to be defined
+in a consistent way, we ensure that the benefits of the XN data modelling approach are not lost in data modelling mistakes or "quick fixes" applied
+outside of the regular system.</p>
+<h4>
+<a aria-hidden="true" class="anchor" href="#when-must-you-use-models" id="user-content-when-must-you-use-models"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>When must you use models?</h4>
+<p>For a part to be used in your application, it must be part of at least one model. In the API, models <strong>must</strong> be used when creating records. They also
+must be used when running actions against records. All other operations work with either parts or models interchangeably.</p>
+<h4>
+<a aria-hidden="true" class="anchor" href="#changing-models" id="user-content-changing-models"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Changing models</h4>
+<p>The API provides a simple to change the model of a record. When the model is changed, any data associated with parts that are no longer present is no
+longer accessible via the API, but that data is not deleted either.</p>
+<a name="user-content-f1"></a>
+<sub>
+1. If you are using [Lightmesh], please do not use these examples as documentation for the Lightmesh API. Examples may be simplified to convey a point
+   and not be precisely as implemented.
+</sub>
+
+        </div>
+
+    </div>]

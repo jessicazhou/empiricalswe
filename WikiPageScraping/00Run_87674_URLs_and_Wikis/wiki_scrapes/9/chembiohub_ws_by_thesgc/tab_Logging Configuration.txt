@@ -1,0 +1,62 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>Application logging happens in 2 places - via the standard out at the process level and into the database for failed background tasks although the background tasks are also captured in the standard out.</p>
+<p>The logging behaviour is configured in the base.py settings file, here is a copy of the config. The streamhandler pushes the information out to the standard out which is then captured by supervisor. Applications listed in the installed apps are added to the logging config as shown below. Note that this may lead to django webauth not being included as it is added to installed apps later.</p>
+<pre><code>	DEBUG_SQL = 'INFO'
+
+	LOGGING = {
+	    'version': 1,
+	    'formatters': {
+		'verbose': {
+		    'format': '%(levelname)s %(asctime)s %(module)s %(process)d %(thread)d %(message)s'
+		},
+		'simple': {
+		    'format': '%(levelname)s %(message)s'
+		},
+	    },
+	    'handlers': {
+		'console': {                           #Logging is sent out to standard out 
+		    'level': 'DEBUG',
+		    'class': 'logging.StreamHandler',
+		    'formatter': 'simple'
+		    },
+		},
+	    
+	    'loggers': {
+		'django': {
+		    'handlers': ['console'],
+		    'level': DEBUG_SQL,
+		    'propagate': True,
+		    },
+		},
+	
+	    }
+
+
+
+
+	for app in INSTALLED_APPS:
+	    LOGGING["loggers"][app] = {
+		    'handlers': ['console'],
+		    'level': 'DEBUG',
+		    'propagate': True,
+		    }
+</code></pre>
+<p>Each of the supervisor processes is pushed to its own logfile by supervisor. The behaviour of how this is done can be configured in the configuration files which are pushed into the supervisor conf.d directory during installation.</p>
+<p>In the standard setup then the output from the logging is pushed to /var/log/supervisor/ and looks like this:</p>
+<pre><code>  astretton@chembiohub:/var/log/supervisor$ tree
+	.
+	├── chem_bio_crunch-stderr---supervisor-lL2XoT.log
+	├── chem_bio_crunch-stdout---supervisor-m_gApG.log
+	├── hub_postgresql-stderr---supervisor-87jYYz.log
+	├── hub_postgresql-stdout---supervisor-GoWqX0.log
+	├── hub_qcluster-stderr---supervisor-zuj2cg.log
+	├── hub_qcluster-stdout---supervisor-mqmip5.log
+	├── test_reg-stderr---supervisor-km3y5J.log
+	└── test_reg-stdout---supervisor-FaGxKa.log
+</code></pre>
+<p>If a background task has failed then usually it will be logged in the failed tasks table. This is available from the django admin interface</p>
+
+        </div>
+
+    </div>]

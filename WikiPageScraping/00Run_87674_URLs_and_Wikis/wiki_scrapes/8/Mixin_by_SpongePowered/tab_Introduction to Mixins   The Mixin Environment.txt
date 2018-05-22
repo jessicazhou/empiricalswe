@@ -1,0 +1,125 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>So now that we understand the <a href="https://github.com/SpongePowered/Mixin/wiki/Introduction-to-Mixins---Understanding-Mixin-Architecture/">basic features of mixins</a> (hint: if you haven't read that, go back and read it first!), let's take a quick detour to understand how to leverage our newly-authored mixins into the game environment.</p>
+<h4>
+<a aria-hidden="true" class="anchor" href="#how-mixins-do-their-thing" id="user-content-how-mixins-do-their-thing"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>How mixins do their thing</h4>
+<p>As I mentioned in the previous <a href="https://github.com/SpongePowered/Mixin/wiki/Introduction-to-Mixins---Understanding-Mixin-Architecture/">article</a>, it's best to keep in mind that to most intents and purposes <strong>mixins are not classes</strong> in the strictest sense and are not classloaded at runtime, but rather the raw bytecode is parsed using <a href="http://asm.ow2.org/" rel="nofollow">ASM</a>'s Tree API. This approach generates a node-based view of the underlying bytecode which can then be merged into the target classes by the mixin transformer.</p>
+<p>Mixins themselves are pumped through the transformer chain independently of regular classes, this is to allow any remapping transformers to do their work prior to the mixin being combined with its target class. It is important that the mixin transformer itself is <em>downstream</em> of any remapping transformers for this reason, this is handled internally by inserting proxy transfomers in the transformer chain.</p>
+<p><img alt="Mixin Transformer Chain" src="https://raw.githubusercontent.com/SpongePowered/Mixin/master/docs/images/mixin_transformer_chain.png"/></p>
+<p>Mixins require processing before class loading begins in order to identify their <strong>target classes</strong>, perform <a href="https://github.com/SpongePowered/Mixin/wiki/About-Hierarchy-Validation-in-Mixins"><strong>hierarchy validation</strong></a>, and resolve any updated <strong>static bindings</strong> for fields and methods. Mixins you wish to apply should be specified in a configuration file and your coremod, tweaker, jar metadata or litemod.json will specify the location of the resource inside your mod's jar.</p>
+<blockquote>
+<p>The configuration path is loaded as a <em>resource</em> and thus can be placed any package within your jar. It is important that you do <strong>not</strong> prepend a leading slash onto the file path as resource paths must be relative.</p>
+<p>For example, if your config file is in the package <code>com.somepackage</code> you should specify the path to your config file as <code>com/somepackage/myconfig.json</code></p>
+</blockquote>
+<p>Each <strong>configuration</strong> defines a <strong>mixin set</strong> and you may have as many <strong>mixin sets</strong> as you require for your application. It is only <em>required</em> to separate mixins into sets when your mixins target different <em>environments</em> (see below). However it is sometimes desirable to also split mixins into sets for organisational purposes.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#mixin-configuration-files" id="user-content-mixin-configuration-files"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Mixin configuration files</h3>
+<p>As well as defining the <strong>mixin set</strong> itself, mixin configuration files also define accompanying properties for the set.</p>
+<p>Firstly, the set itself is defined with four keys:</p>
+<ul>
+<li>
+<code>package</code> defines the <strong>parent package</strong> for this group of mixins (this is important because the package and all subpackages will be excluded from the <code>LaunchClassLoader</code> at run time.</li>
+<li>
+<code>mixins</code> defines the <strong>list of mixin "classes"</strong> within the <em>parent package</em> to apply for this configuration, each mixin "class" is specified relative to the <em>parent package</em>, sub-packages are allowed. Entries in this list are applied to both client and dedicated server <em>side</em>.</li>
+<li>
+<code>client</code> defines the list of mixins to apply <strong>only</strong> on the <strong>client</strong> side.</li>
+<li>
+<code>server</code> defines the list of mixins to apply <strong>only</strong> on the <strong>dedicated server</strong> side.</li>
+</ul>
+<p>Additional properties can then be defined:</p>
+<ul>
+<li>
+<code>refmap</code> defines the name of the <strong>reference map</strong> filename for this set (more on this in the discussion of how obfuscation is handled with mixins)</li>
+<li>
+<code>priority</code> defines the <strong>priority</strong> of this mixin set relative to other configurations.</li>
+<li>
+<code>plugin</code> is the name of an optional <strong>companion plugin</strong> class for the mixin configuration which can tweak the mixin configuration programmatically at run time. See <del>Mixin Companion Plugins</del> (Not done yet).</li>
+<li>
+<code>required</code> defines whether the mixin set is <strong>required</strong> or not. If a single mixin failing to apply should be considered a failure state for the entire game, then the <em>required</em> flag should be set to <code>true</code>.</li>
+<li>
+<code>minVersion</code> should be set if this mixin set relies on some mixin functionality which was added in a particular version. It can be omitted for version-agnostic mixin sets.</li>
+<li>
+<code>setSourceFile</code> causes the mixin processor to overwrite the <code>source file</code> property in target classes with the source file of the mixin class. This can be useful when debugging mixins.</li>
+<li>
+<code>verbose</code> promotes all <code>DEBUG</code>-level log messages to <code>INFO</code> level for this mixin set. This can also be enabled globally via the <code>mixin.debug.verbose</code> <a href="https://github.com/SpongePowered/Mixin/wiki/Mixin-Java-System-Properties">system property</a>
+</li>
+</ul>
+<p>Most important to note is that mixin "classes" must exist within a package with no other classes in your project (this includes sub-packages of the main mixin package) because the entire package will be excluded from the transforming classloader on startup.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#the-game-lifecycle-and-you" id="user-content-the-game-lifecycle-and-you"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>The Game Lifecycle and You</h3>
+<p>To understand how mixins interact with the underlying game, it is crucial to first understand the game's lifecycle when running within <code>LaunchWrapper</code>.</p>
+<p><em>LaunchWrapper</em> usurps the game's normal startup process in order to allow <em>Tweakers</em> to modify the game. Each <em>Tweaker</em> can supply <em>Class Transformers</em> which are able to modify game classes at load time. <em>Tweakers</em> are specified on the command line and are loaded and initialised one by one by the <code>Launch</code> class, which forms the core of <em>LaunchWrapper</em>'s startup logic.</p>
+<p><em>Tweakers</em> such as FML and LiteLoader are also able to co-operatively load and inject other <em>Tweakers</em> that they discover, and so <code>Launch</code> initialises <em>Tweakers</em> in a loop, continuing until no further additional <em>Tweakers</em> are offered. We can visualise the execution flow within <code>Launch</code> like this:</p>
+<p><img alt="Launch lifecycle" src="https://raw.githubusercontent.com/SpongePowered/Mixin/master/docs/images/mixin_env_0.png"/></p>
+<p>It is absolutely vital to realise that this phase of initialisation <em>must</em> complete before the game begins to load, since otherwise a <em>Transformer</em> registered late in the <em>Tweak</em> initialisation cycle may not have the opportunity to process classes that it needs to, and the transformer chain may not be complete.</p>
+<p>Things which happen at this phase of initialisation are:</p>
+<ul>
+<li>Tweakers such as FML and LiteLoader perform mod discovery, and inject their transformers and any additional Tweakers they find.</li>
+<li>FML "Core mods" (aka Loading Plugins) are initialised and can register their own transformers.</li>
+</ul>
+<p>Since the mixin subsystem must be initialised at this early stage (before game classes load), it must be loaded by a coremod or Tweaker, see the sections on bootstrapping below.</p>
+<p><img alt="Launch lifecycle" src="https://raw.githubusercontent.com/SpongePowered/Mixin/master/docs/images/mixin_env_1.png"/></p>
+<p>Once <em>Tweaker</em> initialisation is complete, <code>Launch</code> calls the game's original <code>main()</code> method which starts the game loading process. At this point the transformer chain is complete and so game classes can be loaded and processed by the registered transformers. The game enters its main loop and classes are loaded on-demand and processed by the transformer chain (including Mixin).</p>
+<p>It should be clear from the above that the game execution is thus split into two distinct <em>phases</em>, namely the <strong>pre-init phase</strong> where the <em>Tweakers</em> are initialised, and the <strong>default phase</strong> which is analogous to the normal game lifecycle when not running inside the wrapper. It is necessary to understand these phases and their relationship with the Mixin subsystem.</p>
+<h4>
+<a aria-hidden="true" class="anchor" href="#its-just-a-phase-im-going-through" id="user-content-its-just-a-phase-im-going-through"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>It's just a phase I'm going through</h4>
+<p>In the normal course of things, our Mixin setup would only deal with classes loaded in the <strong>default</strong> phase and life would be simple. During this phase we know that:</p>
+<ul>
+<li>The transformer chain is complete</li>
+<li>Game classes can be safely loaded</li>
+</ul>
+<p>This means that it's safe to load and transform game-class bytecode and apply our mixins, it is also safe to load the <em>class metadata</em> that we require in order to apply those mixins (remember from above that validation and pre-transformation of mixins happens in a single pass at startup). If we perform metadata generation too early (during the pre-init phase for example) then there is a chance that critical transformers may not have been registered! This will result in the mixin bytecode being imcomplete or invalid.</p>
+<p><em>So why bother with <strong>pre-init</strong> at all?</em></p>
+<p>The simple answer is: <em>"so we can mix in to core classes provided by other tweakers, specifically FML</em>"</p>
+<p>One of the requirements of a platform like <em>Sponge</em> is that it is sometimes necessary to hook into the underlying platform in ways which simply wouldn't be possible if transformation occurred during the <strong>default</strong> phase when core classes have already been loaded (and thus are beyond the reach of transformers). However as we have already established, loading our game-relevant mixins during the <strong>pre-init</strong> phase will not work because transformers which we require will not be present.</p>
+<h4>
+<a aria-hidden="true" class="anchor" href="#care-for-the-environment" id="user-content-care-for-the-environment"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Care for the Environment</h4>
+<p>In the Mixin processor then, we acknowledge this divide by splitting processing down into <em><strong>Environments</strong></em>, one for each phase, it is then possible to split up your mixin sets to target the desired <em>Environment</em>. Typical scenarios for mixins would thus resolve into</p>
+<ul>
+<li>A mixin set which only mixes game classes should be registered in the <strong>default</strong> environment</li>
+<li>Where mixins need to be applied in both phases, two mixin sets (configurations) should be specified with <strong>pre-init</strong> mixins in one set and <strong>default</strong> mixins in another.</li>
+</ul>
+<h4>
+<a aria-hidden="true" class="anchor" href="#jumping-the-gun" id="user-content-jumping-the-gun"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Jumping the Gun</h4>
+<p>One thing worth noting is that - as a <em>Tweaker</em> itself - FML co-operatively loads its coremods and re-injects them into the startup lifecycle using proxy <em>Tweakers</em>. Because our sensitivity to the startup order can be somewhat delicate, it is worth making note of a fine distinction between <em>"first class"</em> tweaker initialisation, and the indirection which occurs during coremod initialisation.</p>
+<p>The Mixin library includes a first-class tweaker which is designed to register and begin processing at the earliest possible moment, this is marked by <strong>(1)</strong> in the diagram below. Normal coremod startup occurs during the first pass through the loop at <strong>(2)</strong> and game loading begins at <strong>(3)</strong>.</p>
+<p><img alt="Launch lifecycle" src="https://raw.githubusercontent.com/SpongePowered/Mixin/master/docs/images/mixin_env_2.png"/></p>
+<p>If mixing in to classes during <strong>pre-init</strong> is required, then usage of the first-class tweaker is recommended.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#bootstrapping-mixins-using-an-fml-coremod" id="user-content-bootstrapping-mixins-using-an-fml-coremod"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Bootstrapping mixins using an FML CoreMod</h3>
+<blockquote>
+<p><strong>NOTE: Bootstrapping mixins via a coremod in a production environment is not currently possible, to use mixins with Forge in release builds you must use the tweak method below.</strong> However you may wish to load mixins in your development workspace, this is possible via a coremod but it will be necessary to use the tweaker for production environments:</p>
+</blockquote>
+<p>To use a coremod to boostrap mixins within a devlopment environment:</p>
+<ul>
+<li>In your coremod constructor, use the following commands to initialise the mixin environment and supply the name of your mixin config file:</li>
+</ul>
+<div class="highlight highlight-source-java"><pre><span class="pl-k">public</span> MyCoreMod() {
+    <span class="pl-c"><span class="pl-c">//</span> This statement must appear first, failing to include</span>
+    <span class="pl-c"><span class="pl-c">//</span> it will cause a runtime error</span>
+    <span class="pl-smi">MixinBootstrap</span><span class="pl-k">.</span>init();
+    
+    <span class="pl-c"><span class="pl-c">//</span> Retrieves the DEFAULT mixin environment and registers</span>
+    <span class="pl-c"><span class="pl-c">//</span> the config file</span>
+    <span class="pl-smi">MixinEnvironment</span><span class="pl-k">.</span>getDefaultEnvironment()
+        .addConfiguration(<span class="pl-s"><span class="pl-pds">"</span>mixins.mymod.json<span class="pl-pds">"</span></span>);
+}</pre></div>
+<h3>
+<a aria-hidden="true" class="anchor" href="#bootstrapping-mixins-via-the-first-class-tweaker" id="user-content-bootstrapping-mixins-via-the-first-class-tweaker"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Bootstrapping mixins via the first-class Tweaker</h3>
+<p>The mixin library comes with a built-in first-class <em>Tweaker</em> which you can use by specifying the tweakclass in your mod jar's metadata. To do so simply specify the tweak class name and the name of your mixin configuration(s) as follows:</p>
+<pre><code>TweakClass: org.spongepowered.asm.launch.MixinTweaker
+TweakOrder: 0
+MixinConfigs: mixins.mymod.json
+</code></pre>
+<p>The TweakOrder of <code>0</code> ensures that the mixin transformer is injected as early as possible.</p>
+<blockquote>
+<p><strong>IMPORTANT NOTE:</strong> In an FML environment, specifying a tweak usually precludes the ability to be a coremod. However, to work around this limitation the mixin tweaker reads the <code>FMLCorePlugin</code> entry from the jar manifest and will reflectively inject the coremod class into FML.</p>
+</blockquote>
+<p>The <code>MixinConfigs</code> value is a comma-separated list of configuration files to supply to the mixin subsystem.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#bootstrapping-mixins-using-liteloader" id="user-content-bootstrapping-mixins-using-liteloader"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Bootstrapping mixins using LiteLoader</h3>
+<p>The mixin subsytem is automatically bootstrapped by liteloader. Simply add the <code>mixinConfigs</code> key to your <code>litemod.json</code> file. The <code>mixinConfigs</code> can be specified as a comma-separated list of configs, or as a regular JSON array of strings.</p>
+
+        </div>
+
+    </div>]

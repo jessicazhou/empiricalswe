@@ -1,0 +1,242 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>In Analogue, the content of your database is represented in your application as <strong>Entity</strong> &amp; <strong>Collection</strong> objects.</p>
+<p>In this tutorial, we'll build simple ACL domain, where we have users, roles &amp; permissions. A user can have only one role which grants him a set of permissions attached to that role. For more flexibility, a user can be granted additionnal permissions that are added to the one from his role.</p>
+<p>Our database contains 5 tables :</p>
+<ul>
+<li>users (id, email, role_id)</li>
+<li>roles (id, name)</li>
+<li>permissions (id, label)</li>
+<li>role_permission (id, role_id, permission_id)</li>
+<li>user_permission (id, user_id, permission_id)</li>
+</ul>
+<h2>
+<a aria-hidden="true" class="anchor" href="#roles" id="user-content-roles"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Roles</h2>
+<p>First, let's create a Role class for our roles table.</p>
+<div class="highlight highlight-text-html-php"><pre><span class="pl-s1"></span>
+<span class="pl-s1"><span class="pl-k">use</span> <span class="pl-c1">Analogue\ORM\Entity</span>;</span>
+<span class="pl-s1"></span>
+<span class="pl-s1"><span class="pl-k">class</span> <span class="pl-en">Role</span> <span class="pl-k">extends</span> <span class="pl-e">Entity</span></span>
+<span class="pl-s1">{</span>
+<span class="pl-s1">    <span class="pl-k">public</span> <span class="pl-k">function</span> <span class="pl-c1">__construct</span>(<span class="pl-smi">$name</span>)</span>
+<span class="pl-s1">    {</span>
+<span class="pl-s1">        <span class="pl-smi">$this</span><span class="pl-k">-&gt;</span><span class="pl-smi">name</span> <span class="pl-k">=</span> <span class="pl-smi">$name</span>;</span>
+<span class="pl-s1">    }</span>
+<span class="pl-s1">}</span></pre></div>
+<p>Having a __construct method on the Entity is not mandatory, we could have created a bare entity and just set the attributes on it, but it's a <em>good pratice</em> to enforce some attributes on our Entity, to ensure it meets our minimum requirements for saving.</p>
+<p>Now let's create two roles, <strong>admin</strong> and <strong>user</strong>, and store them in the database.</p>
+<div class="highlight highlight-text-html-php"><pre><span class="pl-s1"></span>
+<span class="pl-s1"><span class="pl-smi">$roleMapper</span> <span class="pl-k">=</span> <span class="pl-smi">$analogue</span><span class="pl-k">-&gt;</span>mapper(<span class="pl-c1">Role</span><span class="pl-k">::</span><span class="pl-c1">class</span>);</span>
+<span class="pl-s1"></span>
+<span class="pl-s1"><span class="pl-smi">$adminRole</span> <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-c1">Role</span>(<span class="pl-s"><span class="pl-pds">'</span>admin<span class="pl-pds">'</span></span>);</span>
+<span class="pl-s1"><span class="pl-smi">$userRole</span> <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-c1">Role</span>(<span class="pl-s"><span class="pl-pds">'</span>user<span class="pl-pds">'</span></span>);</span>
+<span class="pl-s1"></span>
+<span class="pl-s1"><span class="pl-smi">$roleMapper</span><span class="pl-k">-&gt;</span>store( [<span class="pl-smi">$adminRole</span>, <span class="pl-smi">$userRole</span>] );</span>
+<span class="pl-s1"></span></pre></div>
+<p>The mapper's store() method accepts either <strong>object</strong>, <strong>array</strong> or <strong>collection</strong>. When passing it multiple records at a time, it will automatically wrap the several INSERT statements within a database transaction for better performance.</p>
+<p>Next, let's create a User Entity.</p>
+<div class="highlight highlight-text-html-php"><pre><span class="pl-s1"></span>
+<span class="pl-s1"><span class="pl-k">use</span> <span class="pl-c1">Analogue\ORM\Entity</span>;</span>
+<span class="pl-s1"></span>
+<span class="pl-s1"><span class="pl-k">class</span> <span class="pl-en">User</span> <span class="pl-k">extends</span> <span class="pl-e">Entity</span></span>
+<span class="pl-s1">{</span>
+<span class="pl-s1">    <span class="pl-k">public</span> <span class="pl-k">function</span> <span class="pl-c1">__construct</span>(<span class="pl-smi">$email</span>, <span class="pl-c1">Role</span> <span class="pl-smi">$role</span>)</span>
+<span class="pl-s1">    {</span>
+<span class="pl-s1">        <span class="pl-smi">$this</span><span class="pl-k">-&gt;</span><span class="pl-smi">email</span> <span class="pl-k">=</span> <span class="pl-smi">$email</span>;</span>
+<span class="pl-s1">        <span class="pl-smi">$this</span><span class="pl-k">-&gt;</span><span class="pl-smi">role</span> <span class="pl-k">=</span> <span class="pl-smi">$role</span>;</span>
+<span class="pl-s1">    }</span>
+<span class="pl-s1">}</span></pre></div>
+<p>The constructor type hinting comes handy to ensure we create a user object with a valid Role object.</p>
+<p>The user has no password field. We'll assume for this tutorial that the world is a beautiful place where everyone can be trusted (don't do it in production).</p>
+<p>Ok. We created our User entity but before creating users, we need to inform Analogue of the relationship between the User and the Role entity. We need to create a map for it.</p>
+<div class="highlight highlight-text-html-php"><pre><span class="pl-s1"></span>
+<span class="pl-s1"><span class="pl-k">use</span> <span class="pl-c1">Analogue\ORM\EntityMap</span>;</span>
+<span class="pl-s1"></span>
+<span class="pl-s1"><span class="pl-k">class</span> <span class="pl-en">UserMap</span> <span class="pl-k">extends</span> <span class="pl-e">EntityMap</span> {</span>
+<span class="pl-s1">    </span>
+<span class="pl-s1">    <span class="pl-k">public</span> <span class="pl-k">function</span> <span class="pl-en">role</span>(<span class="pl-c1">User</span> <span class="pl-smi">$user</span>)</span>
+<span class="pl-s1">    {</span>
+<span class="pl-s1">        <span class="pl-k">return</span> <span class="pl-smi">$this</span><span class="pl-k">-&gt;</span>belongsTo(<span class="pl-smi">$user</span>, <span class="pl-c1">Role</span><span class="pl-k">::</span><span class="pl-c1">class</span>);</span>
+<span class="pl-s1">    }</span>
+<span class="pl-s1"></span>
+<span class="pl-s1">}</span>
+<span class="pl-s1"></span></pre></div>
+<p>A relationship method has always one argument, which is the entity originating the relationship. It's also have be type hinted to the correct class name, as Analogue uses Reflection to detect the relationships on your map.</p>
+<p>You'll almost never use an entityMap class directly in our code, only in some special cases, its main purpose is to tell Analogue how to map objects to the database.</p>
+<p>But now that we have mapped the User entity, we can create our first user.</p>
+<div class="highlight highlight-text-html-php"><pre><span class="pl-s1"></span>
+<span class="pl-s1"><span class="pl-smi">$userMapper</span> <span class="pl-k">=</span> <span class="pl-smi">$analogue</span><span class="pl-k">-&gt;</span>mapper(<span class="pl-c1">User</span><span class="pl-k">::</span><span class="pl-c1">class</span>);</span>
+<span class="pl-s1"></span>
+<span class="pl-s1"><span class="pl-smi">$alice</span> <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-c1">User</span>(<span class="pl-s"><span class="pl-pds">'</span>alice@example.com<span class="pl-pds">'</span></span>, <span class="pl-smi">$adminRole</span>);</span>
+<span class="pl-s1"></span>
+<span class="pl-s1"><span class="pl-smi">$userMapper</span><span class="pl-k">-&gt;</span>store(<span class="pl-smi">$alice</span>);</span>
+<span class="pl-s1"></span></pre></div>
+<p>Behind the scenes, the mapper recognizes the <strong>role</strong> attributes as corresponding to the <strong>role()</strong> relationship method, and has set the foreign key (role_id) for us.</p>
+<p>But what if the admin role did not exists ?</p>
+<div class="highlight highlight-text-html-php"><pre><span class="pl-s1"></span>
+<span class="pl-s1"><span class="pl-smi">$bob</span> <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-c1">User</span>(<span class="pl-s"><span class="pl-pds">'</span>bob@example.com<span class="pl-pds">'</span></span>, <span class="pl-k">new</span> <span class="pl-c1">Role</span>(<span class="pl-s"><span class="pl-pds">'</span>guest<span class="pl-pds">'</span></span>));</span>
+<span class="pl-s1"></span>
+<span class="pl-s1"><span class="pl-smi">$userMapper</span><span class="pl-k">-&gt;</span>store(<span class="pl-smi">$bob</span>);</span></pre></div>
+<p>When storing Entities, Analogue parse the relationships and will create the non-existing records when needed.</p>
+<p>##Permissions</p>
+<p>As we said earlier, we want to define permissions both for the roles and gives ourself the ability to add permissions to a user on a per case basis.</p>
+<p>The permission itself will consist in a single string :</p>
+<div class="highlight highlight-text-html-php"><pre><span class="pl-s1"></span>
+<span class="pl-s1"><span class="pl-k">use</span> <span class="pl-c1">Analogue\ORM\Entity</span>;</span>
+<span class="pl-s1"></span>
+<span class="pl-s1"><span class="pl-k">class</span> <span class="pl-en">Permission</span> <span class="pl-k">extends</span> <span class="pl-e">Entity</span></span>
+<span class="pl-s1">{</span>
+<span class="pl-s1">    <span class="pl-k">public</span> <span class="pl-k">function</span> <span class="pl-c1">__construct</span>(<span class="pl-smi">$label</span>)</span>
+<span class="pl-s1">    {</span>
+<span class="pl-s1">        <span class="pl-smi">$this</span><span class="pl-k">-&gt;</span><span class="pl-smi">label</span> <span class="pl-k">=</span> <span class="pl-smi">$label</span>;</span>
+<span class="pl-s1">    }</span>
+<span class="pl-s1"></span>
+<span class="pl-s1">}</span></pre></div>
+<p>Then we need to define an EntityMap for the Role Entity.</p>
+<div class="highlight highlight-text-html-php"><pre><span class="pl-s1"></span>
+<span class="pl-s1"><span class="pl-k">use</span> <span class="pl-c1">Analogue\ORM\EntityMap</span>;</span>
+<span class="pl-s1"></span>
+<span class="pl-s1"><span class="pl-k">class</span> <span class="pl-en">RoleMap</span> <span class="pl-k">extends</span> <span class="pl-e">EntityMap</span> {</span>
+<span class="pl-s1">    </span>
+<span class="pl-s1">    <span class="pl-k">public</span> <span class="pl-k">function</span> <span class="pl-en">permissions</span>(<span class="pl-c1">Role</span> <span class="pl-smi">$role</span>)</span>
+<span class="pl-s1">    {</span>
+<span class="pl-s1">        <span class="pl-k">return</span> <span class="pl-smi">$this</span><span class="pl-k">-&gt;</span>belongsToMany(<span class="pl-smi">$role</span>, <span class="pl-c1">Permission</span><span class="pl-k">::</span><span class="pl-c1">class</span>);</span>
+<span class="pl-s1">    }</span>
+<span class="pl-s1"></span>
+<span class="pl-s1">}</span>
+<span class="pl-s1"></span></pre></div>
+<p>And also add a method on the UserMap to link to user specific permissions :</p>
+<div class="highlight highlight-text-html-php"><pre><span class="pl-s1"></span>
+<span class="pl-s1"><span class="pl-k">use</span> <span class="pl-c1">Analogue\ORM\EntityMap</span>;</span>
+<span class="pl-s1"></span>
+<span class="pl-s1"><span class="pl-k">class</span> <span class="pl-en">UserMap</span> <span class="pl-k">extends</span> <span class="pl-e">EntityMap</span> {</span>
+<span class="pl-s1">    </span>
+<span class="pl-s1">    <span class="pl-k">public</span> <span class="pl-k">function</span> <span class="pl-en">permissions</span>(<span class="pl-c1">User</span> <span class="pl-smi">$user</span>)</span>
+<span class="pl-s1">    {</span>
+<span class="pl-s1">        <span class="pl-k">return</span> <span class="pl-smi">$this</span><span class="pl-k">-&gt;</span>belongsToMany(<span class="pl-smi">$user</span>, <span class="pl-c1">Permission</span><span class="pl-k">::</span><span class="pl-c1">class</span>);</span>
+<span class="pl-s1">    }</span>
+<span class="pl-s1"></span>
+<span class="pl-s1">}</span>
+<span class="pl-s1"></span></pre></div>
+<p>Now, let's go back on our User entity and create a new method to add these permissions.</p>
+<div class="highlight highlight-text-html-php"><pre><span class="pl-s1"><span class="pl-k">use</span> <span class="pl-c1">Analogue\ORM\Entity</span>;</span>
+<span class="pl-s1"><span class="pl-k">use</span> <span class="pl-c1">Analogue\ORM\EntityCollection</span>;</span>
+<span class="pl-s1"></span>
+<span class="pl-s1"><span class="pl-k">class</span> <span class="pl-en">User</span> <span class="pl-k">extends</span> <span class="pl-e">Entity</span></span>
+<span class="pl-s1">{</span>
+<span class="pl-s1">    <span class="pl-k">public</span> <span class="pl-k">function</span> <span class="pl-c1">__construct</span>(<span class="pl-smi">$email</span>, <span class="pl-c1">Role</span> <span class="pl-smi">$role</span>)</span>
+<span class="pl-s1">    {</span>
+<span class="pl-s1">        <span class="pl-smi">$this</span><span class="pl-k">-&gt;</span><span class="pl-smi">email</span> <span class="pl-k">=</span> <span class="pl-smi">$email</span>;</span>
+<span class="pl-s1">        <span class="pl-smi">$this</span><span class="pl-k">-&gt;</span><span class="pl-smi">role</span> <span class="pl-k">=</span> <span class="pl-smi">$role</span>;</span>
+<span class="pl-s1">        <span class="pl-smi">$this</span><span class="pl-k">-&gt;</span><span class="pl-smi">permissions</span> <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-c1">EntityCollection</span>;</span>
+<span class="pl-s1">    }</span>
+<span class="pl-s1"></span>
+<span class="pl-s1">    <span class="pl-k">public</span> <span class="pl-k">function</span> <span class="pl-en">addPermission</span>(<span class="pl-c1">Permission</span> <span class="pl-smi">$permission</span>)</span>
+<span class="pl-s1">    {</span>
+<span class="pl-s1">        <span class="pl-smi">$this</span><span class="pl-k">-&gt;</span><span class="pl-smi">permissions</span><span class="pl-k">-&gt;</span>add(<span class="pl-smi">$permission</span>);</span>
+<span class="pl-s1">    }</span>
+<span class="pl-s1">}</span>
+<span class="pl-s1"></span></pre></div>
+<p>Notice that we introduced added new EntityCollection class in our class constructor. This class extends Illuminate\Support\Collection with some methods to deal with entities, as the add() one we use there.</p>
+<p>We can safely copy and paste this code into our Role entity :</p>
+<div class="highlight highlight-text-html-php"><pre><span class="pl-s1"></span>
+<span class="pl-s1"><span class="pl-k">use</span> <span class="pl-c1">Analogue\ORM\Entity</span>;</span>
+<span class="pl-s1"><span class="pl-k">use</span> <span class="pl-c1">Analogue\ORM\EntityCollection</span>;</span>
+<span class="pl-s1"></span>
+<span class="pl-s1"><span class="pl-k">class</span> <span class="pl-en">Role</span> <span class="pl-k">extends</span> <span class="pl-e">Entity</span></span>
+<span class="pl-s1">{</span>
+<span class="pl-s1">    <span class="pl-k">public</span> <span class="pl-k">function</span> <span class="pl-c1">__construct</span>(<span class="pl-smi">$name</span>)</span>
+<span class="pl-s1">    {</span>
+<span class="pl-s1">        <span class="pl-smi">$this</span><span class="pl-k">-&gt;</span><span class="pl-smi">name</span> <span class="pl-k">=</span> <span class="pl-smi">$name</span>;</span>
+<span class="pl-s1">        <span class="pl-smi">$this</span><span class="pl-k">-&gt;</span><span class="pl-smi">permissions</span> <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-c1">EntityCollection</span>;</span>
+<span class="pl-s1">    }</span>
+<span class="pl-s1"></span>
+<span class="pl-s1">    <span class="pl-k">public</span> <span class="pl-k">function</span> <span class="pl-en">addPermission</span>(<span class="pl-c1">Permission</span> <span class="pl-smi">$permission</span>)</span>
+<span class="pl-s1">    {</span>
+<span class="pl-s1">        <span class="pl-smi">$this</span><span class="pl-k">-&gt;</span><span class="pl-smi">permissions</span><span class="pl-k">-&gt;</span>push(<span class="pl-smi">$permission</span>);</span>
+<span class="pl-s1">    }</span>
+<span class="pl-s1">}</span>
+<span class="pl-s1"></span></pre></div>
+<p>With everything in place, we're go wild and create permissions for our role &amp; users.</p>
+<div class="highlight highlight-text-html-php"><pre><span class="pl-s1"></span>
+<span class="pl-s1"><span class="pl-smi">$adminRole</span><span class="pl-k">-&gt;</span>addPermission(<span class="pl-k">new</span> <span class="pl-c1">Permission</span>(<span class="pl-s"><span class="pl-pds">'</span>access_admin<span class="pl-pds">'</span></span>));</span>
+<span class="pl-s1"><span class="pl-smi">$adminRole</span><span class="pl-k">-&gt;</span>addPermission(<span class="pl-k">new</span> <span class="pl-c1">Permission</span>(<span class="pl-s"><span class="pl-pds">'</span>create_users<span class="pl-pds">'</span></span>));</span>
+<span class="pl-s1"></span>
+<span class="pl-s1"><span class="pl-smi">$roleMapper</span><span class="pl-k">-&gt;</span>store(<span class="pl-smi">$adminRole</span>);</span>
+<span class="pl-s1"></span>
+<span class="pl-s1"><span class="pl-smi">$alice</span><span class="pl-k">-&gt;</span>addPermission(<span class="pl-k">new</span> <span class="pl-c1">Permission</span>(<span class="pl-s"><span class="pl-pds">'</span>reset_server<span class="pl-pds">'</span></span>));</span>
+<span class="pl-s1"></span>
+<span class="pl-s1"><span class="pl-smi">$userMapper</span><span class="pl-k">-&gt;</span>store(<span class="pl-smi">$alice</span>);</span>
+<span class="pl-s1"></span></pre></div>
+<p>Finally, it would be awesome to be able to retrieve all the permissions for a user, regardless he got it from his role or from a custom grant. Let's implement it.</p>
+<div class="highlight highlight-text-html-php"><pre><span class="pl-s1"><span class="pl-k">use</span> <span class="pl-c1">Analogue\ORM\Entity</span>;</span>
+<span class="pl-s1"><span class="pl-k">use</span> <span class="pl-c1">Analogue\ORM\EntityCollection</span>;</span>
+<span class="pl-s1"></span>
+<span class="pl-s1"><span class="pl-k">class</span> <span class="pl-en">User</span> <span class="pl-k">extends</span> <span class="pl-e">Entity</span></span>
+<span class="pl-s1">{</span>
+<span class="pl-s1">    <span class="pl-k">public</span> <span class="pl-k">function</span> <span class="pl-c1">__construct</span>(<span class="pl-smi">$email</span>, <span class="pl-c1">Role</span> <span class="pl-smi">$role</span>)</span>
+<span class="pl-s1">    {</span>
+<span class="pl-s1">        <span class="pl-smi">$this</span><span class="pl-k">-&gt;</span><span class="pl-smi">email</span> <span class="pl-k">=</span> <span class="pl-smi">$email</span>;</span>
+<span class="pl-s1">        <span class="pl-smi">$this</span><span class="pl-k">-&gt;</span><span class="pl-smi">role</span> <span class="pl-k">=</span> <span class="pl-smi">$role</span>;</span>
+<span class="pl-s1">        <span class="pl-smi">$this</span><span class="pl-k">-&gt;</span><span class="pl-smi">permissions</span> <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-c1">EntityCollection</span>;</span>
+<span class="pl-s1">    }</span>
+<span class="pl-s1"></span>
+<span class="pl-s1">    <span class="pl-k">public</span> <span class="pl-k">function</span> <span class="pl-en">addPermission</span>(<span class="pl-c1">Permission</span> <span class="pl-smi">$permission</span>)</span>
+<span class="pl-s1">    {</span>
+<span class="pl-s1">        <span class="pl-smi">$this</span><span class="pl-k">-&gt;</span><span class="pl-smi">permissions</span><span class="pl-k">-&gt;</span>push(<span class="pl-smi">$permission</span>);</span>
+<span class="pl-s1">    }</span>
+<span class="pl-s1"></span>
+<span class="pl-s1">    <span class="pl-c"><span class="pl-c">/**</span></span></span>
+<span class="pl-s1"><span class="pl-c">     * Return all User's permissions</span></span>
+<span class="pl-s1"><span class="pl-c">     *</span></span>
+<span class="pl-s1"><span class="pl-c">     * <span class="pl-k">@return</span> Collection </span></span>
+<span class="pl-s1"><span class="pl-c">     <span class="pl-c">*/</span></span></span>
+<span class="pl-s1">    <span class="pl-k">public</span> <span class="pl-k">function</span> <span class="pl-en">getPermissions</span>()</span>
+<span class="pl-s1">    {</span>
+<span class="pl-s1">        <span class="pl-smi">$rolePermissions</span> <span class="pl-k">=</span> <span class="pl-smi">$this</span><span class="pl-k">-&gt;</span><span class="pl-smi">role</span><span class="pl-k">-&gt;</span><span class="pl-smi">permissions</span>;</span>
+<span class="pl-s1"></span>
+<span class="pl-s1">        <span class="pl-k">return</span> <span class="pl-smi">$this</span><span class="pl-k">-&gt;</span><span class="pl-smi">permissions</span><span class="pl-k">-&gt;</span>merge(<span class="pl-smi">$rolePermissions</span>);</span>
+<span class="pl-s1">    }</span>
+<span class="pl-s1">}</span>
+<span class="pl-s1"></span></pre></div>
+<p>As a result, we have a single method on our User class which our <em>PermissionService</em> can use regardless how we do organize ourselves internally. We <em>encapsulated our Logic inside our domain entities</em>. As the application's features evolve over time, for example if we want to implement a system where groups of users can share access to resources, we can do it without breaking client's code checking for permissions.</p>
+<p>====</p>
+<p>A few months have passed, and during that time Alice spent too much time reseting the server, causing a sensible business loss (that was at a time <a href="https://envoyer.io/" rel="nofollow">Envoyer</a> didn't yet exist), so we've been asked to revoke her permission to do it.</p>
+<p>How can we do that ?</p>
+<p>The EntityCollection class has a convenient remove() methods that do it for us. Let's wrap this into a method on the User class.</p>
+<div class="highlight highlight-text-html-php"><pre><span class="pl-s1"></span>
+<span class="pl-s1">    <span class="pl-k">public</span> <span class="pl-k">function</span> <span class="pl-en">removePermission</span>(<span class="pl-c1">Permission</span> <span class="pl-smi">$permission</span>)</span>
+<span class="pl-s1">    {</span>
+<span class="pl-s1">        <span class="pl-smi">$this</span><span class="pl-k">-&gt;</span><span class="pl-smi">permissions</span><span class="pl-k">-&gt;</span>remove(<span class="pl-smi">$permission</span>);</span>
+<span class="pl-s1">    }</span>
+<span class="pl-s1"></span></pre></div>
+<p>Then :</p>
+<div class="highlight highlight-text-html-php"><pre><span class="pl-s1"></span>
+<span class="pl-s1"><span class="pl-smi">$permissionMapper</span> <span class="pl-k">=</span> <span class="pl-smi">$analogue</span><span class="pl-k">-&gt;</span>mapper(<span class="pl-c1">Permission</span><span class="pl-k">::</span><span class="pl-c1">class</span>);</span>
+<span class="pl-s1"></span>
+<span class="pl-s1"><span class="pl-smi">$resetServer</span> <span class="pl-k">=</span> <span class="pl-smi">$permissionMapper</span><span class="pl-k">-&gt;</span>query()<span class="pl-k">-&gt;</span>whereLabel(<span class="pl-s"><span class="pl-pds">'</span>reset_server<span class="pl-pds">'</span></span>)<span class="pl-k">-&gt;</span>first();</span>
+<span class="pl-s1"></span>
+<span class="pl-s1"><span class="pl-smi">$alice</span><span class="pl-k">-&gt;</span>removePermission(<span class="pl-smi">$resetServer</span>);</span>
+<span class="pl-s1"></span>
+<span class="pl-s1"><span class="pl-c"><span class="pl-c">//</span> We still need to store() the entity for the changes to persist in the DB</span></span>
+<span class="pl-s1"><span class="pl-smi">$userMapper</span><span class="pl-k">-&gt;</span>store(<span class="pl-smi">$alice</span>);</span>
+<span class="pl-s1"></span></pre></div>
+<p>By this action we deleted the record from the user_permission pivot table, that linked Alice to the reset_server permission. The actual record still exists in the 'permissions' table. If we want to get rid of it, we have to explicitely delete it.</p>
+<div class="highlight highlight-text-html-php"><pre><span class="pl-s1"></span>
+<span class="pl-s1"><span class="pl-smi">$permissionMapper</span><span class="pl-k">-&gt;</span>delete(<span class="pl-smi">$resetServer</span>);</span>
+<span class="pl-s1"></span></pre></div>
+<p>Poor Alice, she's got fired cause the losses were too big...</p>
+<p>We have to remove her admin role.</p>
+<p>Well, nothing simpler.</p>
+<div class="highlight highlight-text-html-php"><pre><span class="pl-s1"></span>
+<span class="pl-s1"><span class="pl-smi">$alice</span><span class="pl-k">-&gt;</span><span class="pl-smi">role</span> <span class="pl-k">=</span> <span class="pl-c1">null</span>; </span>
+<span class="pl-s1"></span>
+<span class="pl-s1"><span class="pl-smi">$userMapper</span><span class="pl-k">-&gt;</span>store(<span class="pl-smi">$alice</span>);</span>
+<span class="pl-s1"></span></pre></div>
+<p>Setting any Relation attribute to null will have for effect to remove all the corresponding relationships, weither it's a one or many relationship. (again not deleting the related records).</p>
+<p>===</p>
+<p>So, we had a taste on how Analogue gives us the freedom to build our domain classes. Still, we only scratched the surface. For more examples, follow Alice in the rabbit hole, check the <a href="https://github.com/analogueorm/analogue/wiki/Advanced-Recipes">Advanced recipes</a>.</p>
+
+        </div>
+
+    </div>]

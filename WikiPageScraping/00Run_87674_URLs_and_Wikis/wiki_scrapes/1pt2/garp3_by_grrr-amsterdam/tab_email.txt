@@ -1,0 +1,98 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>Garp has a handy <code>Garp_Mailer</code> class that looks for some sensible defaults in config files.<br/>
+Using <code>Garp_Mailer</code> in your project makes sure every mail</p>
+<ul>
+<li>is sent from the same address</li>
+<li>uses Amazon SES if available, but falls back to SMTP</li>
+<li>uses the same email template</li>
+<li>uses the same attachments for every mail (such as your site logo)</li>
+</ul>
+<h2>
+<a aria-hidden="true" class="anchor" href="#usage" id="user-content-usage"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Usage:</h2>
+<pre><code>$mailer = new Garp_Mailer();
+$mailer-&gt;send(array(
+  'to' =&gt; 'admin@hotmail.com',
+  'subject' =&gt; 'hello there',
+  'message' =&gt; '...'
+));
+</code></pre>
+<h2>
+<a aria-hidden="true" class="anchor" href="#configuration" id="user-content-configuration"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Configuration</h2>
+<p>If you have an Amazon SES account, configure as such:</p>
+<pre><code>amazon.ses.accessKey = "abcdef"
+amazon.ses.privateKey = "123456"
+amazon.ses.region = "eu-west-1"
+</code></pre>
+<p>It will automatically be picked up.<br/>
+For historical reasons, the following config keys are searched for a from address:</p>
+<pre><code>amazon.ses.fromAddress
+mailer.fromAddress
+</code></pre>
+<p>Obviously, <code>amazon.ses.fromAddress</code> is only searched when Amazon SES is configured.</p>
+<p>You can configure other defaults, for attachments and templates:</p>
+<pre><code>mailer.attachments.sitelogo = APPLICATION_PATH "/../public/media/images/logo.png"
+mailer.template = "email/email.phtml"
+</code></pre>
+<h2>
+<a aria-hidden="true" class="anchor" href="#send-options" id="user-content-send-options"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Send options</h2>
+<p>A full example:</p>
+<pre><code>$sendOptions = array(
+  'to' =&gt; 'admin@hotmail.com',
+  'subject' =&gt; 'hello there',
+  'message' =&gt; 'Hello there!',
+  'htmlMessage' =&gt; '&lt;p&gt;&lt;b&gt;Hello&lt;/b&gt; there!&lt;/p&gt;',
+  'cc' =&gt; 'henk@grrr.nl',
+  'bcc' =&gt; 'jaap@grrr.nl',
+  'replyTo' =&gt; 'frits@grrr.nl'
+);
+// $viewParams get sent to the view template
+$viewParams = array(
+  'foo' =&gt; 'bar',
+  '...'
+);
+// $attachments should be an assoc array where you can use the key in the mail template
+$attachments = array(
+  'sitelogo' =&gt; APPLICATION_PATH . "/../public/media/images/logo.png"
+);
+
+$mailer-&gt;send($sendOptions, $viewParams, $attachments);
+</code></pre>
+<p>Note, attachments are currently embedded inline. This means you can use them in the template like this:</p>
+<pre><code>&lt;img src="cid:sitelogo"&gt;
+</code></pre>
+<h2>
+<a aria-hidden="true" class="anchor" href="#runtime-configuration" id="user-content-runtime-configuration"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Runtime configuration</h2>
+<p>The complete public API:</p>
+<pre><code>$mailer-&gt;addAttachment('sitelogo', APPLICATION_PATH . "/../public/media/images/logo.png");
+$mailer-&gt;addAttachments($array);
+$mailer-&gt;getDefaultAttachments();
+
+$mailer-&gt;getDefaultFromAddress();
+$mailer-&gt;getFromAddress();
+$mailer-&gt;setFromAddress('henk@grrr.nl');
+
+$mailer-&gt;getDefaultHtmlTemplate();
+$mailer-&gt;getHtmlTemplate();
+$mailer-&gt;setHtmlTemplate('email/email.phtml');
+
+$mailer-&gt;getDefaultTransport();
+$mailer-&gt;getTransport();
+$mailer-&gt;setTransport(new Zend_Mail_Transport_File());
+
+$mailer-&gt;getCharacterEncoding();
+$mailer-&gt;setCharacterEncoding('utf-8');
+</code></pre>
+<h2>
+<a aria-hidden="true" class="anchor" href="#disable-mails" id="user-content-disable-mails"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Disable mails</h2>
+<p>If you want to disable all mails, for instance in your testing environment, you can configure</p>
+<pre><code>mailer.sendMail = false
+</code></pre>
+<p>Or this when Amazon SES is used:</p>
+<pre><code>amazon.ses.sendMail = false
+</code></pre>
+<p>This will swap the underlying mail transport class to <code>Zend_Mail_Transport_File</code>.</p>
+
+        </div>
+
+    </div>]

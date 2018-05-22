@@ -1,0 +1,61 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>##環境</p>
+<ul>
+<li>CentOS 6.5</li>
+<li>Samba 3.6.9-168</li>
+</ul>
+<p>##手順</p>
+<p>####Samba をインストール</p>
+<pre><code># yum install samba
+</code></pre>
+<p>####アカウントとパスワードを作成</p>
+<p>※理想的には PAM とか LDAP で</p>
+<pre><code># pdbedit -a root
+password&gt; *****
+</code></pre>
+<p>####SELinux をしかるべき状態に設定する、または Permissive に変更する</p>
+<pre><code># vim /etc/selinux/config
+</code></pre>
+<p>####ポートを開ける(139, 445)</p>
+<p>現在の設定を確認。INPUT Chain の REJECT よりも上位に挿入するためにはどの位置に挿入すべきかを確認する。</p>
+<pre><code># service iptables status
+</code></pre>
+<p>追加</p>
+<pre><code># iptables --insert INPUT 挿入位置 --protocol tcp --destination-port 139 --jump ACCEPT
+# iptables --insert INPUT 挿入位置 --protocol tcp --destination-port 445 --jump ACCEPT
+</code></pre>
+<p>確認。INPUT Chain の REJECT よりも上位に挿入されていれば OK。失敗した場合は <code>iptables --delete INPUT 番号</code> で取り除く。</p>
+<pre><code># service iptables status
+</code></pre>
+<p>永続化</p>
+<pre><code># service iptables save
+</code></pre>
+<p>####/etc/samba/smb.conf に下記を追記</p>
+<p>※とりあえずフォルダを作ったりファイルを作ったり書き換えたりするのに差支えのない程度の設定です。</p>
+<pre><code>;create mask = 0744
+force user
+force group
+create mode = 0644
+directory mode = 0755
+follow symlinks = yes
+wide links = yes
+unix extensions = no
+;場合によってはこれがいる(所有者のxが落ちてしまう現象を回避する)
+map archive = no
+</code></pre>
+<p>####/tmp を共有</p>
+<pre><code>[tmp]
+    path = /tmp
+    writable = yes
+</code></pre>
+<p>####自動起動</p>
+<pre><code># chkconfig smb on
+</code></pre>
+<p>####起動</p>
+<pre><code># service smb start
+</code></pre>
+
+        </div>
+
+    </div>]

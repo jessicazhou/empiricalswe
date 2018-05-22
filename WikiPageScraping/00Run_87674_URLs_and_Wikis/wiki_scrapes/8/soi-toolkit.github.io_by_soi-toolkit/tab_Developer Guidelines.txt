@@ -1,0 +1,206 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <h1>
+<a aria-hidden="true" class="anchor" href="#executing-generator-tests" id="user-content-executing-generator-tests"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Executing generator tests</h1>
+<p>Running all generator tests takes very long time and fails frequently due to instability problem in some test. Not recommended unless you run a final check before release...</p>
+<p>Command for running all tests on all supported versions of Mule:</p>
+<pre><code>$ cd .../soi-toolkit-mule/tools/soitoolkit-generator/soitoolkit-generator
+$ mvn test -PrunGeneratorTests
+</code></pre>
+<p>Instead it's better to run one significant test for each mule flow generator. To be able to test one Mule version at the time you can also specify what Mule version test. The three most important tests to run are:</p>
+<ul>
+<li><code>OneWayServiceGeneratorTest.testOneWayServicesInOneCommonIC()</code></li>
+<li><code>OneWayServiceV2GeneratorTest.testOneWayServicesInOneCommonIC()</code></li>
+<li><code>RequestResponseServiceV2GeneratorTest.testRequestResponseServicesInOneCommonIC()</code></li>
+</ul>
+<p>They can be run for a specific Mule version with a command like:</p>
+<pre><code>$ cd .../soi-toolkit-mule/tools/soitoolkit-generator/soitoolkit-generator
+$ mvn test -PrunGeneratorTests -Dtest=*GeneratorTest#test*InOneCommonIC -Dmule.version="3.4.0"
+</code></pre>
+<p>The tests takes around 15 minutes on a developer Mac and should result in test results that looks like:</p>
+<pre><code>$ cat target/surefire-reports/*.txt
+-------------------------------------------------------------------------------
+Test set: org.soitoolkit.tools.generator.IntegrationComponentGeneratorTest
+-------------------------------------------------------------------------------
+Tests run: 0, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.001 sec - in org.soitoolkit.tools.generator.IntegrationComponentGeneratorTest
+-------------------------------------------------------------------------------
+Test set: org.soitoolkit.tools.generator.IntegrationComponentTeststubGeneratorTest
+-------------------------------------------------------------------------------
+Tests run: 0, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0 sec - in org.soitoolkit.tools.generator.IntegrationComponentTeststubGeneratorTest
+-------------------------------------------------------------------------------
+Test set: org.soitoolkit.tools.generator.IntegrationComponentV2GeneratorTest
+-------------------------------------------------------------------------------
+Tests run: 0, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0 sec - in org.soitoolkit.tools.generator.IntegrationComponentV2GeneratorTest
+-------------------------------------------------------------------------------
+Test set: org.soitoolkit.tools.generator.OneWayRobustServiceGeneratorTest
+-------------------------------------------------------------------------------
+Tests run: 1, Failures: 0, Errors: 0, Skipped: 1, Time elapsed: 0.001 sec - in org.soitoolkit.tools.generator.OneWayRobustServiceGeneratorTest
+-------------------------------------------------------------------------------
+Test set: org.soitoolkit.tools.generator.OneWayServiceGeneratorTest
+-------------------------------------------------------------------------------
+Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 117.416 sec - in org.soitoolkit.tools.generator.OneWayServiceGeneratorTest
+-------------------------------------------------------------------------------
+Test set: org.soitoolkit.tools.generator.OneWayServiceV2GeneratorTest
+-------------------------------------------------------------------------------
+Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 486.88 sec - in org.soitoolkit.tools.generator.OneWayServiceV2GeneratorTest
+-------------------------------------------------------------------------------
+Test set: org.soitoolkit.tools.generator.RequestResponseServiceV2GeneratorTest
+-------------------------------------------------------------------------------
+Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 151.589 sec - in org.soitoolkit.tools.generator.RequestResponseServiceV2GeneratorTest
+-------------------------------------------------------------------------------
+Test set: org.soitoolkit.tools.generator.SchemaComponentGeneratorTest
+-------------------------------------------------------------------------------
+Tests run: 0, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0 sec - in org.soitoolkit.tools.generator.SchemaComponentGeneratorTest
+</code></pre>
+<h2>
+<a aria-hidden="true" class="anchor" href="#handling-failing-tests" id="user-content-handling-failing-tests"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Handling failing tests</h2>
+<p><strong>Note:</strong> <a href="https://github.com/soi-toolkit/soi-toolkit-mule/issues/400">#400</a> (Since: 2.0.0-M6) introduced new system properties useful for test suite debugging:</p>
+<ul>
+<li>-Dsoitoolkit.test.override.dispose_context_per_class=false</li>
+<li>-Dsoitoolkit.test.sleep.ms.before_test=1000</li>
+</ul>
+<p>If some tests fails you can go to the generated projects and look for an existing <code>target</code> folder (target folders are removed after a successful build to preserve disk space). Look into the <code>surefire-reports</code> folder for <code>txt</code>-files that have a size over 400 bytes, they typically contain output from a failing test. E.g.:</p>
+<p><img alt="failing-gen-test" src="https://raw.githubusercontent.com/soi-toolkit/soi-toolkit.github.io/master/dev-guide/gen-tests/failing-gen-test.png"/></p>
+<p>If you open the <code>txt</code>-file you can see that the test-method <code>testHttpToJmsOk()</code> in the test-class <code>HttpToJmsIntegrationTest</code> failed:</p>
+<pre><code>-------------------------------------------------------------------------------
+Test set: org.soitoolkit.tool.generator.onewaysav2mule350.httptojms.HttpToJmsIntegrationTest
+-------------------------------------------------------------------------------
+Tests run: 1, Failures: 1, Errors: 0, Skipped: 0, Time elapsed: 7.066 sec &lt;&lt;&lt; FAILURE! - in org.soitoolkit.tool.generator.onewaysav2mule350.httptojms.HttpToJmsIntegrationTest
+testHttpToJmsOk(org.soitoolkit.tool.generator.onewaysav2mule350.httptojms.HttpToJmsIntegrationTest)  Time elapsed: 6.161 sec  &lt;&lt;&lt; FAILURE!
+java.lang.AssertionError: expected:&lt;1&gt; but was:&lt;0&gt;
+	at org.junit.Assert.fail(Assert.java:93)
+	at org.junit.Assert.failNotEquals(Assert.java:647)
+	at org.junit.Assert.assertEquals(Assert.java:128)
+	at org.junit.Assert.assertEquals(Assert.java:472)
+	at org.junit.Assert.assertEquals(Assert.java:456)
+	at org.soitoolkit.tool.generator.onewaysav2mule350.httptojms.HttpToJmsIntegrationTest.testHttpToJmsOk(HttpToJmsIntegrationTest.java:195)
+</code></pre>
+<p>After analysing the error, and if required performing some code changes, you can rerun the failing test-method:</p>
+<pre><code>$ mvn test -Dtest=HttpToJmsIntegrationTest#testHttpToJmsOk
+</code></pre>
+<p>If you need to run some specific generator-test after you corrected the error, you can do that with a command like:</p>
+<pre><code>$ mvn test -PrunGeneratorTests -Dtest=OneWayServiceV2GeneratorTest#testOneWayServicesInOneCommonIC  -Dmule.version="3.5.0"
+</code></pre>
+<h1>
+<a aria-hidden="true" class="anchor" href="#performing-a-release" id="user-content-performing-a-release"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Performing a release</h1>
+<p>For details see <a href="https://code.google.com/p/soi-toolkit/wiki/DG_ReleaseHandling" rel="nofollow">soi-toolkit v1 Release Handling</a>.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#prepare" id="user-content-prepare"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Prepare</h2>
+<h4>
+<a aria-hidden="true" class="anchor" href="#switch-to-the-master-branch" id="user-content-switch-to-the-master-branch"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Switch to the <code>master</code> branch</h4>
+<pre><code>git checkout master
+</code></pre>
+<h4>
+<a aria-hidden="true" class="anchor" href="#merge-develop-to-master" id="user-content-merge-develop-to-master"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Merge develop to master</h4>
+<p><strong>TBD:</strong> Using a release branch in between?</p>
+<pre><code>git merge develop
+</code></pre>
+<h4>
+<a aria-hidden="true" class="anchor" href="#manually-update-the-soi-toolkit-version" id="user-content-manually-update-the-soi-toolkit-version"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Manually update the soi-toolkit version</h4>
+<p>To the release version, e.g. from <code>2.0.0-M4-SNAPSHOT</code> to <code>2.0.0-M4</code>, in the following files:</p>
+<ul>
+<li>Constant <code>SOITOOLKIT_VERSION</code> in <code>tools/soitoolkit-generator/soitoolkit-generator/src/main/java/org/soitoolkit/tools/generator/model/impl/DefaultModelImpl.java</code>
+</li>
+<li>
+<code>commons/poms/default-parent/pom.xml</code> --&gt; <code>/ns:project/ns:properties/ns:soitoolkit.version</code>
+</li>
+</ul>
+<h4>
+<a aria-hidden="true" class="anchor" href="#verify-correct-default-mule-esb-version" id="user-content-verify-correct-default-mule-esb-version"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Verify correct default Mule ESB version</h4>
+<p>Make sure that the default Mule version for the Maven-generator plugin is up tp date in:</p>
+<ul>
+<li>
+<code>tools/soitoolkit-generator/soitoolkit-generator-maven-plugin/src/main/java/org/soitoolkit/tools/generator/maven/GenIntegrationComponentMojo.java</code> and <code>GenIntegrationComponentV2Mojo.java</code>
+</li>
+</ul>
+<h2>
+<a aria-hidden="true" class="anchor" href="#release-it" id="user-content-release-it"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Release IT</h2>
+<ul>
+<li><code>mvn clean test</code></li>
+<li><code>git commit -a -m "Commit for releasing v0.4.0"</code></li>
+<li><code>mvn release:clean release:prepare -DdryRun=true</code></li>
+<li><code>mvn release:clean release:prepare</code></li>
+<li><code>mvn release:perform</code></li>
+<li>Go to Sonatypes staging repository and release it to synch with maven central repo</li>
+<li>Go to: <a href="https://oss.sonatype.org" rel="nofollow">https://oss.sonatype.org</a>
+</li>
+<li>Login to the Nexus UI.</li>
+<li>Go to Staging Repositories page.</li>
+<li>Select a staging repository.</li>
+<li>Select the soi-toolkit release</li>
+<li>Click the Close button.</li>
+<li>Validate
+Perform the following steps:</li>
+<li>Validate against the staging repo <a href="https://oss.sonatype.org/content/repositories/staging/org/soitoolkit/" rel="nofollow">https://oss.sonatype.org/content/repositories/staging/org/soitoolkit/</a>
+</li>
+<li>Activate the maven profile soi-toolkit-sonatype in the maven <code>settings.xml</code> - file:</li>
+</ul>
+<p>Code:</p>
+<pre><code>&lt;activeProfiles&gt;
+  &lt;activeProfile&gt;soi-toolkit-sonatype&lt;/activeProfile&gt;
+&lt;/activeProfiles&gt;
+</code></pre>
+<ul>
+<li>
+<p>Remove org.soitoolkit from the local maven repository (to ensure that the artifacts are downloaded as expected from the Sonatypes staging repository)</p>
+</li>
+<li>
+<p>If errors then you can after correcting the error either redeploy just one artefact or Click on the Drop button and redeploy all artefacts...</p>
+</li>
+</ul>
+<p>If something is wrong you can fix it on the release-tag in git and perform av redeploy to the staging repo from the tag-folder using:</p>
+<pre><code>mvn release:clean
+git checkout soitoolkit-2.0.0-M4
+mvn deploy -Psonatype-oss-release
+...
+mvn deploy -f commons/poms/mule-dependencies/mule-3.2.0-dependencies/pom.xml -Psonatype-oss-release
+...
+git checkout master
+</code></pre>
+<p><strong>NOTE:</strong> Don't forget to merge the relevant changes to developer as well...</p>
+<ul>
+<li>Deploy
+Perform the following steps:</li>
+<li>Manually deploy the eclipse plugin as described below</li>
+<li>Publish to central repo</li>
+<li>If ok go back to the Sonatype staging repository web-app, <a href="https://oss.sonatype.org" rel="nofollow">https://oss.sonatype.org</a>
+Select the soi-toolkit release again and click on the Release button.
+Artifacts should now be synched with central repo on a hourly bases...</li>
+</ul>
+<h2>
+<a aria-hidden="true" class="anchor" href="#prepare-for-development-of-the-next-release" id="user-content-prepare-for-development-of-the-next-release"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Prepare for development of the next release</h2>
+<h4>
+<a aria-hidden="true" class="anchor" href="#switch-to-the-develop-branch" id="user-content-switch-to-the-develop-branch"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Switch to the <code>develop</code> branch</h4>
+<pre><code>git checkout develop
+</code></pre>
+<h4>
+<a aria-hidden="true" class="anchor" href="#merge-back-master-to-develop" id="user-content-merge-back-master-to-develop"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Merge back master to develop</h4>
+<p><strong>TBD:</strong> Using a release branch in between and then delete it?</p>
+<pre><code>git merge master
+</code></pre>
+<h4>
+<a aria-hidden="true" class="anchor" href="#manually-update-the-soi-toolkit-version-1" id="user-content-manually-update-the-soi-toolkit-version-1"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Manually update the soi-toolkit version</h4>
+<p>To the release version, e.g. from <code>2.0.0-M4</code> to <code>2.0.0-M5-SNAPSHOT</code>, in the following files:</p>
+<ul>
+<li>Constant <code>SOITOOLKIT_VERSION</code> in <code>tools/soitoolkit-generator/soitoolkit-generator/src/main/java/org/soitoolkit/tools/generator/model/impl/DefaultModelImpl.java</code>
+</li>
+<li>
+<code>commons/poms/default-parent/pom.xml</code> --&gt; <code>/ns:project/ns:properties/ns:soitoolkit.version</code>
+</li>
+</ul>
+<h4>
+<a aria-hidden="true" class="anchor" href="#build" id="user-content-build"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Build</h4>
+<pre><code>mvn clean install
+</code></pre>
+<h4>
+<a aria-hidden="true" class="anchor" href="#commit-to-develop" id="user-content-commit-to-develop"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Commit to develop</h4>
+<pre><code>git commit -a -m "Start work on version n.n.n"
+</code></pre>
+<h4>
+<a aria-hidden="true" class="anchor" href="#push-master-and-develop-branch--new-tag-to-origin" id="user-content-push-master-and-develop-branch--new-tag-to-origin"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Push master and develop branch + new tag to origin</h4>
+<pre><code>git push --tags origin develop:develop master:master 
+</code></pre>
+
+        </div>
+
+    </div>]

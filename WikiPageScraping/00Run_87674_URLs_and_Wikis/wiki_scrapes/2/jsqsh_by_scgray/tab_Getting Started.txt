@@ -1,0 +1,244 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>This page covers everything you need to get jsqsh connected to a database and querying!</p>
+<p><strong>Table of Contents</strong></p>
+<ul>
+<li><a class="internal present" href="/scgray/jsqsh/wiki/Getting-Started#entering-setup">Entering setup</a></li>
+<li><a class="internal present" href="/scgray/jsqsh/wiki/Getting-Started#driver-setup">Driver setup</a></li>
+<li><a class="internal present" href="/scgray/jsqsh/wiki/Getting-Started#connection-setup">Connection setup</a></li>
+<li><a class="internal present" href="/scgray/jsqsh/wiki/Getting-Started#connecting">Connecting</a></li>
+<li><a class="internal present" href="/scgray/jsqsh/wiki/Getting-Started#querying">Querying</a></li>
+<li><a class="internal present" href="/scgray/jsqsh/wiki/Getting-Started#advanced-setup">Advanced setup</a></li>
+</ul>
+<h2>
+<a aria-hidden="true" class="anchor" href="#entering-setup" id="user-content-entering-setup"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Entering setup</h2>
+<p>The first time you start jsqsh you will be presented with the setup wizard screen.</p>
+<p><img alt="Setup wizard" src="https://cloud.githubusercontent.com/assets/1461324/4961714/09dc3fac-66d2-11e4-962b-1541f2bdc20a.jpg"/></p>
+<p>If you want to re-enter this wizard later, you can do so either by lanching jsqsh with:</p>
+<pre><code>$ jsqsh --setup
+</code></pre>
+<p>or at the jsqsh prompt by doing:</p>
+<pre><code>1&gt; \setup
+</code></pre>
+<p>To work with jsqsh, there are two basic steps you need to do first, go into the <a class="internal present" href="/scgray/jsqsh/wiki/Getting-Started#driver-setup">Driver setup</a> to ensure that the JDBC driver that you want to use is defined and can be loaded, then enter <a class="internal present" href="/scgray/jsqsh/wiki/Getting-Started#connection-setup">Connection setup</a> to define a connection using the driver.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#driver-setup" id="user-content-driver-setup"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Driver setup</h2>
+<p>The world of JDBC drivers can be a bit difficult if you aren't used to them (well, and frankly, sometimes even if you are).  To assist with this jsqsh has a built-in database of JDBC drivers for a variety of different database vendors, and tries to make the configuration as easy as possible.</p>
+<p>Before you can use a particular JDBC driver, you should enter the <em>Driver Management Wizard</em> by choosing (D) on the setup wizard.  This will present you with a screen like:</p>
+<p><img alt="Driver Setup Wizard" src="https://cloud.githubusercontent.com/assets/1461324/4961712/09d8275a-66d2-11e4-8d19-01941a0b36c9.jpg"/></p>
+<p>If your driver is shown with an asterisk (*) next to it then the driver is available and you have nothing to do!  JSqsh locates JDBC drivers according to the following rules:</p>
+<ol>
+<li>If you have the driver in the CLASSPATH environment variable</li>
+<li>By looking in the directory <code>share/jsqsh</code> (if you are using jsqsh from a .tar.gz or .zip package)</li>
+<li>By looking in the directory <code>/usr/share/jsqsh</code>
+</li>
+<li>By looking at the classpath that is associated with the JDBC driver (see <a class="internal present" href="/scgray/jsqsh/wiki/Getting-Started#editing-driver-settings">Editing</a>).  This is the recommended way in which to make a JDBC driver available.</li>
+</ol>
+<h3>
+<a aria-hidden="true" class="anchor" href="#editing-driver-settings" id="user-content-editing-driver-settings"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Editing driver settings</h3>
+<p>The main time that you will want to edit a JDBC driver is probably to set the classpath for it (the path to the Java jar file that contains the driver), however this is also a good place to set defaults for the driver that you want to share across all connections.  To edit a given driver, enter the number that is shown next to the driver in the Driver wizard.  In this example, I will edit the <strong>db2</strong> driver:</p>
+<p><img alt="Setting up the DB2 driver" src="https://cloud.githubusercontent.com/assets/1461324/4961711/09d413cc-66d2-11e4-91fb-831813b48bc7.jpg"/></p>
+<p>You'll note under <strong>Status</strong> that the driver cannot be located.  To fix this, type <strong>6</strong> to edit the <strong>Classpath</strong> for the driver, which will present:</p>
+<p><img alt="Editing DB2 classpath" src="https://cloud.githubusercontent.com/assets/1461324/4961710/09c5d762-66d2-11e4-966e-ddff6d7e3983.jpg"/></p>
+<p>A classpath may contain a list of one or more of the following, each separated by a colon (":") character (or a semicolon if you are running on windows)</p>
+<ul>
+<li>A path to a specific jar file, like <code>/usr/share/java/mysql-connector-java.jar</code>
+</li>
+<li>A path to a directory containing one or more jar files, like: <code>/usr/share/java</code>.  All jar files contained in that directory will be automatically picked up</li>
+<li>Any of these entries may refer to environment variables as well, like <code>${MYSQL_HOME}/java/mysql-connector-java.jar</code>
+</li>
+</ul>
+<p>In my particular case, I know that the DB2 JDBC driver lives in <code>${DB2_HOME}/sqllib/java/db2jcc4.jar</code>, which results in:</p>
+<p><img alt="Working DB2 driver" src="https://cloud.githubusercontent.com/assets/1461324/4961713/09d9263c-66d2-11e4-93bd-3c5692f98210.jpg"/></p>
+<p>Note that the driver status now indicates <strong>Available</strong>.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#connection-setup" id="user-content-connection-setup"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Connection setup</h2>
+<p>The Connection Setup Wizard is used to define a connection to a data source using a particular JDBC driver.</p>
+<p>The first time you enter the connection setup wizard, it will appear like so, because you have no connections defined yet:</p>
+<p><img alt="Connection Setup Wizard" src="https://cloud.githubusercontent.com/assets/1461324/4964778/60214600-673b-11e4-9c95-b3bfe444ca43.jpg"/></p>
+<p>Here, choose which JDBC driver you wish to use. If your chosen driver does not have an asterisk next to it or does not appear in this list, then go back to the <a class="internal present" href="/scgray/jsqsh/wiki/Getting-Started#driver-setup">Driver setup</a> wizard.</p>
+<p>For this example, I am going to define a connection to my DB2 instance by choosing driver #2 (the "db2") driver, which then takes me to this screen:</p>
+<p><img alt="DB2 Connection Setup" src="https://cloud.githubusercontent.com/assets/1461324/4964779/636f9ff0-673b-11e4-9972-660e10ac370e.jpg"/></p>
+<p>The <strong>Connection URL Variables</strong> section lists variables that are defined in the JDBC URL, along with the following settings:</p>
+<ul>
+<li>
+<strong>user</strong> - This is the default username to use to connect to the data source. JSqsh will default this to your username.  If you leave this field blank, then jsqsh will prompt you each time you connect for the username.</li>
+<li>
+<strong>password</strong> - This is the password to use to connect to the data source. This password is encrypted in the jsqsh connection configuration file <code>$HOME/.jsqsh/connections.xml</code>, however it is generally safest to leave this field blank which will cause jsqsh to prompt you for the password to connect.</li>
+<li>
+<strong>Autoconnect</strong> - If set to <code>true</code> jsqsh will automatically connect using this connection when launched (unless the name of another connection has been explicitly provided).  Only one connection may have <strong>Autoconnect</strong> enabled, turning it on for one connection will turn it off on any other connection that previously had it enabled.</li>
+</ul>
+<p>The <strong>JDBC Driver Properties</strong> section allows you to manage JDBC connection properties. Almost all JDBC drivers have a large number of configuration properties, that control anything from security settings to language and locale information.  This section allows you to set default values for these properties for your driver.   Note that when adding a new property (the "P" option, above), jsqsh will ask the JDBC driver for a list of properties that are available, but not all drivers publish any or all of their configuration properties, so you may need to find a reference guide for your JDBC driver to know what properties can be set.</p>
+<p>Upon choosing <strong>(S)ave</strong> the wizard will prompt you to name the connection.  After filling everything in and choosing the name "db2", you are presented with the following:</p>
+<p><img alt="Defined DB2 Connection" src="https://cloud.githubusercontent.com/assets/1461324/4964780/6d71a548-673b-11e4-824a-a03e0f270f67.jpg"/></p>
+<p>Once your connection has been defined, you can choose <strong>(Q)uit</strong> to go back to the jsqsh prompt.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#connecting" id="user-content-connecting"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Connecting</h2>
+<p>Let's say that you defined a new connection called <strong>mydb</strong> using the directions above, you can use your connection when starting jsqsh with:</p>
+<pre><code>$ jsqsh mydb
+JSqsh Release 2.1.0
+Type \help for available help topics. Using JLine.
+[localhost][gray] 1&gt;
+</code></pre>
+<p>or if you are already at the jsqsh prompt, you can do:</p>
+<pre><code>1&gt; \connect mydb
+[localhost][gray] 1&gt;
+</code></pre>
+<p>to quit out of jsqsh just do:</p>
+<pre><code>1&gt; quit
+</code></pre>
+<h2>
+<a aria-hidden="true" class="anchor" href="#querying" id="user-content-querying"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Querying</h2>
+<p>Running a query in jsqsh is easy, there are two different wants to do it, using the statement terminator at the end of a line, or using the "go" command.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#the-statement-terminator" id="user-content-the-statement-terminator"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>The statement terminator</h3>
+<p>Every time you hit enter, jsqsh checks the line that you just typed to see if it ends with the statement terminator character, which is a semicolon (";") by default, if it is then it assumes you want to execute the current statement:</p>
+<pre><code>[localhost][gray] 1&gt; select 'hello world' from sysibm.dual;
++-------------+
+| 1           |
++-------------+
+| hello world |
++-------------+
+1 row in results(first row: 0.4s; total: 0.4s)
+</code></pre>
+<p>JSqsh also takes care to avoid trying to execute the statement you are typing if the terminator character occurrs within a quoted string or within a comment:</p>
+<pre><code>[localhost][gray] 1&gt; -- This line will not execute;
+[localhost][gray] 2&gt; select 'This line will not execute;
+[localhost][gray] 3&gt;   either' from sysibm.dual;
++-----------------------------+
+| 1                           |
++-----------------------------+
+| This line will not execute; |
+|   either                    |
++-----------------------------+
+1 row in results(first row: 0.0s; total: 0.0s)
+</code></pre>
+<p>In addition, for the case of a semicolon terminator, jsqsh even contains some logic to attempt to determine of a semicolon contained at the end of a line is part of the SQL itself, or is to be used to execute the current statement.  For example, in SQL PL blocks, a semicolon can be used to indicate the end of a statement, but not the end of the SQL itself. In this case, jsqsh will attempt to be "smart" and figure out where the real end of the statement is:</p>
+<pre><code>[localhost][gray] 1&gt; CREATE PROCEDURE P1 (IN V1 INT, OUT V2 INT)
+[localhost][gray] 2&gt;   LANGUAGE SQL 
+[localhost][gray] 3&gt;   BEGIN 
+[localhost][gray] 4&gt;      -- Note the trailing semicolon. This will not cause jsqsh to execute
+[localhost][gray] 5&gt;      SET V2 = V1 * 2;
+[localhost][gray] 6&gt;      -- But the one after the END will
+[localhost][gray] 7&gt;   END;
+0 rows affected (total: 0.3s)
+</code></pre>
+<p><strong>IMPORTANT NOTE</strong>: This SQL parsing logic is crude, and it can often get things wrong, which can be seen if jsqsh attempts to execute a block before you are done typing it in, or it ignores the semicolon that you intended to actually run the procedure.  There are two ways you can deal with this problem.</p>
+<p>To avoid the ambiguity of the semicolon as a command terminator, jsqsh allows the terminator character to be changed via the <code>\set</code> command:</p>
+<pre><code>[localhost][gray] 1&gt; \set terminator=@
+[localhost][gray] 1&gt; select 'hello world' from sysibm.dual@
++-------------+
+| 1           |
++-------------+
+| hello world |
++-------------+
+1 row in results(first row: 0.0s; total: 0.0s)
+</code></pre>
+<h3>
+<a aria-hidden="true" class="anchor" href="#the-go-command" id="user-content-the-go-command"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>The "go" command</h3>
+<p>The statement terminator is really just a shortcut mechanism for executing a command in jsqsh called "go".</p>
+<pre><code>[localhost][gray] 1&gt; select 'hello world' from sysibm.dual
+[localhost][gray] 1&gt; go
++-------------+
+| 1           |
++-------------+
+| hello world |
++-------------+
+1 row in results(first row: 0.0s; total: 0.0s)
+</code></pre>
+<p>The advantage of using the <strong>go</strong> command over the statement terminator is that go does not suffer from the ambiguity problem that the statement terminator does, and go provides a number of additional objects that allows you to control many aspects of how the statement is executed.  For example, if you want to change the display style:</p>
+<pre><code>[localhost][gray] 1&gt; select 'hello world' from sysibm.dual
+[localhost][gray] 2&gt; go -m isql
+ 1          
+ -----------
+ hello world
+
+1 row in results(first row: 0.0s; total: 0.0s)
+</code></pre>
+<p>For more details on the options that can be provided to the <strong>go</strong> command, run:</p>
+<pre><code>[localhost][gray] 1&gt; \help go
+</code></pre>
+<h2>
+<a aria-hidden="true" class="anchor" href="#advanced-setup" id="user-content-advanced-setup"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Advanced Setup</h2>
+<p>This section covers advanced topics about setting up jsqsh.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#manual-setup" id="user-content-manual-setup"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Manual Setup</h3>
+<p>In all of the previous sections (and even below) the setup process is shown to be using the jsqsh setup wizards, however it should be noted that all these wizards are doing is editing certain configuration files that reside in your home directory, namely:</p>
+<ul>
+<li>
+<strong>Driver configuration</strong> - <code>$HOME/.jsqsh/drivers.xml</code>
+</li>
+<li>
+<strong>Connection configuration</strong> - <code>$HOME/.jsqsh/connections.xml</code>
+</li>
+</ul>
+<h3>
+<a aria-hidden="true" class="anchor" href="#advanced-driver-setup" id="user-content-advanced-driver-setup"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Advanced Driver Setup</h3>
+<p>This section covers details behind either editing or creating new JDBC driver definitions.</p>
+<p>When adding or editing a JDBC driver, the following configuration options are available on the main driver editor screen:</p>
+<p><img alt="Driver Configuration Options" src="https://cloud.githubusercontent.com/assets/1461324/4961711/09d413cc-66d2-11e4-91fb-831813b48bc7.jpg"/></p>
+<ul>
+<li>
+<strong>Name</strong> - Change the name of the driver.  Note that changing the name of a driver that existing connection definitions are using, will stop those connections from working.</li>
+<li>
+<strong>Description</strong> - Human readable description of the driver</li>
+<li>
+<strong>Class</strong> - The name of the java class that provides the JDBC driver</li>
+<li>
+<strong>URL</strong> - The JDBC URL that is to be used to utilize the driver. This URL may reference a number of variables that will be automatically set when attempting to connect using the driver.  These variables are:
+<ul>
+<li>
+<strong>${server}</strong> The name of the server the user provided at connect time</li>
+<li>
+<strong>${port}</strong> The port for the server that the user provided at connect time</li>
+<li>
+<strong>${db}</strong> The name of the database provided by the user</li>
+<li>
+<strong>${SID}</strong> The instance ID for the database (used usually by Oracle)</li>
+<li>
+<strong>${domain}</strong> The domain to use for authenticaion (used usually by SQL Server)</li>
+<li>The above variables are inherent to jsqsh.  That is, the <strong>${server}</strong> variable is automatically set if a server name is provided with the <strong>-S</strong> (or <strong>--server</strong>) command line argument when starting jsqsh, however each driver may also define additional variables that can be set when defining a connection with the Connection Manager Wizard.</li>
+</ul>
+</li>
+<li>
+<strong>SQL Parser</strong> - A driver may also specify the "flavor" of SQL that it understands. This information is used by jsqsh to help with tab completion and also to help it determine if, say, a semicolon is to be used to execute a statement or is just be used to terminate a line in a block of statements.  Note that this is <strong>not</strong> a full SQL parser, but is just a crude set of rules that it uses to help with these activites.</li>
+<li>
+<strong>Classpath</strong> - This is covered in depth under <a class="internal present" href="/scgray/jsqsh/wiki/Getting-Started#Editing-driver-settings">Editing</a>.</li>
+<li>
+<strong>Name normalizer</strong> - For jsqsh commands that look up database metadata, such as <strong>\describe</strong> (which describes a table), jsqsh is using a standard JDBC call to do the metadata lookup.  For some drivers, however, the name of the object must exactly match how the object is stored in the database catalogs.  For example, if the database stores the name <strong>as MYTABLE</strong>, you ran <strong>\describe mytable</strong> you would get no results.  For drivers such as these, <strong>Name normalizer</strong> may be used to let jsqsh know how the database platforms stores its object names, in <strong>UPPER CASE</strong> or <strong>LOWER CASE</strong>.</li>
+<li>
+<strong>Schema query</strong> - The jsqsh metadata lookup functions, such as <strong>\show tables</strong> will attempt to be sensitive to the schema context of the current session, so only show objects in the current schema.  JSqsh does this by asking the JDBC driver what the current schema context is, however this feature was added only in very recent versions of JDBC, so many drivers do not support this. For such drivers, a query may be provided</li>
+</ul>
+<p>The <strong>URL Variable Defaults</strong> section lists variables that are referenced in the <strong>URL</strong> of the JDBC driver and allows you to specify defaults that will be used if the user doesn't specify any.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#jdbc-url-magic" id="user-content-jdbc-url-magic"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>JDBC URL magic</h3>
+<p>A typical JDBC URL is defined in a JDBC driver referring to a number of variables that will be replaced at connect time based upon the connection definition that you have defined, for example:</p>
+<pre><code>jdbc:db2://${server}:${port}/${db}
+</code></pre>
+<p>will replace the server, port, and db variables with the values provided by the connection.  However, sometimes, you may want to define a URL with properties that the user may not necessarily supply.  For example, maybe you want to allow for a database to be provided, but only optionally, and if the user doesn't provide it, you want them to connect to the default database.</p>
+<p>To allow for this, jsqsh does the variable processing on a JDBC URL using a tool called <a href="http://velocity.apache.org/engine/devel/user-guide.html" rel="nofollow">Velocity</a>.  Velocity doesn't just do simple variable expansion but is a full "macro" language, meaning that it allows for conditional expressions and a whole variety of other features.  Thus, using the velocity <a href="http://velocity.apache.org/engine/devel/user-guide.html#Conditionals" rel="nofollow">"if"</a> syntax, you can default URL's with components that only exist if the user provided a value, such as:</p>
+<pre><code>jdbc:sybase:Tds:${server}:${port}#if($db)/${db}#end
+</code></pre>
+<p>In this case, if the user provided a database, the URL would appear as:</p>
+<pre><code>jdbc:sybase:Tds:myhost.mydomain.com:4100/mydb
+</code></pre>
+<p>however, if they did not provide a database, it would be:</p>
+<pre><code>jdbc:sybase:Tds:myhost.mydomain.com:4100
+</code></pre>
+<h3>
+<a aria-hidden="true" class="anchor" href="#driver-advanced-options" id="user-content-driver-advanced-options"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Driver advanced options</h3>
+<p>The JDBC driver Advanced Options screen:</p>
+<p><img alt="JDBC Driver Advanced Options" src="https://cloud.githubusercontent.com/assets/1461324/4964634/98303e36-6734-11e4-89a9-1378376f102e.jpg"/></p>
+<p>Allows you to set a number of additional JDBC driver settings:</p>
+<ul>
+<li>
+<p><strong>Session variables to set upon connect</strong> - This section allows you to set jsqsh variables within the session once a connection has been established.  The typical use case for this session is to set one of jsqsh's special configuration variables (run <code>\help vars</code> for a list).  For example, if you wanted to ensure that the database connection was always created with autocommit turned off, you could set the <strong>autocommit</strong> variable to false for the driver.</p>
+</li>
+<li>
+<p><strong>JDBC driver connection properties</strong> - This section allows you to set driver configuration properties. Almost all JDBC drivers have a large number of configuration properties, that control anything from security settings to language and locale information.  This section allows you to set default values for these properties for your driver.   Note that when adding a new property (the "P" option, above), jsqsh will ask the JDBC driver for a list of properties that are available, but not all drivers publish any or all of their configuration properties, so you may need to find a reference guide for your JDBC driver to know what properties can be set.</p>
+</li>
+</ul>
+
+        </div>
+
+    </div>]

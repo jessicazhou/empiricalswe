@@ -1,0 +1,213 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <h1>
+<a aria-hidden="true" class="anchor" href="#%E3%82%B9%E3%82%B3%E3%82%A2%E3%81%AE%E5%AE%9F%E8%A3%85" id="user-content-スコアの実装"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>スコアの実装</h1>
+<p>スコアは様々な考え方ができるので、自由に考えてもらって構わない。CPlayerBaseのiParamがスコアの代わりになる。
+ここでは、以下のルールでスコアを実装する例を示す。</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#%E5%BE%97%E7%82%B9%E3%83%AB%E3%83%BC%E3%83%AB" id="user-content-得点ルール"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>得点ルール</h2>
+<ul>
+<li>アタックが成功すると10点加算される</li>
+<li>落下した時に、最後にアタックした相手に100点加算される</li>
+<li>落下した人は持ち点が0点になる</li>
+</ul>
+<h2>
+<a aria-hidden="true" class="anchor" href="#%E7%82%B9%E6%95%B0%E3%81%AE%E5%8A%A0%E7%82%B9%E6%96%B9%E6%B3%95" id="user-content-点数の加点方法"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>点数の加点方法</h2>
+<p>通信版では、<strong>体当たりされたか</strong>どうかの判定のみ行っている。点数が入るのは、<strong>体当たりしたか</strong>どうかなので、ぶつかった相手に点数が入ったことを伝える仕組みが必要である。</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#10%E7%82%B9%E5%8A%A0%E7%AE%97" id="user-content-10点加算"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>10点加算</h3>
+<ul>
+<li>アタックの成功は、速度を0にするためにリストをすでに送っている</li>
+<li>速度を0にするタイミングで、合わせてiParamを10増やせばよい。</li>
+</ul>
+<h3>
+<a aria-hidden="true" class="anchor" href="#0%E7%82%B9" id="user-content-0点"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>0点</h3>
+<ul>
+<li>ミス判定時にiParamを0にする</li>
+</ul>
+<h3>
+<a aria-hidden="true" class="anchor" href="#100%E7%82%B9%E5%8A%A0%E7%AE%97" id="user-content-100点加算"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>100点加算</h3>
+<ul>
+<li>最後にアタックに成功したプレイヤーに100点が加算されるので、アタックに成功した相手の名前を覚えておくようにする</li>
+<li>ミス判定時に、記録していた相手の名前に対して、100点加算するデータを送信する</li>
+<li>名前を空欄にして、2番目に100点獲得したプレイヤーの名前を記載したデータを100点加算用のデータとする</li>
+<li>最後にアタックしてきたプレイヤー名をクリアする</li>
+</ul>
+<p>以上を実装する。</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#%E5%AE%9F%E8%A3%85%E6%89%8B%E9%A0%86" id="user-content-実装手順"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>実装手順</h2>
+<p>実装をシンプルにするために、プレイヤーのインスタンスをCMilkcocoaから簡単に取得できるように、myPlayerにアクセサを用意して公開する。</p>
+<ul>
+<li>[CMilkcocoa]スクリプトを開く</li>
+<li>myPlayer変数の定義を、以下のように書き換える</li>
+</ul>
+<div class="highlight highlight-source-cs"><pre>	<span class="pl-c"><span class="pl-c">//</span> プレイヤーのインスタンス</span>
+	<span class="pl-k">private</span> <span class="pl-en">GameObject</span> <span class="pl-smi">_myplayer</span> <span class="pl-k">=</span> <span class="pl-c1">null</span>;
+	<span class="pl-k">public</span> <span class="pl-smi">GameObject</span> <span class="pl-smi">myPlayer</span> {
+		<span class="pl-smi">get</span> {
+			<span class="pl-k">return</span> <span class="pl-smi">_myplayer</span>;
+		}
+		<span class="pl-smi">set</span>{
+			<span class="pl-smi">_myplayer</span> <span class="pl-k">=</span> <span class="pl-smi">value</span>;
+		}
+	}</pre></div>
+<ul>
+<li>上書き保存する</li>
+</ul>
+<h3>
+<a aria-hidden="true" class="anchor" href="#10%E7%82%B9%E5%8A%A0%E7%AE%97-1" id="user-content-10点加算-1"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>10点加算</h3>
+<ul>
+<li>[CEnemyComm]スクリプトをエディタで開く</li>
+<li>[public void OnRecv]関数の中から、プレイヤーの速度を0にしている場所を探す</li>
+<li>見つけたら、そのすぐ下に以下の10点加算するコードを追加する</li>
+</ul>
+<div class="highlight highlight-source-cs"><pre>				<span class="pl-smi">mk</span>.<span class="pl-smi">myPlayer</span>.<span class="pl-en">GetComponent</span>&lt;<span class="pl-en">CPlayer</span>&gt;().<span class="pl-smi">iParam</span> <span class="pl-k">+=</span> <span class="pl-c1">10</span>;</pre></div>
+<ul>
+<li>上書き保存する</li>
+<li>[File]&gt;[Build &amp; Run]をして、リビルドする</li>
+</ul>
+<p>以上で、2つ以上ページを開いて体当たりをしてみよう。10点が入れば成功。</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#0%E7%82%B9%E3%81%AB%E3%81%99%E3%82%8B" id="user-content-0点にする"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>0点にする</h3>
+<ul>
+<li>[CPlayerBase]スクリプトをエディタで開く</li>
+<li>[public void Respawn]関数を探して、[iParam++;]という行を、「iParam = 0;」に変更する</li>
+<li>上書き保存する</li>
+<li>[File]&gt;[Build &amp; Run]をして、リビルドする</li>
+</ul>
+<p>以上で、2つ以上ページを開いて体当たりをしたのち、落ちてみよう。みよう。10点が入れば成功。</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#100%E7%82%B9%E5%8A%A0%E7%AE%97%E3%81%99%E3%82%8B" id="user-content-100点加算する"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>100点加算する</h3>
+<ul>
+<li>[CPlayerBase]スクリプトをエディタで開く</li>
+<li>最後に体当たりしてきた相手の名前を記録しておくための変数を以下のように定義する</li>
+</ul>
+<div class="highlight highlight-source-cs"><pre>	<span class="pl-c"><span class="pl-c">/*</span>* 最後にアタックを成功させた相手の名前<span class="pl-c">*/</span></span>
+	<span class="pl-k">private</span> <span class="pl-k">string</span> <span class="pl-smi">sLastHit</span> <span class="pl-k">=</span> <span class="pl-s"><span class="pl-pds">"</span><span class="pl-pds">"</span></span>;</pre></div>
+<ul>
+<li>[void OnCollisionEnter]関数の中で、[// 当たった相手の名前を取り出してリストに加える]ためにsHitListに名前を足している行を、以下のように修正する</li>
+</ul>
+<div class="highlight highlight-source-cs"><pre>			<span class="pl-c"><span class="pl-c">//</span> 当たった相手の名前を取り出してリストに加える</span>
+			<span class="pl-smi">sLastHit</span> <span class="pl-k">=</span> <span class="pl-smi">WWW</span>.<span class="pl-en">EscapeURL</span>(<span class="pl-smi">col</span>.<span class="pl-smi">gameObject</span>.<span class="pl-en">GetComponent</span>&lt;<span class="pl-en">CPlayerBase</span>&gt;().<span class="pl-smi">sName</span>);
+			<span class="pl-smi">sHitList</span> <span class="pl-k">+=</span> <span class="pl-s"><span class="pl-pds">"</span>,<span class="pl-pds">"</span></span><span class="pl-k">+</span><span class="pl-smi">sLastHit</span>;</pre></div>
+<ul>
+<li>落下から復帰する[public void Respawn]関数の中に、以下のコードを追加する</li>
+</ul>
+<div class="highlight highlight-source-cs"><pre>		<span class="pl-c"><span class="pl-c">//</span> 最後に体当たりを成功させた相手が記録されていた時の処理</span>
+		<span class="pl-k">if</span> (<span class="pl-smi">sLastHit</span>.<span class="pl-smi">Length</span> <span class="pl-k">&gt;</span> <span class="pl-c1">0</span>) {
+			<span class="pl-c"><span class="pl-c">//</span> 最初の名前を無効にして、次のパラメータに体当たりした相手の名前を追加</span>
+			<span class="pl-smi">commObject</span>.<span class="pl-en">SendMessage</span>(<span class="pl-s"><span class="pl-pds">"</span>Send<span class="pl-pds">"</span></span>,<span class="pl-s"><span class="pl-pds">"</span>,<span class="pl-pds">"</span></span><span class="pl-k">+</span><span class="pl-smi">sLastHit</span>);
+			<span class="pl-c"><span class="pl-c">//</span> 送信したら体当たりを成功させた相手の記録を削除する</span>
+			<span class="pl-smi">sLastHit</span> <span class="pl-k">=</span> <span class="pl-s"><span class="pl-pds">"</span><span class="pl-pds">"</span></span>;
+		}</pre></div>
+<ul>
+<li>上書き保存する</li>
+<li>[CMilkcocoa]スクリプトをエディタで開く</li>
+<li>[public void OnRecv]関数を探して、最初の**string [] srecv = st.Split(',');**という行の下に、以下のコードを追加する</li>
+</ul>
+<div class="highlight highlight-source-cs"><pre>		<span class="pl-c"><span class="pl-c">//</span> 無名の場合は100点加算用データ</span>
+		<span class="pl-k">if</span> (<span class="pl-smi">srecv</span> [<span class="pl-c1">0</span>].<span class="pl-smi">Length</span> <span class="pl-k">==</span> <span class="pl-c1">0</span>) {
+			<span class="pl-c"><span class="pl-c">//</span> 2番目のデータが相手の名前</span>
+			<span class="pl-smi">srecv</span>[<span class="pl-c1">1</span>] <span class="pl-k">=</span> <span class="pl-smi">WWW</span>.<span class="pl-en">UnEscapeURL</span>(<span class="pl-smi">srecv</span>[<span class="pl-c1">1</span>]);
+			<span class="pl-en">GameObject</span> <span class="pl-smi">pnt</span> <span class="pl-k">=</span> <span class="pl-en">getPlayerByName</span>(<span class="pl-smi">srecv</span>[<span class="pl-c1">1</span>]);
+			<span class="pl-smi">pnt</span>.<span class="pl-en">GetComponent</span>&lt;<span class="pl-en">CPlayerBase</span>&gt;().<span class="pl-smi">iParam</span><span class="pl-k">+=</span><span class="pl-c1">100</span>;
+			<span class="pl-k">return</span>;
+		}</pre></div>
+<ul>
+<li>上書き保存する</li>
+<li>[File]&gt;[Build &amp; Run]を選択して、リビルドする</li>
+</ul>
+<p>以上ができたら、2つ以上のウィンドウで動かして、体当たりした後に落ちたら相手に100点入るか試す。</p>
+<h1>
+<a aria-hidden="true" class="anchor" href="#%E3%83%8F%E3%82%A4%E3%82%B9%E3%82%B3%E3%82%A2%E8%A1%A8%E7%A4%BA" id="user-content-ハイスコア表示"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>ハイスコア表示</h1>
+<ul>
+<li>Webページ側に、登場したキャラクタが記録したハイスコアを表示してみよう</li>
+<li>キャラクタが送信するデータには点数が含まれている。これをmain.jsで確認すれば、登場したキャラクタの得点一覧を表示することが可能である</li>
+<li>JavaScriptのプログラムになるが、動作と単語を読んで、意味を考えてみよう。</li>
+</ul>
+<h2>
+<a aria-hidden="true" class="anchor" href="#%E4%BD%9C%E6%A5%AD%E6%89%8B%E9%A0%86" id="user-content-作業手順"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>作業手順</h2>
+<ul>
+<li>表示先のタグを調整するために、[index.html]をエディタで開く</li>
+<li>ファイルの下の方を探して、[<ul></ul>]という行を見つけたら、以下のように修正する</li>
+</ul>
+<div class="highlight highlight-text-html-basic"><pre>		&lt;<span class="pl-ent">div</span> <span class="pl-e">id</span>=<span class="pl-s"><span class="pl-pds">"</span>board<span class="pl-pds">"</span></span>&gt;&lt;/<span class="pl-ent">div</span>&gt;</pre></div>
+<ul>
+<li>ulタグは箇条書きだが、スコアはテーブルで表示したいので、範囲を表すdivに変更しておく</li>
+<li>上書き保存する</li>
+<li>[main.js]をVisualStudioなどのエディタで開く</li>
+<li>スコアを記録しておく配列とスコアの表示先を入れておく変数を宣言する。main.jsの4行目付近に、以下の2行を追加する</li>
+</ul>
+<div class="highlight highlight-source-js"><pre><span class="pl-k">var</span> scores <span class="pl-k">=</span> [];
+<span class="pl-k">var</span> board <span class="pl-k">=</span> <span class="pl-c1">null</span>;</pre></div>
+<ul>
+<li>起動時に、表示先のIDがboardのエレメントを取得する。変数宣言したすぐ下の[window.onload]から始まるイベント処理内に、以下の1行を追加する</li>
+</ul>
+<div class="highlight highlight-source-js"><pre>  board <span class="pl-k">=</span> <span class="pl-c1">document</span>.<span class="pl-c1">getElementById</span>(<span class="pl-s"><span class="pl-pds">"</span>board<span class="pl-pds">"</span></span>);</pre></div>
+<ul>
+<li>受信は[chatDataStore.on("send",…)]で始まるイベント関数である。現在はUnityのCommゲームオブジェクトに受信データを送っているだけだが、その下に以下のスコア処理ルーチンを追加する</li>
+</ul>
+<div class="highlight highlight-source-js"><pre>  <span class="pl-c"><span class="pl-c">//</span> 受信したデータをコンマで分解</span>
+  <span class="pl-k">var</span> splits <span class="pl-k">=</span> <span class="pl-smi">data</span>.<span class="pl-c1">value</span>.<span class="pl-c1">split</span>(<span class="pl-s"><span class="pl-pds">"</span>,<span class="pl-pds">"</span></span>);
+
+  <span class="pl-c"><span class="pl-c">//</span> 名前が有効であることを確認</span>
+  <span class="pl-k">if</span> (splits[<span class="pl-c1">0</span>].<span class="pl-c1">length</span> <span class="pl-k">&gt;</span> <span class="pl-c1">0</span>) {
+    <span class="pl-c"><span class="pl-c">//</span> 対応インデックス</span>
+    <span class="pl-k">var</span> scidx <span class="pl-k">=</span> <span class="pl-k">-</span><span class="pl-c1">1</span>;
+    <span class="pl-c"><span class="pl-c">//</span> 更新フラグ</span>
+    <span class="pl-k">var</span> isupdate <span class="pl-k">=</span> <span class="pl-c1">false</span>;
+    <span class="pl-c"><span class="pl-c">//</span> 名前を取り出す</span>
+    <span class="pl-k">var</span> recvname <span class="pl-k">=</span> <span class="pl-c1">decodeURI</span>(splits[<span class="pl-c1">0</span>]);
+    <span class="pl-c"><span class="pl-c">//</span> スコアを数値で取り出す。-0しているのは、文字列を数値に変換するJavaScriptの表記の１つ</span>
+    <span class="pl-k">var</span> sc <span class="pl-k">=</span> splits[<span class="pl-c1">1</span>]<span class="pl-k">-</span><span class="pl-c1">0</span>;
+    <span class="pl-c"><span class="pl-c">//</span> 登録されているスコア表のチェック</span>
+    <span class="pl-smi">scores</span>.<span class="pl-en">some</span>(<span class="pl-k">function</span>(<span class="pl-smi">element</span>,<span class="pl-smi">index</span>,<span class="pl-smi">array</span>) {
+      <span class="pl-c"><span class="pl-c">//</span> 登録しているデータがあれば</span>
+      <span class="pl-k">if</span> (<span class="pl-smi">element</span>.<span class="pl-smi">scname</span> <span class="pl-k">===</span> recvname) {
+        <span class="pl-c"><span class="pl-c">//</span> スコアのインデックスを記録</span>
+        scidx <span class="pl-k">=</span> index;
+        <span class="pl-c"><span class="pl-c">//</span> ループ終了</span>
+        <span class="pl-k">return</span> <span class="pl-c1">true</span>;
+      }
+      <span class="pl-c"><span class="pl-c">//</span> ループ継続</span>
+      <span class="pl-k">return</span> <span class="pl-c1">false</span>;
+    });
+    
+    <span class="pl-c"><span class="pl-c">//</span> 名前が見つかった時の処理</span>
+    <span class="pl-k">if</span> (scidx <span class="pl-k">!=</span> <span class="pl-k">-</span><span class="pl-c1">1</span>) {
+      <span class="pl-c"><span class="pl-c">//</span> 点数が記録を上回ったかをチェック</span>
+      <span class="pl-k">if</span> (sc <span class="pl-k">&gt;</span> scores[scidx].<span class="pl-smi">score</span>) {
+        isupdate <span class="pl-k">=</span> <span class="pl-c1">true</span>;
+        scores[scidx].<span class="pl-smi">score</span> <span class="pl-k">=</span> sc;
+      }
+    }
+    <span class="pl-c"><span class="pl-c">//</span> 名前が見つからなかった時は追加する</span>
+    <span class="pl-k">else</span> {
+      <span class="pl-smi">scores</span>.<span class="pl-c1">push</span>({scname<span class="pl-k">:</span>recvname,score<span class="pl-k">:</span>sc});
+      isupdate <span class="pl-k">=</span> <span class="pl-c1">true</span>;
+    }
+    
+    <span class="pl-c"><span class="pl-c">//</span> 降順ソート</span>
+    <span class="pl-smi">scores</span>.<span class="pl-c1">sort</span>(
+      <span class="pl-k">function</span>(<span class="pl-smi">a</span>,<span class="pl-smi">b</span>) {
+        <span class="pl-k">return</span> <span class="pl-smi">b</span>.<span class="pl-smi">score</span> <span class="pl-k">-</span> <span class="pl-smi">a</span>.<span class="pl-smi">score</span>;
+      }
+    );
+
+    <span class="pl-c"><span class="pl-c">//</span> 更新されていて、かつ、boardが利用可能になっていたら、スコアテーブルを再描画する</span>
+    <span class="pl-k">if</span> (isupdate <span class="pl-k">&amp;&amp;</span> (board<span class="pl-k">!=</span><span class="pl-c1">null</span>)) {
+      <span class="pl-k">var</span> tbl <span class="pl-k">=</span> <span class="pl-s"><span class="pl-pds">"</span><span class="pl-pds">"</span></span>;
+      <span class="pl-k">for</span> (<span class="pl-k">var</span> i<span class="pl-k">=</span><span class="pl-c1">0</span> ; i<span class="pl-k">&lt;</span><span class="pl-smi">scores</span>.<span class="pl-c1">length</span> ; i<span class="pl-k">++</span>) {
+        tbl <span class="pl-k">+=</span> <span class="pl-s"><span class="pl-pds">"</span>&lt;tr&gt;&lt;td&gt;<span class="pl-pds">"</span></span><span class="pl-k">+</span>scores[i].<span class="pl-smi">scname</span><span class="pl-k">+</span><span class="pl-s"><span class="pl-pds">"</span>&lt;/td&gt;&lt;td&gt;<span class="pl-pds">"</span></span><span class="pl-k">+</span>scores[i].<span class="pl-smi">score</span><span class="pl-k">+</span><span class="pl-s"><span class="pl-pds">"</span>&lt;/td&gt;<span class="pl-pds">"</span></span>;
+      }
+      <span class="pl-smi">board</span>.<span class="pl-smi">innerHTML</span><span class="pl-k">=</span><span class="pl-s"><span class="pl-pds">"</span>&lt;table style='margin:auto'&gt;<span class="pl-pds">"</span></span><span class="pl-k">+</span>tbl<span class="pl-k">+</span><span class="pl-s"><span class="pl-pds">"</span>&lt;/table&gt;<span class="pl-pds">"</span></span>;
+    }
+  }</pre></div>
+<ul>
+<li>上書き保存する</li>
+</ul>
+<p>index.htmlを再読み込みして、動作を確認してみよう。Web Playerの下に参加者のリストとスコアが降順で列挙されるようになる</p>
+
+        </div>
+
+    </div>]

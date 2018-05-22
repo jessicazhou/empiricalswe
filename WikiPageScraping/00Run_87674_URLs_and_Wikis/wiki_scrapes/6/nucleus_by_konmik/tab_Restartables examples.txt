@@ -1,0 +1,167 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>In the current version (2.0.4) there are 3 delivery methods. They are explained in the documentation:</p>
+<ul>
+<li>
+<p><code>deliverLatestCache</code> keeps the latest onNext value and emits it each time a new view gets attached.
+If a new onNext value appears while a view is attached, it will be delivered immediately.</p>
+</li>
+<li>
+<p><code>deliverFirst</code> delivers only the first onNext value that has been emitted by the source observable.</p>
+</li>
+<li>
+<p><code>deliverReplay</code> keeps all onNext values and emits them each time a new view gets attached.
+If a new onNext value appears while a view is attached, it will be delivered immediately.</p>
+</li>
+</ul>
+<p>NOTE: All the examples from this page use lambdas. You should strongly consider <a href="https://github.com/evant/gradle-retrolambda#usage">adding retrolambda to your project</a> to avoid writing lots and lots of anonymous classes.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#basic-example" id="user-content-basic-example"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Basic example</h3>
+<p>This example will fetch items from the network when the presenter is created.</p>
+<div class="highlight highlight-source-java"><pre><span class="pl-k">public</span> <span class="pl-k">class</span> <span class="pl-en">MainPresenter</span> <span class="pl-k">extends</span> <span class="pl-e">RxPresenter&lt;<span class="pl-smi">MainActivity</span>&gt;</span> {
+
+    <span class="pl-k">private</span> <span class="pl-k">static</span> <span class="pl-k">final</span> <span class="pl-k">int</span> <span class="pl-c1">REQUEST_ITEMS</span> <span class="pl-k">=</span> <span class="pl-c1">1</span>;
+
+    <span class="pl-k">@Override</span>
+    <span class="pl-k">protected</span> <span class="pl-k">void</span> <span class="pl-en">onCreate</span>(<span class="pl-smi">Bundle</span> <span class="pl-v">savedState</span>) {
+        <span class="pl-c1">super</span><span class="pl-k">.</span>onCreate(savedState);
+
+        restartableLatestCache(<span class="pl-c1">REQUEST_ITEMS</span>,
+                () <span class="pl-k">-</span><span class="pl-k">&gt;</span> <span class="pl-smi">App</span><span class="pl-k">.</span>getServerAPI()
+                    .getItems()
+                    .observeOn(<span class="pl-smi">AndroidSchedulers</span><span class="pl-k">.</span>mainThread()),
+                (activity, response) <span class="pl-k">-</span><span class="pl-k">&gt;</span> activity<span class="pl-k">.</span>onItems(response<span class="pl-k">.</span>items),
+                (activity, throwable) <span class="pl-k">-</span><span class="pl-k">&gt;</span> activity<span class="pl-k">.</span>onItemsError(throwable));
+
+        <span class="pl-c"><span class="pl-c">//</span> After a process restart, it will restart itself when registering the restartable</span>
+        <span class="pl-k">if</span> (savedState <span class="pl-k">==</span> <span class="pl-c1">null</span>)
+            start(<span class="pl-c1">REQUEST_ITEMS</span>);
+    }
+
+}</pre></div>
+<h3>
+<a aria-hidden="true" class="anchor" href="#example-sending-parameters-from-the-view" id="user-content-example-sending-parameters-from-the-view"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Example sending parameters from the view</h3>
+<p>You may need to send a parameter for a network request from the view. This example does so.</p>
+<p>You will only have to call <code>getPresenter().request("my_parameter")</code> from the view.</p>
+<div class="highlight highlight-source-java"><pre><span class="pl-k">public</span> <span class="pl-k">class</span> <span class="pl-en">MainPresenter</span> <span class="pl-k">extends</span> <span class="pl-e">RxPresenter&lt;<span class="pl-smi">MainActivity</span>&gt;</span> {
+
+    <span class="pl-k">private</span> <span class="pl-k">static</span> <span class="pl-k">final</span> <span class="pl-k">int</span> <span class="pl-c1">REQUEST_ITEMS</span> <span class="pl-k">=</span> <span class="pl-c1">1</span>;
+
+    <span class="pl-k">private</span> <span class="pl-k">static</span> <span class="pl-k">final</span> <span class="pl-smi">String</span> <span class="pl-c1">NAME_KEY</span> <span class="pl-k">=</span> <span class="pl-smi">MainPresenter</span><span class="pl-k">.</span>class<span class="pl-k">.</span>getName() <span class="pl-k">+</span> <span class="pl-s"><span class="pl-pds">"</span>#name<span class="pl-pds">"</span></span>;
+
+    <span class="pl-k">private</span> <span class="pl-smi">String</span> name;
+
+    <span class="pl-k">@Override</span>
+    <span class="pl-k">protected</span> <span class="pl-k">void</span> <span class="pl-en">onCreate</span>(<span class="pl-smi">Bundle</span> <span class="pl-v">savedState</span>) {
+        <span class="pl-c1">super</span><span class="pl-k">.</span>onCreate(savedState);
+
+        <span class="pl-c"><span class="pl-c">//</span> Recover the value after a process restart, you have to restore it before</span>
+        <span class="pl-c"><span class="pl-c">//</span> registering the restartable, or you will get a NullPointerException</span>
+        <span class="pl-k">if</span> (savedState <span class="pl-k">!=</span> <span class="pl-c1">null</span>)
+            name <span class="pl-k">=</span> savedState<span class="pl-k">.</span>getString(<span class="pl-c1">NAME_KEY</span>);
+
+        restartableLatestCache(<span class="pl-c1">REQUEST_ITEMS</span>,
+                () <span class="pl-k">-</span><span class="pl-k">&gt;</span> <span class="pl-smi">App</span><span class="pl-k">.</span>getServerAPI()
+                    .getItems(name)
+                    .observeOn(<span class="pl-smi">AndroidSchedulers</span><span class="pl-k">.</span>mainThread()),
+                (activity, response) <span class="pl-k">-</span><span class="pl-k">&gt;</span> activity<span class="pl-k">.</span>onItems(response<span class="pl-k">.</span>items),
+                (activity, throwable) <span class="pl-k">-</span><span class="pl-k">&gt;</span> activity<span class="pl-k">.</span>onItemsError(throwable));
+    }
+
+    <span class="pl-k">@Override</span>
+    <span class="pl-k">protected</span> <span class="pl-k">void</span> <span class="pl-en">onSave</span>(<span class="pl-k">@NonNull</span> <span class="pl-smi">Bundle</span> <span class="pl-v">state</span>) {
+        <span class="pl-c1">super</span><span class="pl-k">.</span>onSave(state);
+        state<span class="pl-k">.</span>putString(<span class="pl-c1">NAME_KEY</span>, name);
+    }
+
+    <span class="pl-k">public</span> <span class="pl-k">void</span> <span class="pl-en">request</span>(<span class="pl-smi">String</span> <span class="pl-v">name</span>) {
+        <span class="pl-c1">this</span><span class="pl-k">.</span>name <span class="pl-k">=</span> name;
+        start(<span class="pl-c1">REQUEST_ITEMS</span>);
+    }
+}</pre></div>
+<p>And an example activity:</p>
+<div class="highlight highlight-source-java"><pre><span class="pl-k">@RequiresPresenter</span>(<span class="pl-smi">MainPresenter</span><span class="pl-k">.</span>class)
+<span class="pl-k">public</span> <span class="pl-k">class</span> <span class="pl-en">MainActivity</span> <span class="pl-k">extends</span> <span class="pl-e">NucleusActivity&lt;<span class="pl-smi">MainPresenter</span>&gt;</span> {
+
+    <span class="pl-k">ArrayAdapter&lt;<span class="pl-smi">Item</span>&gt;</span> adapter;
+
+    <span class="pl-k">@Override</span>
+    <span class="pl-k">public</span> <span class="pl-k">void</span> <span class="pl-en">onCreate</span>(<span class="pl-smi">Bundle</span> <span class="pl-v">savedInstanceState</span>) {
+        <span class="pl-c1">super</span><span class="pl-k">.</span>onCreate(savedInstanceState);
+        setContentView(<span class="pl-smi">R</span><span class="pl-k">.</span>layout<span class="pl-k">.</span>activity_main);
+
+        <span class="pl-c"><span class="pl-c">//</span> View and adapter initialization</span>
+        <span class="pl-c"><span class="pl-c">//</span> ...</span>
+
+        <span class="pl-k">if</span> (savedInstanceState <span class="pl-k">==</span> <span class="pl-c1">null</span>)
+            requestItems(<span class="pl-s"><span class="pl-pds">"</span>initial query<span class="pl-pds">"</span></span>);
+    }
+
+    <span class="pl-k">public</span> <span class="pl-k">void</span> <span class="pl-en">onItems</span>(<span class="pl-k">List&lt;<span class="pl-smi">Item</span>&gt;</span> <span class="pl-v">items</span>) {
+        adapter<span class="pl-k">.</span>clear();
+        adapter<span class="pl-k">.</span>addAll(items);
+    }
+
+    <span class="pl-k">public</span> <span class="pl-k">void</span> <span class="pl-en">onItemsError</span>(<span class="pl-smi">Throwable</span> <span class="pl-v">throwable</span>) {
+        <span class="pl-smi">Toast</span><span class="pl-k">.</span>makeText(<span class="pl-c1">this</span>, throwable<span class="pl-k">.</span>getMessage(), <span class="pl-smi">Toast</span><span class="pl-c1"><span class="pl-k">.</span>LENGTH_LONG</span>)<span class="pl-k">.</span>show();
+    }
+
+    <span class="pl-c"><span class="pl-c">//</span> You can use this method to (re)start the restartable with a new parameter</span>
+    <span class="pl-k">private</span> <span class="pl-k">void</span> <span class="pl-en">requestItems</span>(<span class="pl-smi">String</span> <span class="pl-v">query</span>) {
+        getPresenter()<span class="pl-k">.</span>request(query);
+    }
+}</pre></div>
+<h3>
+<a aria-hidden="true" class="anchor" href="#example-sending-parameters-from-the-view-with-icepick" id="user-content-example-sending-parameters-from-the-view-with-icepick"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Example sending parameters from the view (with Icepick)</h3>
+<p>To avoid manually saving/restoring instances every time, you can add <a href="https://github.com/frankiesardo/icepick">Icepick</a> to your project and create a class <code>BasePresenter</code>.</p>
+<div class="highlight highlight-source-java"><pre><span class="pl-k">public</span> <span class="pl-k">class</span> <span class="pl-en">BasePresenter</span>&lt;V <span class="pl-k">extends</span> <span class="pl-e">ViewWithPresenter</span>&gt; extends <span class="pl-e">RxPresenter&lt;<span class="pl-smi">V</span>&gt;</span> {
+
+    <span class="pl-k">@Override</span>
+    <span class="pl-k">protected</span> <span class="pl-k">void</span> <span class="pl-en">onCreate</span>(<span class="pl-smi">Bundle</span> <span class="pl-v">savedState</span>) {
+        <span class="pl-c1">super</span><span class="pl-k">.</span>onCreate(savedState);
+        <span class="pl-smi">Icepick</span><span class="pl-k">.</span>restoreInstanceState(<span class="pl-c1">this</span>, savedState);
+    }
+
+    <span class="pl-k">@Override</span>
+    <span class="pl-k">protected</span> <span class="pl-k">void</span> <span class="pl-en">onSave</span>(<span class="pl-k">@NonNull</span> <span class="pl-smi">Bundle</span> <span class="pl-v">state</span>) {
+        <span class="pl-c1">super</span><span class="pl-k">.</span>onSave(state);
+        <span class="pl-smi">Icepick</span><span class="pl-k">.</span>saveInstanceState(<span class="pl-c1">this</span>, state);
+    }
+
+}</pre></div>
+<p>If you extend from <code>BasePresenter</code>, your presenter would look like this:</p>
+<div class="highlight highlight-source-java"><pre><span class="pl-k">import</span> <span class="pl-smi">icepick.State</span>;
+
+<span class="pl-k">public</span> <span class="pl-k">class</span> <span class="pl-en">MainPresenter</span> <span class="pl-k">extends</span> <span class="pl-e">BasePresenter&lt;<span class="pl-smi">MainActivity</span>&gt;</span> {
+
+    <span class="pl-k">private</span> <span class="pl-k">static</span> <span class="pl-k">final</span> <span class="pl-k">int</span> <span class="pl-c1">REQUEST_ITEMS</span> <span class="pl-k">=</span> <span class="pl-c1">1</span>;
+
+    <span class="pl-k">@State</span> <span class="pl-smi">String</span> name;
+
+    <span class="pl-k">@Override</span>
+    <span class="pl-k">protected</span> <span class="pl-k">void</span> <span class="pl-en">onCreate</span>(<span class="pl-smi">Bundle</span> <span class="pl-v">savedState</span>) {
+        <span class="pl-c1">super</span><span class="pl-k">.</span>onCreate(savedState);
+
+        restartableLatestCache(<span class="pl-c1">REQUEST_ITEMS</span>,
+                () <span class="pl-k">-</span><span class="pl-k">&gt;</span> <span class="pl-smi">App</span><span class="pl-k">.</span>getServerAPI()
+                    .getItems(name)
+                    .observeOn(<span class="pl-smi">AndroidSchedulers</span><span class="pl-k">.</span>mainThread()),
+                (activity, response) <span class="pl-k">-</span><span class="pl-k">&gt;</span> activity<span class="pl-k">.</span>onItems(response<span class="pl-k">.</span>items),
+                (activity, throwable) <span class="pl-k">-</span><span class="pl-k">&gt;</span> activity<span class="pl-k">.</span>onItemsError(throwable));
+    }
+
+    <span class="pl-k">public</span> <span class="pl-k">void</span> <span class="pl-en">request</span>(<span class="pl-smi">String</span> <span class="pl-v">name</span>) {
+        <span class="pl-c1">this</span><span class="pl-k">.</span>name <span class="pl-k">=</span> name;
+        start(<span class="pl-c1">REQUEST_ITEMS</span>);
+    }
+}</pre></div>
+
+        </div>
+
+        <div class="wiki-footer gollum-markdown-content boxed-group" id="wiki-footer">
+          <div class="boxed-group-inner wiki-auxiliary-content markdown-body">
+            <p><a href="https://github.com/konmik/nucleus/wiki/Paging-example">Paging example</a></p>
+
+          </div>
+        </div>
+    </div>]

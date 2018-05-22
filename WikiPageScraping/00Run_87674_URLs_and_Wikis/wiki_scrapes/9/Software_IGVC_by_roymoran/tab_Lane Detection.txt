@@ -1,0 +1,110 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>The objective is to detected marked lanes (sprayed white lines) on grass. The major steps are:</p>
+<ol>
+<li>Filter the image</li>
+<li>Identify Lines</li>
+<li>Transform the image to a pointcloud</li>
+</ol>
+<p>This page will contain a list of line detection algorithms (specific step-by-step algorithms for taking camera images and extracting lines from them).</p>
+<h1>
+<a aria-hidden="true" class="anchor" href="#flowcharts-for-possible-implementations-of-the-three-stages" id="user-content-flowcharts-for-possible-implementations-of-the-three-stages"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Flowcharts for possible implementations of the three stages</h1>
+<h2>
+<a aria-hidden="true" class="anchor" href="#stage-1-filtering" id="user-content-stage-1-filtering"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Stage 1: Filtering</h2>
+<p><img alt="filtering stage flowchart" data-canonical-src="https://api.genmymodel.com/projects/_zhAv4JMzEeS5h4H2KE1sXg/diagrams/_AVFzIXVjEDKNyMv249e-sg/svg" src="https://camo.githubusercontent.com/b531dc76bfd0e2f59a0a508543f062f90884014b/68747470733a2f2f6170692e67656e6d796d6f64656c2e636f6d2f70726f6a656374732f5f7a684176344a4d7a45655335683448324b45317358672f6469616772616d732f5f4156467a4958566a45444b4e794d76323439652d73672f737667"/></p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#stage-2-line-detection" id="user-content-stage-2-line-detection"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Stage 2: Line Detection</h2>
+<ul>
+<li>
+<a href="http://marcosnietoblog.wordpress.com/2012/04/28/line-segment-detection-opencv-c-source-code/" rel="nofollow">Line Segment Detection</a>. Result: doesn't work well with the broken-up lines we get. Results in sporadic short lines (not full long lines like in Hough).</li>
+<li>RANSAC (not implemented yet, check <a href="https://github.com/canderegg/cfg_obj/pull/1">here</a> occasionally to see if the package is fixed).</li>
+<li>Hough Transform + some form of clustering. Currently hough is implemented in its own node, but the results are multiple lines on top of each other. We can either cluster them (average each bundle of lines into one proper line) or just dilate the lines and use those as pixels and send them out to costmap).</li>
+<li>OpenCV's fitLine. Implemented into its own node. Outliers drastically reduce accuracy, no way this will work unless we use some sort of clustering method to remove outliers or something.</li>
+<li>Why not use Blob detection to rule out noise? We look at the two most well-connected blobs of pixels and filter everything else out (anything that's not a big enough blob is ruled out)</li>
+</ul>
+<h2>
+<a aria-hidden="true" class="anchor" href="#stage-3-transforming-to-pointcloud" id="user-content-stage-3-transforming-to-pointcloud"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Stage 3: Transforming to Pointcloud</h2>
+<ul>
+<li>Running two instances of lane detection using stereo, with stereo_image_proc outputting pointcloud.</li>
+<li>Given a pointcloud before and running lane detection on the recontsructed image, we can choose pixels and get back the pointcloud with which those pixels were reconstructed from.</li>
+<li>Just perform an <a href="http://marcosnietoblog.wordpress.com/2014/02/22/source-code-inverse-perspective-mapping-c-opencv/" rel="nofollow">inverse-perspective mapping</a> (basically converting from pixel space to real-world space).</li>
+</ul>
+<h1>
+<a aria-hidden="true" class="anchor" href="#list-of-comprehensive-fleshed-out-algorithms-to-be-prototyped-and-tested" id="user-content-list-of-comprehensive-fleshed-out-algorithms-to-be-prototyped-and-tested"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>List of comprehensive (fleshed-out) algorithms to be prototyped and tested</h1>
+<ol>
+<li>
+<p>2014 IGVC line detection (official name: BackprojectGrass-Skeletonize): Refer to the <a href="https://www.dropbox.com/s/gggppojoen45e1s/EDT%202014%20IGVC%20Design%20Report.pdf?dl=0" rel="nofollow">2014 Design Report</a>.
+<img alt="IGVC 2014 Line Detection" data-canonical-src="https://api.genmymodel.com/projects/_zhAv4JMzEeS5h4H2KE1sXg/diagrams/_zhB-BJMzEeS5h4H2KE1sXg/svg" src="https://camo.githubusercontent.com/ac75c9ee638350b3725ee90db07fbd7c2658c258/68747470733a2f2f6170692e67656e6d796d6f64656c2e636f6d2f70726f6a656374732f5f7a684176344a4d7a45655335683448324b45317358672f6469616772616d732f5f7a68422d424a4d7a45655335683448324b45317358672f737667"/>
+The basic idea is to filter out the grass based on its hue (using HSV color scheme) using histogram backprojection (using the training <a href="https://drive.google.com/file/d/0B1Ba5iax8CW8aEYtVWh0Q1Z6NU0/view?usp=sharing" rel="nofollow">image here</a>), and then (assuming all that remains is the white lines and some random small noise lines from the grass) run a Gaussian Blur on it, then apply a global threshold based on normalized image brightness (from the ROI only), equalize Histogram, apply adaptive threshold, and then skeletonize it (erode and dilate until only it's only a single pixel thick). These remaining pixels were assumed to be the lines and were sent as a pointcloud.</p>
+</li>
+<li>
+<p>Modification of #1 (official name: BackprojectGrass-Hough-Skeletonize). Basically, after filtering the grass out (histogram backprojection), we run a Hough transform, and select all the pixels around those Hough lines (you can dilate the lines themselves and binary AND the original pixels to get these pixels). This should eliminate all the remaining noise that was left out by stupid histogram backprojection. Now we proceed with the rest (check if we have to use blur, either before Hough, after Hough, or not at all)...</p>
+</li>
+<li>
+<p>Backproject, blur, then Gabor filter. Very good results. Only issue: we can't use backprojection (because we don't have RGB data on our new camera) to filter out most of the noise to make Gabor filter useful. Otherwise, it thinks all the grass blades are lines. Check out the Python code I wrote for it (super easy).</p>
+</li>
+<li>
+<p>Some sort of contrast/brightness control if the hardware (camera) supports it.</p>
+</li>
+</ol>
+<h1>
+<a aria-hidden="true" class="anchor" href="#list-of-line-detection-steps-or-tools-that-could-be-used-as-part-of-a-line-detection-algorithm" id="user-content-list-of-line-detection-steps-or-tools-that-could-be-used-as-part-of-a-line-detection-algorithm"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>List of line detection steps or tools that could be used as part of a line detection algorithm</h1>
+<ol>
+<li><a href="http://www.sciencedirect.com/science/article/pii/S0167865503001880" rel="nofollow">Robust Eigenvalue Analysis</a></li>
+<li>Hough Transforms (in many forms)</li>
+<li>Skeletonizing (erosion and dilation)</li>
+<li>Histogram backprojection to extract colors</li>
+<li>RANSAC and other related interpolation(?) methods</li>
+<li>Reconstructing a disparity image from pointcloud (to remove pixels from the image which are not on the ground e.g. barrels or sawhorses with white stripes on them)</li>
+<li>Edge detection/Canny/Contours</li>
+<li>Gabor filter</li>
+<li>Dynamic/Directional Brightest pixel threshold (per row or column). Here's how Brightest pixel threshold normally works: for every row of pixels in the image, you find the brightest pixel and zero out all other pixels (like a binary threshold). Do that for every row. This works great but only if the lanes are vertical in the image. So my idea is to change the direction at which you take brightest pixel (instead of looking at every row, you could look at every column, or look diagonally). I will try doing all 3 at the same time (row, column, diagonal) and use the three images to find lines (maybe average the lines or take the best one or merge the images).</li>
+<li>Subtraction filter for bright top of image (similar to histogram equalization?)</li>
+<li>Look at <a href="http://www.biblioteca.uma.es/bbldoc/tesisuma/16603667.pdf" rel="nofollow">Hough transform + clustering</a> in order to get the actual line (instead of the many overlayed but not colinear lines). Also consider just straight up line-segment clustering on Hough results like using <a href="http://pdf.aminer.org/000/067/494/grouping_line_segments_using_eigenclustering.pdf" rel="nofollow">Eigenclustering</a>.</li>
+<li>Adaptive Histogram Equalization (CLAHE), which is only available in OpenCV 3.0.</li>
+<li>Since the direction of the lanes doesn't change too drastically, we should look for lanes that are similar in slope to current ones. Based on current slope of the lanes, set the direction of the kernels when filtering (like in Gabor) to be similar.</li>
+<li>Applying histogram equalization AFTER initial thresholding (such as with backprojection) will spread the values around so a second thresholding stage will be less sensitive. <strong>Maybe not, apparently. It seems that equalizing the histogram after backprojection might lead to making the bright lines a bit faded</strong>
+</li>
+<li>In order to solve the problem of lineFit not working for multiple lines, we can use clustering (think PCA) to cluster lines into separate clusters. This could even work great to remove noise (by only grabbing largest 1 or 2 clusters and throwing away small ones)</li>
+</ol>
+<h1>
+<a aria-hidden="true" class="anchor" href="#stuff-to-look-into" id="user-content-stuff-to-look-into"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Stuff to look into</h1>
+<ul>
+<li><a href="http://scholar.lib.vt.edu/theses/available/etd-05262005-103758/unrestricted/bacha_thesis.pdf" rel="nofollow">This guy's thesis</a></li>
+<li>Inverse perspective mapping in OpenCV to transform from image coordinates to world coordinates (not necessary with stereo images because it's already taken care of).</li>
+</ul>
+<h1>
+<a aria-hidden="true" class="anchor" href="#todos" id="user-content-todos"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>TODOs</h1>
+<ul>
+<li>
+<p>Improve backprojection training (write a node that reads a bag, and saves the normalized histogram into a csv which is later read when backprojection training is performed).</p>
+</li>
+<li>
+<p>Look into clustering.</p>
+</li>
+<li>
+<p>Look into ml/statistical-learning methods for lane detection</p>
+</li>
+<li>
+<p>Determine whether monochrome (black and white) images are sufficient enough to perform line detection algorithms</p>
+</li>
+<li>
+<p>If they are not, use build on Basheer’s code from last year</p>
+</li>
+<li>
+<p>Research how to implement a RANSAC algorithm (create a “line of best fit” through the points we come up with)</p>
+</li>
+<li>
+<p>Point Cloud Ground Plane Extraction (we don’t want the point clouds of the ground, just the barrels)</p>
+</li>
+<li>
+<p>Filter out grass of image</p>
+</li>
+<li>
+<p>Good place to start <a href="http://en.wikipedia.org/wiki/Edge_detection#See_also" rel="nofollow">http://en.wikipedia.org/wiki/Edge_detection#See_also</a></p>
+</li>
+</ul>
+
+        </div>
+
+    </div>]

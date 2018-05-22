@@ -1,0 +1,290 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <h1>
+<a aria-hidden="true" class="anchor" href="#multi-layer-configuration-system" id="user-content-multi-layer-configuration-system"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Multi layer configuration system</h1>
+<p>ProxySQL has a complex yet easy-to-use configuration system suited to serve the following needs:</p>
+<ul>
+<li>allowing easy dynamic updates to the configuration (this is to allow ProxySQL users to use it in larger infrastructures where zero-downtime provisioning is required). A MySQL-compatible admin interface is available for this very purpose.</li>
+<li>allowing as many configuration items as possible to be modified dynamically, without requiring a restartof the ProxySQL process</li>
+<li>allowing effortless rollback of invalid configuration</li>
+</ul>
+<p>This is achieved through a multi-level configuration system where settings are moved from runtime to memory, and persisted to disk as desired.</p>
+<p>The 3 levels of configuration consist of the following layers:</p>
+<pre><code>+-------------------------+
+|         RUNTIME         |
++-------------------------+
+       /|\          |
+        |           |
+    [1] |       [2] |
+        |          \|/
++-------------------------+
+|         MEMORY          |
++-------------------------+ _
+       /|\          |      |\
+        |           |        \
+    [3] |       [4] |         \ [5]
+        |          \|/         \
++-------------------------+  +-------------------------+
+|          DISK           |  |       CONFIG FILE       |
++-------------------------+  +-------------------------+
+
+</code></pre>
+<p><strong>RUNTIME</strong> represents the in-memory data structures of ProxySQL used by threads handling requests.</p>
+<p>The runtime variables contain:</p>
+<ul>
+<li>the actual values defined in the global variables</li>
+<li>the list of backend servers grouped into hostgroups</li>
+<li>the list of MySQL users that can connect to the proxy</li>
+</ul>
+<p>Note: Operators can never modify the contents of the <strong>RUNTIME</strong> configuration section directly. They always have to go through the bottom layers.</p>
+<p><strong>MEMORY</strong> (sometime also referred as <em>main</em>) represent an in-memory database which is exposed via a MySQL-compatible interface. Users can connect with a MySQL client to this interface and query the various ProxySQL configuration tables / databases.</p>
+<p>The configuration tables available through this interface are:</p>
+<ul>
+<li>mysql_servers -- the list of backend servers which ProxySQL connects to</li>
+<li>mysql_users -- the list of users and their credentials which connect to ProxySQL. Please note that ProxySQL will use the same credentials to connect to the backend servers as well!</li>
+<li>mysql_query_rules -- the list of query rules which are evaluated when routing traffic to the various backend servers. These rules can also rewrite queries or even cache the result of an executed query.</li>
+<li>global_variables -- the list of global variables which the proxy is configured to use, and which can be tweaked during runtime.</li>
+</ul>
+<p>Examples of global variables:</p>
+<pre><code>mysql&gt; select * from global_variables limit 3;
++----------------------------------+----------------+
+| variable_name                    | variable_value |
++----------------------------------+----------------+
+| mysql-connect_retries_on_failure | 5              |
+| mysql-connect_retries_delay      | 1              |
+| mysql-connect_timeout_server_max | 10000          |
++----------------------------------+----------------+
+</code></pre>
+<ul>
+<li>mysql_collations -- the list of MySQL collations available for the proxy to work with. These are extracted directly from the client library.</li>
+<li>[only available in debug builds] debug_levels -- the list of types of debug statements that ProxySQL emits together with their verbosity levels. This allows us to easily configure at runtime what kind of statements we have in the log in order to debug different problems. This is available only in debug builds because it can affect performance.</li>
+</ul>
+<p><strong>DISK</strong> and <strong>CONFIG FILE</strong></p>
+<p><strong>DISK</strong> represents an on-disk SQLite3 database, with the default location at <code>$(DATADIR)/proxysql.db</code>. Across restarts, the in-memory configs that were not persisted will be lost. Therefore it is important to persist the configuration into <strong>DISK</strong> . The <strong>CONFIG</strong> file is the classical config file, and we'll see the relationship between it and the other configuration layers in the next section.</p>
+<p>In the following sections, we'll describe the life-cycle of each of these layers for the basic operations that the daemon goes through: starting up for the first time, starting up, restarting, shutting down, etc.</p>
+<h1>
+<a aria-hidden="true" class="anchor" href="#startup" id="user-content-startup"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Startup</h1>
+<p>At a normal start-up, ProxySQL reads its config file (if present) to determine its datadir.
+What happen next depends from the presence or not of its database file (disk) in its datadir.</p>
+<p>If the database file is found, ProxySQL initializes its in-memory configuration from the persisted on-disk database. So, disk gets loaded into memory and then propagated towards the runtime configuration.
+If the database file is not found and a config file exists, the config file is parsed and its content is loaded into the in-memory database, to then be both saved on-disk database and loaded at runtime.
+It is important to note that <strong>if a database file is found, the config file is not parsed</strong> . That is, during a normal start-up, ProxySQL initializes its in-memory configuration from the persisted on-disk database ONLY.</p>
+<p><strong>Note</strong>: ProxySQL 1.4.4 introduced 2 new <a href="./Configuration-file#general-variables">general variables</a> that are always parsed from the config file.</p>
+<h1>
+<a aria-hidden="true" class="anchor" href="#initial-startup-or---initial-flag" id="user-content-initial-startup-or---initial-flag"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Initial startup (or --initial flag)</h1>
+<p>At the initial start-up, the memory and runtime configurations are populated from the config file. Thereafter the configuration is persisted in ProxySQL's embedded SQLite database. It is possible to force the initial configuration to re-occur by running proxysql with the --initial flag, which will reset the SQLite database file to its original state (i.e. the state defined in the config file) and rename the existing SQLite database file in case a rollback is required (check the defined data directory for the older file if required).</p>
+<h1>
+<a aria-hidden="true" class="anchor" href="#reload-startup-or---reload-flag" id="user-content-reload-startup-or---reload-flag"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Reload startup (or --reload flag)</h1>
+<p>If proxysql is executed with the --reload flag, it attempts to merge the configuration in the config file with the content of the database file. Thereafter, it will perform its regular startup procedures.</p>
+<p>There is no guarantee that ProxySQL will successfully manage to merge the two configuration source if they conflict, and users should always validate that the merge was executed as expected.</p>
+<h1>
+<a aria-hidden="true" class="anchor" href="#modifying-config-at-runtime" id="user-content-modifying-config-at-runtime"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Modifying config at runtime</h1>
+<p>Modifying the config at runtime is done through the MySQL admin port of ProxySQL (6032 by default). After connecting to it, you'll see a MySQL-compatible interface for querying the various ProxySQL-related tables:</p>
+<div class="highlight highlight-source-sql"><pre>mysql<span class="pl-k">&gt;</span> show tables;
+<span class="pl-k">+</span><span class="pl-c"><span class="pl-c">--</span>-----------------+</span>
+| tables            |
+<span class="pl-k">+</span><span class="pl-c"><span class="pl-c">--</span>-----------------+</span>
+| mysql_servers     |
+| mysql_users       |
+| mysql_query_rules |
+| global_variables  |
+| mysql_collations  |
+| debug_levels      |
+<span class="pl-k">+</span><span class="pl-c"><span class="pl-c">--</span>-----------------+</span>
+<span class="pl-c1">6</span> rows <span class="pl-k">in</span> <span class="pl-k">set</span> (<span class="pl-c1">0</span>.<span class="pl-c1">01</span> sec)</pre></div>
+<p>Each such table has a well defined role in the admin interface:</p>
+<ul>
+<li>
+<code>mysql_servers</code> contains the list of backend servers for ProxySQL to connect to</li>
+<li>
+<code>mysql_users</code> contains the list of users which ProxySQL will use to authenticate to the backend servers</li>
+<li>
+<code>mysql_query_rules</code> contains the rules for caching, routing or rewriting the SQL queries that are sent to ProxySQL</li>
+<li>
+<code>global_variables</code> contains the MySQL variables and admin variables which were defined during the server's initial configuration</li>
+<li>
+<code>debug_levels</code> is only useful for debugging a manual build of ProxySQL</li>
+</ul>
+<p>These tables represent the in-memory database described in the diagram above and can be configured using standard SQL queries. In order to move the configuration from this layer upwards (i.e. in order to be used during runtime) or downwards (in order to be persisted to disk), please review the next section.</p>
+<p>For more details about these tables and their fields, see their dedicated description in the documentation.</p>
+<h1>
+<a aria-hidden="true" class="anchor" href="#moving-config-between-layers" id="user-content-moving-config-between-layers"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Moving config between layers</h1>
+<p>In order to persist configuration to disk or load configuration to runtime there is a set of different admin commands available which can be executed via the admin interface. Once you understand how each of the three layers are used, the semantics should be clear. Together with the explanation of each command, there is a numbered option written next to each. The number corresponds to the arrow listed in the diagram above.</p>
+<p>For reconfiguring MySQL users, execute either one of the following commands:</p>
+<ul>
+<li>[1] LOAD MYSQL USERS FROM MEMORY / LOAD MYSQL USERS TO RUNTIME
+<ul>
+<li>loads MySQL users from the in-memory database to the runtime data structures or vice versa</li>
+</ul>
+</li>
+<li>[2] SAVE MYSQL USERS TO MEMORY / SAVE MYSQL USERS FROM RUNTIME
+<ul>
+<li>persists the MySQL users from runtime to the in-memory database</li>
+</ul>
+</li>
+<li>[3] LOAD MYSQL USERS TO MEMORY / LOAD MYSQL USERS FROM DISK
+<ul>
+<li>loads the persisted MySQL users from the on-disk database to the in-memory database</li>
+</ul>
+</li>
+<li>[4] SAVE MYSQL USERS FROM MEMORY / SAVE MYSQL USERS TO DISK
+<ul>
+<li>persists the MySQL users from the in-memory database to the on-disk database</li>
+</ul>
+</li>
+<li>[5] LOAD MYSQL USERS FROM CONFIG
+<ul>
+<li>loads from the configuration file the users into the in-memory database</li>
+</ul>
+</li>
+</ul>
+<p>For handling MySQL servers:</p>
+<ul>
+<li>[1] LOAD MYSQL SERVERS FROM MEMORY / LOAD MYSQL SERVERS TO RUNTIME
+<ul>
+<li>loads MySQL servers from the in-memory database to runtime</li>
+</ul>
+</li>
+<li>[2] SAVE MYSQL SERVERS TO MEMORY / SAVE MYSQL SERVERS FROM RUNTIME
+<ul>
+<li>persists the MySQL servers from runtime to the in-memory database</li>
+</ul>
+</li>
+<li>[3] LOAD MYSQL SERVERS TO MEMORY / LOAD MYSQL SERVERS FROM DISK
+<ul>
+<li>loads MySQL servers from the on-disk database to the in-memory database</li>
+</ul>
+</li>
+<li>[4] SAVE MYSQL SERVERS FROM MEMORY / SAVE MYSQL SERVERS TO DISK
+<ul>
+<li>persists the MySQL servers from the in-memory database to the on-disk database</li>
+</ul>
+</li>
+<li>[5] LOAD MYSQL SERVERS FROM CONFIG
+<ul>
+<li>loads from the configuration file the servers into the in-memory database</li>
+</ul>
+</li>
+</ul>
+<p>For handling MySQL query rules:</p>
+<ul>
+<li>[1] LOAD MYSQL QUERY RULES FROM MEMORY / LOAD MYSQL QUERY RULES TO RUNTIME
+<ul>
+<li>loads the MySQL query rules from the in-memory database to the runtime data structures</li>
+</ul>
+</li>
+<li>[2] SAVE MYSQL QUERY RULES TO MEMORY / SAVE MYSQL QUERY RULES FROM RUNTIME
+<ul>
+<li>persists the MySQL query rules from the runtime data structures to the in-memory database</li>
+</ul>
+</li>
+<li>[3] LOAD MYSQL QUERY RULES TO MEMORY / LOAD MYSQL QUERY RULES FROM DISK
+<ul>
+<li>loads MySQL query rules from the on-disk database to the in-memory database</li>
+</ul>
+</li>
+<li>[4] SAVE MYSQL QUERY RULES FROM MEMORY / SAVE MYSQL QUERY RULES TO DISK
+<ul>
+<li>persists the MySQL query rules from the in-memory database to the on-disk database</li>
+</ul>
+</li>
+<li>[5] LOAD MYSQL QUERY RULES FROM CONFIG
+<ul>
+<li>loads from the configuration file query rules into the in-memory database</li>
+</ul>
+</li>
+</ul>
+<p>For handling MySQL variables:</p>
+<ul>
+<li>[1] LOAD MYSQL VARIABLES FROM MEMORY / LOAD MYSQL VARIABLES TO RUNTIME
+<ul>
+<li>loads the MySQL variables from the in-memory database to the runtime data structures</li>
+</ul>
+</li>
+<li>[2] SAVE MYSQL VARIABLES FROM MEMORY / SAVE MYSQL VARIABLES TO DISK
+<ul>
+<li>persists the MySQL variables from the in-memory database to the on-disk database</li>
+</ul>
+</li>
+<li>[3] LOAD MYSQL VARIABLES TO MEMORY / LOAD MYSQL VARIABLES FROM DISK
+<ul>
+<li>loads MySQL variables from the on-disk database to the in-memory database</li>
+</ul>
+</li>
+<li>[4] SAVE MYSQL VARIABLES TO MEMORY / SAVE MYSQL VARIABLES FROM RUNTIME
+<ul>
+<li>persists the MySQL variables from the runtime data structures to the in-memory database</li>
+</ul>
+</li>
+<li>[5] LOAD MYSQL VARIABLES FROM CONFIG
+<ul>
+<li>loads the configuration file variables into the in-memory database</li>
+</ul>
+</li>
+</ul>
+<p>For handling admin variables:</p>
+<ul>
+<li>[1] LOAD ADMIN VARIABLES FROM MEMORY / LOAD ADMIN VARIABLES TO RUNTIME
+<ul>
+<li>loads admin variables from the in-memory database to runtime</li>
+</ul>
+</li>
+<li>[2] SAVE ADMIN VARIABLES TO MEMORY / SAVE ADMIN VARIABLES FROM RUNTIME
+<ul>
+<li>persists the admin variables from runtime to the in-memory database</li>
+</ul>
+</li>
+<li>[3] LOAD ADMIN VARIABLES TO MEMORY / LOAD ADMIN VARIABLES FROM DISK
+<ul>
+<li>loads admin variables from the on-disk database to the in-memory database</li>
+</ul>
+</li>
+<li>[4] SAVE ADMIN VARIABLES FROM MEMORY / SAVE ADMIN VARIABLES TO DISK
+<ul>
+<li>persists the admin variables from the in-memory database to the on-disk database</li>
+</ul>
+</li>
+<li>[5] LOAD ADMIN VARIABLES FROM CONFIG
+<ul>
+<li>loads the configuration file admin variables into the in-memory database</li>
+</ul>
+</li>
+</ul>
+<p>Note: the above commands allow the following shortcuts:</p>
+<ul>
+<li>
+<strong>MEM</strong> for <strong>MEMORY</strong>
+</li>
+<li>
+<strong>RUN</strong> for <strong>RUNTIME</strong>
+</li>
+</ul>
+<p>For example, these two commands are equivalent:</p>
+<ul>
+<li>SAVE ADMIN VARIABLES TO MEMORY</li>
+<li>SAVE ADMIN VARIABLES TO MEM</li>
+</ul>
+<h1>
+<a aria-hidden="true" class="anchor" href="#summary" id="user-content-summary"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Summary</h1>
+<p>Having now understood how this system works, here are some sample commands from above that you may find yourself needing the most.  These are specifically related to how you make config changes active (RUNTIME) and how they are saved to disk permanently (DISK).  Remember that no changes will be activated until they are loaded to RUNTIME.</p>
+<pre><code>LOAD MYSQL USERS TO RUNTIME;
+SAVE MYSQL USERS TO DISK;
+LOAD MYSQL SERVERS TO RUNTIME;
+SAVE MYSQL SERVERS TO DISK;
+LOAD MYSQL QUERY RULES TO RUNTIME;
+SAVE MYSQL QUERY RULES TO DISK;
+LOAD MYSQL VARIABLES TO RUNTIME;
+SAVE MYSQL VARIABLES TO DISK;
+
+LOAD ADMIN VARIABLES TO RUNTIME;
+SAVE ADMIN VARIABLES TO DISK;
+</code></pre>
+<h1>
+<a aria-hidden="true" class="anchor" href="#troubleshooting" id="user-content-troubleshooting"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Troubleshooting</h1>
+<p>Note that final validation is only done when values are loaded to runtime. You can set a value that won't raise any kind of warning or error when saved to memory, or even saved to disk. Changes are however reverted to their previously saved state when a load to runtime is executed.  If this occurs you should check the defined error log.</p>
+<p>For example,
+<code>[WARNING] Impossible to set variable monitor_read_only_interval with value "0". Resetting to current "1500".</code></p>
+
+        </div>
+
+    </div>]

@@ -1,0 +1,120 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>Welcome to the docker-fuseki wiki!</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#using-docker-fuseki" id="user-content-using-docker-fuseki"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Using docker-fuseki</h2>
+<p>This section will show steps to establish a Docker container running Fuseki and how to load/update/query RDF data using the SOH tools.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#assumptions" id="user-content-assumptions"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Assumptions</h3>
+<ul>
+<li>Docker 1.0+ is installed. Instructions on how to install Docker can be found here: <a href="https://docs.docker.com/installation/" rel="nofollow">https://docs.docker.com/installation/</a>
+</li>
+<li>Docker-fuseki has been git cloned
+e.g. git clone <a href="https://github.com/CSIRO-enviro-informatics/docker-fuseki.git">https://github.com/CSIRO-enviro-informatics/docker-fuseki.git</a>
+</li>
+</ul>
+<h3>
+<a aria-hidden="true" class="anchor" href="#build" id="user-content-build"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Build</h3>
+<p>Use <code>build.sh</code> to create the docker image. The image will be named csiro-env/fuseki. You may need to use admin privileges.</p>
+<pre><code>$ sudo ./build.sh
+
+[sudo] password for user:
+fuseki
+fuseki
+Sending build context to Docker daemon 92.16 kB
+Sending build context to Docker daemon 
+Step 0 : FROM ubuntu:14.04
+---&gt; ba5877dc9bec
+Step 1 : RUN echo "deb http://archive.ubuntu.com/ubuntu/ precise universe" &gt;&gt; /etc/apt/sources.list
+---&gt; Using cache
+---&gt; 68da6f51a75f
+....
+Step 26 : CMD ["/usr/bin/supervisord"]
+---&gt; Running in 20db656f5333
+---&gt; d686b5dabb4e
+Removing intermediate container 20db656f5333
+Successfully built d686b5dabb4e
+</code></pre>
+<h3>
+<a aria-hidden="true" class="anchor" href="#run" id="user-content-run"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Run</h3>
+<p>Use <code>run.sh</code> to create the running docker container. The container will be named fuseki. You may need to use admin privileges.</p>
+<pre><code>$ sudo ./run.sh
+Error response from daemon: No such container: fuseki
+2014/11/20 17:32:20 Error: failed to kill one or more containers
+Error response from daemon: No such container: fuseki
+2014/11/20 17:32:20 Error: failed to remove one or more containers
+413bd846a83c57ead8bf49500d23de82f2623c43239e25e4862711bc321a67b3
+</code></pre>
+<p>The errors are fine - the script just has commands to remove any previously running containers with the name 'fuseki'.</p>
+<p>We can inspect using <code>docker ps</code> to see which ports have been mapped.</p>
+<pre><code>$ sudo docker ps
+CONTAINER ID        IMAGE                        COMMAND                CREATED             STATUS              PORTS                                                                     NAMES
+413bd846a83c        csiro_env/fuseki:latest      /usr/bin/supervisord   4 minutes ago       Up 4 minutes        0.0.0.0:49166-&gt;22/tcp, 0.0.0.0:49167-&gt;3030/tcp  
+</code></pre>
+<p>We can test out ssh with the port that's mapped from the container's ssh port <code>22</code> to the host on port <code>49166</code> (default password is <code>docker</code>).</p>
+<pre><code>$ ssh root@localhost -p 49166 
+</code></pre>
+<p>Note: the default deployment is not production secured so please make changes to do so if needed.</p>
+<p>We can also test out the Fuseki service by checking out the service on the mapped port <code>49167</code> using a browser e.g. <a href="http://localhost:49167/" rel="nofollow">http://localhost:49167/</a></p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#add-rdf-data-using-fuseki-soh" id="user-content-add-rdf-data-using-fuseki-soh"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Add RDF data using Fuseki SOH</h3>
+<p>First we'll need to download the Fuseki dist to get the SOH scripts.</p>
+<pre><code>$ wget http://apache.petsads.us//jena/binaries/jena-fuseki-1.1.1-distribution.tar.gz
+$ tar -xvvzf jena-fuseki-1.1.1-distribution.tar.gz 
+$ mv jena-fuseki-1.1.1-distribution fuseki
+</code></pre>
+<p>Let's use some SKOS/RDF from the NY Times <a href="http://data.nytimes.com/descriptors.rdf" rel="nofollow">http://data.nytimes.com/descriptors.rdf</a> (shared under the <a href="http://creativecommons.org/licenses/by/3.0/us/" rel="nofollow">CC  3.0 licence</a>).</p>
+<pre><code>$ wget http://data.nytimes.com/descriptors.rdf
+</code></pre>
+<p>Let's load this into the triple store. By default, docker-fuseki has configured a service endpoint <code>/ds</code>, so we can add RDF data to this. We will use <code>default</code> as the name of the graph. <code>/ds/data</code> is the fuseki HTTP rest data endpoint. We can then load descriptors.rdf into the Fuseki service using SOH</p>
+<pre><code>$ fuseki/s-put http://localhost:49167/ds/data default descriptors.rdf
+</code></pre>
+<p>To verify, we can get out the triples from the <code>default</code> graph.
+$ fuseki/s-get <a href="http://localhost:49167/ds/data" rel="nofollow">http://localhost:49167/ds/data</a> default</p>
+<p>The fuseki s-query tool can be used to query the triple store. The following queries the NY SKOS descriptors for the first 10 SKOS preferred labels.</p>
+<pre><code>$ fuseki/s-query --service http://localhost:49167/ds/query 'PREFIX skos: &lt;http://www.w3.org/2004/02/skos/core#&gt;   SELECT ?p WHERE { ?x skos:prefLabel ?p } LIMIT 10'
+</code></pre>
+<pre><code>{
+  "head": {
+    "vars": [ "p" ]
+  } ,
+  "results": {
+    "bindings": [
+      {
+        "p": { "type": "literal" , "xml:lang": "en" , "value": "Golf" }
+      } ,
+      {
+        "p": { "type": "literal" , "xml:lang": "en" , "value": "Electronics" }
+      } ,
+      {
+        "p": { "type": "literal" , "xml:lang": "en" , "value": "American Recovery and Reinvestment Act (2009)" }
+      } ,
+      {
+        "p": { "type": "literal" , "xml:lang": "en" , "value": "Cellular Telephones" }
+      } ,
+      {
+        "p": { "type": "literal" , "xml:lang": "en" , "value": "Student Loans" }
+      } ,
+      {
+        "p": { "type": "literal" , "xml:lang": "en" , "value": "Medicare" }
+      } ,
+      {
+        "p": { "type": "literal" , "xml:lang": "en" , "value": "Rap Music" }
+      } ,
+      {
+        "p": { "type": "literal" , "xml:lang": "en" , "value": "Space" }
+      } ,
+      {
+        "p": { "type": "literal" , "xml:lang": "en" , "value": "Legislatures and Parliaments" }
+      } ,
+      {
+        "p": { "type": "literal" , "xml:lang": "en" , "value": "Robberies and Thefts" }
+      }
+    ]
+  }
+}
+</code></pre>
+
+        </div>
+
+    </div>]

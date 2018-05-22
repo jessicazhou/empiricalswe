@@ -1,0 +1,86 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>When working on an application you quickly find yourself needing to share
+configured object instances between different parts of your codebase. Some
+systems like Laravel and Symfony provide <strong>Dependency Injection</strong> where your
+configured object is passed either to the constructor or a setter of the
+object dependent upon it.</p>
+<p>Other systems like Slim and Silex use a system called <strong>Service Location</strong> and
+let the code being called pull in any dependencies it needs. Wilson uses a
+variation of this optimised for performance.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#the-service-container" id="user-content-the-service-container"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>The Service Container</h2>
+<p>The framework provides an object called <code>Wilson\Services</code> which provides the
+basic Service Container mechanism. Essentially, you extend out from this
+object and create methods, called <strong>Factories</strong>, which return configured object
+instances. The underlying <code>Services</code> object then handles creation and caching
+of these objects. For example, say we want to share a Database Connection around:</p>
+<div class="highlight highlight-text-html-php"><pre><span class="pl-s1"></span>
+<span class="pl-s1"><span class="pl-k">class</span> <span class="pl-en">Services</span> <span class="pl-k">extends</span> <span class="pl-c1">Wilson\</span><span class="pl-e">Services</span></span>
+<span class="pl-s1">{</span>
+<span class="pl-s1">    <span class="pl-k">protected</span> <span class="pl-k">function</span> <span class="pl-en">getConnection</span>()</span>
+<span class="pl-s1">    {</span>
+<span class="pl-s1">        <span class="pl-k">return</span> <span class="pl-k">new</span> <span class="pl-c1">PDO</span>(<span class="pl-c"><span class="pl-c">/*</span> ... <span class="pl-c">*/</span></span>);</span>
+<span class="pl-s1">    }</span>
+<span class="pl-s1">}</span>
+<span class="pl-s1"></span></pre></div>
+<p>You can then access this connection as follows:</p>
+<div class="highlight highlight-text-html-php"><pre><span class="pl-s1"></span>
+<span class="pl-s1"><span class="pl-smi">$services</span> <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-c1">Services</span>();</span>
+<span class="pl-s1"><span class="pl-smi">$connection</span> <span class="pl-k">=</span> <span class="pl-smi">$services</span><span class="pl-k">-&gt;</span><span class="pl-smi">connection</span>;</span>
+<span class="pl-s1"></span></pre></div>
+<p>It is recommended that the Factory be made protected to avoid them being called
+directly. Additionally, it is recommended that you use <code>@property</code> annotations
+for the class to document what services are available in your IDE:</p>
+<div class="highlight highlight-text-html-php"><pre><span class="pl-s1"></span>
+<span class="pl-s1"><span class="pl-c"><span class="pl-c">/**</span></span></span>
+<span class="pl-s1"><span class="pl-c"> * @property PDO $connection</span></span>
+<span class="pl-s1"><span class="pl-c"> <span class="pl-c">*/</span></span></span>
+<span class="pl-s1"><span class="pl-k">class</span> <span class="pl-en">Services</span> <span class="pl-k">extends</span> <span class="pl-c1">Wilson\</span><span class="pl-e">Services</span></span>
+<span class="pl-s1">{</span>
+<span class="pl-s1">    <span class="pl-k">protected</span> <span class="pl-k">function</span> <span class="pl-en">getConnection</span>()</span>
+<span class="pl-s1">    {</span>
+<span class="pl-s1">        <span class="pl-k">return</span> <span class="pl-k">new</span> <span class="pl-c1">PDO</span>(<span class="pl-c"><span class="pl-c">/*</span> ... <span class="pl-c">*/</span></span>);</span>
+<span class="pl-s1">    }</span>
+<span class="pl-s1">}</span>
+<span class="pl-s1"></span></pre></div>
+<h2>
+<a aria-hidden="true" class="anchor" href="#using-the-service-container" id="user-content-using-the-service-container"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Using the Service Container</h2>
+<p>The framework needs to know to use your instance of the Service Container. To
+do this, we give an instance to the <code>Api</code> object that we created initially in
+our <code>index.php</code>:</p>
+<div class="highlight highlight-text-html-php"><pre><span class="pl-pse">&lt;?php</span><span class="pl-s1"></span>
+<span class="pl-s1"></span>
+<span class="pl-s1"><span class="pl-k">require_once</span> <span class="pl-s"><span class="pl-pds">"</span>vendor/autoload.php<span class="pl-pds">"</span></span>;</span>
+<span class="pl-s1"></span>
+<span class="pl-s1"><span class="pl-smi">$api</span> <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-c1">Wilson\</span><span class="pl-c1">Api</span>();</span>
+<span class="pl-s1"><span class="pl-smi">$api</span><span class="pl-k">-&gt;</span><span class="pl-smi">resources</span> <span class="pl-k">=</span> <span class="pl-c1">array</span>(<span class="pl-s"><span class="pl-pds">"</span>Users<span class="pl-pds">"</span></span>);</span>
+<span class="pl-s1"><span class="pl-smi">$api</span><span class="pl-k">-&gt;</span><span class="pl-smi">services</span>  <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-c1">Services</span>();</span>
+<span class="pl-s1"><span class="pl-smi">$api</span><span class="pl-k">-&gt;</span>dispatch();</span>
+<span class="pl-s1"></span></pre></div>
+<p>Great, but now you might be wondering how your Controllers get access to
+these services you've created. If you think back to the <a href="lifecycle.md">Lifecycle</a>
+document you'll remember that every Controller and Middleware Controller
+is automatically passed an instance of the <code>Request</code> and <code>Response</code> objects.
+They also receive an instance of the <code>Service</code> object automatically:</p>
+<div class="highlight highlight-text-html-php"><pre><span class="pl-s1"></span>
+<span class="pl-s1">    <span class="pl-c"><span class="pl-c">/**</span></span></span>
+<span class="pl-s1"><span class="pl-c">     * @route GET /users/{id}</span></span>
+<span class="pl-s1"><span class="pl-c">     * @where id \d+</span></span>
+<span class="pl-s1"><span class="pl-c">     * @through authenticate</span></span>
+<span class="pl-s1"><span class="pl-c">     <span class="pl-c">*/</span></span></span>
+<span class="pl-s1">    <span class="pl-k">function</span> <span class="pl-en">getUser</span>(<span class="pl-c1">Request</span> <span class="pl-smi">$request</span>, <span class="pl-c1">Response</span> <span class="pl-smi">$response</span>, <span class="pl-c1">Services</span> <span class="pl-smi">$services</span>)</span>
+<span class="pl-s1">    {</span>
+<span class="pl-s1">        <span class="pl-smi">$connection</span> <span class="pl-k">=</span> <span class="pl-smi">$services</span><span class="pl-k">-&gt;</span><span class="pl-smi">connection</span>;</span>
+<span class="pl-s1">        <span class="pl-smi">$data</span> <span class="pl-k">=</span> <span class="pl-smi">$this</span><span class="pl-k">-&gt;</span>magicallyReturnData(<span class="pl-smi">$request</span><span class="pl-k">-&gt;</span>getParam(<span class="pl-s"><span class="pl-pds">"</span>id<span class="pl-pds">"</span></span>));</span>
+<span class="pl-s1">        </span>
+<span class="pl-s1">        <span class="pl-c"><span class="pl-c">//</span> ...</span></span>
+<span class="pl-s1">    }</span>
+<span class="pl-s1"></span></pre></div>
+<h2>
+<a aria-hidden="true" class="anchor" href="#next-testing" id="user-content-next-testing"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Next: <a href="Unit-Testing">Testing</a>
+</h2>
+
+        </div>
+
+    </div>]

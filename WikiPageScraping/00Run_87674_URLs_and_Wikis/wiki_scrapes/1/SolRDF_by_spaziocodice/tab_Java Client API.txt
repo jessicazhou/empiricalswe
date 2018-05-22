@@ -1,0 +1,74 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>The module <em>solrdf-client</em> contains a Java client that can be used to interact with SolRDF. This has been mainly designed for hiding, as much as possible,</p>
+<ul>
+<li>the mixing of Jena (client side) and Solr (actually Solrj) code</li>
+<li>the interaction (including low level communication details) with a running SolRDF</li>
+</ul>
+<blockquote>
+<p>As the client API development is currently in progress, the content of this chapter will be adjusted / corrected / changed according with the latest changes.</p>
+</blockquote>
+<h2>
+<a aria-hidden="true" class="anchor" href="#instantiating-the-remote-proxy" id="user-content-instantiating-the-remote-proxy"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Instantiating the remote proxy</h2>
+<p>The fully name of the proxy is (not surprisingly) <em>org.gazzax.labs.solrdf.client.SolRDF</em>. It can be instantiated (at the moment) with several options, depending on the architecture of the target running SolRDF instance(s):</p>
+<div class="highlight highlight-source-java"><pre><span class="pl-smi">SolRDF</span> solrdf <span class="pl-k">=</span> <span class="pl-smi">SolRDF</span><span class="pl-k">.</span>newBuilder()
+              .withEndpoint(<span class="pl-s"><span class="pl-pds">"</span>http://127.0.0.1:8080/solr/store<span class="pl-pds">"</span></span>)
+		      .withGraphStoreProtocolEndpointPath(<span class="pl-s"><span class="pl-pds">"</span>/rdf-graph-store<span class="pl-pds">"</span></span>)
+		      .withSPARQLEndpointPath(<span class="pl-s"><span class="pl-pds">"</span>/sparql<span class="pl-pds">"</span></span>)
+		      .build();</pre></div>
+<p>The example above uses all defaults value so in that case you could simply do:</p>
+<div class="highlight highlight-source-java"><pre><span class="pl-k">final</span> <span class="pl-smi">SolRDF</span> solrdf <span class="pl-k">=</span> <span class="pl-smi">SolRDF</span><span class="pl-k">.</span>newBuilder()<span class="pl-k">.</span>build();</pre></div>
+<p>In case SolRDF is running in SolrCloud mode, you can provide only the Zookeeper address(es):</p>
+<div class="highlight highlight-source-java"><pre><span class="pl-smi">SolRDF</span> solrdf <span class="pl-k">=</span> <span class="pl-smi">SolRDF</span><span class="pl-k">.</span>newBuilder()
+                      .withZkHost(<span class="pl-s"><span class="pl-pds">"</span>192.168.1.132:2181<span class="pl-pds">"</span></span>)
+                      .build();</pre></div>
+<blockquote>
+<p>The SolrCloud client is still under development</p>
+</blockquote>
+<h2>
+<a aria-hidden="true" class="anchor" href="#adding-data" id="user-content-adding-data"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Adding data</h2>
+<p>Once you got a valid SolRDF reference as described above, you can use one of the add(...) methods:</p>
+<div class="highlight highlight-source-java"><pre><span class="pl-k">void</span> add(<span class="pl-k">List&lt;<span class="pl-smi">Statement</span>&gt;</span> statements)   
+<span class="pl-k">void</span> add(<span class="pl-smi">String</span> uri, <span class="pl-k">List&lt;<span class="pl-smi">Statement</span>&gt;</span> statements)      
+
+<span class="pl-k">void</span> add(<span class="pl-smi">Statement</span> [] statements)    
+<span class="pl-k">void</span> add(<span class="pl-smi">String</span> uri, <span class="pl-smi">Statement</span> [] statements)    
+  
+<span class="pl-k">void</span> add(<span class="pl-smi">Statement</span> statement)   
+<span class="pl-k">void</span> add(<span class="pl-smi">String</span> uri, <span class="pl-smi">Statement</span> statement)   
+
+<span class="pl-k">void</span> add(<span class="pl-smi">Resource</span> subject, <span class="pl-smi">Property</span> predicate, <span class="pl-smi">RDFNode</span> object)     
+<span class="pl-k">void</span> add(<span class="pl-smi">String</span> uri, <span class="pl-smi">Resource</span> subject, <span class="pl-smi">Property</span> predicate, <span class="pl-smi">RDFNode</span> object)   
+
+<span class="pl-k">void</span> add(<span class="pl-smi">String</span> url, <span class="pl-smi">String</span> lang)   
+<span class="pl-k">void</span> add(<span class="pl-smi">String</span> graphUri, <span class="pl-smi">String</span> url, <span class="pl-smi">String</span> lang)
+
+<span class="pl-k">void</span> add(<span class="pl-smi">InputStream</span> stream, <span class="pl-smi">String</span> lang)   
+<span class="pl-k">void</span> add(<span class="pl-smi">String</span> graphUri, <span class="pl-smi">InputStream</span> stream, <span class="pl-smi">String</span> lang)
+
+<span class="pl-k">void</span> add(<span class="pl-smi">Reader</span> charStream, <span class="pl-smi">String</span> lang)     
+<span class="pl-k">void</span> add(<span class="pl-smi">String</span> graphUri, <span class="pl-smi">Reader</span> charStream, <span class="pl-smi">String</span> lang)   </pre></div>
+<p>For example:</p>
+<div class="highlight highlight-source-java"><pre>solrdf<span class="pl-k">.</span>add(<span class="pl-k">new</span> <span class="pl-smi">FileReader</span>(<span class="pl-s"><span class="pl-pds">"</span>/usr/local/data/mydata.nt<span class="pl-pds">"</span></span>, <span class="pl-s"><span class="pl-pds">"</span>N-TRIPLES<span class="pl-pds">"</span></span>);</pre></div>
+<blockquote>
+<p>A complete list of all available Add scenarios can be found in the test case <em>org.gazzax.labs.solrdf.client.AddTestCase</em> (under the test folder)</p>
+</blockquote>
+<h2>
+<a aria-hidden="true" class="anchor" href="#querying-data" id="user-content-querying-data"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Querying data</h2>
+<p>Following the same approach for adding data, you can use one of the "query" methods of the SolRDF proxy:</p>
+<div class="highlight highlight-source-java"><pre><span class="pl-c"><span class="pl-c">//</span> SELECT</span>
+<span class="pl-k">final</span> <span class="pl-smi">ResultSet</span> result <span class="pl-k">=</span> solrdf<span class="pl-k">.</span>select(<span class="pl-s"><span class="pl-pds">"</span>SELECT * WHERE {?s ?p ?o} LIMIT 10<span class="pl-pds">"</span></span>);
+      
+<span class="pl-c"><span class="pl-c">//</span> CONSTRUCT</span>
+<span class="pl-k">final</span> <span class="pl-smi">Model</span> result <span class="pl-k">=</span> solrdf<span class="pl-k">.</span>construct(<span class="pl-s"><span class="pl-pds">"</span>CONSTRUCT ...<span class="pl-pds">"</span></span>);
+
+<span class="pl-c"><span class="pl-c">//</span> DESCRIBE</span>
+<span class="pl-k">final</span> <span class="pl-smi">Model</span> result <span class="pl-k">=</span> solrdf<span class="pl-k">.</span>describe(<span class="pl-s"><span class="pl-pds">"</span>DESCRIBE ...<span class="pl-pds">"</span></span>);
+    
+<span class="pl-c"><span class="pl-c">//</span> ASK</span>
+<span class="pl-k">final</span> <span class="pl-k">boolean</span> result <span class="pl-k">=</span> solrdf<span class="pl-k">.</span>ask(<span class="pl-s"><span class="pl-pds">"</span>ASK ...<span class="pl-pds">"</span></span>);
+</pre></div>
+
+        </div>
+
+    </div>]

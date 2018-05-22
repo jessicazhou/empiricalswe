@@ -1,0 +1,79 @@
+[<div class="wiki-body gollum-asciidoc-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <div>
+<div>Table of Contents</div>
+<ul>
+<li>
+<a href="#transfer-objects">Transfer-Objects</a>
+<ul>
+<li><a href="#business-transfer-objects">Business-Transfer-Objects</a></li>
+<li><a href="#service-transfer-objects">Service-Transfer-Objects</a></li>
+</ul>
+</li>
+</ul>
+</div>
+<h1 id="user-content-transfer-objects">
+<a aria-hidden="true" class="anchor" href="#transfer-objects" id="user-content-transfer-objects"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Transfer-Objects</h1>
+<div>
+<p>The technical data model is defined in form of <a href="guide-dataaccess-layer#entity">persistent entities</a>.
+However, passing persistent entities via <em>call-by-reference</em> across the entire application will soon cause problems:</p>
+</div>
+<div>
+<ul>
+<li>
+<p>Changes to a persistent entity are directly written back to the persistent store when the transaction is committed. When the entity is send across the application also changes tend to take place in multiple places endangering data sovereignty and leading to inconsistency.</p>
+</li>
+<li>
+<p>You want to send and receive data via services across the network and have to define what section of your data is actually transferred. If you have relations in your technical model you quickly end up loading and transferring way too much data.</p>
+</li>
+<li>
+<p>Modifications to your technical data model shall not automatically have impact on your external services causing incompatibilities.</p>
+</li>
+</ul>
+</div>
+<div>
+<p>To prevent such problems transfer-objects are used leading to a <em>call-by-value</em> model and decoupling changes to persistent entities.</p>
+</div>
+<div>
+<h2 id="user-content-business-transfer-objects">
+<a aria-hidden="true" class="anchor" href="#business-transfer-objects" id="user-content-business-transfer-objects"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Business-Transfer-Objects</h2>
+<div>
+<div>
+<p>For each <a href="guide-dataaccess-layer#entity">persistent entity</a> we create or generate a corresponding <em>entity transfer object</em> (ETO) that has the same properties except for relations. In order to centralize the properties (getters and setters with their javadoc) we use a common interface for the entity and its ETO.</p>
+</div>
+<div>
+<p>If we need to pass an entity with its relation(s) we create a corresponding <em>composite transfer object</em> (CTO) that only contains other transfer-objects or collections of them. This pattern is illustrated by the following UML diagram from our sample application.</p>
+</div>
+<div>
+<div>
+<a href="images/transfer-objects.png"><img alt="ETOs and CTOs" src="images/transfer-objects.png" width="450"/></a>
+</div>
+<div>Figure 1. ETOs and CTOs</div>
+</div>
+<div>
+<p> <br/>
+Finally, there are typically transfer-objects for data that is never persistent. A common example are search criteria objects (derived from SearchCriteriaTo in our sample application).</p>
+</div>
+<div>
+<p>The <a href="guide-logic-layer">logic layer</a> defines these transfer-objects (ETOs, CTOs, etc.) and will only pass such objects instead of <a href="guide-dataaccess-layer#entity">persistent entities</a>.</p>
+</div>
+</div>
+</div>
+<div>
+<h2 id="user-content-service-transfer-objects">
+<a aria-hidden="true" class="anchor" href="#service-transfer-objects" id="user-content-service-transfer-objects"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Service-Transfer-Objects</h2>
+<div>
+<div>
+<p>If we need to do <a href="guide-service-layer#versioning">service versioning</a> and support previous APIs or for external services with a different view on the data, we create separate transfer-objects to keep the service API stable (see <a href="guide-service-layer">service layer</a>).</p>
+</div>
+</div>
+</div>
+        </div>
+
+        <div class="wiki-footer gollum-markdown-content boxed-group" id="wiki-footer">
+          <div class="boxed-group-inner wiki-auxiliary-content markdown-body">
+            <p><a href="http://creativecommons.org/licenses/by-nd/4.0/" rel="nofollow"><img alt="Creative Commons License Agreement" data-canonical-src="http://i.creativecommons.org/l/by-nd/4.0/88x31.png" src="https://camo.githubusercontent.com/171d004f9ccb9199e35ac8ec3d99ede916037a9f/687474703a2f2f692e6372656174697665636f6d6d6f6e732e6f72672f6c2f62792d6e642f342e302f38387833312e706e67"/></a><br/><span>This documentation</span> is licensed under the <a href="http://creativecommons.org/licenses/by-nd/4.0/" rel="nofollow">Creative Commons License (Attribution-NoDerivatives 4.0 International)</a>.</p>
+
+          </div>
+        </div>
+    </div>]

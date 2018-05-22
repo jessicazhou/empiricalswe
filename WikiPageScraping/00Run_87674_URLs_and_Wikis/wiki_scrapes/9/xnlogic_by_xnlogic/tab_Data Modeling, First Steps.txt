@@ -1,0 +1,156 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>Let's start with a fairly simple, textbook-style example.</p>
+<ul>
+<li>Our data set consists of students and courses.</li>
+<li>Each student can enroll in multiple courses.</li>
+</ul>
+<br/>
+<br/>
+![Diagram 1](img/many_to_many.png)
+<br/>
+<br/>
+<p>Let's see how we define our <em>Student</em> and <em>Course</em> models, as well as a many-to-many relation between students and courses.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#step-1---define-the-models" id="user-content-step-1---define-the-models"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Step 1 - Define the models</h3>
+<p>Models are defined in <code>lib/$XN_APP/models.rb</code>, in the <code>client_models</code> hash:</p>
+<ul>
+<li>Keys are model names (lower_case_underscore_separated).</li>
+<li>Each key is associated with an array of parts (i.e. TheModuleName of each part).</li>
+</ul>
+<p>For example, in a new xnlogic application, <code>lib/$XN_APP/models.rb</code> should contain:</p>
+<div class="highlight highlight-source-ruby"><pre>client_models <span class="pl-k">=</span> {
+    <span class="pl-c1">user_account:</span>      [<span class="pl-c1">PacerModel</span>::<span class="pl-c1">Extensions</span>::<span class="pl-c1">Permission</span>, <span class="pl-c1">PacerModel</span>::<span class="pl-c1">Extensions</span>::<span class="pl-c1">User</span>],
+    <span class="pl-c1">group:</span>             [<span class="pl-c1">PacerModel</span>::<span class="pl-c1">Extensions</span>::<span class="pl-c1">Permission</span>, <span class="pl-c1">PacerModel</span>::<span class="pl-c1">Extensions</span>::<span class="pl-c1">Group</span>],
+    <span class="pl-c1">token:</span>             [<span class="pl-c1">PacerModel</span>::<span class="pl-c1">Extensions</span>::<span class="pl-c1">Token</span>],
+    <span class="pl-c1">external_record:</span>   [<span class="pl-c1">PacerModel</span>::<span class="pl-c1">Extensions</span>::<span class="pl-c1">ExternalRecord</span>],
+    <span class="pl-c1">data_source:</span>       [<span class="pl-c1">PacerModel</span>::<span class="pl-c1">Extensions</span>::<span class="pl-c1">DataSource</span>],
+    <span class="pl-c1">import_record:</span>     [<span class="pl-c1">PacerModel</span>::<span class="pl-c1">Extensions</span>::<span class="pl-c1">ImportRecord</span>],
+    <span class="pl-c1">import:</span>            [<span class="pl-c1">PacerModel</span>::<span class="pl-c1">Extensions</span>::<span class="pl-c1">Import</span>],
+
+    <span class="pl-c1">note:</span>              [<span class="pl-c1">Note</span>]
+  }</pre></div>
+<p>Edit <code>lib/$XN_APP/models.rb</code> and add the following entries to the <code>client_models</code> hash.</p>
+<div class="highlight highlight-source-ruby"><pre>    <span class="pl-c1">student:</span> [<span class="pl-c1">Student</span>],
+    <span class="pl-c1">course:</span> [<span class="pl-c1">Course</span>]</pre></div>
+<p>These entries define two new models, <code>M::Student</code> and <code>M::Course</code>. Each of these models is made up of a single part.</p>
+<p>Next, we need to actually create the <code>Student</code> and <code>Course</code> parts.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#step-2---define-the-parts" id="user-content-step-2---define-the-parts"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Step 2 - Define the parts</h3>
+<p>xnlogic parts are defined in Ruby files under the <code>lib/$XN_APP/parts</code> folder.</p>
+<ul>
+<li>All source files in the directory will be picked up by xnlogic, regardless of their name.</li>
+<li>Parts are defined as Ruby modules.</li>
+<li>Parts are defined in same namespace as your application name (InCamelCase).</li>
+</ul>
+<p>For example, if your application is called <code>my_first_app</code>, then every source file in <code>lib/my_first_app/parts</code> should look like this:</p>
+<div class="highlight highlight-source-ruby"><pre><span class="pl-k">module</span> <span class="pl-en">MyFirstApp</span>
+   <span class="pl-c"><span class="pl-c">#</span> Your code goes here ...</span>
+<span class="pl-k">end</span></pre></div>
+<p>OK, let's create our <code>Student</code> and <code>Course</code> parts, in a file called <code>lib/$XN_APP/parts/xn_ex1.rb</code>.</p>
+<div class="highlight highlight-source-ruby"><pre>  <span class="pl-k">module</span> <span class="pl-en">Student</span>
+    xn_part
+  <span class="pl-k">end</span>
+
+  <span class="pl-k">module</span> <span class="pl-en">Course</span>
+    xn_part
+  <span class="pl-k">end</span></pre></div>
+<h3>
+<a aria-hidden="true" class="anchor" href="#step-3---test-in-the-irb" id="user-content-step-3---test-in-the-irb"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Step 3 - Test in the IRB</h3>
+<p>We haven't defined anything useful in our <code>Student</code> and <code>Course</code> parts, but we should already be able to create and query for these model objects. Let's test it in the IRB.</p>
+<p><strong>TODO:</strong> Quick-start with the IRB</p>
+<p>We'll start by creating a student:</p>
+<div class="highlight highlight-source-ruby"><pre>jruby<span class="pl-k">-</span><span class="pl-c1">1.7</span>.<span class="pl-c1">16</span> :<span class="pl-c1">094</span> <span class="pl-k">&gt;</span> app.create(<span class="pl-c1">M</span>::<span class="pl-c1">Student</span>, {<span class="pl-c1">name:</span> <span class="pl-s"><span class="pl-pds">'</span>Johnny<span class="pl-pds">'</span></span>})
+<span class="pl-c1">Pacer</span>::<span class="pl-c1">TransactionError:</span> <span class="pl-c1">Can</span><span class="pl-s"><span class="pl-pds">'</span>t mutate the graph outside a transaction block</span></pre></div>
+<p>This is the first thing to note, any operation that mutates the graph, must occur inside a transaction.
+Let's try it again:</p>
+<div class="highlight highlight-source-ruby"><pre>jruby<span class="pl-k">-</span><span class="pl-c1">1.7</span>.<span class="pl-c1">16</span> :<span class="pl-c1">095</span> <span class="pl-k">&gt;</span> graph.transaction <span class="pl-k">do</span>
+jruby<span class="pl-k">-</span><span class="pl-c1">1.7</span>.<span class="pl-c1">16</span> :<span class="pl-c1">096</span> <span class="pl-k">&gt;</span>     app.create(<span class="pl-c1">M</span>::<span class="pl-c1">Student</span>, {<span class="pl-c1">name:</span> <span class="pl-s"><span class="pl-pds">'</span>Johnny<span class="pl-pds">'</span></span>})
+jruby<span class="pl-k">-</span><span class="pl-c1">1.7</span>.<span class="pl-c1">16</span> :<span class="pl-c1">097</span>?<span class="pl-k">&gt;</span>   <span class="pl-k">end</span>
+ =&gt; <span class="pl-c"><span class="pl-c">#</span>&lt;V[71] Johnny&gt;</span></pre></div>
+<p>Good, seems like the student has been created. Next, let's see how we can search for it.</p>
+<p>We can filter results by model:</p>
+<div class="highlight highlight-source-ruby"><pre>jruby<span class="pl-k">-</span><span class="pl-c1">1.7</span>.<span class="pl-c1">16</span> :<span class="pl-c1">098</span> <span class="pl-k">&gt;</span> graph.v(<span class="pl-c1">M</span>::<span class="pl-c1">Student</span>)
+<span class="pl-c"><span class="pl-c">#</span>&lt;V[71] Johnny&gt;</span>
+<span class="pl-c1">Total:</span> <span class="pl-c1">1</span>
+ =&gt; <span class="pl-c"><span class="pl-c">#</span>&lt;V-Lucene(model_name:"student") ~ 1&gt; </span>
+
+jruby<span class="pl-k">-</span><span class="pl-c1">1.7</span>.<span class="pl-c1">16</span> :<span class="pl-c1">099</span> <span class="pl-k">&gt;</span> graph.v(<span class="pl-c1">M</span>::<span class="pl-c1">Course</span>)
+<span class="pl-c1">Total:</span> <span class="pl-c1">0</span>
+ =&gt; <span class="pl-c"><span class="pl-c">#</span>&lt;V-Lucene(model_name:"course") ~ 0&gt;</span></pre></div>
+<p>Notice that, in addition to the actual result, the output includes a description of how the query was executed. In the example above, <code>V-Lucene(model_name:"student")</code> indicates that the vertex was searched using a Lucene index on the <code>model_name</code> property.<br/>
+This detailed output is useful for optimizing heavy queries, as well as understanding some of the "magic" that xnlogic performs under the hood.</p>
+<p>We can also filter results by part (e.g. Get all vertices that have a <code>Student</code> part):</p>
+<div class="highlight highlight-source-ruby"><pre>jruby<span class="pl-k">-</span><span class="pl-c1">1.7</span>.<span class="pl-c1">16</span> :<span class="pl-c1">100</span> <span class="pl-k">&gt;</span> graph.v(<span class="pl-c1">Student</span>)
+<span class="pl-c"><span class="pl-c">#</span>&lt;V[71]&gt;</span>
+<span class="pl-c1">Total:</span> <span class="pl-c1">1</span>
+ =&gt; <span class="pl-c"><span class="pl-c">#</span>&lt;V-Lucene((model_name:"student")) ~ 1 -&gt; V&gt; </span>
+
+jruby<span class="pl-k">-</span><span class="pl-c1">1.7</span>.<span class="pl-c1">16</span> :<span class="pl-c1">101</span> <span class="pl-k">&gt;</span> graph.v(<span class="pl-c1">Course</span>)
+<span class="pl-c1">Total:</span> <span class="pl-c1">0</span>
+ =&gt; <span class="pl-c"><span class="pl-c">#</span>&lt;V-Lucene((model_name:"course")) ~ 0 -&gt; V&gt;</span></pre></div>
+<p>If you examine the detailed output, you can deduce how xnlogic performs this search:</p>
+<ol>
+<li>It figures out all the models that have a <code>Student</code> part.</li>
+<li>It filters the vertices based on (the indexed) property <code>model_name</code>.</li>
+</ol>
+<p>In our simplified example, the <a href="Part-patterns#the-part-is-the-model">distinction between parts and models</a> is not so clear. It will become clearer as we present examples where models are composed of multiple parts. For now, let's continue with this example, and see how we can define relations between entities in our data.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#step-4---define-a-relation" id="user-content-step-4---define-a-relation"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Step 4 - Define a Relation</h3>
+<p>Relations are defined on the part level. In order to define a many-to-many relation between students and courses, we need to edit <code>lib/$XN_APP/parts/xn_ex1.rb</code>:</p>
+<div class="highlight highlight-source-ruby"><pre>  <span class="pl-k">module</span> <span class="pl-en">Student</span>
+    xn_part
+
+    to_many <span class="pl-c1">:Course</span>
+  <span class="pl-k">end</span>
+
+  <span class="pl-k">module</span> <span class="pl-en">Course</span>
+    xn_part
+
+    from_many <span class="pl-c1">:Student</span>
+  <span class="pl-k">end</span></pre></div>
+<p>Let's reload our application code in the IRB (<strong>TODO:</strong> Show the <code>reload!</code> command), and create a few students and courses.</p>
+<div class="highlight highlight-source-ruby"><pre>jruby<span class="pl-k">-</span><span class="pl-c1">1.7</span>.<span class="pl-c1">16</span> :<span class="pl-c1">102</span> <span class="pl-k">&gt;</span> graph.transaction <span class="pl-k">do</span>
+jruby<span class="pl-k">-</span><span class="pl-c1">1.7</span>.<span class="pl-c1">16</span> :<span class="pl-c1">103</span> <span class="pl-k">&gt;</span>     app.create(<span class="pl-c1">M</span>::<span class="pl-c1">Student</span>, {<span class="pl-c1">name:</span> <span class="pl-s"><span class="pl-pds">'</span>Michelle<span class="pl-pds">'</span></span>})
+jruby<span class="pl-k">-</span><span class="pl-c1">1.7</span>.<span class="pl-c1">16</span> :<span class="pl-c1">104</span>?<span class="pl-k">&gt;</span>     app.create(<span class="pl-c1">M</span>::<span class="pl-c1">Student</span>, {<span class="pl-c1">name:</span> <span class="pl-s"><span class="pl-pds">'</span>Sam<span class="pl-pds">'</span></span>})
+jruby<span class="pl-k">-</span><span class="pl-c1">1.7</span>.<span class="pl-c1">16</span> :<span class="pl-c1">105</span>?<span class="pl-k">&gt;</span>     app.create(<span class="pl-c1">M</span>::<span class="pl-c1">Course</span>, {<span class="pl-c1">name:</span> <span class="pl-s"><span class="pl-pds">'</span>Economics 101<span class="pl-pds">'</span></span>})
+jruby<span class="pl-k">-</span><span class="pl-c1">1.7</span>.<span class="pl-c1">16</span> :<span class="pl-c1">106</span>?<span class="pl-k">&gt;</span>     app.create(<span class="pl-c1">M</span>::<span class="pl-c1">Course</span>, {<span class="pl-c1">name:</span> <span class="pl-s"><span class="pl-pds">'</span>Advanced Math<span class="pl-pds">'</span></span>})
+jruby<span class="pl-k">-</span><span class="pl-c1">1.7</span>.<span class="pl-c1">16</span> :<span class="pl-c1">107</span>?<span class="pl-k">&gt;</span>     app.create(<span class="pl-c1">M</span>::<span class="pl-c1">Course</span>, {<span class="pl-c1">name:</span> <span class="pl-s"><span class="pl-pds">'</span>Graph Theory<span class="pl-pds">'</span></span>})
+jruby<span class="pl-k">-</span><span class="pl-c1">1.7</span>.<span class="pl-c1">16</span> :<span class="pl-c1">108</span>?<span class="pl-k">&gt;</span> <span class="pl-k">end</span></pre></div>
+<p>Next, let's find out which courses is Sam enrolled in?</p>
+<div class="highlight highlight-source-ruby"><pre>jruby<span class="pl-k">-</span><span class="pl-c1">1.7</span>.<span class="pl-c1">16</span> :<span class="pl-c1">109</span> <span class="pl-k">&gt;</span> graph.v(<span class="pl-c1">Student</span>, <span class="pl-c1">name:</span> <span class="pl-s"><span class="pl-pds">'</span>Sam<span class="pl-pds">'</span></span>).courses
+<span class="pl-c1">Total:</span> <span class="pl-c1">0</span></pre></div>
+<p>Or, which students are enrolled in the Graph Theory course?</p>
+<div class="highlight highlight-source-ruby"><pre>jruby<span class="pl-k">-</span><span class="pl-c1">1.7</span>.<span class="pl-c1">16</span> :<span class="pl-c1">110</span> <span class="pl-k">&gt;</span> graph.v(<span class="pl-c1">Course</span>, <span class="pl-c1">name:</span> <span class="pl-s"><span class="pl-pds">'</span>Graph Theory<span class="pl-pds">'</span></span>).students
+<span class="pl-c1">Total:</span> <span class="pl-c1">0</span></pre></div>
+<p>It is not surprising that, in both cases, the result is empty - We did not associate any students with any courses. That being said, notice that the <code>courses</code> and <code>students</code> methods were automatically generated by the xnlogic framework, based on the relation we have defined.</p>
+<p>Let's see how we can enroll Sam in the Graph Theory course</p>
+<div class="highlight highlight-source-ruby"><pre>jruby<span class="pl-k">-</span><span class="pl-c1">1.7</span>.<span class="pl-c1">16</span> :<span class="pl-c1">111</span> <span class="pl-k">&gt;</span> sam <span class="pl-k">=</span> graph.v(<span class="pl-c1">Student</span>, <span class="pl-c1">name:</span> <span class="pl-s"><span class="pl-pds">'</span>Sam<span class="pl-pds">'</span></span>).first
+jruby<span class="pl-k">-</span><span class="pl-c1">1.7</span>.<span class="pl-c1">16</span> :<span class="pl-c1">112</span> <span class="pl-k">&gt;</span> gt_course <span class="pl-k">=</span> graph.v(<span class="pl-c1">Course</span>, <span class="pl-c1">name:</span> <span class="pl-s"><span class="pl-pds">'</span>Graph Theory<span class="pl-pds">'</span></span>).first
+jruby<span class="pl-k">-</span><span class="pl-c1">1.7</span>.<span class="pl-c1">16</span> :<span class="pl-c1">113</span> <span class="pl-k">&gt;</span> sam.add_courses(gt_course)</pre></div>
+<p>We can create the relation in either direction. For example, let's enroll Johnny in the Graph Theory course as well:</p>
+<div class="highlight highlight-source-ruby"><pre>jruby<span class="pl-k">-</span><span class="pl-c1">1.7</span>.<span class="pl-c1">16</span> :<span class="pl-c1">114</span> <span class="pl-k">&gt;</span> johnny <span class="pl-k">=</span> graph.v(<span class="pl-c1">Student</span>, <span class="pl-c1">name:</span> <span class="pl-s"><span class="pl-pds">'</span>Johnny<span class="pl-pds">'</span></span>).first
+jruby<span class="pl-k">-</span><span class="pl-c1">1.7</span>.<span class="pl-c1">16</span> :<span class="pl-c1">115</span> <span class="pl-k">&gt;</span> gt_course.add_students(johnny)</pre></div>
+<p>Now, let's query the data again:</p>
+<div class="highlight highlight-source-ruby"><pre>jruby<span class="pl-k">-</span><span class="pl-c1">1.7</span>.<span class="pl-c1">16</span> :<span class="pl-c1">116</span> <span class="pl-k">&gt;</span> sam.courses
+<span class="pl-c"><span class="pl-c">#</span>&lt;V[76] Graph Theory&gt;</span>
+
+jruby<span class="pl-k">-</span><span class="pl-c1">1.7</span>.<span class="pl-c1">16</span> :<span class="pl-c1">117</span> <span class="pl-k">&gt;</span> johnny.courses
+<span class="pl-c"><span class="pl-c">#</span>&lt;V[76] Graph Theory&gt;</span>
+
+jruby<span class="pl-k">-</span><span class="pl-c1">1.7</span>.<span class="pl-c1">16</span> :<span class="pl-c1">118</span> <span class="pl-k">&gt;</span> gt_course.students
+<span class="pl-c"><span class="pl-c">#</span>&lt;V[73] Sam&gt;    #&lt;V[71] Johnny&gt;</span></pre></div>
+<h3>
+<a aria-hidden="true" class="anchor" href="#summary" id="user-content-summary"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Summary</h3>
+<ul>
+<li>We model our data using <em>models</em> and <em>parts</em>.</li>
+<li>Parts are Ruby modules that contain a <code>xn_part</code> statement.</li>
+<li>Models are defined as an array of parts.</li>
+<li>We can create model objects, using <code>app.create(model-class, properties)</code>.</li>
+<li>We can query the graph and filter the result by model or part.</li>
+<li>We define relations between parts, and xnlogic automatically creates convenient methods that allow us to access/modify relations between different model objects.</li>
+</ul>
+
+        </div>
+
+    </div>]

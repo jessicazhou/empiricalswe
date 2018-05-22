@@ -1,0 +1,54 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <h1>
+<a aria-hidden="true" class="anchor" href="#important-classes" id="user-content-important-classes"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Important classes</h1>
+<p>The central classes in UHH2 are:</p>
+<ul>
+<li>
+<code>Event</code>: The event container. Roughly corresponds to <code>UHHAnalysis</code>' <code>BaseCycleContainer</code>
+</li>
+<li>
+<code>AnalysisModule</code>: Abstract base class for new modules which are called for each event. Cf. <code>UHHAnalysis</code>' AnalysisCycle</li>
+<li>
+<code>Context</code>: passed to <code>AnalysisModule</code>; used to access configuration, create output histograms, setup input/output event data. There is no direct corresponding class in <code>UHHAnalysis</code>; it corresponds to calling method of <code>AnalysisCycle</code> or SFrame methods. (Note that it is this desgin choice to use a separate object instead of base classes which allows to run the same code within SFrame and within CMSSW unchanged.)</li>
+</ul>
+<p>These classes are defined in <code>core/include/Event.hpp</code> and <code>core/include/analysismodule.hpp</code>. The details for these classes are documented in the header; here, only the "big picture" will be discussed.</p>
+<p>Apart from the central classes just discussed, some helper classes exist to help with certain common tasks:</p>
+<ul>
+<li>
+<code>Hists</code>: This is an abstract base class for filling histograms. Derived classes have to implement a <code>fill</code> method and have access to a <code>book</code> method. All histograms booked by an instance of <code>Hists</code> will be created in the same directory in the output file.</li>
+<li>
+<code>Selection</code>: This is a base class for event selection. The <code>AndSelection</code> is a special implementation of <code>Selection</code> which also creates a cutflow histogram.</li>
+<li>Finally, please implement all object ids (lepton ids, b-tagging, etc.) as functions with the signature <code>bool my_id(const Object &amp; obj, const Event &amp; event)</code>. This allows re-using ids at many different places. As an example, look at the ids in <code>common</code>; note that <code>common/ObjectIdUtils.h</code> contains some typedefs like <code>MuonId</code>, <code>JetId</code>, etc. which allow to save objects conforming to the above interface.</li>
+</ul>
+<h1>
+<a aria-hidden="true" class="anchor" href="#starting-a-new-analysis" id="user-content-starting-a-new-analysis"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Starting a new Analysis</h1>
+<p>To start a new analysis, choose a unique new name for the analysis, which serves both as repository name in github and as subdirectory name in <code>UHH2</code>. The name should be able to tell people what it is about; here, we use <code>ZPrimeToTTbar</code>. Using that name, you can create a (almost) minimal analysis directory by running</p>
+<pre><code>./create-new-analysis ZPrimeToTTbar
+</code></pre>
+<p>This will copy some of the code in <code>examples</code>, reanaming the classes and make adaptions in the new <code>ZPrimeToTTbar/Makefile</code> such that you can immediately start modifying the code in <code>ZPrimeToTTbar/src/ZPrimeToTTbarModule.cxx</code>.</p>
+<p>One analysis typically consists of many subclasses for <code>AnalysisModule</code>s, <code>Hists</code>, and <code>Selection</code>, which implement the various components of the analysis. A good starting point for an <code>AnalysisModule</code> is to use the <code>CommonModules</code> class, which calls other <code>AnalysisModule</code> commonly used, such as jet energy corrections, jet smearing, and object filtering.</p>
+<h1>
+<a aria-hidden="true" class="anchor" href="#code-structure" id="user-content-code-structure"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Code Structure</h1>
+<p>This section discusses the file structure of the code.</p>
+<p>The subdirectories of <code>UHH2</code> contain:</p>
+<ul>
+<li>
+<code>core</code>: ntuple data format for dictionaries; crucial abstract base classes (such as <code>AnalysisModule</code>, <code>Selection</code>, ...); glue code to SFrame (<code>AnalysisModuleRunner</code>) and for CMSSW (<code>NtupleWriter</code> defined in  <code>plugins</code>)</li>
+<li>
+<code>common</code>: object ids and event selection modules common to several analyses</li>
+<li>
+<code>common/datasets</code> and subdirectories: SFrame xml files defining input data files</li>
+<li>
+<code>examples</code>: example implementation of an <code>AnalysisModule</code>, including SFrame configuration</li>
+<li>
+<code>scripts</code>: non-C++ code/scripts and other files (such as configuration files) required in various steps in the workflow; right now mainly a grid-control configuration example for running <code>NtupleWriter</code> at the NAF</li>
+</ul>
+<p>All subdirectories containing code have the include files in <code>include</code> and the C++ source code in <code>src</code>. A special case is <code>NtupleWriter</code> which is the only package also providing code to be compiled within CMSSW only; it is located in <code>plugins</code>.</p>
+<h1>
+<a aria-hidden="true" class="anchor" href="#notes-on-build-system" id="user-content-notes-on-build-system"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Notes on Build System</h1>
+<p>The two-level directory structure is a result of the desire to be able to build the same code either within CMSSW via <code>scram</code> and also to build it for SFrame via <code>make</code>. It also allows to create analysis-specific subdirectories which helps to stay out of each other's way when creating new analyses and testing stuff. Within the two-level directory structure, <code>src</code>, <code>include</code> contain the C++ cource and include files, respectively; this is also to follow the CMSSW convention to allow building via <code>scram</code>. Therefore, please stick to the structure for new code, unless you want to do something special (such as creating code build only in CMSSW or only in SFrame, which should be rarely necessary).</p>
+
+        </div>
+
+    </div>]

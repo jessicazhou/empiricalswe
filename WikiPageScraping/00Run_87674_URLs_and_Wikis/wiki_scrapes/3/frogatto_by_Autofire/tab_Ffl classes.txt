@@ -1,0 +1,44 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <h2>
+<a aria-hidden="true" class="anchor" href="#why-classes" id="user-content-why-classes"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Why Classes?</h2>
+<p>FFL supports <em>maps</em> -- simple dictionaries of data. It also supports <em>objects</em> -- types which resemble maps from the point of view of FFL, but which can be coded in C++ to have all sorts of special behavior. Using C++ we can define an object that executes custom functionality when a key is set or read from the object.</p>
+<p>Classes are a way to allow FFL to do this too -- to define special kinds of objects that look and behave very much like maps, but which have special behavior when keys are queried or set. Classes aren't really a "native" FFL feature, in that the core FFL language knows nothing about them. Rather, they are simply FFL objects that have been written in C++ to delegate behavior back to FFL.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#defining-a-class" id="user-content-defining-a-class"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Defining a class</h2>
+<p>You can define a class by putting its definition in data/classes/xxx.cfg where 'xxx' is the name of your class. A class may itself have sub-classes, defined in its <em>classes</em> attribute.</p>
+<p>A class is composed of a public interface, which is defined as a set of properties. A class stores its data in an FFL map, called simply 'private'. The properties of a class can freely access private, but <em>it cannot be accessed in any other way.</em> Thus, classes enforce data hiding -- anything wanting to get to the data an instance of the class holds must go through the class's properties.</p>
+<p>Suppose we wanted to implement a Monopoly-like game, and use a class to represent a property. Here is what we might have in classes/monopoly_property.cfg:</p>
+<pre><code>{
+properties: {
+  cost: { variable: true, default: 100},  //the variable: true makes this equivalent to having
+                                          //set: "set(private.cost, value)", get: "private.cost"
+                                          // -- i.e. it makes it automatically back-end the property
+                                          //onto a variable stored in private.
+
+  name: { variable: true },
+  board_segment: { variable: true, default: 0 },
+
+  num_houses: { get: "private.num_houses",
+                set: "if(value &gt;= 0 and value &lt;= 4, set(private.num_houses, value))"  },
+
+  house_price: "(board_segment+1)*50",  //equivalent to { get: "(board_segment+1)*50" }
+  },
+
+private: {} // Optionally we can specify what private should be initialized to upon construction
+            // of a class instance. Initializing to an empty map is the default behavior.
+}
+</code></pre>
+<p>You could construct an instance of this using FFL:</p>
+<p><code>construct('monopoly_property', { name: 'Park Lane', cost: 350, board_segment: 3 })</code></p>
+<p>This constructs an instance of the class. The map argument represents properties to set immediately upon construction.</p>
+
+        </div>
+
+        <div class="wiki-footer gollum-markdown-content boxed-group" id="wiki-footer">
+          <div class="boxed-group-inner wiki-auxiliary-content markdown-body">
+            <p>More help can be found via IRC, <a href="irc://irc.freenode.net/#frogatto" rel="nofollow">#Frogatto</a> on freenode.net. This wiki is not a complete reference.</p>
+
+          </div>
+        </div>
+    </div>]

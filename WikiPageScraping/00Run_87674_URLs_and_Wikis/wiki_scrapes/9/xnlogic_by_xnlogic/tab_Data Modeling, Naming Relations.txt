@@ -1,0 +1,95 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>In previous examples, we defined a relation between students and courses. But, what if we need to maintain <em>different types of relations</em> between students and courses?<br/>
+For example, we might want to keep track of all courses that a student is currently enrolled in, as well as courses that a student has completed.</p>
+<br/>
+![Named Relations, diagram 1](img/named_relations1.png)
+<br/>
+<h3>
+<a aria-hidden="true" class="anchor" href="#naming-a-relation-using-the-to-attribute" id="user-content-naming-a-relation-using-the-to-attribute"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Naming a relation using the <code>to</code> attribute</h3>
+<p>Let's edit the <code>Student</code> and <code>Course</code> parts in <code>lib/$XN_APP/parts/xn_ex1.rb</code>:</p>
+<div class="highlight highlight-source-ruby"><pre>  <span class="pl-k">module</span> <span class="pl-en">Student</span>
+    xn_part
+
+    to_many <span class="pl-c1">:Course</span>, <span class="pl-c1">to:</span> <span class="pl-c1">:enrolled_in</span>
+    to_many <span class="pl-c1">:Course</span>, <span class="pl-c1">to:</span> <span class="pl-c1">:completed</span>
+
+  <span class="pl-k">end</span>
+
+  <span class="pl-k">module</span> <span class="pl-en">Course</span>
+    xn_part
+
+    from_many <span class="pl-c1">:Student</span>, <span class="pl-c1">to:</span> <span class="pl-c1">:enrolled_in</span>
+    from_many <span class="pl-c1">:Student</span>, <span class="pl-c1">to:</span> <span class="pl-c1">:completed</span>
+
+  <span class="pl-k">end</span></pre></div>
+<p>There are a number of things to notice here:</p>
+<ul>
+<li>We specify a relation's name using the <code>to</code> attribute.</li>
+<li>The value of the <code>to</code> attribute is a symbol.</li>
+<li>The value of the <code>to</code> attribute of both, the from-relation and to-relation, must match.</li>
+</ul>
+<p>OK, so let's create some named relations:</p>
+<div class="highlight highlight-source-ruby"><pre>jruby<span class="pl-k">-</span><span class="pl-c1">1.7</span>.<span class="pl-c1">16</span> :<span class="pl-c1">066</span> <span class="pl-k">&gt;</span> sam <span class="pl-k">=</span> g.v(<span class="pl-c1">Student</span>, <span class="pl-c1">name:</span> <span class="pl-s"><span class="pl-pds">'</span>Sam<span class="pl-pds">'</span></span>).first
+jruby<span class="pl-k">-</span><span class="pl-c1">1.7</span>.<span class="pl-c1">16</span> :<span class="pl-c1">067</span> <span class="pl-k">&gt;</span> johnny <span class="pl-k">=</span> g.v(<span class="pl-c1">Student</span>, <span class="pl-c1">name:</span> <span class="pl-s"><span class="pl-pds">'</span>Johnny<span class="pl-pds">'</span></span>).first
+jruby<span class="pl-k">-</span><span class="pl-c1">1.7</span>.<span class="pl-c1">16</span> :<span class="pl-c1">068</span> <span class="pl-k">&gt;</span> graph_theory <span class="pl-k">=</span> g.v(<span class="pl-c1">Course</span>, <span class="pl-c1">name:</span> <span class="pl-s"><span class="pl-pds">'</span>Graph Theory<span class="pl-pds">'</span></span>).first
+
+jruby<span class="pl-k">-</span><span class="pl-c1">1.7</span>.<span class="pl-c1">16</span> :<span class="pl-c1">069</span> <span class="pl-k">&gt;</span> sam.add_enrolled_in(graph_theory)
+jruby<span class="pl-k">-</span><span class="pl-c1">1.7</span>.<span class="pl-c1">16</span> :<span class="pl-c1">070</span> <span class="pl-k">&gt;</span> johnny.add_completed(graph_theory)</pre></div>
+<p>We can now access the <code>enrolled_in</code> and <code>completed</code> relations of Sam and Johnny:</p>
+<div class="highlight highlight-source-ruby"><pre>jruby<span class="pl-k">-</span><span class="pl-c1">1.7</span>.<span class="pl-c1">16</span> :<span class="pl-c1">071</span> <span class="pl-k">&gt;</span> sam.enrolled_in
+<span class="pl-c"><span class="pl-c">#</span>&lt;V[76] Graph Theory&gt;</span>
+
+jruby<span class="pl-k">-</span><span class="pl-c1">1.7</span>.<span class="pl-c1">16</span> :<span class="pl-c1">072</span> <span class="pl-k">&gt;</span> sam.completed
+<span class="pl-c1">Total:</span> <span class="pl-c1">0</span>
+
+jruby<span class="pl-k">-</span><span class="pl-c1">1.7</span>.<span class="pl-c1">16</span> :<span class="pl-c1">073</span> <span class="pl-k">&gt;</span> johnny.enrolled_in
+<span class="pl-c1">Total:</span> <span class="pl-c1">0</span>
+
+jruby<span class="pl-k">-</span><span class="pl-c1">1.7</span>.<span class="pl-c1">16</span> :<span class="pl-c1">074</span> <span class="pl-k">&gt;</span> johnny.completed
+<span class="pl-c"><span class="pl-c">#</span>&lt;V[76] Graph Theory&gt;</span></pre></div>
+<p>Let's see which students are enrolled in the Graph Theory course:</p>
+<div class="highlight highlight-source-ruby"><pre>jruby<span class="pl-k">-</span><span class="pl-c1">1.7</span>.<span class="pl-c1">16</span> :<span class="pl-c1">075</span> <span class="pl-k">&gt;</span> graph_theory.enrolled_in
+<span class="pl-c1">NoMethodError:</span> undefined method <span class="pl-s"><span class="pl-pds">`</span>enrolled_in' for #&lt;V[76]&gt;</span></pre></div>
+<p>What happened here? Is it possible that the relation has only been defined in one direction?</p>
+<p>Well ... a relation's <code>to</code> attribute is used for two things:</p>
+<ol>
+<li>To match between from-relations and to-relations.</li>
+<li>To name the relation, but only in the "to direction".</li>
+</ol>
+<h3>
+<a aria-hidden="true" class="anchor" href="#naming-the-the-from-direction-of-a-relation" id="user-content-naming-the-the-from-direction-of-a-relation"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Naming the the <code>from</code> direction of a relation</h3>
+<p>If we want to traverse the relation in the "from direction" as well, we need to let xnlogic know about it, and explicitly specify a name for the traversal method:</p>
+<div class="highlight highlight-source-ruby"><pre>  <span class="pl-k">module</span> <span class="pl-en">Student</span>
+    xn_part
+
+    to_many <span class="pl-c1">:Course</span>, <span class="pl-c1">to:</span> <span class="pl-c1">:enrolled_in</span>
+    to_many <span class="pl-c1">:Course</span>, <span class="pl-c1">to:</span> <span class="pl-c1">:completed</span>
+
+  <span class="pl-k">end</span>
+
+  <span class="pl-k">module</span> <span class="pl-en">Course</span>
+    xn_part
+
+    from_many <span class="pl-c1">:Student</span>, <span class="pl-c1">to:</span> <span class="pl-c1">:enrolled_in</span> , <span class="pl-c1">from:</span> <span class="pl-c1">:enrolled</span>
+    from_many <span class="pl-c1">:Student</span>, <span class="pl-c1">to:</span> <span class="pl-c1">:completed</span>   , <span class="pl-c1">from:</span> <span class="pl-c1">:completed</span>
+
+  <span class="pl-k">end</span></pre></div>
+<p>Let's reload the code and give it a try:</p>
+<div class="highlight highlight-source-ruby"><pre>jruby<span class="pl-k">-</span><span class="pl-c1">1.7</span>.<span class="pl-c1">16</span> :<span class="pl-c1">078</span> <span class="pl-k">&gt;</span> graph_theory.enrolled
+<span class="pl-c"><span class="pl-c">#</span>&lt;V[73] Sam&gt;</span>
+
+jruby<span class="pl-k">-</span><span class="pl-c1">1.7</span>.<span class="pl-c1">16</span> :<span class="pl-c1">079</span> <span class="pl-k">&gt;</span> graph_theory.completed
+<span class="pl-c"><span class="pl-c">#</span>&lt;V[71] Johnny&gt;</span></pre></div>
+<h2>
+<a aria-hidden="true" class="anchor" href="#summary" id="user-content-summary"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Summary</h2>
+<ul>
+<li>We can give relations names.</li>
+<li>We specify the name of the relation (in the to-direction), using the <code>to</code> attribute.</li>
+<li>The value of the <code>to</code> attribute is used to match between to and from relations.</li>
+<li>We can specify a name for the from-direction of the relation, using the <code>from</code> attribute.</li>
+</ul>
+
+        </div>
+
+    </div>]

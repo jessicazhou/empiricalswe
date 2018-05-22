@@ -1,0 +1,71 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>Setting-up with incremental migration support:</p>
+<div class="highlight highlight-source-swift"><pre>CoreStore.<span class="pl-smi">defaultStack</span> <span class="pl-k">=</span> <span class="pl-c1">DataStack</span>(
+    <span class="pl-c1">modelName</span>: <span class="pl-s"><span class="pl-pds">"</span>MyStore<span class="pl-pds">"</span></span>,
+    <span class="pl-c1">migrationChain</span>: [<span class="pl-s"><span class="pl-pds">"</span>MyStore<span class="pl-pds">"</span></span>, <span class="pl-s"><span class="pl-pds">"</span>MyStoreV2<span class="pl-pds">"</span></span>, <span class="pl-s"><span class="pl-pds">"</span>MyStoreV3<span class="pl-pds">"</span></span>]
+)</pre></div>
+<p>Adding a store:</p>
+<div class="highlight highlight-source-swift"><pre><span class="pl-k">do</span> {
+    <span class="pl-k">try</span> CoreStore.<span class="pl-c1">addStorage</span>(
+        <span class="pl-c1">SQLiteStore</span>(<span class="pl-c1">fileName</span>: <span class="pl-s"><span class="pl-pds">"</span>MyStore.sqlite<span class="pl-pds">"</span></span>),
+        <span class="pl-c1">completion</span>: { (result) <span class="pl-k">-&gt;</span> <span class="pl-c1">Void</span> <span class="pl-k">in</span>
+            <span class="pl-c"><span class="pl-c">//</span> ...</span>
+<span class="pl-c"></span>        }
+    )
+}
+<span class="pl-k">catch</span> {
+    <span class="pl-c"><span class="pl-c">//</span> ...</span>
+<span class="pl-c"></span>}</pre></div>
+<p>Starting transactions:</p>
+<div class="highlight highlight-source-swift"><pre>CoreStore.<span class="pl-smi">beginAsynchronous</span> { (transaction) <span class="pl-k">-&gt;</span> <span class="pl-c1">Void</span> <span class="pl-k">in</span>
+    <span class="pl-k">let</span> person <span class="pl-k">=</span> transaction.<span class="pl-c1">create</span>(<span class="pl-c1">Into</span>(MyPersonEntity))
+    person.<span class="pl-smi">name</span> <span class="pl-k">=</span> <span class="pl-s"><span class="pl-pds">"</span>John Smith<span class="pl-pds">"</span></span>
+    person.<span class="pl-smi">age</span> <span class="pl-k">=</span> <span class="pl-c1">42</span>
+
+    transaction.<span class="pl-smi">commit</span> { (result) <span class="pl-k">-&gt;</span> <span class="pl-c1">Void</span> <span class="pl-k">in</span>
+        <span class="pl-k">switch</span> result {
+            <span class="pl-k">case</span> .<span class="pl-c1">Success</span>(<span class="pl-k">let</span> hasChanges)<span class="pl-k">:</span> <span class="pl-c1">print</span>(<span class="pl-s"><span class="pl-pds">"</span>success!<span class="pl-pds">"</span></span>)
+            <span class="pl-k">case</span> .<span class="pl-c1">Failure</span>(<span class="pl-k">let</span> error)<span class="pl-k">:</span> <span class="pl-c1">print</span>(error)
+        }
+    }
+}</pre></div>
+<p>Fetching objects:</p>
+<div class="highlight highlight-source-swift"><pre><span class="pl-k">let</span> people <span class="pl-k">=</span> CoreStore.<span class="pl-c1">fetchAll</span>(<span class="pl-c1">From</span>(MyPersonEntity))</pre></div>
+<div class="highlight highlight-source-swift"><pre><span class="pl-k">let</span> people <span class="pl-k">=</span> CoreStore.<span class="pl-c1">fetchAll</span>(
+    <span class="pl-c1">From</span>(MyPersonEntity),
+    <span class="pl-c1">Where</span>(<span class="pl-s"><span class="pl-pds">"</span>age &gt; 30<span class="pl-pds">"</span></span>),
+    <span class="pl-c1">OrderBy</span>(.<span class="pl-c1">Ascending</span>(<span class="pl-s"><span class="pl-pds">"</span>name<span class="pl-pds">"</span></span>), .<span class="pl-c1">Descending</span>(<span class="pl-s"><span class="pl-pds">"</span>age<span class="pl-pds">"</span></span>)),
+    Tweak { (fetchRequest) <span class="pl-k">-&gt;</span> <span class="pl-c1">Void</span> <span class="pl-k">in</span>
+        fetchRequest.<span class="pl-smi">includesPendingChanges</span> <span class="pl-k">=</span> <span class="pl-c1">false</span>
+    }
+)</pre></div>
+<p>Querying values:</p>
+<div class="highlight highlight-source-swift"><pre><span class="pl-k">let</span> maxAge <span class="pl-k">=</span> CoreStore.<span class="pl-c1">queryValue</span>(
+    <span class="pl-c1">From</span>(MyPersonEntity),
+    Select<span class="pl-k">&lt;</span><span class="pl-c1">Int</span><span class="pl-k">&gt;</span>(.<span class="pl-c1">Maximum</span>(<span class="pl-s"><span class="pl-pds">"</span>age<span class="pl-pds">"</span></span>))
+)</pre></div>
+<p>But really, there's a reason I wrote this huge Wiki. Read up on the details!</p>
+<p>Check out the <strong>CoreStoreDemo</strong> app project for sample codes as well!</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#contents" id="user-content-contents"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Contents</h2>
+<ul>
+<li><a class="internal present" href="/JohnEstropia/CoreStore/wiki/TL%3BDR-%28a.k.a.-sample-codes%29">TL;DR (a.k.a. sample codes)</a></li>
+<li><a class="internal present" href="/JohnEstropia/CoreStore/wiki/Architecture">Architecture</a></li>
+<li>CoreStore Tutorials
+<ul>
+<li><a class="internal present" href="/JohnEstropia/CoreStore/wiki/Setting-up">Setting up</a></li>
+<li><a class="internal present" href="/JohnEstropia/CoreStore/wiki/Migrations">Migrations</a></li>
+<li><a class="internal present" href="/JohnEstropia/CoreStore/wiki/Saving-and-processing-transactions">Saving and processing transactions</a></li>
+<li><a class="internal present" href="/JohnEstropia/CoreStore/wiki/Fetching-and-querying">Fetching and querying</a></li>
+<li><a class="internal present" href="/JohnEstropia/CoreStore/wiki/Logging-and-error-handling">Logging and error handling</a></li>
+<li><a class="internal present" href="/JohnEstropia/CoreStore/wiki/Observing-changes-and-notifications">Observing changes and notifications</a></li>
+</ul>
+</li>
+<li><a class="internal present" href="/JohnEstropia/CoreStore/wiki/Installation">Installation</a></li>
+<li><a class="internal present" href="/JohnEstropia/CoreStore/wiki/Changesets">Changesets</a></li>
+</ul>
+
+        </div>
+
+    </div>]

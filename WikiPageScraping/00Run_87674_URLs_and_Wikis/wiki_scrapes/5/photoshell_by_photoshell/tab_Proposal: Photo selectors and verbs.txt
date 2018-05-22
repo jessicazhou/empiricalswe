@@ -1,0 +1,51 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>As part of the search-centric UI proposal, I'd like to come up with a system of "verbs" and "selectors". Selectors may be chained (via the usual conjunctions), and executed to return a selection containing all matching photos. Verbs can be used to perform some action against the resulting selector.</p>
+<p>Note that this isn't really a syntax proposal; internally we want to design the methods that do these actions to take selector/selection objects (which are possibly the same thing, one's just been executed already?) anyways, so the syntax could just be "give them access to a Python REPL and let them call internal functions" or it could be designing our own simple query language. This is more about the idea of the thing rather than the specific syntax. I'm using a simple made-up syntax here just for the sake of having an easy way to lay things out.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#selecting-vs-searching" id="user-content-selecting-vs-searching"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Selecting vs. Searching</h2>
+<p>The terminology is a bit confusing here: "Selection" does not map to "highlighted in the UI", but instead means "shown in the UI (highlighted or no)" or "search results". This will make more sense from the user perspective (where they'll be using a separate <code>SEARCH</code> and <code>SELECT</code> (or <code>HIGHLIGHT</code>?) verb to do each action). The scope of the search (all photos vs within the current selection) is a matter for a selector (eg. <code>in:current</code>), the actual behavior (show as search results vs. show highlighted) is determined by the verb (<code>SEARCH</code> vs. <code>SELECT</code> or <code>HIGHLIGHT</code>).</p>
+<p>Alternatively: Maybe we don't have any concept of "highlighting" a few photos. Maybe whatever action you perform is <em>always</em> performed on the entire search. If you want something smaller (eg. a single photo) you can "drill down" into the search by performing a sub-search. The previous searches could be put on a stack and when you've finished you could either start over (destroying the stack) or go back up the stack as needed. Eg. you might search for <code>tag:backpacking</code>, decide you like the first photo, do a subsearch for <code>current[0]</code>, do some action (tagging, editing, etc.), then <code>exit</code> or <code>pop</code> to get back to the previous search where you could select more photos, etc.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#verbs" id="user-content-verbs"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Verbs</h2>
+<ul>
+<li>
+<code>SEARCH selector</code> — Executes the selector(s) and returns a selection (shows the photos in the current UI view if the UI is open)</li>
+<li>
+<code>SELECT [selector]</code> — Selects a subset of the current photos (highlights them in the UI?). This is probably a shortcut for a search that includes some tag (eg. <code>SEARCH in:selection ...</code>). Selects the entire search</li>
+<li>
+<code>DELETE [selection]</code> — Deletes the given selection from the library / disk</li>
+<li>
+<code>REMOVE [selection]</code> — Removes the given selection from the library</li>
+<li>
+<code>EDIT [selection]</code> — Opens the editor in the UI (or creates some sort of batch edit object in the CLI)</li>
+<li>
+<code>VIEW [selection]</code> — Opens the viewer in the UI. If a single photo is selected, make it full, otherwise, show the grid (scaled to some reasonable default)</li>
+<li>
+<a href="https://github.com/photoshell/photoshell/issues/149"><code>DEBUG [selection]</code></a> — Dump debug information related to the current photos</li>
+</ul>
+<p>We could also have some UI / context specific verbs that don't do anything in the CLI:</p>
+<ul>
+<li>
+<code>ZOOM [±X/FULL] [selection]</code> — zoom in or out in the viewer</li>
+<li>
+<code>SPLIT [SELECTION]</code> — Split view between several photos</li>
+<li>... etc.</li>
+</ul>
+<h2>
+<a aria-hidden="true" class="anchor" href="#selectors" id="user-content-selectors"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Selectors</h2>
+<p>Some selectors (and any arguments they take):</p>
+<ul>
+<li>Tag <code>string</code>
+</li>
+<li>Before <code>datetime</code> (possibly combined with <code>after</code> into one <code>datetime</code> selector?)</li>
+<li>After <code>datetime</code>
+</li>
+<li>Exif <code>string</code>
+</li>
+<li>Metadata <code>string</code> (searches all raw metadata; gives us a way to construct searches on things that don't really have support)</li>
+</ul>
+
+        </div>
+
+    </div>]

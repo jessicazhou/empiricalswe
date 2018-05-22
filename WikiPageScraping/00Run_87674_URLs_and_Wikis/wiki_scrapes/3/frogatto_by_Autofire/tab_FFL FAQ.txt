@@ -1,0 +1,137 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <h1>
+<a aria-hidden="true" class="anchor" href="#ffl-faq" id="user-content-ffl-faq"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>FFL FAQ</h1>
+<p>Q: I'm writing some expressions in FFL, I keep quitting the game and reloading after updating the file, this is a pain as it often crashes with an assertion error if I get something slightly wrong.<br/>
+A: Don't do it that way, Press ctrl+d in game to bring up the debug console, you can paste (ctrl+v) and copy (ctrl+c) expressions to and from there and best of all the assertions don't cause the game to crash, so that you can test till your happy the code works the way you intend.  Also you know the game has a full built-in text editor which updates the behaviour in real time.  Press ctrl+e for the in-game editor then the code button at the top brings up the code for the currently selected object.</p>
+<p>Q: When I try to set the value in an array it doesn't work. e.g set(some_list[1], 5)<br/>
+A: Lists items are immutable, you need to set the whole list, set(some_list, some_list[0] + [5] +some_list[2:]), there is a convenience function in data/functions.cfg called list_replace_elements().</p>
+<p>Q: I wrote some FFL but it never seems to return a value?<br/>
+A: Did you ensure that you used set(...) to actual put the return value somewhere?</p>
+<p>Q: I wanted to write multiple sequential FFL statements, but it complained of errors.<br/>
+A1: FFL statements need to be enclosed in square brackets, thus making them a list.  Then each statement will be executed.<br/>
+A2: There is no gaurantee that ffl statements are going to be sequentially evaluated. This means that [set(xx,5), debug(xx)] will display false(null) the default value for an uninitialized variable.</p>
+<p>Q: What are all these on_xxxx things?<br/>
+A: Those are event handlers called in response to the given event. The value of them is the FFL to be executed in response.  e.g on_process:"debug('A statement')".  on_process is called at the tick frequency that the game runs (which practically means it's called 50 times a second). There are lots of different handlers see here(<a href="https://github.com/frogatto/frogatto/wiki/ObjectEvents">Object Events</a>) for a list.</p>
+<p>Q: I see some of those handlers have arguments, how do I access those?<br/>
+You just use them! e.g. Take for example the on_mouse_down event, we could create a handler like this.<br/>
+on_mouse_down:"[if(mouse_button=0,set(left_pressed,true)),set(m_distance,distance(mouse_x,mouse_y,x,y))]"</p>
+<p>Q: So how do I print out debug information?<br/>
+A: One might try doing it this way.</p>
+<blockquote>
+<p>[set(xx, v), debug(v)] where v = 5</p>
+</blockquote>
+<p>Q: I see the word context used as a variable in some files, what's this for?<br/>
+A: It is a remnant from the way map/etc used to work and is no longer nescessary. The scope of execution inside these functions, limits the namespace making context unnecessary.</p>
+<p>Q: I want to store information somewhere between calls to the FFL, how?<br/>
+A: Firstly is the information temporary or does it require more permanance (i.e serialized and written out when the object is saved). If the information is temporary use self.tmp.xxx where xxx is the new variable name or just tmp.xxx. If your new variable should be saved use self.vars.xxx, or vars.xxx, where xxx is the new variable name.</p>
+<p>Q: How do I define my own functions?<br/>
+A: functions: "def f1(x,y) ...; def f2(x,y) ...; 1"<br/>
+Or if you want to have access to the object itself from your functions then add it as a property i.e.
+properties:{ myFunc: "def(x,y) ..."}</p>
+<p>Q: Whats lambda mean?<br/>
+A: It's used by people when they're talking about Lambda calculus. You can go <a href="http://en.wikipedia.org/wiki/Lambda_calculus" rel="nofollow">here</a> to read more, basically it forms the foundation for functional programming as we know it today.</p>
+<p>Q: Huh? I thought FFL was a pure functional language. but all the commands like set(), debug() etc clearly mutate state!<br/>
+A: They do change the state <em>but</em> (you know there is always a but) they don't mutate the state when FFL is executing.  What happens internally is that the FFL is executed and it returns a command object/series of command objects.  When these command objects are executed they modify state.  So FFL when it is executed doesn't modify state, but it does return commands that subsequently do.</p>
+<p>Q: How do I do a loop in FFL?<br/>
+Q: How do I iterate over lists?<br/>
+A: Use recursion, not iteration. And anticipation of your next question here is an example.  Lets say we have two lists of numbers [1,2,3] and [4,5,6] and we want to sum the elements together to get [5,7,9].</p>
+<blockquote>
+<p>def sum_lists(a,b,z) if((not size(a)) or (not size(b)),z,sum_lists(a[1:],b[1:],z+[a[0]+b[0]]))<br/>
+sum_lists([1,2,3],[4,5,6],[])<br/>
+[5, 7, 9]</p>
+</blockquote>
+<p>Basically this function takes two input lists we want to add together and a list to store the output in, the empty list.  The function first checks to see if we are at the end of either list, returning the currently constructed list if we are.  If there are still elements on both lists we run our sum_lists function again this time removing the head element off each list and summing them, adding them to our constructed list z and passing the tail of each list into the recursive function.
+The easiest way to iterate over a list is using the map, fold, filter and find functions.</p>
+<p>Q: How do I do foreach in FFL?<br/>
+A: Use map and see the next question.</p>
+<p>Q: What are map, filter, find, fold and how do I use them?<br/>
+A: map -- Applies the given function to each element in a list or map object.<br/>
+filter -- searches through a list and returns a new list containing only those elements matching the selection criteria.<br/>
+find -- searches through a list and returns a single element matching the search criteria.<br/>
+fold -- Applies the given function to the first two elements on the list, then to that result and each subsequent element.<br/>
+e.g.</p>
+<blockquote>
+<p>map(['a', 'b', 'c', 'd'], value+'fgh')   -- adds the string 'fgh' to each element in the list<br/>
+['afgh', 'bfgh', 'cfgh', 'dfgh']</p>
+<p>filter([1,2,3,4,5,6], value % 2) -- selects odd values in the list<br/>
+[1,3,5]</p>
+<p>find([{id:'a',a:1},{id:'b',b:2},{id:'c',c:3},], value.id = 'b' ) -- returns the map item from the list having an id attribute of 'b'<br/>
+{b: 2, id: 'b'}</p>
+<p>fold([true,false,false,false], a or b) -- returns a value computed by doing an inclusive or on all the elements in the list.<br/>
+true</p>
+</blockquote>
+<p>Oh and from the example of summing lists, this is how you would do it in FFL: zipWith([1,2,3],[4,5,6],a+b) -- easy eh?</p>
+<p>Q: Wait, what's all this stuff with value and a/b in those functions?<br/>
+A: In order to make them easy to use, the symbol value is supplied which represents the element currently being operated on.  For the fold function a/b are the current item on the list and the current accumulated value. When map is used on a map object there is also the symbol key representing the key value. So this function while recurse over a map and turn it into a list of maps, each map containing a single key:value pair.</p>
+<blockquote>
+<p>map({a:1, b:2, c:3}, {(key):value})<br/>
+[{a:1}, {b:2}, {c:3}]</p>
+</blockquote>
+<p>Q: Wait! The above example looks fishy, why is there a pair of parenthesis around the key symbol?<br/>
+A: Next question! Nothing to see here, just move along.  Just kidding.  Because of how maps are constructed, i.e. key values can be specified as strings when constructing a map with or without quotation marks. so that 'id' is equivalent to id.  The downside of this is that when using a key in this way inside a map statement the key symbol is treated as a string literal.  Thus to protect it we need to enclose it in parenthesis to indicate that we want the symbol value.</p>
+<p>Q: Wait! You didn't mention zipWith earlier<br/>
+A: Well I decided it really should be added as a primitive function and only just added it. There is the FFL function _zip_with that has been defined in data/functions.cfg, it's use is the same, but it will run slower and it requires an anonymous function to work. _zip_with([1,2,3],[4,5,6],def(a,b)a+b)</p>
+<p>Q: I want a complex example of some FFL to work through, just not too complex.<br/>
+A: Glad you ask, here is a challenge. Given the following function</p>
+<blockquote>
+<p>def fold(f,z,x) if(size(x)=0,z,foldl(f,f(z,x.first),x[1:]))</p>
+</blockquote>
+<p>what does this do?</p>
+<blockquote>
+<p>set(tmp.pressed,foldl(def(a,b)a+b,{},map(tmp.pressed,{(key):if(value.captured_by=mouse_index,pressed:false,captured_by:null},value)})))</p>
+<p>(tmp.pressed could look like this on input {left:{pressed:false, captured_by:null}, right:{pressed:true, captured_by:0}, a:{pressed:false, captured_by:null}, b:{pressed:false, captured_by:null}})<br/>
+(No I'm not sadistic)</p>
+</blockquote>
+<p>Q: I noticed that FFL is surrounded by double quotes in the event handlers and uses single quotes for strings. What if I want to use " or ' inside a string?<br/>
+A: Inside an FFL statement you can use the q operator to change from using single quotes to some other symbol to delimit strings. so q<del>This is a string</del> is treated as being equivalent to 'This is a string', except that it frees you up to use single quotes inside your string.  The q operator can used most symbols as delimiters for this purpose.</p>
+<p>Q: Does FFL support tail recursion?<br/>
+A: Yes, so long as you structure your recursive function so that the calling function simply returns the value it gets from the called function. Compare these two functions the first is not tail recursive the second is.  The difference is the accumulator we pass, in the first case we do the multiplication on returning back up the call stack.  In the second case we do the evaluation going down the call stack, meaning that each returned value is simple, thus the FFL interpreter can optimise removing the tail recursion.</p>
+<blockquote>
+<p>def fact(n)if(n=0,1,fact(n-1)*n)<br/>
+fact(10) = 3628800</p>
+<p>def fact_tail(n,x) if(n=0,x,fact_tail(n-1,n*x))<br/>
+fact_tail(10,1) = 3628800</p>
+</blockquote>
+<p>Q: How do I do if ... else in FFL? How do I do if...else if...else...<br/>
+A: if(truth_condition, statement_if_true, statement_if_false)</p>
+<blockquote>
+<p>if(truth_condition1, statement1_if_true, if(truth_condition2,statement2_if_true,else_condition))</p>
+</blockquote>
+<p>So by nesting the basic if() statement we can chain together if/else logic.</p>
+<p>Q: What is where for?<br/>
+A: It's used simplify statements that might be used in multiple places in an expression, or just to keep the logic clear. It can be thought of as macro expansion, in simple terms, but tt's more expressive than a straight macro expansion, in that where gets evaluated before being substituted into the expression.</p>
+<blockquote>
+<p>e.g. [set(vars.button_left,b),debug('Left button assigned to ', b),set(vars.buttons,vars.buttons+b)]<br/>
+where b = find(button_list, value.id = 'left')</p>
+</blockquote>
+<p>You can define multiple items using where by separating them with a comma.</p>
+<blockquote>
+<p>--&gt; set(xx,{(a):b}) where a='id', b=5<br/>
+--&gt; xx<br/>
+{'id': 5}</p>
+</blockquote>
+<p>Basically we only want to do the find once, then use it in three different places in the expression.  But we can also define anonymous functions with where.</p>
+<blockquote>
+<p>--&gt; def fact(n) factt(n,1) where factt = def(n,acc) if(n&lt;=0,acc,recurse(n-1,acc*n))<br/>
+--&gt; fact(10)<br/>
+3628800</p>
+</blockquote>
+<p>Q: recurse? tell me, tell me.<br/>
+A: recurse basically lets you recursively call on the current anonymous function. See above for the factorial example using recurse.</p>
+<h1>
+<a aria-hidden="true" class="anchor" href="#not-specifically-ffl-questions-but-more-fson" id="user-content-not-specifically-ffl-questions-but-more-fson"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Not specifically FFL questions, but more FSON.</h1>
+<p>Q: So I looked at some of game files, but they didn't seem to make much sense.<br/>
+A: And your question was?</p>
+<p>Q: Okay, smart alec, what's inside the files then?<br/>
+A: All the game files are FSON, which is very similar to JSON, with a few extensions to support comments.  Strictly speaking FSON is also a subset of FFL.  On the most basic level all the document is, is a series of key:value pairs, split into lists and maps.  Basically these map directly into the primitives used in FFL, which supports maps and lists. Maps are also often referred to as hash-maps, dictionaries and associative arrays.  Generally speaking they lets you search very quickly for an indexed item (O(log(n) -- but implementation dependent).  The basic syntax for a map in a FSON file is {a:1, b:2, c:3} keys are generally string values and the parser treats id as synonymous with 'id'.  Of course the value portion doesn't have to be a simple integer it can be another map, list, string or number. Thus complex data can be built up. Lists are simply comma delimited series of items, e.g. [{a:1},{b:2},{c:3}] is a list of maps.</p>
+
+        </div>
+
+        <div class="wiki-footer gollum-markdown-content boxed-group" id="wiki-footer">
+          <div class="boxed-group-inner wiki-auxiliary-content markdown-body">
+            <p>More help can be found via IRC, <a href="irc://irc.freenode.net/#frogatto" rel="nofollow">#Frogatto</a> on freenode.net. This wiki is not a complete reference.</p>
+
+          </div>
+        </div>
+    </div>]

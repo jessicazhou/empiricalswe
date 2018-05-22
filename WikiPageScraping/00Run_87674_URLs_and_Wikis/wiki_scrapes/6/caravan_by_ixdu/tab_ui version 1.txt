@@ -1,0 +1,196 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <ul>
+<li>
+<a class="internal present" href="/ixdu/caravan/wiki/Gui.js">gui.js</a> - Описание возможностей встраиваемого в дерево элементов ui javascript кода</li>
+<li>
+<a class="internal present" href="/ixdu/caravan/wiki/Gui.action-lang">gui.action-lang</a> - Описание концепции, под рабочим названием action_lang. Способа описания изменения ui,
+на стороне клиента, без привлечения основного кода приложения.</li>
+<li>
+<a class="internal absent" href="/ixdu/caravan/wiki/gui.backend">gui.backend</a> - Описание работы разных бекендов, их особенностей, способов использования</li>
+</ul>
+<p>Сервис реализует простой набор виджетов для построения интерфейсов. В основу описания gui положено json описание дерева виджетов. Возможно как декларативное описание всего интерфейса в виде одного json документа, так и создание дерева виджетов с помощью вызова методов. Оба способа построения интерфеса можно комбинировать.
+Все методы создания виджетов и работы с ними есть в файле интерфейса этого сервиса, поэтому простое их перечисление здесь не имеет смысла. Однако общие понятия всё таки приведу.
+Каждый виджет - это объект, который который адресуется с помощью UUID. Этот UUID можно получить двумя способами:
+*создать виджет с помощью метода, создающего виджет, который и вернёт нужный UUID
+*запросив UUID нужного виджета из существующего дерева виджетов.</p>
+<p>Второй способ необходим либо в том случае, когда временное хранение UUID виджетов в коде не имеет смысла(например очень большое дерево виджетов), так и в случае, когда дерево изначально было построено из json документа.
+Прежде, чем покажем немного работающего кода(пусть и упрощённого псевдокода), надо разобраться с json описанием дерева, так как именно этот способ будет преимущественно использоваться, как наиболее удобный.
+Простой пример:</p>
+<div class="highlight highlight-source-js"><pre>{
+    <span class="pl-s"><span class="pl-pds">"</span>panel_root<span class="pl-pds">"</span></span> <span class="pl-k">:</span> {
+        <span class="pl-s"><span class="pl-pds">"</span>orientation<span class="pl-pds">"</span></span> <span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">"</span>vertical<span class="pl-pds">"</span></span>,
+        <span class="pl-s"><span class="pl-pds">"</span>child<span class="pl-pds">"</span></span> <span class="pl-k">:</span> {
+             <span class="pl-s"><span class="pl-pds">"</span>label_fig<span class="pl-pds">"</span></span> <span class="pl-k">:</span> {
+                <span class="pl-s"><span class="pl-pds">"</span>text<span class="pl-pds">"</span></span> <span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">"</span>Фиг вам гады, мир не продаётся!<span class="pl-pds">"</span></span>
+            },
+            <span class="pl-s"><span class="pl-pds">"</span>button_sell<span class="pl-pds">"</span></span> <span class="pl-k">:</span> {
+                <span class="pl-s"><span class="pl-pds">"</span>text<span class="pl-pds">"</span></span> <span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">"</span>Продать всё сразу<span class="pl-pds">"</span></span>
+           }
+        }
+    }
+}</pre></div>
+<p>Приведённый пример демонстрирует простое окошечко, которое описано с помощью panel_root. В котором расположено два элемента вертикально. Одна метка и одна кнопка под меткой:</p>
+<pre><code>Фиг вам гады, мир не продаётся!
++-----------------+
+|Продать всё сразу|
++-----------------+
+</code></pre>
+<p>Ну и пожалуй сразу не будем мелочиться и рассмотрим комплексный пример:) В качестве примера можно взять какое-нибудь окно ввода какого-нибудь сферического мессенджера:)</p>
+<div class="highlight highlight-source-js"><pre>{
+    <span class="pl-s"><span class="pl-pds">"</span>panel_window<span class="pl-pds">"</span></span> <span class="pl-k">:</span> {
+        <span class="pl-s"><span class="pl-pds">"</span>orientation<span class="pl-pds">"</span></span> <span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">"</span>vertical<span class="pl-pds">"</span></span>,
+        <span class="pl-s"><span class="pl-pds">"</span>child<span class="pl-pds">"</span></span> <span class="pl-k">:</span> {
+            <span class="pl-s"><span class="pl-pds">"</span>button_user<span class="pl-pds">"</span></span> <span class="pl-k">:</span> {
+                <span class="pl-s"><span class="pl-pds">"</span>text<span class="pl-pds">"</span></span> <span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">"</span>дружище<span class="pl-pds">"</span></span>
+            },
+            <span class="pl-s"><span class="pl-pds">"</span>panel_messages<span class="pl-pds">"</span></span> <span class="pl-k">:</span> {
+                <span class="pl-s"><span class="pl-pds">"</span>orientation<span class="pl-pds">"</span></span> <span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">"</span>vertical<span class="pl-pds">"</span></span>,
+                <span class="pl-s"><span class="pl-pds">"</span>child<span class="pl-pds">"</span></span> <span class="pl-k">:</span> {
+                    <span class="pl-s"><span class="pl-pds">"</span>label_msg1<span class="pl-pds">"</span></span> <span class="pl-k">:</span> {
+                        <span class="pl-s"><span class="pl-pds">"</span>text<span class="pl-pds">"</span></span> <span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">"</span>пирожочег: Здорово лошара!<span class="pl-pds">"</span></span>
+                    },
+                    <span class="pl-s"><span class="pl-pds">"</span>label_msg2<span class="pl-pds">"</span></span> <span class="pl-k">:</span> {
+                        <span class="pl-s"><span class="pl-pds">"</span>text<span class="pl-pds">"</span></span> <span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">"</span>дружище: Как сам, почки ещё держатся?<span class="pl-pds">"</span></span>
+                    },
+                    <span class="pl-s"><span class="pl-pds">"</span>label_msg3<span class="pl-pds">"</span></span> <span class="pl-k">:</span> {
+                       <span class="pl-s"><span class="pl-pds">"</span>text<span class="pl-pds">"</span></span> <span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">"</span>пирожочег: конечно, они будут держаться вечность, я же мужик!<span class="pl-pds">"</span></span>
+                    },
+                    <span class="pl-s"><span class="pl-pds">"</span>label_msg4<span class="pl-pds">"</span></span> <span class="pl-k">:</span> {
+                        <span class="pl-s"><span class="pl-pds">"</span>text<span class="pl-pds">"</span></span> <span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">"</span>дружище: Хо *ТроллФейс<span class="pl-pds">"</span></span>
+                    },
+                    <span class="pl-s"><span class="pl-pds">"</span>label_msg5<span class="pl-pds">"</span></span> <span class="pl-k">:</span> {
+                        <span class="pl-s"><span class="pl-pds">"</span>text<span class="pl-pds">"</span></span> <span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">"</span>пирожочег: Пить будешь?<span class="pl-pds">"</span></span>
+                    },
+                    <span class="pl-s"><span class="pl-pds">"</span>label_msg6<span class="pl-pds">"</span></span> <span class="pl-k">:</span> {
+                        <span class="pl-s"><span class="pl-pds">"</span>text<span class="pl-pds">"</span></span> <span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">"</span>дружище: Конечно, на поминках по тебе, выпью пару стопарей друх<span class="pl-pds">"</span></span>
+                   },
+               }
+            },
+            
+            <span class="pl-s"><span class="pl-pds">"</span>panel_toolbox<span class="pl-pds">"</span></span> <span class="pl-k">:</span> {
+                <span class="pl-s"><span class="pl-pds">"</span>orientation<span class="pl-pds">"</span></span> <span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">"</span>horizontal<span class="pl-pds">"</span></span>,
+                <span class="pl-s"><span class="pl-pds">"</span>child<span class="pl-pds">"</span></span> <span class="pl-k">:</span> {
+                    <span class="pl-s"><span class="pl-pds">"</span>button_font<span class="pl-pds">"</span></span> <span class="pl-k">:</span> {
+                        <span class="pl-s"><span class="pl-pds">"</span>text<span class="pl-pds">"</span></span> <span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">"</span>шрифт<span class="pl-pds">"</span></span>,
+                    },
+
+                    <span class="pl-s"><span class="pl-pds">"</span>button_smiles<span class="pl-pds">"</span></span> <span class="pl-k">:</span> {
+                        <span class="pl-s"><span class="pl-pds">"</span>text<span class="pl-pds">"</span></span> <span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">"</span>жмуйлеге<span class="pl-pds">"</span></span>
+                    }
+                } 
+           },
+
+            <span class="pl-s"><span class="pl-pds">"</span>entry_newmsg<span class="pl-pds">"</span></span> <span class="pl-k">:</span> {
+               <span class="pl-s"><span class="pl-pds">"</span>text<span class="pl-pds">"</span></span> <span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">"</span>Введите сюда своё обдолбанное сообщение<span class="pl-pds">"</span></span>
+            }
+
+        }  
+    }
+}</pre></div>
+<p>Вся вышенаписанная фигня превращается вот в такое окно:</p>
+<pre><code>+-------+
+|дружище|
++-------+
+ пирожочег: Здорово лошара!
+ дружище: Как сам, почки ещё держатся?
+ пирожочег: конечно, они будут держаться вечность, я же мужик!
+ дружище: Хо *ТроллФейс"
+ пирожочег: Пить будешь?
+ дружище: Конечно, на поминках по тебе, выпью пару стопарей друх
+ +-----+ +--------+
+ |шрифт| |шмуйлеге|
+ +-----+ +---------
+ +---------------------------------------+
+ |Введите сюда своё обдолбанное сообщение|
+ +---------------------------------------+
+</code></pre>
+<p>###Типы элементов ui и их свойтва:</p>
+<p>Существуют следующие типы элементов и их свойства:</p>
+<ul>
+<li>panel
+Содержит свойства:</li>
+</ul>
+<p>orientation - vertical or horisontal</p>
+<p>child - объект, способный содержать любые другие элементы</p>
+<ul>
+<li>
+<p>label</p>
+<p>text - string</p>
+</li>
+<li>
+<p>button</p>
+<p>text - string</p>
+</li>
+<li>
+<p>entry</p>
+<p>text - string</p>
+</li>
+</ul>
+<p>###Action_object объекты действия</p>
+<p>Элементы этого типа имеют свой контейнер - <code>ao</code>. И <em>любой</em> элемент интерфейса имеет этот контейнер в себе, в виде element.ao. Контейнер, это также элемент, поэтому он можежт быть добавлен в панельки, как и другие элементы.</p>
+<p>Например: <code>panel1.ao</code>, <code>button.ao</code>, <code>label.ao</code> и тд</p>
+<p>В контейнер <code>ao</code> помещаются <code>action_object</code>ы</p>
+<p>Таким образом контейнер <code>ao</code> подобен контейнеру <code>panel</code> с той разницей, что может содержать <em>только</em> элементы типа <code>action_object</code>.</p>
+<p>Пример использования:</p>
+<div class="highlight highlight-source-js"><pre>{
+     <span class="pl-s"><span class="pl-pds">"</span>panel_window<span class="pl-pds">"</span></span> <span class="pl-k">:</span> {
+         <span class="pl-s"><span class="pl-pds">"</span>orientation<span class="pl-pds">"</span></span> <span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">"</span>vertical<span class="pl-pds">"</span></span>,
+         <span class="pl-s"><span class="pl-pds">"</span>child<span class="pl-pds">"</span></span> <span class="pl-k">:</span> {
+             <span class="pl-s"><span class="pl-pds">"</span>ao_tretya_figa<span class="pl-pds">"</span></span> <span class="pl-k">:</span> { 
+                                    <span class="pl-s"><span class="pl-pds">"</span>catch<span class="pl-pds">"</span></span> <span class="pl-k">:</span> [<span class="pl-s"><span class="pl-pds">'</span>figa vipushena v otvet<span class="pl-pds">'</span></span>],
+                                    <span class="pl-s"><span class="pl-pds">"</span>code<span class="pl-pds">"</span></span> <span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">"</span>local.ui.add('figushka', 'label', { 'text' : 'vot tebe i figushka, do igralsya malcheg'})<span class="pl-pds">"</span></span>
+             }
+         },
+         <span class="pl-s"><span class="pl-pds">"</span>on_mouse_move<span class="pl-pds">"</span></span> <span class="pl-k">:</span> { 
+                               <span class="pl-s"><span class="pl-pds">"</span>figa<span class="pl-pds">"</span></span> <span class="pl-k">:</span> { 
+                                             <span class="pl-s"><span class="pl-pds">"</span>throw<span class="pl-pds">"</span></span> <span class="pl-k">:</span> [<span class="pl-s"><span class="pl-pds">'</span>figa vipushena<span class="pl-pds">'</span></span>] 
+                               } 
+                           },
+         <span class="pl-s"><span class="pl-pds">"</span>ao<span class="pl-pds">"</span></span> <span class="pl-k">:</span> { 
+                    <span class="pl-s"><span class="pl-pds">"</span>otvetnayafiga<span class="pl-pds">"</span></span> <span class="pl-k">:</span> { 
+                                          <span class="pl-s"><span class="pl-pds">"</span>catch<span class="pl-pds">"</span></span> <span class="pl-k">:</span> [<span class="pl-s"><span class="pl-pds">'</span>figa vipushena<span class="pl-pds">'</span></span>],
+                                          <span class="pl-s"><span class="pl-pds">"</span>throw<span class="pl-pds">"</span></span> <span class="pl-k">:</span> [<span class="pl-s"><span class="pl-pds">'</span>figa vipushena v otvet<span class="pl-pds">'</span></span>] 
+                                      } 
+                }
+     } 
+}</pre></div>
+<p>Пример порождает событие по навадению мыши на панельку, затем порождается событие, как результат отлова первого события, а потом отлавливается второе и вызывается код, который создаёт на панельке метку.</p>
+<p>Подробнее о структуре <code>action_object</code> смотрим <a class="internal present" href="/ixdu/caravan/wiki/Gui.action-lang">gui.action-lang</a></p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#%D0%A1%D0%B8%D0%B3%D0%BD%D0%B0%D0%BB%D1%8B" id="user-content-Сигналы"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Сигналы</h3>
+<p>Каждый элемент может иметь сигналы.
+Сигнал элемента <code>ui</code> может иметь одно из трёх состояний:</p>
+<ul>
+<li>
+<p>объект, содержащий action_object`ы, полностью аналогичен контейнеру ao</p>
+</li>
+<li>
+<p>serviced - обычный обработчик на стороне того сервиса, который использует сервис gui для построения</p>
+</li>
+<li>
+<p>disabled - быть не активным</p>
+</li>
+</ul>
+<p>Сигнал может быть и не указан в описании элемента, в таком случае он считается <code>disabled</code></p>
+<p>Список сигналов одинаков для всех элементов, вот он:</p>
+<ul>
+<li>on_load
+При создании элемента с помощью create</li>
+<li>on_click
+клик:)</li>
+<li>on_dblclick
+двойной клик</li>
+<li>on_move
+движение элемента, испускается всякий раз при смещении. Вызывается каждые несколько пикселей, так часто, как это возможно на протяжении траектории движения.</li>
+<li>on_mouse_move
+движение мыши над элементом.</li>
+<li>on_mouse_down
+нажатие клавиш мыши над элементом</li>
+<li>on_mouse_up
+отпускание клавиши мыши над элементом</li>
+</ul>
+
+        </div>
+
+    </div>]

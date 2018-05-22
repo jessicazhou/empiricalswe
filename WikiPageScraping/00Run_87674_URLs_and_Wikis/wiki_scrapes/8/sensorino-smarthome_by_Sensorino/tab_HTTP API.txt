@@ -1,0 +1,67 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>The server loads the network addresses from <code>config.py</code> and, among other interfaces, starts listening for HTTP requests.  The default is to listen on port 8000 of all available interfaces.  This built-in HTTP server serves static files from the <code>static/</code> subdirectory, where the User Interface resources are and also serves a few dynamic API calls that are described below.</p>
+<p>All API request and response bodies are <a href="https://en.wikipedia.org/wiki/JSON" rel="nofollow">JSON</a> encoded.</p>
+<p>Keep-alive is supported.  Streaming endpoints use the <a href="http://en.wikipedia.org/wiki/Chunked_transfer_encoding" rel="nofollow"><em>Chunked</em> transfer-encoding</a>.</p>
+<p>The streaming endpoints don't currently enforce any time limits and there's no per-IP or other limits.  Request timeout, error handling and reconnection guidelines similar to <a href="https://dev.twitter.com/streaming/overview" rel="nofollow">those of Twitter</a> are recommended.</p>
+<p>The following 6 endpoints exists at this time.</p>
+<table>
+<thead>
+<tr>
+<th>Endpoint</th>
+<th>GET</th>
+<th>POST</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>/api/sensorino.json</code></td>
+<td>Returns current network state tree.  <em>Time parameters</em> optional.</td>
+<td><em>N/A</em></td>
+</tr>
+<tr>
+<td><code>/api/stream/sensorino.json</code></td>
+<td>Streams a list object.  First element contains current network state tree (same as <code>/api/sensorino.json</code>).  Subsequent elements contain state change events.</td>
+<td><em>N/A</em></td>
+</tr>
+<tr>
+<td><code>/api/console.json</code></td>
+<td>Returns the last <em>N</em> lines of Sensorino logs, each consisting of the timestamp and the <a href="https://github.com/Sensorino/Sensorino/wiki/Sensorino-Protocol">Sensorino Protocol</a> JSON object.  <em>N</em> is 30 right now.  <em>Time parameters</em> optional.</td>
+<td>Sends provided <a href="https://github.com/Sensorino/Sensorino/wiki/Sensorino-Protocol">Sensorino Protocol</a> JSON object to a remote device.</td>
+</tr>
+<tr>
+<td><code>/api/stream/console.json</code></td>
+<td>Streams a list object.  First <em>N</em> elements contain the most recent log lines (same as <code>/api/console.json</code>).  Subsequent elements new log lines as they arrive.</td>
+<td><em>N/A</em></td>
+</tr>
+<tr>
+<td><code>/api/floorplan.json</code></td>
+<td>Returns the current floorplan state.  <em>Time parameters</em> optional.</td>
+<td>Stores a new version of the floorplan in the database.</td>
+</tr>
+<tr>
+<td><code>/api/&lt;Address&gt;/&lt;Service ID&gt;/&lt;Data type&gt;/&lt;Channel number&gt;/value.json</code></td>
+<td>Returns the current value of given data channel.  <em>Time parameters</em> optional.</td>
+<td><em>N/A</em></td>
+</tr>
+</tbody>
+</table>
+<h2>
+<a aria-hidden="true" class="anchor" href="#time-parameters" id="user-content-time-parameters"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Time parameters</h2>
+<h3>
+<a aria-hidden="true" class="anchor" href="#state-at-timestamp" id="user-content-state-at-timestamp"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>State at timestamp</h3>
+<p>The calls that accept <em>time parameters</em> allow requesting historical data from the database.  The historical data is in the same format as current data (i.e. as if no parameters were passed to the call), only data that was current at the point in time given by the parameters is returned instead.</p>
+<p>For example a GET call to <code>/api/sensorino.json?at=1400000000.5</code> will return the state of all nodes, services and data channels on Tuesday May 13, 2014 at 16:53:20 UTC + 500 milliseconds.</p>
+<div class="highlight highlight-source-shell"><pre>$ curl http://localhost:8000/api/sensorino.json<span class="pl-k">?</span>at=1400000000.5</pre></div>
+<p>The time parameters can have two forms: <code>at</code> for absolute timestamp or <code>ago</code> for relative.  Both forms can not be present in the same call.  Both forms accept integer or fractional values in seconds.</p>
+<p>Absolute timestamp are given as UNIX timestamp (time from Epoch in seconds) while relative timestamps are given as number of seconds before the time of the call.  Using the relative form reduces the effect of clock error on the server or client.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#all-values-within-a-period" id="user-content-all-values-within-a-period"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>All values within a period</h3>
+<p>The <code>/api/&lt;Address&gt;/&lt;Service ID&gt;/&lt;Data type&gt;/&lt;Channel number&gt;/value.json</code> call also accepts a period form of the time parameters where the period start timestamp is given by the <code>at0</code> or <code>ago0</code> parameter and the period end is given by <code>at1</code> or <code>ago1</code>.  If the period end timestamp is not given, the call's timestamp will be used.</p>
+<p>For example <code>/api/10/5/switch/0/value.json?ago0=3600</code> will return all values of <code>Switch</code> channel 0 within service 5 of node at address 10 between one hour ago and now.</p>
+<pre lang="sheel"><code>$ curl http://localhost:8000/api/10/5/switch/0/value.json?ago0=3600
+</code></pre>
+
+        </div>
+
+    </div>]

@@ -1,0 +1,43 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>Here lies an explanation of the architecture of the PCNChart utility.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#high-level" id="user-content-high-level"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>High Level</h2>
+<p>PCNChart exports a function which receives Data formatted according to the <a href="https://github.com/pcnsuite/pcnspec">PCNSpec</a>.  That data may be a JavaScript object or a string that will be parsed (using <code>JSON.parse</code>) into an object.  The return value of the function is an SVG string when run in Node.js or an SVG Element tree (<a href="https://developer.mozilla.org/en-US/docs/Web/API/SVGSVGElement" rel="nofollow">SVGSVGElement</a>) when run in the browser.</p>
+<p>Once the input is received and in object form, it is run through the following steps to create the output:</p>
+<ol>
+<li>Linting with the <a href="https://github.com/pcnsuite/pcnlint">PCNLint tool</a> version 0.5*.</li>
+<li>Building a LayoutGraph object with a node for each PCN step and that node's X and Y position.</li>
+<li>Building an XML document of an SVG from the LayoutGraph.</li>
+<li>Conversion to String in Node.js, or parse to SVG Element in Browser</li>
+</ol>
+<p><em>*Note: PCNLint version 0.5 is the latest that can be used because it throws exceptions when input is malformed. Later versions are meant to be used as a CLI tool and output their results to STDOUT.</em></p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#code-conventions" id="user-content-code-conventions"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Code Conventions</h2>
+<p>In general, the code takes a mixed paradigm approach of Object-Oriented + Functional when creating a Chart.  Most of the functions are pure (without side-effects) and do not mutate their input data.  PCNChart defines two object types: LayoutGraph and LayoutNode.  The data that flows through the program is either (1) the original PCNSpec input data, (2) an instance of LayoutGraph containing instances of LayoutNodes, or (3) an XML builder object.</p>
+<p>The entry to the module is <code>index.js</code> in the project root, which then calls functions in <code>lib/</code> where the bulk of the logic lives.  The <code>lib/</code> directory has two domains, <code>layout/</code> and <code>builder/</code> for generating a LayoutGraph and building XML respectively.</p>
+<p>Functions that mutate their inputs (cause side-effects) are placed in <code>mutations/</code> directories and identified by their function and file names:</p>
+<div class="highlight highlight-source-js"><pre><span class="pl-c"><span class="pl-c">//</span> lib/layout/mutations/mutate-adjust-layout-for-relations.js</span>
+<span class="pl-k">function</span> <span class="pl-en">mutateAdjustLayoutForRelations</span>(<span class="pl-smi">layoutGraph</span>) {
+  <span class="pl-c"><span class="pl-c">/*</span> Mutation Logic <span class="pl-c">*/</span></span>
+}</pre></div>
+<p>In addition to mutations is a concept of generators: functions that receive input and use it to generate output from pre-defined templates. These functions are grouped together in <code>generators/</code> directories.  They are primarily used in SVG/XML building stage to generate elements.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#building-the-layoutgraph" id="user-content-building-the-layoutgraph"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Building the LayoutGraph</h2>
+<p>A LayoutGraph is a self-contained representation of the data that will be rendered by the builder later on.  It receives PCNSpec data in its constructor function and then creates a store of LayoutNode's for each PCN Step.  Once the nodes are created, the graph (and it's nodes) are mutated twice:</p>
+<ol>
+<li>Initial Layout: <code>lib/layout/mutations/mutate-initial-layout.js</code>
+</li>
+<li>Layout Adjustment for Relations: <code>lib/layout/mutations/mutate-adjust-layout-for-relations.js</code>
+</li>
+</ol>
+<p>The Initial Layout organizes all node's into stacked columns in the order that they are specified in the PCNSpec data.  After Initial Layout, the X position of Nodes does not change because each Node is in it's appropriate column.</p>
+<p>The Layout Adjustment iterates over each Node, checks it's predecessor relationships to other nodes, and <code>bumps</code> the Y position of that Node so that it is equal or lower than it's predecessors.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#building-the-xml" id="user-content-building-the-xml"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Building the XML</h2>
+<p>Building the output data is a fairly straightforward process of setting up the skeleton chart and iterating through the LayoutGraph's nodes to place a Step Box and relationship lines to each predecessor.  The shape of the Step Box is determined by the type of PCN Step, and the relationship lines receive an X,Y position for the start and end points (mid-point of the predecessor node side to the mid-point of a side of the current step).</p>
+<p>One important thing to note is that depending on which environment PCNChart is executed in, either the <strong>DOM builder</strong> (<code>lib/builder/dom/builder.js</code>) or the <strong>XML builder</strong> (<code>lib/builder/xml/builder.js</code>) is exported.  In practice, this does not matter much because the DOM builder just requires the XML builder and then runs the XML output string through a <a href="https://developer.mozilla.org/en-US/docs/Web/API/DOMParser" rel="nofollow">DOMParser</a> before returning it.  All the main logic is in the XML builder.</p>
+
+        </div>
+
+    </div>]

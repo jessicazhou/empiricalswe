@@ -1,0 +1,46 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <h1>
+<a aria-hidden="true" class="anchor" href="#example-usage" id="user-content-example-usage"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Example Usage</h1>
+<p>In the following, we give a brief example on how to use mtSet. As a case study, we use a subset of the genotypes from the 1000 project [1] and simulated phenotypes.</p>
+<p>All commands can be found in <em>demos/run_mtSet.sh</em>.
+In the following, we give a short summary of the individual steps.</p>
+<p>Go to the bin folder, create the output folder, set the filenames and parameters:</p>
+<pre><code>mkdir out
+BFILE=./../data/1000G_chr22/chrom22_subsample20_maf0.10 #specify bed basename here
+CFILE=./out/chrom22
+PFILE=./out/pheno
+WFILE=./out/windows
+NFILE=./out/null
+WSIZE=30000
+RESDIR=./out/results
+OUTFILE=./out/final
+</code></pre>
+<p>Generating covariance matrix:</p>
+<pre><code>./../mtSet_preprocess --compute_covariance --bfile $BFILE --cfile $CFILE 
+</code></pre>
+<p>Simulating phenotype:</p>
+<pre><code>./../mtSet/bin/mtSet_simPheno --bfile $BFILE --cfile $CFILE --pfile $PFILE --chrom 22 --minPos 1640000  --maxPos 17550000
+</code></pre>
+<p>Fitting the null model and assigning the markers to windows:</p>
+<pre><code>./../mtSet/bin/mtSet_preprocess --precompute_windows --fit_null --bfile $BFILE --cfile $CFILE --pfile $PFILE --wfile $WFILE --nfile $NFILE --window_size $WSIZE --plot_windows
+</code></pre>
+<p>Running the analysis on the true genotypes:</p>
+<pre><code>./../mtSet/bin/mtSet_analyze --bfile $BFILE --cfile $CFILE --pfile $PFILE --nfile $NFILE --wfile $WFILE --minSnps 4 --resdir $RESDIR --start_wnd 0 --end_wnd 100
+</code></pre>
+<p>Running the analysis on permuted genotypes:</p>
+<pre><code>for i in `seq 0 10`;
+do
+./../mtSet/bin/mtSet_analyze --bfile $BFILE --cfile $CFILE --pfile $PFILE --nfile $NFILE --wfile $WFILE --minSnps 4 --resdir $RESDIR --start_wnd 0 --end_wnd 100 --perm $i
+done
+</code></pre>
+<p>Postprocessing:</p>
+<pre><code>./../mtSet/bin/mtSet_postprocess --resdir $RESDIR --outfile $OUTFILE --manhattan_plot
+</code></pre>
+<p>Running the complete analysis takes approximately 15 minutes on a standard notebook.</p>
+<hr/>
+<p>[1]: Genomes Project, C. et al. An integrated map of genetic variation from 1,092 human genomes. <em>Nature</em> <strong>491</strong>, 56-65 (2012).</p>
+
+        </div>
+
+    </div>]

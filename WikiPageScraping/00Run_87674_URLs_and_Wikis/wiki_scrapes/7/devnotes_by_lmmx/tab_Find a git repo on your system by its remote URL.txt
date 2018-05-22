@@ -1,0 +1,80 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>If you cloned a repo but can't find it on your system, surely you can figure out where it is?</p>
+<ol>
+<li>list all git repos by searching for directories called .git</li>
+</ol>
+<ul>
+<li>better yet, make an index of all such directories</li>
+</ul>
+<ol start="2">
+<li>use <code>git remote show origin</code> to show the repo source (i.e. GitHub URL: user/org and repo name)</li>
+</ol>
+<hr/>
+<ul>
+<li>
+<p><code>findafile</code> is a function: <code>find / -iname "$@" 2&gt; /dev/null</code></p>
+</li>
+<li>
+<p><code>findafile .git</code> lists all git repos</p>
+</li>
+<li>
+<p><code>findafile .git | head -4</code> returns a list (to figure it out I'm just getting a few with <code>head</code>)</p>
+<pre><code>/gits/getpaperstmp/.git
+/gits/grc-issues-backup/.git
+/gits/euler/.git
+/gits/websiteresources/.git
+</code></pre>
+</li>
+<li>
+<p><a href="https://git-scm.com/docs/git-config" rel="nofollow"><code>git-config</code></a> is the tool to query a repo's <code>.git/config</code> file, which has a line with the URL in, e.g. for this repository wiki (yes, you can clone a GitHub wiki!)</p>
+<pre><code>[core]
+        repositoryformatversion = 0
+        filemode = true
+        bare = false
+        logallrefupdates = true
+[remote "origin"]
+        url = git@github.com:lmmx/devnotes.wiki.git
+        fetch = +refs/heads/*:refs/remotes/origin/*
+[branch "master"]
+        remote = origin
+        merge = refs/heads/master
+</code></pre>
+<ul>
+<li>get the parameter by calling <code>git config --get remote.origin.url</code> if inside the directory above <code>.git/</code>,</li>
+<li>or point it at the directory using the <code>--git-dir</code> flag: <code>git --git-dir=devnotes.wiki/.git config --get remote.origin.url</code>
+</li>
+</ul>
+</li>
+<li>
+<p>So... to do this for a list, such as the one I took the <code>head</code> of above, apply a call to <code>xargs</code>,</p>
+<div class="highlight highlight-source-shell"><pre>findafile .git <span class="pl-k">|</span> head -4 <span class="pl-k">|</span> xargs -I {} git --git-dir={} config --get remote.origin.url</pre></div>
+</li>
+<li>
+<p>an improvement would be to print out say, tab-separated columns of the directory and the remote URL, but I can't quite see how to do this</p>
+<ul>
+<li>if you rename the <code>{}</code> argument by placing a variable name to use after it and replacing the <code>--git-dir</code> flag parameter with said word, the word isn't parsed (e.g. declaring 'gitdir' as the variable reports "xargs: gitdir: No such file or directory")</li>
+</ul>
+</li>
+<li>
+<p>since you can't (?) do that, it's fine to just run the call twice (kinda defeats the purpose of calling <code>xargs</code> but whatever - for the purpose I'm writing this for, I just want to grep to see if a certain repo URL exists, i.e. if I have it on my computer, so it'll do)</p>
+</li>
+</ul>
+<p>Fin!</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#extension-keeping-a-list-to-query" id="user-content-extension-keeping-a-list-to-query"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Extension: keeping a list to query</h2>
+<ul>
+<li>making an index saves running this command which is kind of slow</li>
+<li>see <a href="https://github.com/spin-arb/in">https://github.com/spin-arb/in</a>
+</li>
+</ul>
+
+        </div>
+
+        <div class="wiki-footer gollum-markdown-content boxed-group" id="wiki-footer">
+          <div class="boxed-group-inner wiki-auxiliary-content markdown-body">
+            <p><a href="https://github.com/lmmx/devnotes/wiki">Main page</a></p>
+
+          </div>
+        </div>
+    </div>]

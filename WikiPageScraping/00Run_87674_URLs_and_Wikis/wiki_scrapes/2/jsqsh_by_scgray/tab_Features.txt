@@ -1,0 +1,496 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>This page provides an overview of the major features available in jsqsh. It is not a comprehensive list, though, so you are highly encouraged to spend some time reading through the builtin documentation that comes with jsqsh via the <a class="internal present" href="/scgray/jsqsh/wiki/help">\help</a> command.</p>
+<p><strong>Table of contents</strong></p>
+<ul>
+<li><a class="internal present" href="/scgray/jsqsh/wiki/Features#line-and-query-editing">Line and query editing</a></li>
+<li><a class="internal present" href="/scgray/jsqsh/wiki/Features#commands">Commands</a></li>
+<li><a class="internal present" href="/scgray/jsqsh/wiki/Features#redirection-and-pipes">Redirection</a></li>
+<li><a class="internal present" href="/scgray/jsqsh/wiki/Features#variables">Variables</a></li>
+<li><a class="internal present" href="/scgray/jsqsh/wiki/Features#display-styles">Display styles</a></li>
+<li><a class="internal present" href="/scgray/jsqsh/wiki/Features#ddl-generation">DDL generation</a></li>
+<li><a class="internal present" href="/scgray/jsqsh/wiki/Features#other-features">Misc</a></li>
+</ul>
+<h1>
+<a aria-hidden="true" class="anchor" href="#line-and-query-editing" id="user-content-line-and-query-editing"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Line and query editing</h1>
+<p>JSqsh supports several major line editing via the <a href="https://github.com/jline/jline2/wiki">JLine</a> library (it can utilize the <a href="http://java-readline.sourceforge.net/" rel="nofollow">Java-Readline</a> library if you prefer). This library provides:</p>
+<ul>
+<li>The ability to scroll forward and back through and edit previously entered lines</li>
+<li>Built-in support for both <strong>Emacs</strong> and <strong>Vi</strong> key bindings (see <a class="internal present" href="/scgray/jsqsh/wiki/readline">readline</a>)</li>
+<li>Configurable key bindings through the readline <strong>$HOME/.inputrc</strong> configuration file</li>
+<li>Object name completion while entering SQL</li>
+</ul>
+<h2>
+<a aria-hidden="true" class="anchor" href="#editing-query-history" id="user-content-editing-query-history"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Editing query history</h2>
+<p>Along with line-editing functionality, jsqsh allows you to recall and edit entire queries that you have previously executed. The <a class="internal present" href="/scgray/jsqsh/wiki/history">\history</a> command displays the list 50 queries (configurable) that you have executed.</p>
+<pre><code>1&gt; \history
+ (1) select count(*) as 'Count' from $t
+ (2) select 1
+ (3) select top 3 * from sysdatases
+ (4) select top 3 * fromsysdatabases
+ (5) select top 3 * from sysdatabases
+ (6) use mydb
+ (7) select * from STATISTIC_SAMPLE_TYPE
+     where SAMPLE_DATE &gt;= '1/1/2012'
+ (8) exec sp_myproc @x = 10
+ (9) sp_who
+(10) select * from syscolumns
+</code></pre>
+<p>You can then recall a previously executed statement using the <strong>!<em>n</em></strong> where <strong><em>n</em></strong> is the history number of the command you wish to edit. You can edit the current you currently working on using your favorite editor using the <code>vi</code> or <code>emacs</code> command (see <a class="internal present" href="/scgray/jsqsh/wiki/buf_edit">\buf-edit</a>) which will launch the editor defined in the <strong>$EDITOR</strong> environment variable to provide full screen query editing.</p>
+<pre><code>1&gt; !7
+1&gt; select * from STATISTICS_SAMPLE_TYPE
+2&gt; where SAMPLE_DATE &gt;= '1/1/2012'
+3&gt; vi
+</code></pre>
+<p>Alternatively you can combine both steps in a single command:</p>
+<pre><code>1&gt; vi !7
+...edit in vi editor...
+</code></pre>
+<h1>
+<a aria-hidden="true" class="anchor" href="#commands" id="user-content-commands"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Commands</h1>
+<p>Most command line database tools provided by database vendors provide relatively limited functionality--allow you to type a SQL statement, execute it, and display the results. Along with this functionality. jsqsh provides a significant number of additional commands. Typically commands in jsqsh are prefixed with a '' to avoid collision with any SQL keywords. For example:</p>
+<pre><code>1&gt; \help commands
+Available commands. Use "\help &lt;command&gt;" to display detailed help for a given command
++-------------+----------------------------------------------------------------------+
+| Command     | Description                                                          |
++-------------+----------------------------------------------------------------------+
+| \alias      | Creates an alias                                                     |
+| \buf-append | Appends the contents of one SQL buffer into another                  |
+| \buf-copy   | Copies the contents of one SQL buffer into another                   |
+| \buf-edit   | Edits a SQL buffer                                                   |
+| \buf-load   | Loads an external file into a SQL buffer                             |
+| \call       | Call a prepared statement                                            |
+| \connect    | Establishes a connection to a database.                              |
+                               ...
+| \tables     | Displays tables, views, synonyms, etc.                               |
+| \tree       | Shows a tree view of all the tables                                  |
+| \unset      | Removes a jsqsh variable.                                            |
+| \wrap       | Used internally for testing of jsqsh's word-wrapping facility.       |
++-------------+----------------------------------------------------------------------+
+</code></pre>
+<p>JSqsh provides extensive built-in help for every command.  To find out the command line arguments a command accepts, you can provide the <strong>--help</strong> (see <a class="internal present" href="/scgray/jsqsh/wiki/options">options</a>) flag:</p>
+<pre><code>1&gt; \connect --help
+Use: \connect [options] [named-connection]
+   -a, --add=val              Save the command line as a named connection
+   -D, --database=db          Database (catalog) context to use upon connection
+   -w, --domain=domain        Windows domain to be used for authentication
+   -d, --driver=driver        Name of jsqsh driver to be used for connection
+   -g, --gui                  Send all command output to a graphical window
+   -h, --help                 Display help for command line usage
+   -c, --jdbc-class=driver    JDBC driver class to utilize
+   -u, --jdbc-url=url         JDBC url to use for connection
+   -l, --list                 List all defined connections
+   -n, --new-session          Create a new session for the connection
+   -P, --password=pass        Password utilized for connection
+   -p, --port=port            Listen port for the server to connect to
+   -O, --prop=name=val        Set a driver connection property. Can be used more than once
+   -r, --remove               Remove a connection definition
+   -S, --server=server        Name of the database server to connect to
+   -x, --show-password        Displays connect password in clear-text
+   -s, --sid=SID              Instance id (e.g. Oracle SID) to utilize
+   -x, --update               Update a named connection with the current settings
+   -U, --user=user            Username utilized for connection
+</code></pre>
+<p>Additionally, every command has detailed documentation that can be viewed using the <a class="internal present" href="/scgray/jsqsh/wiki/help">\help</a> command with the name of the command you want help with:</p>
+<pre><code>1&gt; \help connect
+
+SYNOPSIS
+  \connect [options] [connection-name]
+          
+DESCRIPTION
+  The \connect command attempts to establish a JDBC connection to a database
+  server.  If a connection is successfully established then the connection
+  becomes the active connection for the current session. If the session already
+  had a connection established, then the existing connection is closed and
+  replaced with the new connection.
+          
+CONNECTION OPTIONS
+  The following options may be used to specify information required to establish
+  a database connection (or whatever your chosen JDBC driver considers a
+  connection).
+...
+</code></pre>
+<p>and online reference of all commands is available in the <a class="internal present" href="/scgray/jsqsh/wiki/Command-Reference">Command Reference</a>.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#aliasing" id="user-content-aliasing"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Aliasing</h2>
+<p>Aliases are a way of creating alternative names for existing jsqsh commands. Aliases may even provide additional command line arguments for those commands. For example, if you wanted to use '?' instead of the <a class="internal present" href="/scgray/jsqsh/wiki/help">\help</a> command, you could use the <a class="internal present" href="/scgray/jsqsh/wiki/alias">\alias</a> command like so:</p>
+<pre><code>1&gt; \alias ?='\help'
+1&gt; ? alias
+SYNOPSIS
+   \alias [-G] [name=text]
+          
+DESCRIPTION
+   An alias in jsqsh is slightly different (and potentially more dangerous
+   if misused) than the UNIX shell equivalent. In jsqsh, an alias defines a 
+   piece of text that, when encountered in a user's input, is replaced with
+   another piece of text. 
+...
+</code></pre>
+<h1>
+<a aria-hidden="true" class="anchor" href="#redirection-and-pipes" id="user-content-redirection-and-pipes"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Redirection and pipes</h1>
+<p>How many times have you watched a result set disappear from your screen because you didn't parse the screen fast enough or ran out of history in your terminal? Well, no more. Now, any command available in sqsh may be redirected to/from a file or pipelined to another process. For example:</p>
+<pre><code>1&gt; SELECT * FROM sysobjects
+2&gt; go | grep test | more
+</code></pre>
+<p>You may also redirect output to files using standard shell redirection nomenclature:</p>
+<pre><code>1&gt; SELECT * FROM sysobjects
+2&gt; go &gt; sysobjects.dat 2&gt;&amp;1
+</code></pre>
+<p>see <a class="internal present" href="/scgray/jsqsh/wiki/redirection">redirection</a> for more details.</p>
+<h1>
+<a aria-hidden="true" class="anchor" href="#variables" id="user-content-variables"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Variables</h1>
+<p>JSqsh supports variables in much the same way as a traditional shell.  They can be used both as values that you may refer to within your SQL, and they can be used to view or configure the behavior of jsqsh.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#configuration-variables" id="user-content-configuration-variables"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Configuration variables</h2>
+<p>Many aspects of jsqsh's behavior can be configured using variables.  The list of such variables can be displayed using <strong>\help vars</strong> (online documentation is available in the <a class="internal present" href="/scgray/jsqsh/wiki/Variables-Reference">Variables Reference</a>:</p>
+<pre><code>1&gt; \help vars
+Available configuration variables. Use "\help &lt;variable&gt;" to display detailed help for a given variable
++---------------------+-----------------------------------------------------------+
+| Variable            | Description                                               |
++---------------------+-----------------------------------------------------------+
+| SID                 | Oracle instance to which connection is established        |
+| autocommit          | Contains the connection's current auto-commit status      |
+| binstr_fmt          | Changes the manner in which binary values are displayed   |
+| build_date          | The jsqsh build date                                      |
+| classpath           | Defines JDBC driver locations                             |
+| connected           | Indicates whether or not the current session is connected |
+| database            | Contains the connection's current database                |
+| dflt_autocommit     | Controls the autocommit setting for new connections       |
+| dflt_database       | Controls the default database for new connections         |
+| domain              | Windows domain used to establish connection               |
+                             ...
+</code></pre>
+<p>So, for examples, to change the format that jsqsh uses to display TIMESTAMP data types you can change the $<a class="internal present" href="/scgray/jsqsh/wiki/fmt_datetime">fmt_datetime</a> variable using the <a class="internal present" href="/scgray/jsqsh/wiki/set">\set</a> command:</p>
+<pre><code>1&gt; select current_timestamp from dual;
++-------------------------+
+| current_timestamp       |
++-------------------------+
+| 2012-12-09 15:59:09.000 |
++-------------------------+
+1 row in results(first row: 0.0s; total: 0.0s)
+
+1&gt; \set fmt_datetime='MM/dd/yyyy HH:mm:ss'
+
+1&gt; select current_timestamp from dual;
++---------------------+
+| current_timestamp   |
++---------------------+
+| 12/09/2012 15:59:56 |
++---------------------+
+1 row in results(first row: 0.2s; total: 0.2s)
+</code></pre>
+<p>To display the value of a variable, you can use the <a class="internal present" href="/scgray/jsqsh/wiki/echo">\echo</a> command with the variable name.  Note that variables may be used within any jsqsh command, in the same way that they could be used on a UNIX shell command line:</p>
+<pre><code>1&gt; \echo $fmt_datetime
+MM/dd/yyyy HH:mm:ss
+</code></pre>
+<p>The <a class="internal present" href="/scgray/jsqsh/wiki/set">\set</a> command with no argument will display all configuration variables, and every configuration value has built-in help for it as well:</p>
+<pre><code>1&gt; \help fmt_datetime
+VARIABLE
+   fmt_datetime - Controls the representation of datatime values.
+
+DESCRIPTION
+   The ${fmt_datetime} variable contains a format string that is utilized
+   when display columns of type DATETIME. The format string follows java
+   SimpleDateFormat conventions, which are documented here:
+
+      http://java.sun.com/j2se/1.5.0/docs/api/java/text/SimpleDateFormat.html
+  
+   The default is 'MMM dd yyyy HH:mm:ss'.
+
+SEE ALSO
+   fmt_date, fmt_time
+</code></pre>
+<h2>
+<a aria-hidden="true" class="anchor" href="#variables-in-queries" id="user-content-variables-in-queries"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Variables in queries</h2>
+<p>If the $<a class="internal present" href="/scgray/jsqsh/wiki/expand">expand</a> variable is set to <code>true</code> (it defaults to <code>false</code>) then queries that contain variable references will have them expanded prior to execution.  For example:</p>
+<pre><code>1&gt; \set expand=true
+1&gt; \set t="sysobjects"
+1&gt; select count(*) as 'Count' from $t;
++-------+
+| Count |
++-------+
+|    82 |
++-------+
+</code></pre>
+<h1>
+<a aria-hidden="true" class="anchor" href="#display-styles" id="user-content-display-styles"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Display styles</h1>
+<p>Ever get tired of wading through isql's messy output when dealing with very wide result sets? JSqsh currently supports multiple separate display styles: <code>perfect</code>, <code>pretty</code>, <code>graphical</code>, <code>json</code>, <code>isql</code>, <code>csv</code>, <code>vertical</code>, <code>tree</code> and <code>discard</code>. The display style is switchable at any time while running via the <a class="internal present" href="/scgray/jsqsh/wiki/style">style</a> variable or by the <strong>-m</strong> flag to the <a class="internal present" href="/scgray/jsqsh/wiki/go">\go</a> command.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#perfect" id="user-content-perfect"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Perfect</h2>
+<p>The <code>perfect</code> is the default display style samples a number of rows of data (configurable) before display, and attempts to pack the columns as tightly together as possible to fit in the least screen space:</p>
+<pre><code>:::text
+1&gt; select DB_ID, OWNER, TBL_NAME from TBLS LIMIT 3
+2&gt; go -m perfect
++-------+-------+---------------------+
+| DB_ID | OWNER | TBL_NAME            |
++-------+-------+---------------------+
+|     1 | gray  | struct_simple1      |
+|     1 | gray  | struct_nested3      |
+|    81 | gray  | dist_inventory_fact |
++-------+-------+---------------------+
+</code></pre>
+<h2>
+<a aria-hidden="true" class="anchor" href="#pretty" id="user-content-pretty"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Pretty</h2>
+<p>The <code>pretty</code> style is just like <code>perfect</code> except rows are not analyzed before display, so the columns will be roughly the width of the datatype that the columns are defined for. This mode does try to be nice and word wrap long strings so that the result set stands a better chance of fitting on the screen (see <a class="internal present" href="/scgray/jsqsh/wiki/maxlen">maxlen</a>)</p>
+<pre><code>1&gt; select DB_ID, OWNER, TBL_NAME from TBLS LIMIT 3
+2&gt; go -m pretty
++--------------------+-----------------------------+---------------------------------+
+|              DB_ID | OWNER                       | TBL_NAME                        |   
++--------------------+-----------------------------+---------------------------------+
+|                  1 | gray                        | struct_simple1                  |   
+|                  1 | gray                        | struct_nested3                  |   
+|                 81 | gray                        | dist_inventory_fact             |   
++--------------------+-----------------------------+---------------------------------+
+</code></pre>
+<h2>
+<a aria-hidden="true" class="anchor" href="#tight" id="user-content-tight"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Tight</h2>
+<p>Tight is identical to <code>pretty</code> (meaning it attempts to minimize the space required to display the results), except that it drops out outside border for a slightly tighter display:</p>
+<pre><code>[null][me] 1&gt; select * from x
+[null][me] 2&gt; go -m tight
+
+STATE | DAYOFWEEK |    SALES
+------+-----------+---------
+NJ    | Mon       | 14.20000
+NJ    | Tue       | 11.40000
+NJ    | Wed       | 19.30000
+CA    | Mon       |  4.10000
+CA    | Tue       |  8.30000
+CA    | Wed       | 44.20000
+NJ    | Thu       | 17.10000
+AR    | Tue       |  4.30000
+</code></pre>
+<h2>
+<a aria-hidden="true" class="anchor" href="#simple" id="user-content-simple"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Simple</h2>
+<p>Simple is the same as <code>pretty</code> except that it drops the outer border as well:</p>
+<pre><code>[null][me] 1&gt; select * from x
+[null][me] 2&gt; go -m simple
+
+STATE | DAYOFWEEK  |                  SALES
+------+------------+-----------------------
+NJ    | Mon        |               14.20000
+NJ    | Tue        |               11.40000
+NJ    | Wed        |               19.30000
+CA    | Mon        |                4.10000
+CA    | Tue        |                8.30000
+CA    | Wed        |               44.20000
+NJ    | Thu        |               17.10000
+AR    | Tue        |                4.30000 
+</code></pre>
+<h2>
+<a aria-hidden="true" class="anchor" href="#graphical" id="user-content-graphical"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Graphical</h2>
+<p>The <code>graphical</code> display style displays each result set as a popup graphical table that supports sorting by clicking on the column headers of the table:</p>
+<pre><code>1&gt; select * from sysobjects
+2&gt; go -m graphical
+</code></pre>
+<p>results in a window that looks like:</p>
+<p><img alt="Graphical format" data-canonical-src="https://sourceforge.net/p/jsqsh/wiki/Attachments/attachment/Query_results.jpg" src="https://camo.githubusercontent.com/5d53d1d6b3839e979fc73509796e426282267ff1/68747470733a2f2f736f75726365666f7267652e6e65742f702f6a737173682f77696b692f4174746163686d656e74732f6174746163686d656e742f51756572795f726573756c74732e6a7067"/></p>
+<p>In addition to the graphical table format shown here, every jsqsh command takes an option argument of <strong>-g</strong> or <strong>--gui</strong> (see <a class="internal present" href="/scgray/jsqsh/wiki/options">options</a>) that causes the text of that command to be displayed in a graphical window. For example, passing the flag to the <a class="internal present" href="/scgray/jsqsh/wiki/help">\help</a> command, like so:</p>
+<pre><code>1&gt; \help --gui vars
+</code></pre>
+<p>results in:</p>
+<p><img alt="Graphical help" data-canonical-src="https://sourceforge.net/p/jsqsh/wiki/Attachments/attachment/Help_gui.jpg" src="https://camo.githubusercontent.com/f15edc67def76ebafe2a5aae74ebb287c52a6d19/68747470733a2f2f736f75726365666f7267652e6e65742f702f6a737173682f77696b692f4174746163686d656e74732f6174746163686d656e742f48656c705f6775692e6a7067"/></p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#json" id="user-content-json"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>JSON</h2>
+<p>The <code>json</code> display style, presents rows as an array of <a href="http://www.json.org/" rel="nofollow">JSON</a> records.</p>
+<pre><code>1&gt; select DB_ID, OWNER, TBL_NAME from TBLS LIMIT 3
+2&gt; go -m json
+[
+   {
+      "DB_ID": 1,
+      "OWNER": "gray",
+      "TBL_NAME": "struct_simple1"
+   },
+   {
+      "DB_ID": 1,
+      "OWNER": "gray",
+      "TBL_NAME": "struct_nested3"
+   },
+   {
+      "DB_ID": 81,
+      "OWNER": "gray",
+      "TBL_NAME": "dist_inventory_fact"
+   }
+]
+</code></pre>
+<h2>
+<a aria-hidden="true" class="anchor" href="#isql" id="user-content-isql"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Isql</h2>
+<p>The <code>isql</code> display style is intended to mimic the output of Sybase or Microsoft SQL Server 'isql' commands:</p>
+<pre><code>1&gt; select DB_ID, OWNER, TBL_NAME from TBLS LIMIT 3
+2&gt; go -m isql
+ DB_ID             
+    OWNER
+    TBL_NAME
+ ----------------------
+    -----------------------------------------------
+    -----------------------------------------------
+                      1
+    gray               
+    struct_simple1      
+                      1
+    gray               
+    struct_nested3
+                     81
+    gray               
+    dist_inventory_fact
+</code></pre>
+<h2>
+<a aria-hidden="true" class="anchor" href="#csv" id="user-content-csv"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>CSV</h2>
+<p>The <code>csv</code> output format presents ye-olde comma delimited values:</p>
+<pre><code>1&gt; select DB_ID, OWNER, TBL_NAME from TBLS LIMIT 3
+2&gt; go -m csv
+DB_ID,OWNER,TBL_NAME
+1,gray,struct_simple1
+1,gray,struct_nested3
+81,gray,dist_inventory_fact
+</code></pre>
+<h2>
+<a aria-hidden="true" class="anchor" href="#vertical" id="user-content-vertical"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Vertical</h2>
+<p>The <code>vertical</code> display style presents a simple set of name/value pairs:</p>
+<pre><code>1&gt; select DB_ID, OWNER, TBL_NAME from TBLS LIMIT 3
+2&gt; go -m vertical
+DB_ID:    1
+OWNER:    gray
+TBL_NAME: struct_simple1
+
+DB_ID:    1
+OWNER:    gray
+TBL_NAME: struct_nested3
+
+DB_ID:    81
+OWNER:    gray
+TBL_NAME: dist_inventory_fact
+</code></pre>
+<h2>
+<a aria-hidden="true" class="anchor" href="#tree" id="user-content-tree"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Tree</h2>
+<p>The <code>tree</code> view is a graphical view that presents ordered data in a tree view so that you can drill down and sift through available information:</p>
+<pre><code>1&gt; select DB_ID, OWNER, TBL_NAME from TBLS order by DB_ID, OWNER, TBL_NAME
+2&gt; go -m tree
+</code></pre>
+<p>Presents:</p>
+<p><img alt="Tree view" data-canonical-src="https://sourceforge.net/p/jsqsh/wiki/Attachments/attachment/tree_view.png" src="https://camo.githubusercontent.com/22b956281921532a1c3f03257e84c2387b0cf17b/68747470733a2f2f736f75726365666f7267652e6e65742f702f6a737173682f77696b692f4174746163686d656e74732f6174746163686d656e742f747265655f766965772e706e67"/></p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#discard" id="user-content-discard"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Discard</h2>
+<p>The <code>discard</code> display style displays no output, just the final row count and timing information about the query. This display style is intended to performance testing when you wish to exclude (as much as possible) the cost of displaying the output in your final query timing.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#crosstab" id="user-content-crosstab"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Crosstab</h2>
+<p>With jsqsh 2.3 and later you may ask jsqsh to produce a crosstab of your query using the <code>--crosstab</code> argument to the <code>\go</code> command. For example, given:</p>
+<pre><code>    [null][me] 1&gt; select * from x
+    [null][me] 2&gt; go
+    +-------+-----------+----------+
+    | STATE | DAYOFWEEK |    SALES |
+    +-------+-----------+----------+
+    | NJ    | Mon       | 14.20000 |
+    | NJ    | Tue       | 11.40000 |
+    | NJ    | Wed       | 19.30000 |
+    | CA    | Mon       |  4.10000 |
+    | CA    | Tue       |  8.30000 |
+    | CA    | Wed       | 44.20000 |
+    | NJ    | Thu       | 17.10000 |
+    | AR    | Tue       |  4.30000 |
+    +-------+-----------+----------+
+</code></pre>
+<p>A crosstab of day of week by state can be produced like so:</p>
+<pre><code>    [null][me] 1&gt; select * from x
+    [null][me] 2&gt; go --crosstab dayofweek,state,sales
+    +-----------+---------+----------+----------+
+    | DAYOFWEEK |      AR |       CA |       NJ |
+    +-----------+---------+----------+----------+
+    | Mon       |  [NULL] |  4.10000 | 14.20000 |
+    | Tue       | 4.30000 |  8.30000 | 11.40000 |
+    | Wed       |  [NULL] | 44.20000 | 19.30000 |
+    | Thu       |  [NULL] |   [NULL] | 17.10000 |
+    +-----------+---------+----------+----------+
+</code></pre>
+<p>For more details, see the <a class="internal present" href="/scgray/jsqsh/wiki/go">\go</a> command.</p>
+<h1>
+<a aria-hidden="true" class="anchor" href="#ddl-generation" id="user-content-ddl-generation"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>DDL generation</h1>
+<p>Beyond just running queries against the database server, jsqsh has a number of commands to automatically generate SQL statements for you, to save a little typing.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#create-generation" id="user-content-create-generation"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>CREATE generation</h2>
+<p>The <a class="internal present" href="/scgray/jsqsh/wiki/create">\create</a> command can be used to generate a table definition:</p>
+<pre><code>1&gt; \create sysobjects
+CREATE TABLE sysobjects
+(
+    name             sysname(128)     NOT NULL,
+    id               int              NOT NULL,
+    xtype            char(2)          NOT NULL,
+    uid              smallint         NOT NULL,
+    info             smallint         NOT NULL,
+    status           int              NOT NULL,
+    base_schema_ver  int              NOT NULL,
+    replinfo         int              NOT NULL,
+    parent_obj       int              NOT NULL,
+    crdate           datetime         NOT NULL,
+    ftcatid          smallint         NOT NULL,
+    schema_ver       int              NOT NULL,
+    stats_schema_ver int              NOT NULL,
+    type             char(2)          NULL,
+    userstat         smallint         NULL,
+    sysstat          smallint         NULL,
+    indexdel         smallint         NULL,
+    refdate          datetime         NULL,
+    version          int              NULL,
+    deltrig          int              NULL,
+    instrig          int              NULL,
+    updtrig          int              NULL,
+    seltrig          int              NULL,
+    category         int              NULL,
+    cache            smallint         NULL
+)
+</code></pre>
+<p>Currently the <a class="internal present" href="/scgray/jsqsh/wiki/create">\create</a> command is limited to basic column definitions. Future versions of jsqsh will add support for RI related to the table as well (and possibly check constraints).</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#insert-generation" id="user-content-insert-generation"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>INSERT generation</h2>
+<p>The <a class="internal present" href="/scgray/jsqsh/wiki/insert">\insert</a> command can be used to generate INSERT statements for populating tables:</p>
+<pre><code>1&gt; select * from pubs2..authors
+2&gt; \insert --batch-size=2 authors
+INSERT INTO authors (au_id, au_lname, au_fname, ...) VALUES (...
+INSERT INTO authors (au_id, au_lname, au_fname, ...) VALUES (...
+go
+INSERT INTO authors (au_id, au_lname, au_fname, ...) VALUES (...
+INSERT INTO authors (au_id, au_lname, au_fname, ...) VALUES (...
+go
+</code></pre>
+<p>In addition, using the <strong>--target-session</strong> argument to <a class="internal present" href="/scgray/jsqsh/wiki/insert">\insert</a> the INSERT statements can directly executed against another connection being managed by jsqsh to provide a basic server-to-server table copy function.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#select-generation" id="user-content-select-generation"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>SELECT generation</h2>
+<p>The <a class="internal present" href="/scgray/jsqsh/wiki/select">\select</a> command can be used to generate SELECT statements based upon the definition of tables in the database. The command can generate WHERE clauses to join multiple tables based upon the RI between the tables or, optionally , by performing a "natural" join and joining columns of the same name and datatype.</p>
+<pre><code>1&gt; \select --print titles titleauthor
+SELECT a.title_id,
+       a.title,
+       a.type,
+       a.pub_id,
+       a.price,
+       a.advance,
+       a.num_sold,
+       a.notes,
+       a.pubdate,
+       a.contract,
+       b.au_id,
+       b.title_id,
+       b.au_ord,
+       b.royaltyper
+FROM titles a, titleauthor b
+WHERE a.title_id = b.title_id
+</code></pre>
+<h1>
+<a aria-hidden="true" class="anchor" href="#other-features" id="user-content-other-features"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Other features</h1>
+<p>Below is just a general list of other interesting features:</p>
+<ul>
+<li>
+<strong>Multiple active sessions</strong>  You may have multiple connections open to multiple different servers simultaneously and easily switch between them. The output of one session can even be redirected into another session (see <a class="internal present" href="/scgray/jsqsh/wiki/session">\session</a>).</li>
+<li>
+<strong>Name connections</strong> You can name connections, so that if you ever need to reconnect to a given server you can refer to the server as, say, "testdb" rather than providing all of the necessary connection information</li>
+<li>
+<strong>Tab completion</strong> The tab key will attempt to complete the object name you are currently typing based upon the context of your SQL statement</li>
+<li>
+<strong>Batch SQL</strong> The <a class="internal present" href="/scgray/jsqsh/wiki/call">\call</a> command allows you to prepare a statement containing "?" markers and execute it repeatedly utilizing values from a delimited file.</li>
+<li>
+<strong>Stored procedure with return parameters</strong> Jsqsh has special handling for calling stored procedures with output parameters, see <a class="internal present" href="/scgray/jsqsh/wiki/storedprocs">storedprocs</a> for details.</li>
+<li>
+<strong>Much more!</strong> Please, please please. I spent a lot of time writing documentation. Use the <strong>\help</strong> command!!</li>
+</ul>
+
+        </div>
+
+    </div>]

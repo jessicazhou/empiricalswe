@@ -1,0 +1,63 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>Do I have to remind you by now that <strong>mixins aren't classes</strong>? Hopefully not. However since from a purely mechanical standpoint mixins are <em>compiled using javac</em> just like ordinary java classes, there are certain things you need to be aware of when writing them, many of which I have already covered in previous sections.</p>
+<p>One place where mixins get tricky to work with is when you have mixins being applied to multiple classes which form a class hierarchy. Inter-mixin operability can be a nuisance without helper interfaces allowing you to access mixin-provided fields and methods in superclasses.</p>
+<p>As we saw in the earlier sections, in general a mixin is expected to extend either the direct superclass of its <strong>target class</strong> or a superclass within the the <strong>target class</strong>'s hierarchy (up to and including <code>java.lang.Object</code>).</p>
+<p>This section covers one of the more technical aspects of mixin implementation, that of validating that a mixin extends from a valid superclass.</p>
+<h4>
+<a aria-hidden="true" class="anchor" href="#mixins-and-the-parallel-pseudo-hierarchy" id="user-content-mixins-and-the-parallel-pseudo-hierarchy"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Mixins and the parallel pseudo-hierarchy</h4>
+<p>For a typical class hierarchy, we can easily end up with a scenario which looks something like the following, with each mixin inheriting from its target's parent class:</p>
+<p><img alt="" src="https://raw.githubusercontent.com/SpongePowered/Mixin/master/docs/images/mixin_hier_0.png"/></p>
+<p>We can easily see from this diagram that the mixins themselves form what appears at first glance to be a hierarchy which mirrors the hierarchy of their targets, however it is important to realise that the mixins themselves <strong>do not</strong>, in fact, form a hierarchy and are not directly related to one another in any way that transcends the purely conceptual.</p>
+<p>One benefit of this scenario is that it is extremely easy to validate, we can easily check that a mixin's superclass is valid by simply looking for its superclass in the hierarchy of each target class.</p>
+<p>Let's take a look at how we would validate <code>MixinEntityPlayer</code>. This mixin targets <code>EntityPlayer</code> and extends <code>EntityLiving</code>. To perform validation we simply walk up <code>EntityPlayer</code>'s superclass hierarchy until we find (or don't find) <code>EntityLiving</code>.</p>
+<p>We can express our naïve validation algorithm in a recursive fashion as follows:</p>
+<ol>
+<li>If I am the <strong>superclass</strong>, stop and <strong>return true</strong>.</li>
+<li>If I am <code>Object</code>, stop and <strong>return false</strong>.</li>
+<li>Walk up to <strong>my</strong> superclass, then repeat from step 1 and return the result.</li>
+</ol>
+<p>Visually, our validation process looks like this:</p>
+<p><img alt="" src="https://raw.githubusercontent.com/SpongePowered/Mixin/master/docs/images/mixin_hier_1.png"/></p>
+<p>As we can see, validation for this scenario using this algorithm takes only two steps:</p>
+<ol>
+<li>First we traverse to the mixin target class <code>EntityPlayer</code>
+</li>
+<li>Next we walk up the hierarchy 1 position to <code>EntityPlayer</code>'s superclass, at which point validation succeeds because the superclass was found.</li>
+</ol>
+<p>However this efficiency comes at a price: because our mixins don't actually extend from one another, it is not immediately possible to access a field or method in a superclass which is added by a mixin.</p>
+<p>For example, let's imagine that <code>MixinEntityLiving</code> adds a new protected <code>field</code> into its target class. Now because <code>MixinEntityPlayer</code> extends <code>EntityLiving</code>, in <strong>practice</strong> the field <code>foo</code> will be accessible from <code>EntityPlayer</code>, however mixins for <code>EntityPlayer</code> have no awareness of this new field and are thus unable to reference it at <strong>compile time</strong>:</p>
+<p><img alt="" src="https://raw.githubusercontent.com/SpongePowered/Mixin/master/docs/images/mixin_hier_2.png"/></p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#mixin-inheritance" id="user-content-mixin-inheritance"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Mixin "inheritance"</h3>
+<p>We can address this problem by allowing mixins to extend not just from classes in the target's hierarchy, but also from other mixins, this allows us to conceptually create a structure like this:</p>
+<p><img alt="" src="https://raw.githubusercontent.com/SpongePowered/Mixin/master/docs/images/mixin_hier_3.png"/></p>
+<p>However whilst a structure like this is easy for a human being to design and understand, it is quite difficult for the mixin subsystem to verify, this is because an individual mixin has no way of knowing if it's (declared) superclass will eventually appear in the superclass hierarchy of its <strong>target</strong>.</p>
+<p>It may be tempting to assume - looking at the diagram above - that validation is easy or even unnecessary, but since it's true that mixins can have multiple targets and multiple mixins can target a single class, validation gets very complicated very quickly when the hierarchy of mixins and targets is less straightforward:</p>
+<p><img alt="" src="https://raw.githubusercontent.com/SpongePowered/Mixin/master/docs/images/mixin_hier_4.png"/></p>
+<p>Superclass validation is important because it's the only way to verify before application of a mixin that statically-bound invocations in the mixin are sane and will resolve correctly at application time, thus it is not safe to simply skip validation and hope for the best. However we need validation to be as efficient as possible because it must be run for every mixin at load time.</p>
+<p>It's important to realise that <strong>every mixin</strong> has to be validated in the context of <strong>every one of its targets</strong>, since as already shown mixin targets may have wildly different hierarchies. This means it's not safe to assume that because one target's hierarchy can be sanely resolved that all other targets are sane, validation still has to take place for each target.</p>
+<p>When we apply our naïve validation scheme from before, and simply look for the mixin's superclass in the hierarchy of the target, we run into a problem, validation fails:</p>
+<p><img alt="" src="https://raw.githubusercontent.com/SpongePowered/Mixin/master/docs/images/mixin_hier_5.png"/></p>
+<p>Now we <strong>could</strong> solve this problem by walking up the mixin hierarchy, and for <em>each</em> super mixin, look for each of its targets in the superclass hierarchy of the mixin target in question. However this approach gets very expensive very quickly when dealing with multi-target mixins because for <em>every</em> supermixin target we have to search the superclass hierarchy of <em>every</em> target of the derived mixin to find a match. This could result in a lot of lookups for an ostensibly quite simple validation task.</p>
+<p>The solution turns out to be quite simple: we simply separate mixin loading into two distinct <strong>passes</strong>. In the <strong>first pass</strong> we generate some additional metadata which can be used to fill the gaps in our knowledge of the hierarchy. In particular, we have each loaded mixin "tag" its target classes with a pointer to itself. This means that the target class now <em>knows</em> which mixins are targetting it:</p>
+<p><img alt="" src="https://raw.githubusercontent.com/SpongePowered/Mixin/master/docs/images/mixin_hier_6.png"/></p>
+<p>With this new information available, we can perform validation in a <strong>second pass</strong>, knowing that our hierarchy information is complete, and modify our recursive algorithm to take advantage of the new data as follows:</p>
+<ol>
+<li>If I am the <strong>superclass</strong>, stop and <strong>return true</strong>.</li>
+<li>If I am <code>Object</code>, stop and <strong>return false</strong>.</li>
+<li>Walk up to <strong>my</strong> superclass, then repeat from step 1 and note the result.</li>
+<li>If the result of step 3 is <strong>false</strong> check each tagged mixin:</li>
+</ol>
+<ul>
+<li>If <strong>any mixins</strong> are the <strong>superclass</strong> we're looking for, <strong>return true</strong>
+</li>
+<li>If <strong>no mixins</strong> are the <strong>superclass</strong> we're looking for, <strong>return false</strong>
+</li>
+</ul>
+<p><img alt="" src="https://raw.githubusercontent.com/SpongePowered/Mixin/master/docs/images/mixin_hier_7.png"/></p>
+<p>As you can see, validation is still a <em>depth-first search</em>. However we now have a secondary strategy to employ when the search fails, in that we check tagged mixins on our way back up the tree. This ultimately means that the complexity of our search is linear and only marginally more expensive than before, in as much as a full traversal of the target's superclass hierarchy is still required, but a maximum of one time per target, which is far more acceptable.</p>
+
+        </div>
+
+    </div>]

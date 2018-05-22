@@ -1,0 +1,297 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>Up to this point, the mixin functionality we have covered has been exclusively <em>additive</em> in nature, and does not fundamentally alter the original behaviour of the target class. However there are two situations where we may wish to have our mixins alter or replace content in the target class:</p>
+<ol>
+<li>We wish to change the behaviour of an existing method.</li>
+<li>We wish to define an accessor in the target class which already exists, but whose name may change after it is obfuscated.</li>
+</ol>
+<p>Both of these scenarios require us to potentially <em>overwrite</em> some part of the target class.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#1-the-proverbial-bull-in-the-proverbial-shop---overwrites" id="user-content-1-the-proverbial-bull-in-the-proverbial-shop---overwrites"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>1. The Proverbial Bull in the Proverbial Shop - Overwrites</h3>
+<p><em>Overwrites</em> are the least subtle of the mixin capabilities, and in general effort should be undertaken to instead make use of <a href="https://github.com/SpongePowered/Mixin/wiki/Advanced-Mixin-Usage---Callback-Injectors">Callback Injectors</a>, <a href="https://github.com/SpongePowered/Mixin/wiki/Advanced-Mixin-Usage---Rerouters">Rerouters</a> or other mixin code injection capabilities.</p>
+<p>Let's take a moment to remind ourselves of the example from <a href="https://github.com/SpongePowered/Mixin/wiki/Introduction-to-Mixins---Understanding-Mixin-Architecture#6-is-it-a-bird-is-it-a-plane-no-its-superclass">the first part of this tutorial</a> where we add the method <code>setLevel</code> to the target class using a mixin:</p>
+<p><img alt="" src="https://raw.githubusercontent.com/SpongePowered/Mixin/master/docs/images/mixin_tut_19.png"/></p>
+<p>The mixin contains the extra method with no extra decoration and the method is added to the target class. After mixin application, the method exists in the target class as if it had been there all along. I've tagged the mixin method with <img alt="" src="https://raw.githubusercontent.com/SpongePowered/Mixin/master/docs/images/mixin_tut_21.png"/> in order to make it easier to spot when merged:</p>
+<p><img alt="" src="https://raw.githubusercontent.com/SpongePowered/Mixin/master/docs/images/mixin_tut_20.png"/></p>
+<p>So the next question is: <em>what happens if we declare a method in a mixin which <strong>already exists in the target class</strong>?</em></p>
+<p>The answer is, <strong>the <em>mixin</em> method completely overwrites the <em>original</em> method</strong>.</p>
+<h4>
+<a aria-hidden="true" class="anchor" href="#11-declaring-overwrite-methods" id="user-content-11-declaring-overwrite-methods"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>1.1 Declaring Overwrite Methods</h4>
+<p>Let's take a look at a simple example. We will assume that the <code>getLevel()</code> method in <code>EntityPlayer</code> doesn't function in the manner required by our interface. Maybe the interface contract stipulates that calling <code>getLevel()</code> should always return a non-negative value, but the internal structure of <code>EntityPlayer</code> does not prevent negative levels and we want to guard against this.</p>
+<p>We will define a new body for <code>getLevel()</code> which respects the interface contract:</p>
+<div class="highlight highlight-source-java"><pre><span class="pl-k">@Mixin</span>(<span class="pl-smi">EntityPlayer</span><span class="pl-k">.</span>class)
+<span class="pl-k">public</span> <span class="pl-k">abstract</span> <span class="pl-k">class</span> <span class="pl-en">MixinEntityPlayer</span>
+    <span class="pl-k">extends</span> <span class="pl-e">Entity</span>
+    <span class="pl-k">implements</span> <span class="pl-e">LivingThing</span>, <span class="pl-e">Leveller</span> {
+
+    <span class="pl-k">@Shadow</span>
+    <span class="pl-k">private</span> <span class="pl-k">int</span> level;
+
+    <span class="pl-c"><span class="pl-c">/**</span></span>
+<span class="pl-c">     * This method overwrites getLevel in the target class and</span>
+<span class="pl-c">     * ensures that it returns a non-negative value.</span>
+<span class="pl-c">     <span class="pl-c">*/</span></span>
+    <span class="pl-k">public</span> <span class="pl-k">int</span> <span class="pl-en">getLevel</span>() {
+        <span class="pl-k">return</span> <span class="pl-smi">Math</span><span class="pl-k">.</span>max(<span class="pl-c1">this</span><span class="pl-k">.</span>level, <span class="pl-c1">0</span>);
+    }
+
+    <span class="pl-k">@Override</span>
+    <span class="pl-k">public</span> <span class="pl-k">void</span> <span class="pl-en">setLevel</span>(<span class="pl-k">int</span> <span class="pl-v">newLevel</span>) {
+    
+        <span class="pl-c1">...</span> etc.</pre></div>
+<p>Now when the mixin is applied, the <code>getLevel()</code> method defined in the mixin will overwrite its existing counterpart:</p>
+<p><img alt="" src="https://raw.githubusercontent.com/SpongePowered/Mixin/master/docs/images/mixin_tut_22.png"/></p>
+<p>Resulting in a class whose structure is no different from before, but contains our new logic in the <code>getLevel()</code> method.</p>
+<h4>
+<a aria-hidden="true" class="anchor" href="#12-with-great-power-comes-great-possibility-to-screw-things-up" id="user-content-12-with-great-power-comes-great-possibility-to-screw-things-up"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>1.2 With Great Power Comes Great Possibility to Screw Things Up</h4>
+<p>It should be noted early on that <strong>overwrites are not some kind of panacea</strong>, they have a number of quite significant drawbacks and care should be taken when choosing to use them. Drawbacks include, but are not limited to:</p>
+<ul>
+<li>Overwrites completely eradicate any previous transformations applied to the method. This means that any other mod using a transformer to change the target method will have their changes eradicated. This could cause the other mod, or even the entire game to become unstable.</li>
+<li>As well as other mods, other mixins which want to overwrite the same method will conflict. The mixin with the highest defined <em>priority</em> will win, and only the overwrite from that mixin will actually be present in the target class. If a later mixin tries to overwrite a method from a mixin with a higher priority, a warning is generated.</li>
+<li>Overwriting more complex methods may lead to the overwrite becoming "out of date". For example if you decide to overwrite a method with a modified version of its original code, it becomes your responsibility to ensure that that code maintains parity with its target in your mixin. You can help yourself do this using <a href="#3-constraints">constraints</a> (see below).</li>
+<li>Using overwrites may cause premature baldness and a tendency to shout at traffic.</li>
+</ul>
+<p>You should thus consider carefully whether to use an overwrite. Some considerations, and places where overwrites are appropriate to use are:</p>
+<ul>
+<li>
+<p><strong>Simple methods, such as accessors</strong>
+Using overwrites in these scenarios to decorate an accessor with some additional logic can be a quick and efficient way to add functionality such as argument validation. Since getters and setters don't tend to be very dynamic, modifying them using overwrites is quick and straightforward. However you should still consider whether an <a href="https://github.com/SpongePowered/Mixin/wiki/Advanced-Mixin-Usage---Callback-Injectors">Injector</a> would be more suitable.</p>
+</li>
+<li>
+<p><strong>Rapid prototyping</strong>
+Another place where overwrites can be handy is when prototyping changes to a method which you intend to later change to use <a href="https://github.com/SpongePowered/Mixin/wiki/Advanced-Mixin-Usage---Callback-Injectors">Callback Injectors</a>. Making a copy of the original method in your mixin can be a fast and easy way to create a simple "patch" during development, especially when trying to determine the best way to alter a method's behaviour to suit your needs.</p>
+</li>
+<li>
+<p><strong>Situations where injectors simply aren't powerful enough</strong>
+Whilst <a href="https://github.com/SpongePowered/Mixin/wiki/Advanced-Mixin-Usage---Callback-Injectors">Callback Injectors</a> are incredibly powerful, their scope is nevertheless limited and you will occasionally encounter scenarios where they don't cut the mustard, especially in extremely complex or large methods. As with all overwrites, extreme reluctance should be excercised when taking this kind of approach, but sometimes it's simply necessary.</p>
+</li>
+<li>
+<p><strong>Careful with that rope</strong>
+Overwrites should be considered a great length of rope to hang yourself with. Ensure that overwrites don't come back to bite you by setting up a process for managing any overwrites you have on an ongoing basis. I recommend that you, as a minimum:</p>
+</li>
+<li>
+<p>Decorate <strong>all</strong> overwriting methods with comments explaining <strong>why</strong> the overwrite is being used, <strong>who</strong> added it and <strong>when</strong> they did so. Review these comments on an ongoing basis to ensure that overwrites remain necessary and relevant.</p>
+</li>
+<li>
+<p>When using a "copy and modify" approach to overwrites, where the original method body is used as a starting point, <strong>comment changes you make</strong> to the method body. This will make it easier to extract and merge your changes should the target method change.</p>
+</li>
+<li>
+<p>Decorate any overwrites used for prototyping or "to be converted to injectors" as such so that they don't get left in the codebase longer than necessary.</p>
+</li>
+<li>
+<p>Use <a href="#3-constraints">constraints</a> to add a level of sanity checking to your overwrites, more details on these are provided in the section below.</p>
+</li>
+</ul>
+<h4>
+<a aria-hidden="true" class="anchor" href="#13-that-pesky-obfuscation-boundary" id="user-content-13-that-pesky-obfuscation-boundary"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>1.3 That Pesky Obfuscation Boundary</h4>
+<p>You may have wondered why the <a href="https://github.com/SpongePowered/Mixin/wiki/Introduction-to-Mixins---Obfuscation-and-Mixins">the previous section</a> went into such a painful amount of detail to define this thing we refer to as the <em><a href="https://github.com/SpongePowered/Mixin/wiki/Introduction-to-Mixins---Obfuscation-and-Mixins#2-resolving-the-identity-crisis---defining-the-obfuscation-boundary">obfuscation boundary</a></em>. You may recall from that section that</p>
+<blockquote>
+<p>Any mixin-specific mechanisms ...  <strong>will always be decorated with some kind of annotation</strong>. This makes them visible to the Mixin Annotation Processor which will handle their obfuscation traversal.</p>
+</blockquote>
+<p>... and indeed this is the case.</p>
+<p>If you think about it this is perfectly logical: an overwrite method doesn't "know" it's going to be overwriting a target method <em>until the mixin is applied</em>, at which point it discovers that it's comfy spot by the fire is already occupied by the original method and realises its destiny as an overwrite. This is fine when no obfuscation is involved, but is a real pain when there is because we need some way of "connecting" the overwrite with the desired target method in order to let the AP generate the obfuscation table entries.</p>
+<p>To do this, we use a simple annotation called <code>@Overwrite</code>.</p>
+<div class="highlight highlight-source-java"><pre>    <span class="pl-c"><span class="pl-c">/**</span></span>
+<span class="pl-c">     * Adding the annotation to our overwrite connects it with</span>
+<span class="pl-c">     * its will-be-obfuscated target method.</span>
+<span class="pl-c">     <span class="pl-c">*/</span></span>
+    <span class="pl-k">@Overwrite</span>
+    <span class="pl-k">public</span> <span class="pl-k">int</span> getLevel() {
+        <span class="pl-k">return</span> <span class="pl-smi">Math</span><span class="pl-k">.</span>max(<span class="pl-c1">this</span><span class="pl-k">.</span>level, <span class="pl-c1">0</span>);
+    }</pre></div>
+<h5>
+<a aria-hidden="true" class="anchor" href="#131-using-the-overwrite-annotation" id="user-content-131-using-the-overwrite-annotation"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>1.3.1 Using the <code>@Overwrite</code> Annotation</h5>
+<p>Decorating a method with <code>@Overwrite</code> will cause the annotation processor to look up the target method at compile time. If no mapping is found the AP will generate an error.</p>
+<p>This means that:</p>
+<ul>
+<li>
+<p>To define an <strong>overwrite</strong> in your mixin for a method which <strong>is not obfuscated</strong>, you should simply <strong>declare the method.</strong></p>
+</li>
+<li>
+<p>To define an <strong>overwrite</strong> for a method which <strong>is obfuscated</strong> you should <strong>declare the method and decorate it with an <code>@Overwrite</code> annotation</strong>.</p>
+</li>
+</ul>
+<p>You should also bear in mind that any mixin containing an overwrite method <em>cannot target more than one class</em>. The reason for this is that even if all of the target classes define the same method with the same name and signature in the mcp environment, this will not be the case for the obfuscated environment where every method has a unique name. It is possible to work around this restriction using aliases but this is not recommended.</p>
+<h4>
+<a aria-hidden="true" class="anchor" href="#14-other-uses-of-the-overwrite-annotation" id="user-content-14-other-uses-of-the-overwrite-annotation"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>1.4 Other Uses of the <code>@Overwrite</code> Annotation</h4>
+<p>There is one final use of the <code>@Overwrite</code> decoration. Defining an overwrite for a <code>public static</code> method in the target class.</p>
+<p>By default, including a method declared as <code>public static</code> in a mixin raises an <code>Id10t Error</code>, since there is no way to ever call a method defined in this way! However it should be clear that overwrites provide a use-case for this otherwise pointless operation. Decorating the method with <code>@Overwrite</code> will bypass the restriction and allow the <code>public static</code> method to be defined in the mixin.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#2-intrinsic-proxy-methods" id="user-content-2-intrinsic-proxy-methods"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>2. Intrinsic Proxy Methods</h3>
+<p>Whilst the behaviour of regular overwrites is easy to understand and quite predictable, their lack of flexibility presents some challenges for mixin design which are not easy to overcome. The good news is that Mixin provides built-in functionality to cope with these problems. The not so good news is that this functionality looks quite complicated at first. We shall approach the problem step-by-step in order to understand these methods more clearly.</p>
+<h4>
+<a aria-hidden="true" class="anchor" href="#21-the-intrinsic-quack-and-the-obfuscated-duck-hunt" id="user-content-21-the-intrinsic-quack-and-the-obfuscated-duck-hunt"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>2.1 The Intrinsic Quack and the Obfuscated Duck Hunt</h4>
+<p>As we have seen, one of the key undertakings with Mixin is to provide pseudo-duck-typing capabilities in our Java applications by applying our own interfaces to existing objects using mixins. As we have seen, sometimes a method in the existing class will <em>already</em> implement an interface method, we call this type of method an <em>Intrinsic</em> method because it is a part of the existing class: effectively our class already knows - intrinsically - how to quack.</p>
+<p>However there's a problem: what happens if the intrinsic method in question is obfuscated? The answer is - the object no longer quacks once it's obfuscated, and the interface contract is broken once the obfuscation boundary is crossed.</p>
+<p>Let's look at a simple example. In this example, we will use the same class and interface from the previous article, but we will assume that instead the <code>Identifyable</code> interface doesn't conflict with the target object this time:</p>
+<p><img alt="" src="https://raw.githubusercontent.com/SpongePowered/Mixin/master/docs/images/mixin_tut_24.png"/></p>
+<p>As we can see, no implementation of <code>getID</code> is required in the mixin, since the class <code>Foo</code> already intrinsically implements the interface. However, after obfuscation the class, field and method names have all changed, and we run into a problem:</p>
+<p><img alt="" src="https://raw.githubusercontent.com/SpongePowered/Mixin/master/docs/images/mixin_tut_25.png"/></p>
+<p>Now that the method is no longer implemented, any consumer will cause an <code>AbstractMethodError</code> to be raised if they try to call the method.</p>
+<p>There is a way to fix this using functionality we already know about:</p>
+<ul>
+<li>
+<strong>Overwrite the method with a copy of the original method</strong>
+This might seem like the most obvious, and it's certainly the simplest approach. As we know, omitting the <code>@Overwrite</code> annotation will cause the overwrite to <em>not</em> be obfuscated. This means that in our dev environment (where the method and field names are not obfuscated) the method will simply overwrite the existing method in the target:</li>
+</ul>
+<p><img alt="" src="https://raw.githubusercontent.com/SpongePowered/Mixin/master/docs/images/mixin_tut_26.png"/></p>
+<p>After obfuscation, the overwrite magically transforms into a <em>new</em> accessor, since the semantics of method merging mean that the method will simply be added to the target class:</p>
+<p><img alt="" src="https://raw.githubusercontent.com/SpongePowered/Mixin/master/docs/images/mixin_tut_27.png"/></p>
+<p>The two major drawbacks with this approach are firstly that it requires duplicating the original method into the mixin, which is acceptable for simple accessors but can be problematic for more complex methods, since it once again puts us in a position of needing to manually retain functional parity with the target method; if the target method changes then we must update our overwrite. Secondly we potentially end up needing to create shadows for fields which we are not really interested in and would rather access via the public contract of the existing class (for example via the original accessors) and for more complex methods this could potentially be a <em>lot</em> of shadow fields. We are not really interested in these fields except for replicating the functionality of the original method, so adding them just creates code noise.</p>
+<p><strong>Intrinsic Proxy</strong> methods allow us finer-grained control over the overwrite process when this situation arises.</p>
+<h4>
+<a aria-hidden="true" class="anchor" href="#22-the-polite-overwrite-wont-fight-for-the-right-to-um-blight" id="user-content-22-the-polite-overwrite-wont-fight-for-the-right-to-um-blight"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>2.2 The Polite Overwrite Won't Fight for the Right to um... <em>Blight</em>?</h4>
+<p>We can improve on the situation somewhat by introducing a new overwrite behaviour, specifically:</p>
+<ul>
+<li><code>"Don't overwrite method if it already exists (is intrinsic)"</code></li>
+</ul>
+<p>In this situation, we create the overwrite as above, but decorate it with an <code>@Intrinsic</code> annotation. This effectively declares that the overwrite is for an intrinsic method, and if the method is found then the overwrite should not take place.</p>
+<p>Whilst this is not a huge improvement, it does mean that from the point of view of all foreign code (the code in the target codesbase) the <em>original contract of the method is guaranteed to be preserved</em> which alleviates <strong>some</strong> of the concern that the underlying method may change and the changes won't be reflected in our overwrite. By allowing the original method to always exist, and only adding our new method (for our own code to consume) in production, we have improved the chances of stability somewhat.</p>
+<h4>
+<a aria-hidden="true" class="anchor" href="#23-proxying-intrinsic-methods" id="user-content-23-proxying-intrinsic-methods"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>2.3 Proxying Intrinsic Methods</h4>
+<p>Of course, this still means that <em>our own code</em> invoking method calls against our duck-typed interface could end up interacting with different implementations of the method based on the environment, which could be undesirable depending on the nature of the method. What we would really like to be able to do is call the original method, and maybe wrap some of our own logic around it.</p>
+<p>Fortunately we can, by defining our overwrite as an <strong>intrinsic proxy</strong>.</p>
+<p><strong>Intrinsic Proxy Methods</strong> work by altering the behaviour of an overwrite so that the <em>original</em> method is <em>moved</em> instead of <em>overwritten</em>. We can then call the <em>original</em> method from the overwrite in all circumstances. However in order to define the new proxy method, we need to <code>@Shadow</code> the original method - which creates a conflict. Fortunately we know exactly how to deal with conflicts: we use <strong>soft implementation</strong>!</p>
+<p>Let's take a small step in the direction of sanity and convert our new accessor to a soft implementation:</p>
+<div class="highlight highlight-source-java"><pre><span class="pl-k">@Mixin</span>(<span class="pl-smi">Foo</span><span class="pl-k">.</span>class)
+<span class="pl-k">@Implements</span>(<span class="pl-k">@Interface</span>(<span class="pl-c1">iface</span> <span class="pl-k">=</span> <span class="pl-smi">Indentifyable</span><span class="pl-k">.</span>class, <span class="pl-c1">prefix</span> <span class="pl-k">=</span> <span class="pl-s"><span class="pl-pds">"</span>id$<span class="pl-pds">"</span></span>))
+<span class="pl-k">public</span> <span class="pl-k">abstract</span> <span class="pl-k">class</span> <span class="pl-en">MixinFoo</span> {
+
+    <span class="pl-k">@Shadow</span>
+    <span class="pl-k">public</span> <span class="pl-k">abstract</span> <span class="pl-k">int</span> <span class="pl-en">getID</span>();
+
+    <span class="pl-c"><span class="pl-c">/**</span></span>
+<span class="pl-c">     * This method will become our intrinsic proxy method, it</span>
+<span class="pl-c">     * calls the original (shadowed) version of the accessor.</span>
+<span class="pl-c">     <span class="pl-c">*/</span></span>
+    <span class="pl-k">public</span> int id$<span class="pl-en">getID</span>() {
+        <span class="pl-c"><span class="pl-c">//</span> Call original accessor</span>
+        <span class="pl-k">return</span> <span class="pl-c1">this</span><span class="pl-k">.</span>getID();
+    }
+}</pre></div>
+<p>Of course the prefix will be stripped when applying the mixin, this means we will end up with a conflict after the mixin is merged. As we already know, mixin will treat this conflict as an <em>overwrite</em> and we're back at square one!</p>
+<p><img alt="" src="https://raw.githubusercontent.com/SpongePowered/Mixin/master/docs/images/mixin_tut_28.png"/></p>
+<p>It gets worse however, because the call to <code>this.getID()</code> within the new method <strong>now becomes self-referential</strong>, this will cause a stack overflow if the method is called because it will recursively call itself until the JVM runs out of stack space!</p>
+<p>This is where our new friend <code>@Intrinsic</code> once again comes to the rescue. The <code>@Intrinsic</code> annotation has a secondary behaviour which allows the target intrinsic method to be not replaced but instead displaced, if it already exists.</p>
+<div class="highlight highlight-source-java"><pre>    <span class="pl-c"><span class="pl-c">/**</span></span>
+<span class="pl-c">     * This method will become our intrinsic proxy method, it</span>
+<span class="pl-c">     * calls the original (shadowed) version of the accessor.</span>
+<span class="pl-c">     * It uses the displace parameter to avoid re-entrance when</span>
+<span class="pl-c">     * the method would otherwise be overwritten.</span>
+<span class="pl-c">     <span class="pl-c">*/</span></span>
+    <span class="pl-k">@Intrinsic</span>(<span class="pl-c1">displace</span> <span class="pl-k">=</span> <span class="pl-c1">true</span>)
+    <span class="pl-k">public</span> <span class="pl-k">int</span> id$getID() {
+        <span class="pl-c"><span class="pl-c">//</span> Call original accessor</span>
+        <span class="pl-k">return</span> <span class="pl-c1">this</span><span class="pl-k">.</span>getID();
+    }</pre></div>
+<p>Adding the <code>displace</code> parameter causes the intrinsic overwrite to behave in the following way:</p>
+<ul>
+<li>If the intrinsic counterpart does not exist (for example, if in an obfuscated environment where the method has a different name) then the new proxy method is simply added to the target class as normal.</li>
+<li>If the intrinsic counterpart does exist, then three things happen:</li>
+</ul>
+<ol>
+<li>The intrinsic counterpart is renamed to a new name.</li>
+<li>References to the intrinsic counterpart within the proxy are updated with the new name.</li>
+<li>The proxy method is then added to the target class as before.</li>
+</ol>
+<p>This new behaviour allows to have our cake and eat it too, since we ensure that our own code always calls the proxy method but that the contract of the original accessor is always preserved as well. We also do not need to add shadows for any unrelated target class members, and can simply shadow the intrinsic counterpart, making our mixin code much clearer.</p>
+<p>Our new mixin behaviour map looks like this:</p>
+<p><img alt="" src="https://raw.githubusercontent.com/SpongePowered/Mixin/master/docs/images/mixin_tut_29.png"/></p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#3-constraints" id="user-content-3-constraints"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>3. Constraints</h3>
+<p>As mentioned above, overwrite capabilities need to be employed carefully in order to avoid breaking the target application. Whilst applying a strict process to the management of overwrites in your mixin codebase will help a great deal, managing your product "in the wild" can be trickier, especially if users are deploying your product in an unexpected environment, for example with a much later version of the software you are intending to mix into.</p>
+<p>Constraints thus provide a level of sanity checking which would otherwise be unavailable, provided that you are able to supply relevant information into the environment upon which constraints may be based.</p>
+<h4>
+<a aria-hidden="true" class="anchor" href="#31-managing-constraints-in-your-application-environment" id="user-content-31-managing-constraints-in-your-application-environment"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>3.1 Managing Constraints in Your Application Environment</h4>
+<p>Constraints take the form of string tokens which are associated with a single integer value. The values of these tokens must be provided into the mixin environment by registering <em>Token Provider</em> instances with the <code>MixinEnvironment</code>.</p>
+<p>The tokens are entirely up to you, but in general you will wish to represent some aspect of the target application environment. Let's assume that you are able to fetch the target application's build number from a singleton instance of the application: a simple token provider might look like this:</p>
+<div class="highlight highlight-source-java"><pre><span class="pl-k">public</span> <span class="pl-k">class</span> <span class="pl-en">MyTokenProvider</span> <span class="pl-k">implements</span> <span class="pl-e">ITokenProvider</span> {
+    <span class="pl-k">public</span> <span class="pl-smi">Integer</span> <span class="pl-en">getToken</span>(<span class="pl-smi">String</span> <span class="pl-v">token</span>) {
+        <span class="pl-k">if</span> (<span class="pl-s"><span class="pl-pds">"</span>BUILD<span class="pl-pds">"</span></span><span class="pl-k">.</span>equals(token)) {
+            <span class="pl-k">return</span> <span class="pl-smi">TargetApplication</span><span class="pl-k">.</span>getInstance()<span class="pl-k">.</span>getBuildNumber();
+        }
+        <span class="pl-k">return</span> <span class="pl-c1">null</span>;
+    }
+}</pre></div>
+<p>This token provider returns the application build number for the token <code>BUILD</code>. It returns <code>null</code> for all other tokens which indicates that the provider does not support this token. We must register an instance of our token provider when <a href="https://github.com/SpongePowered/Mixin/wiki/Introduction-to-Mixins---The-Mixin-Environment">bootstrapping the Mixin library</a></p>
+<h4>
+<a aria-hidden="true" class="anchor" href="#32-using-constraints" id="user-content-32-using-constraints"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>3.2 Using Constraints</h4>
+<p>Once we have defined tokens in our environment, we can then define constraints on our overwrites:</p>
+<div class="highlight highlight-source-java"><pre><span class="pl-k">@Overwrite</span>(<span class="pl-c1">constraints</span> <span class="pl-k">=</span> <span class="pl-s"><span class="pl-pds">"</span>BUILD(1234)<span class="pl-pds">"</span></span>)
+<span class="pl-k">public</span> <span class="pl-k">void</span> someHackyOverwrite(<span class="pl-k">int</span> x, <span class="pl-k">int</span> y) {
+    <span class="pl-c"><span class="pl-c">//</span> do hacky things</span>
+}</pre></div>
+<p>This hacky method is defined with a constraint which indicates that the token <code>BUILD</code> <strong>must be defined</strong> and also <strong>must have the value 1234</strong>. If this constraint is not met, the mixin processor will raise an error and crash the application.</p>
+<p>We can also define constraints which have some wiggle room built in to them. To define a range of values we could write:</p>
+<div class="highlight highlight-source-java"><pre><span class="pl-k">@Overwrite</span>(<span class="pl-c1">constraints</span> <span class="pl-k">=</span> <span class="pl-s"><span class="pl-pds">"</span>BUILD(1230-1240)<span class="pl-pds">"</span></span>)</pre></div>
+<p>This will allow any value between 1230 and 1240 (inclusive) to succeed, and can also be written as:</p>
+<div class="highlight highlight-source-java"><pre><span class="pl-k">@Overwrite</span>(<span class="pl-c1">constraints</span> <span class="pl-k">=</span> <span class="pl-s"><span class="pl-pds">"</span>BUILD(1230+10)<span class="pl-pds">"</span></span>)</pre></div>
+<p>A full list of constraint specifiers is provided below:</p>
+<table>
+    <thead>
+        <tr>
+            <th>Constraint String</th>
+            <th>Meaning</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td valign="top"><tt>()</tt></td>
+            <td valign="top">The token value must be present in the environment, but can have any value</td>
+        </tr>
+        <tr>
+            <td valign="top">
+<tt>(1234)</tt>
+            </td>
+<td valign="top">The token value must be exactly equal to <tt>1234</tt>
+</td>
+        </tr>
+        <tr>
+            <td valign="top">
+<tt>(1234+)</tt><br/>
+<tt>(1234-)</tt><br/>
+<tt>(1234&gt;)</tt>
+</td>
+            <td valign="top">All of these variants mean the same thing, and can be read as "1234 or greater"</td>
+        </tr>
+        <tr>
+            <td valign="top"><tt>(&lt;1234)</tt></td>
+            <td valign="top">Less than 1234</td>
+        </tr>
+        <tr>
+            <td valign="top"><tt>(&lt;=1234)</tt></td>
+            <td valign="top">Less than or equal to 1234 ( equivalent to <tt>1234&lt;</tt> )</td>
+        </tr>
+        <tr>
+            <td valign="top"><tt>(&gt;1234)</tt></td>
+            <td valign="top">Greater than 1234</td>
+        </tr>
+        <tr>
+            <td valign="top"><tt>(&gt;=1234)</tt></td>
+            <td valign="top">Greater than or equal to 1234 ( equivalent to <tt>1234&gt;</tt> )</td>
+         </tr>
+        <tr>
+            <td valign="top"><tt>(1234-1300)</tt></td>
+            <td valign="top">Value must be between 1234 and 1300 (inclusive)</td>
+         </tr>
+        <tr>
+            <td valign="top">
+<tt>(1234+10)</tt>
+            </td>
+<td valign="top">Value must be between 1234 and 1234+10 (1234-1244 inclusive)</td>
+        </tr>
+    </tbody>
+</table>
+<p>Any feature of the target environment which can be represented as an integer can be used as the basis for a constraint. For example a boolean state can be represented as 1 or 0.</p>
+<h4>
+<a aria-hidden="true" class="anchor" href="#33-choosing-constraints" id="user-content-33-choosing-constraints"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>3.3 Choosing Constraints</h4>
+<p>The exact constraints to use will depend on your target environment, and the expected volatility of the method in question. For example overwriting a simple accessor could be considered much less risky than overwriting a complex one, and could thus recieve a more generous constraint. With extremely volatile methods (volatility in this case being a method's likelihood of being changed) then smaller constraints are probably a good idea.</p>
+<p>Of course the exact value of "generous" and "small" will depend on the token, for example using build number on a project with multiple builds per day, "small" might be a value of 100. Whereas with a project  which only changes a few times a year, "small" might be a value of 2. Use your judgement when defining tokens into the environment, and document the expected volatility of the token in your application's developer notes.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#4-summing-up" id="user-content-4-summing-up"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>4. Summing Up</h3>
+<p>Overwrites and Intrinsic Proxies provide a great deal of power, however they must be carefully designed taking into account many factors, and should nearly always be avoided when possible.</p>
+<p>Using overwrites as another tool in your repertoire can provide a great deal of flexibility and power when designing mixins, using them recklessly and not considering potential pitfalls will almost certainly cause you problems later on in your application lifecycle.</p>
+
+        </div>
+
+    </div>]

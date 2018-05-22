@@ -1,0 +1,123 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <h3>
+<a aria-hidden="true" class="anchor" href="#the-problem" id="user-content-the-problem"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>The Problem</h3>
+<p><em>SVG</em> stands for <em>scalable vector graphics</em>. The authors of the first SVG standard took the <em>scalable</em> part very seriously and specified the format in a way that makes it impossible to determine an absolute scale for shapes declared in an SVG document. Coordinates in an SVG document can be specified using a number of unit suffixes [0].</p>
+<ul>
+<li>
+<strong>m</strong>: One meter, as defined by the SI.</li>
+<li>
+<strong>cm</strong>: 1 m / 100.</li>
+<li>
+<strong>mm</strong>: 1 m / 1000.</li>
+<li>
+<strong>km</strong>: 1 m * 1000.</li>
+<li>
+<strong>in</strong>: One inch, defined as 25.4 mm.</li>
+<li>
+<strong>pc</strong>: 1 in / 6.</li>
+<li>
+<strong>pt</strong>: 1 in / 72.</li>
+<li>
+<strong>ft</strong>: 1 in * 12.</li>
+<li>
+<strong>yd</strong>: 1 in * 36.</li>
+<li>
+<strong>px</strong>: One pixel.</li>
+</ul>
+<p>In this list, only <em>px</em> has no defined size in <a href="http://www.w3.org/TR/SVG/coords.html" rel="nofollow">SVG 1.1</a>. SVG 1.1 does hint at a size of 1 in / 90. Later, <a href="http://www.w3.org/TR/2015/WD-SVG2-20150915/coords.html#Units" rel="nofollow">SVG 2</a> defined it to be 1 in / 96. But the harm had already been done. Inscape took the value of 1 in / 90 and produces and reads documents using that interpretation. The latest snapshots of version 0.92 changed this to 1 in / 96, making documents incompatible between older and newer versions.</p>
+<p>SVG also allows sizes to be declared without specifying a unit, which is what e.g. Inkscape does when writing files. Guess which of the above units is used when no unit is specified.</p>
+<p>To make matters more complicated, the SVG standard adds a way to specify the absolute size of the image represented by a document. This defines sort of a scaling factor between the measurements used in the document and the actual sizes those objects will have (I.e. one mm will not be equal to one mm anymore). To make matters even more complicated, this scaling factor is defined using <em>four</em> attributes on the root <code>svg</code> element, <code>height</code>, <code>width</code>, <code>viewBox</code> and <code>preserveAspectRatio</code>. And to make this ordeal ultimately pointless again, this "absolute size" can again be specified using the <code>px</code> unit, making it not absolute again. Inkscape does not even implement <code>preserveAspectRatio</code> and thus neither does the converter of this project.</p>
+<p>[0]: SVG uses the units defined by <a href="http://www.w3.org/TR/2012/WD-css3-values-20120308/#absolute-lengths" rel="nofollow">CCS 3</a>, which are just <code>cm</code>, <code>mm</code>, <code>in</code>, <code>px</code>, <code>pt</code> and <code>pc</code>. But <code>inkex.py</code> in the Inkscape distribution also includes conversion factors for <code>yd</code>, <code>ft</code>, <code>m</code> and <code>km</code>, which makes me believe that Inkscape also supports those, thus I included them in the list.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#our-approach" id="user-content-our-approach"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Our Approach</h3>
+<p>Because the differences introduced by the different interpretations of the <code>px</code> unit are very frustrating (a scale difference of 15/16 is usually not noticed until the finished part is printed and then does not fit where it should), the converter using in this project employs some checks for documents which lack the necessary information to be converted consistently. Depending on the problem, different error messages are printed. Those error messages look like this:</p>
+<pre><code>[inkscape] src/test-1.dxf
+Error: While processing src/test-1.svg: SVG document has no viewBox attribute. See https://github.com/Feuermurmel/openscad-template/wiki/Absolute-Measurements
+Makefile:92: recipe for target 'src/test-1.dxf' failed
+make: *** [src/test-1.dxf] Error 1
+</code></pre>
+<p>Because Inkscape writes all coordinates using the <code>px</code> units, the converter tries to determine the absolute size of a pixel using the <code>height</code> and <code>viewBox</code> attributes. Simply speaking, the <code>height</code> specifies an absolute value for the height of the whole document while the <code>viewBox</code> defines the same length as a number of pixels.</p>
+<p>For example, in the following SVG document, the viewBox defines 100 pixels in the document to be equal to 100 mm in the real world. The <code>width</code> attribute is also specified, but it is ignored by the converter:</p>
+<pre><code>&lt;svg
+   xmlns:svg="http://www.w3.org/2000/svg"
+   width="200mm"
+   height="100mm"
+   viewBox="0 0 200 100"
+   ...
+</code></pre>
+<p>The following error messages are produced:</p>
+<ul>
+<li>
+<strong>SVG document has no height attribute.</strong>: Add a <code>height</code> attribute to the root <code>svg</code> element, specifying the height of the document in an absolute unit like mm or pt. An appropriate <code>width</code> attribute should also be added.</li>
+<li>
+<strong>Height of SVG document is not an absolute measure.</strong>: Add an absolute unit to the <code>height</code> attribute of the root <code>svg</code> element (i.e. anything other than <code>px</code>).</li>
+<li>
+<strong>SVG document has no viewBox attribute.</strong>: Add a <code>viewBox</code> attribute to the document, specifying the size of the document as a number of pixels.</li>
+</ul>
+<p>The <code>viewBox</code> attribute is a sequence of four numbers, without units. To construct the attribute, set the first two values to <code>0</code> and compute the two following numbers from the <code>width</code> and <code>height</code> attributes of your document by converting the absolute measures of those attributes to pixels. For this, you should probably use a value of 90 or 96 pixels per inch. The following table gives the conversion factors for all SVG units. E.g. a height of 10 cm would be translated to 10 * 37.7953 = 377.953 pixels:</p>
+<table>
+<thead>
+<tr>
+<th>Unit</th>
+<th>90 px / in</th>
+<th>96 px/in</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1 m</td>
+<td>3543.31</td>
+<td>3779.53</td>
+</tr>
+<tr>
+<td>1 cm</td>
+<td>35.4331</td>
+<td>37.7953</td>
+</tr>
+<tr>
+<td>1 mm</td>
+<td>3.54331</td>
+<td>3.77953</td>
+</tr>
+<tr>
+<td>1 km</td>
+<td>3543310</td>
+<td>3779530</td>
+</tr>
+<tr>
+<td>1 in</td>
+<td>90</td>
+<td>96</td>
+</tr>
+<tr>
+<td>1 pc</td>
+<td>15</td>
+<td>16</td>
+</tr>
+<tr>
+<td>1 pt</td>
+<td>1.25</td>
+<td>1.33333</td>
+</tr>
+<tr>
+<td>1 ft</td>
+<td>1080</td>
+<td>1152</td>
+</tr>
+<tr>
+<td>1 yd</td>
+<td>3240</td>
+<td>3456</td>
+</tr>
+</tbody>
+</table>
+<h3>
+<a aria-hidden="true" class="anchor" href="#shout-outs" id="user-content-shout-outs"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Shout-outs</h3>
+<p>Most may have noticed that this article is written in a very sarcastic and maybe a bit angry tone, which reflects the feelings I have, working on these subjects. I'd like to state here very clearly that I do <em>not</em> want to belittle the work that people have done for the specifications and software projects I mentioned. Both SVG and Inkscape are enormous projects, and especially in Inkscape, and even somewhat and SVG, units are small part of the whole ordeal, insignificant to most people (most people are satisfied when they draw a circle in Inkscape, save it and open it in their browser and its still a circle, both projects together do solve that problem). And all the different requirements arising from different use-cases certainly complicate these matters.</p>
+<p>But units … I can live with people wanting to use inches. Even here in Europe, as one example, most of the piping dimensions are specified in inches ("Zoll" as we call it in German). It works because we know that an inch is exactly 2.54 centimeters (OTOH e.g miles, barrels, ounces and pounds are probably a different story because they're ambiguous, but I was not yet exposed to those units in a context where it would have mattered to me).</p>
+<p>But when I get into contact with a file format that gets these things <em>slightly</em> wrong, I tend to get very angry. SVG 1.1 got units right 90%, figuratively. The problem is that getting something like that 90% right makes it still <em>completely unusable</em> for when it matters. When I want to have absolute measurements of an object, it's either always correct or I don't want to work with it. And thus I'd like to tell the people working on file formats which may be used to describe object in the real world: Also do the last 10%! Have balls and stand up in your committee and shout: "NO! All measurements have an absolute unit! And it's always millimeters!" (or inches, if you must). I will thank you and the users that don't care won't be the wiser.</p>
+
+        </div>
+
+    </div>]

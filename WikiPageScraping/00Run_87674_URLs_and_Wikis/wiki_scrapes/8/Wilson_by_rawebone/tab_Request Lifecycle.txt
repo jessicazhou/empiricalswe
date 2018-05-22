@@ -1,0 +1,298 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>Wilson works by intercepting HTTP <strong>Requests</strong>, routes that request to an
+appropriate <strong>Controller</strong> and then sends a <strong>Response</strong> back to the client.
+Lets start at the start with the <code>index.php</code> file we created in
+<a href="installing.md">Installation and Setup</a>:</p>
+<div class="highlight highlight-text-html-php"><pre><span class="pl-pse">&lt;?php</span><span class="pl-s1"></span>
+<span class="pl-s1"></span>
+<span class="pl-s1"><span class="pl-k">require_once</span> <span class="pl-s"><span class="pl-pds">"</span>vendor/autoload.php<span class="pl-pds">"</span></span></span>
+<span class="pl-s1"></span>
+<span class="pl-s1"><span class="pl-smi">$api</span> <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-c1">Wilson\</span><span class="pl-c1">Api</span>();</span>
+<span class="pl-s1"><span class="pl-smi">$api</span><span class="pl-k">-&gt;</span>dispatch();</span>
+<span class="pl-s1"></span></pre></div>
+<p>Here we create an instance of an <code>Api</code> object, which is the entry point for the
+framework. The call we make to <code>dispatch</code> tells the framework to intercept the
+request and send the response. Neat! So that leaves us with <strong>Controllers</strong>.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#controllers" id="user-content-controllers"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Controllers</h2>
+<p>A <strong>Controller</strong> is a method of an object which processes a <strong>Request</strong> and prepares
+a <strong>Response</strong>. The object which contains Controllers is referred to as a
+<strong>Resource</strong>, but we'll come to that later. Say we have a series of users that
+we want to expose through our API, we would write a Controller such as:</p>
+<div class="highlight highlight-text-html-php"><pre><span class="pl-s1"></span>
+<span class="pl-s1"><span class="pl-k">use</span> <span class="pl-c1">Wilson\Http\Request</span>;</span>
+<span class="pl-s1"><span class="pl-k">use</span> <span class="pl-c1">Wilson\Http\Response</span>;</span>
+<span class="pl-s1"></span>
+<span class="pl-s1"><span class="pl-k">class</span> <span class="pl-en">Users</span></span>
+<span class="pl-s1">{</span>
+<span class="pl-s1">    <span class="pl-c"><span class="pl-c">/**</span></span></span>
+<span class="pl-s1"><span class="pl-c">     * @route GET /users/</span></span>
+<span class="pl-s1"><span class="pl-c">     <span class="pl-c">*/</span></span></span>
+<span class="pl-s1">    <span class="pl-k">function</span> <span class="pl-en">getUsers</span>(<span class="pl-c1">Request</span> <span class="pl-smi">$request</span>, <span class="pl-c1">Response</span> <span class="pl-smi">$response</span>)</span>
+<span class="pl-s1">    {</span>
+<span class="pl-s1">        <span class="pl-smi">$data</span> <span class="pl-k">=</span> <span class="pl-smi">$this</span><span class="pl-k">-&gt;</span>magicallyReturnData();</span>
+<span class="pl-s1">        </span>
+<span class="pl-s1">        <span class="pl-smi">$response</span><span class="pl-k">-&gt;</span>setStatus(<span class="pl-c1">200</span>);</span>
+<span class="pl-s1">        <span class="pl-smi">$response</span><span class="pl-k">-&gt;</span>setHeader(<span class="pl-s"><span class="pl-pds">"</span>Content-Type<span class="pl-pds">"</span></span>, <span class="pl-s"><span class="pl-pds">"</span>application/json<span class="pl-pds">"</span></span>);</span>
+<span class="pl-s1">        <span class="pl-smi">$response</span><span class="pl-k">-&gt;</span>setBody(<span class="pl-c1">json_encode</span>(<span class="pl-smi">$data</span>));</span>
+<span class="pl-s1">    }</span>
+<span class="pl-s1">}</span>
+<span class="pl-s1"></span></pre></div>
+<p>We then have to tell Wilson to consider the User object when dispatching the
+request:</p>
+<div class="highlight highlight-text-html-php"><pre><span class="pl-pse">&lt;?php</span><span class="pl-s1"></span>
+<span class="pl-s1"></span>
+<span class="pl-s1"><span class="pl-k">require_once</span> <span class="pl-s"><span class="pl-pds">"</span>vendor/autoload.php<span class="pl-pds">"</span></span>;</span>
+<span class="pl-s1"></span>
+<span class="pl-s1"><span class="pl-smi">$api</span> <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-c1">Wilson\</span><span class="pl-c1">Api</span>();</span>
+<span class="pl-s1"><span class="pl-smi">$api</span><span class="pl-k">-&gt;</span><span class="pl-smi">resources</span> <span class="pl-k">=</span> <span class="pl-c1">array</span>(<span class="pl-s"><span class="pl-pds">"</span>Users<span class="pl-pds">"</span></span>);</span>
+<span class="pl-s1"><span class="pl-smi">$api</span><span class="pl-k">-&gt;</span>dispatch();</span>
+<span class="pl-s1"></span></pre></div>
+<p>Now, if we were to spool up a configured web server and go to, say,
+<code>http://localhost/users/</code> we would then expect to see some JSON output. The
+framework looks at the request and sees that the query string is <code>/users</code> and
+that the HTTP method is <code>GET</code>. It looks over the annotations that are supplied
+in the exposed resources and sees that <code>getUsers</code> can handle this type of
+request. So it creates an instance of the <code>Users</code> object and calls the <code>getUsers</code>
+method, passing it a request and response object. Once the call to <code>getUsers</code>
+completes the response is then prepared and sent back to the User Agent.</p>
+<blockquote>
+<p>The framework creates an instance of the <code>Users</code> object because it minimises the
+amount of objects that are held in memory during the processing of the request
+which helps reduce your applications footprint. The knock on effect is that the
+Resource object cannot have any constructor arguments and as such any
+dependencies have to be used with the <a href="services.md">Service Container</a>.</p>
+</blockquote>
+<p>So far so simples. However, we now want to return a single user through our API
+with a URI like <code>/users/1</code> - how do we do this? Wilson provides the ability to
+capture values in URIs called <strong>Parameters</strong>:</p>
+<div class="highlight highlight-text-html-php"><pre><span class="pl-s1"></span>
+<span class="pl-s1"><span class="pl-k">use</span> <span class="pl-c1">Wilson\Http\Request</span>;</span>
+<span class="pl-s1"><span class="pl-k">use</span> <span class="pl-c1">Wilson\Http\Response</span>;</span>
+<span class="pl-s1"></span>
+<span class="pl-s1"><span class="pl-k">class</span> <span class="pl-en">Users</span></span>
+<span class="pl-s1">{</span>
+<span class="pl-s1">    <span class="pl-c"><span class="pl-c">/**</span></span></span>
+<span class="pl-s1"><span class="pl-c">     * @route GET /users/</span></span>
+<span class="pl-s1"><span class="pl-c">     <span class="pl-c">*/</span></span></span>
+<span class="pl-s1">    <span class="pl-k">function</span> <span class="pl-en">getUsers</span>(<span class="pl-c1">Request</span> <span class="pl-smi">$request</span>, <span class="pl-c1">Response</span> <span class="pl-smi">$response</span>)</span>
+<span class="pl-s1">    {</span>
+<span class="pl-s1">        <span class="pl-smi">$data</span> <span class="pl-k">=</span> <span class="pl-smi">$this</span><span class="pl-k">-&gt;</span>magicallyReturnData();</span>
+<span class="pl-s1">        </span>
+<span class="pl-s1">        <span class="pl-smi">$response</span><span class="pl-k">-&gt;</span>setStatus(<span class="pl-c1">200</span>);</span>
+<span class="pl-s1">        <span class="pl-smi">$response</span><span class="pl-k">-&gt;</span>setHeader(<span class="pl-s"><span class="pl-pds">"</span>Content-Type<span class="pl-pds">"</span></span>, <span class="pl-s"><span class="pl-pds">"</span>application/json<span class="pl-pds">"</span></span>);</span>
+<span class="pl-s1">        <span class="pl-smi">$response</span><span class="pl-k">-&gt;</span>setBody(<span class="pl-c1">json_encode</span>(<span class="pl-smi">$data</span>));</span>
+<span class="pl-s1">    }</span>
+<span class="pl-s1">    </span>
+<span class="pl-s1">    <span class="pl-c"><span class="pl-c">/**</span></span></span>
+<span class="pl-s1"><span class="pl-c">     * @route GET /users/{id}</span></span>
+<span class="pl-s1"><span class="pl-c">     <span class="pl-c">*/</span></span></span>
+<span class="pl-s1">    <span class="pl-k">function</span> <span class="pl-en">getUser</span>(<span class="pl-c1">Request</span> <span class="pl-smi">$request</span>, <span class="pl-c1">Response</span> <span class="pl-smi">$response</span>)</span>
+<span class="pl-s1">    {</span>
+<span class="pl-s1">        <span class="pl-smi">$data</span> <span class="pl-k">=</span> <span class="pl-smi">$this</span><span class="pl-k">-&gt;</span>magicallyReturnData(<span class="pl-smi">$request</span><span class="pl-k">-&gt;</span>getParam(<span class="pl-s"><span class="pl-pds">"</span>id<span class="pl-pds">"</span></span>));</span>
+<span class="pl-s1">        </span>
+<span class="pl-s1">        <span class="pl-c"><span class="pl-c">//</span> ...</span></span>
+<span class="pl-s1">    }</span>
+<span class="pl-s1">}</span>
+<span class="pl-s1"></span></pre></div>
+<p>Cool! But not necessarily secure because <code>id</code> could be anything; as such the
+framework provides another annotation which can be used in conjunction with
+Parameters called <strong>Conditions</strong> that allows you more control over your input:</p>
+<div class="highlight highlight-text-html-php"><pre><span class="pl-s1"></span>
+<span class="pl-s1">    <span class="pl-c"><span class="pl-c">/**</span></span></span>
+<span class="pl-s1"><span class="pl-c">     * @route GET /users/{id}</span></span>
+<span class="pl-s1"><span class="pl-c">     * @where id \d+</span></span>
+<span class="pl-s1"><span class="pl-c">     <span class="pl-c">*/</span></span></span>
+<span class="pl-s1">    <span class="pl-k">function</span> <span class="pl-en">getUser</span>(<span class="pl-c1">Request</span> <span class="pl-smi">$request</span>, <span class="pl-c1">Response</span> <span class="pl-smi">$response</span>)</span>
+<span class="pl-s1">    {</span>
+<span class="pl-s1">        <span class="pl-smi">$data</span> <span class="pl-k">=</span> <span class="pl-smi">$this</span><span class="pl-k">-&gt;</span>magicallyReturnData(<span class="pl-smi">$request</span><span class="pl-k">-&gt;</span>getParam(<span class="pl-s"><span class="pl-pds">"</span>id<span class="pl-pds">"</span></span>));</span>
+<span class="pl-s1">        </span>
+<span class="pl-s1">        <span class="pl-c"><span class="pl-c">//</span> ...</span></span>
+<span class="pl-s1">    }</span>
+<span class="pl-s1"></span></pre></div>
+<p>We are now saying that the Parameter <code>id</code> must meet the regular expression of
+<code>\d+</code> or in other words that <code>id</code> <strong>must</strong> be an integer of any length.</p>
+<blockquote>
+<p>It is worth keeping in mind when developing an API that using integer
+based IDs can enable third parties to easily scrape your data and so
+should be used with caution.</p>
+</blockquote>
+<h3>
+<a aria-hidden="true" class="anchor" href="#middleware" id="user-content-middleware"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Middleware</h3>
+<p>Often when working with an API you find yourself performing repetitive tasks
+such as authentication, content acceptance, et al. You might find yourself
+writing code like:</p>
+<div class="highlight highlight-text-html-php"><pre><span class="pl-s1"></span>
+<span class="pl-s1">    <span class="pl-c"><span class="pl-c">/**</span></span></span>
+<span class="pl-s1"><span class="pl-c">     * @route GET /users/{id}</span></span>
+<span class="pl-s1"><span class="pl-c">     * @where id \d+</span></span>
+<span class="pl-s1"><span class="pl-c">     <span class="pl-c">*/</span></span></span>
+<span class="pl-s1">    <span class="pl-k">function</span> <span class="pl-en">getUser</span>(<span class="pl-c1">Request</span> <span class="pl-smi">$request</span>, <span class="pl-c1">Response</span> <span class="pl-smi">$response</span>)</span>
+<span class="pl-s1">    {</span>
+<span class="pl-s1">        <span class="pl-k">if</span> (<span class="pl-k">!</span><span class="pl-smi">$this</span><span class="pl-k">-&gt;</span>authenticate()) {</span>
+<span class="pl-s1">            <span class="pl-smi">$response</span><span class="pl-k">-&gt;</span>setStatus(<span class="pl-c1">401</span>);</span>
+<span class="pl-s1">            <span class="pl-k">return</span></span>
+<span class="pl-s1">        }</span>
+<span class="pl-s1">    </span>
+<span class="pl-s1">        <span class="pl-smi">$data</span> <span class="pl-k">=</span> <span class="pl-smi">$this</span><span class="pl-k">-&gt;</span>magicallyReturnData(<span class="pl-smi">$request</span><span class="pl-k">-&gt;</span>getParam(<span class="pl-s"><span class="pl-pds">"</span>id<span class="pl-pds">"</span></span>));</span>
+<span class="pl-s1">        </span>
+<span class="pl-s1">        <span class="pl-c"><span class="pl-c">//</span> ...</span></span>
+<span class="pl-s1">    }</span>
+<span class="pl-s1"></span></pre></div>
+<p>This violates DRY and distracts from the real problem your Controller is trying
+to solve. As such, Wilson provides a <strong>Middleware</strong> system that allows you easily
+reuse code. For example:</p>
+<div class="highlight highlight-text-html-php"><pre><span class="pl-s1"></span>
+<span class="pl-s1"><span class="pl-k">use</span> <span class="pl-c1">Wilson\Http\Request</span>;</span>
+<span class="pl-s1"><span class="pl-k">use</span> <span class="pl-c1">Wilson\Http\Response</span>;</span>
+<span class="pl-s1"></span>
+<span class="pl-s1"><span class="pl-k">trait</span> <span class="pl-en">Middleware</span></span>
+<span class="pl-s1">{</span>
+<span class="pl-s1">    <span class="pl-k">function</span> <span class="pl-en">authenticate</span>(<span class="pl-c1">Request</span> <span class="pl-smi">$request</span>, <span class="pl-c1">Response</span> <span class="pl-smi">$response</span>)</span>
+<span class="pl-s1">    {</span>
+<span class="pl-s1">        <span class="pl-k">if</span> (<span class="pl-smi">$request</span><span class="pl-k">-&gt;</span>getUsername() <span class="pl-k">===</span> <span class="pl-s"><span class="pl-pds">"</span>John<span class="pl-pds">"</span></span>) {</span>
+<span class="pl-s1">            <span class="pl-smi">$response</span><span class="pl-k">-&gt;</span>setStatus(<span class="pl-c1">401</span>);</span>
+<span class="pl-s1">            <span class="pl-k">return</span> <span class="pl-c1">false</span>;</span>
+<span class="pl-s1">        }</span>
+<span class="pl-s1">    }</span>
+<span class="pl-s1">}</span>
+<span class="pl-s1"></span></pre></div>
+<div class="highlight highlight-text-html-php"><pre><span class="pl-s1"></span>
+<span class="pl-s1">    <span class="pl-k">use</span> <span class="pl-c1">Middleware</span>;</span>
+<span class="pl-s1"></span>
+<span class="pl-s1">    <span class="pl-c"><span class="pl-c">/**</span></span></span>
+<span class="pl-s1"><span class="pl-c">     * @route GET /users/{id}</span></span>
+<span class="pl-s1"><span class="pl-c">     * @where id \d+</span></span>
+<span class="pl-s1"><span class="pl-c">     * @through authenticate</span></span>
+<span class="pl-s1"><span class="pl-c">     <span class="pl-c">*/</span></span></span>
+<span class="pl-s1">    <span class="pl-k">function</span> <span class="pl-en">getUser</span>(<span class="pl-c1">Request</span> <span class="pl-smi">$request</span>, <span class="pl-c1">Response</span> <span class="pl-smi">$response</span>)</span>
+<span class="pl-s1">    {</span>
+<span class="pl-s1">        <span class="pl-smi">$data</span> <span class="pl-k">=</span> <span class="pl-smi">$this</span><span class="pl-k">-&gt;</span>magicallyReturnData(<span class="pl-smi">$request</span><span class="pl-k">-&gt;</span>getParam(<span class="pl-s"><span class="pl-pds">"</span>id<span class="pl-pds">"</span></span>));</span>
+<span class="pl-s1">        </span>
+<span class="pl-s1">        <span class="pl-c"><span class="pl-c">//</span> ...</span></span>
+<span class="pl-s1">    }</span>
+<span class="pl-s1"></span></pre></div>
+<p>So what we have done here is create a trait to hold all of our Middleware, added
+a <strong>Middleware Controller</strong> called authenticate which <strong>returns boolean false</strong> if
+the request process should abort, and added a <code>@through</code> annotation to the
+<code>getUsers</code> Controller. Now when the framework dispatches the request it will put
+the request through the <code>authenticate</code> method first.</p>
+<p>We can assign as much Middleware as we require and the framework will process
+each in turn until one returns boolean false or there are no more Controllers
+left. A Middleware Controller is exactly the same as a Controller, the only
+difference being that a Middleware Controller does not have a <code>@route</code>
+annotation.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#request-and-response-headers" id="user-content-request-and-response-headers"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Request and Response Headers</h2>
+<p>Please be aware that header names <strong>are not normalised</strong> between requests and
+responses. This is because normalising the names of headers in the <code>$_SERVER</code>
+superglobal can add a substantial amount of time to the request add so we
+instead use the SAPI appropriate names, i.e.:</p>
+<div class="highlight highlight-text-html-php"><pre><span class="pl-s1"></span>
+<span class="pl-s1"><span class="pl-smi">$req</span><span class="pl-k">-&gt;</span>getHeader(<span class="pl-s"><span class="pl-pds">"</span>HTTP_CONTENT_TYPE<span class="pl-pds">"</span></span>);</span>
+<span class="pl-s1"><span class="pl-smi">$resp</span><span class="pl-k">-&gt;</span>setHeader(<span class="pl-s"><span class="pl-pds">"</span>Content-Type<span class="pl-pds">"</span></span>, <span class="pl-s"><span class="pl-pds">"</span>text/html<span class="pl-pds">"</span></span>);</span>
+<span class="pl-s1"></span></pre></div>
+<h2>
+<a aria-hidden="true" class="anchor" href="#convenience-methods" id="user-content-convenience-methods"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Convenience Methods</h2>
+<h3>
+<a aria-hidden="true" class="anchor" href="#response-helper" id="user-content-response-helper"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Response Helper</h3>
+<div class="highlight highlight-text-html-php"><pre><span class="pl-s1"></span>
+<span class="pl-s1"><span class="pl-smi">$response</span> <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-c1">Wilson\Http\</span><span class="pl-c1">Response</span>();</span>
+<span class="pl-s1"></span>
+<span class="pl-s1"><span class="pl-c"><span class="pl-c">//</span> Configure the response in a single hit</span></span>
+<span class="pl-s1"><span class="pl-smi">$response</span><span class="pl-k">-&gt;</span>make(<span class="pl-s"><span class="pl-pds">"</span>Something went wrong<span class="pl-pds">"</span></span>, <span class="pl-c1">500</span>, [<span class="pl-s"><span class="pl-pds">"</span>Content-Type<span class="pl-pds">"</span></span> <span class="pl-k">=&gt;</span> <span class="pl-s"><span class="pl-pds">"</span>text/html<span class="pl-pds">"</span></span>]);</span>
+<span class="pl-s1"><span class="pl-smi">$response</span><span class="pl-k">-&gt;</span>make(<span class="pl-s"><span class="pl-pds">"</span>This is your content<span class="pl-pds">"</span></span>);</span>
+<span class="pl-s1"><span class="pl-smi">$response</span><span class="pl-k">-&gt;</span>make(<span class="pl-s"><span class="pl-pds">"</span>Created!<span class="pl-pds">"</span></span>, <span class="pl-c1">201</span>);</span>
+<span class="pl-s1"></span>
+<span class="pl-s1"><span class="pl-c"><span class="pl-c">//</span> Send back JSON</span></span>
+<span class="pl-s1"><span class="pl-smi">$response</span><span class="pl-k">-&gt;</span>json([<span class="pl-s"><span class="pl-pds">"</span>error<span class="pl-pds">"</span></span> <span class="pl-k">=&gt;</span> <span class="pl-s"><span class="pl-pds">"</span>error message<span class="pl-pds">"</span></span>], <span class="pl-c1">500</span>);</span>
+<span class="pl-s1"><span class="pl-smi">$response</span><span class="pl-k">-&gt;</span>json(<span class="pl-s"><span class="pl-pds">"</span>Custom JSON MIME Type<span class="pl-pds">"</span></span>, <span class="pl-c1">200</span>, [<span class="pl-s"><span class="pl-pds">"</span>Content-Type<span class="pl-pds">"</span></span> <span class="pl-k">=&gt;</span> <span class="pl-s"><span class="pl-pds">"</span>application/vnd.io+json<span class="pl-pds">"</span></span>]);</span>
+<span class="pl-s1"></span>
+<span class="pl-s1"><span class="pl-c"><span class="pl-c">//</span> Send back HTML</span></span>
+<span class="pl-s1"><span class="pl-smi">$response</span><span class="pl-k">-&gt;</span>html(<span class="pl-s"><span class="pl-pds">"</span>&lt;b&gt;Hello!&lt;/b&gt;<span class="pl-pds">"</span></span>);</span>
+<span class="pl-s1"><span class="pl-smi">$response</span><span class="pl-k">-&gt;</span>html(<span class="pl-s"><span class="pl-pds">"</span>&lt;b&gt;Custom MIME Type<span class="pl-pds">"</span></span>, <span class="pl-c1">200</span>, [<span class="pl-s"><span class="pl-pds">"</span>Content-Type<span class="pl-pds">"</span></span> <span class="pl-k">=&gt;</span> <span class="pl-s"><span class="pl-pds">"</span>text/xhtml<span class="pl-pds">"</span></span>]);</span>
+<span class="pl-s1"></span>
+<span class="pl-s1"><span class="pl-c"><span class="pl-c">//</span> Stream response data. Useful for delaying action until</span></span>
+<span class="pl-s1"><span class="pl-c"><span class="pl-c">//</span> the body of the request is being sent back</span></span>
+<span class="pl-s1"><span class="pl-smi">$response</span><span class="pl-k">-&gt;</span>setBody(<span class="pl-k">function</span> ()  <span class="pl-k">use</span> (<span class="pl-smi">$users</span>)</span>
+<span class="pl-s1">{</span>
+<span class="pl-s1">    <span class="pl-c1">echo</span> <span class="pl-c1">json_encode</span>(<span class="pl-smi">$users</span>);</span>
+<span class="pl-s1">});</span>
+<span class="pl-s1"></span>
+<span class="pl-s1"><span class="pl-c"><span class="pl-c">//</span> Send back a HTTP valid datetime:</span></span>
+<span class="pl-s1"><span class="pl-smi">$response</span><span class="pl-k">-&gt;</span>setDateHeader(<span class="pl-s"><span class="pl-pds">"</span>Last-Modified<span class="pl-pds">"</span></span>, <span class="pl-k">new</span> <span class="pl-c1">DateTime</span>());</span>
+<span class="pl-s1"></span></pre></div>
+<h2>
+<a aria-hidden="true" class="anchor" href="#caching" id="user-content-caching"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Caching</h2>
+<p>Caching is a working in progress, but there are basic provisions in place to help reduce the amount of work needed to be done in your application.</p>
+<p>In general, Wilson allows you to defer processing until after the request has been validated as not being cached:</p>
+<div class="highlight highlight-text-html-php"><pre><span class="pl-s1"></span>
+<span class="pl-s1"><span class="pl-smi">$response</span><span class="pl-k">-&gt;</span>whenCacheMissed(<span class="pl-k">function</span> () <span class="pl-k">use</span> (<span class="pl-smi">$response</span>)</span>
+<span class="pl-s1">{</span>
+<span class="pl-s1">    <span class="pl-smi">$response</span><span class="pl-k">-&gt;</span>setBody(<span class="pl-s"><span class="pl-pds">"</span>Hello!<span class="pl-pds">"</span></span>);</span>
+<span class="pl-s1">});</span>
+<span class="pl-s1"></span></pre></div>
+<p>The response object can be fully modified during the callback. No headers will have been sent at this point, so you should not try to use this for streaming data. The callback will only be fired when <code>Response::isNotModified()</code> returns false.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#entity-tags" id="user-content-entity-tags"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Entity Tags</h3>
+<p>The framework has built in support for validating ETags and If-None-Match headers which will be validating during the sending of the response. If the ETag set against the response matches that on the request the response will be converted to a <code>304 Not Modified</code>.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#cache-control-headers" id="user-content-cache-control-headers"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Cache Control headers</h3>
+<p>Given the nature of the Cache-Control header and it's associated ties to HTTP 1.0 headers, Wilson ships with an API to handle this gracefully. It can be accessed via the <code>Response::getCacheControl()</code> method call and allows for specifying options such as:</p>
+<div class="highlight highlight-text-html-php"><pre><span class="pl-s1"></span>
+<span class="pl-s1"><span class="pl-smi">$response</span><span class="pl-k">-&gt;</span>getCacheControl()<span class="pl-k">-&gt;</span>makePublic()</span>
+<span class="pl-s1">                            <span class="pl-k">-&gt;</span>age(<span class="pl-c1">400</span>);</span>
+<span class="pl-s1"></span></pre></div>
+<p>The framework then generates the necessary headers (such as Expires) when the response is being prepared for sending. See <code>Wilson\Http\CacheControl</code> for all supported options.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#cookies" id="user-content-cookies"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Cookies</h2>
+<p>The framework has very basic Cookie based on that in Symfony HttpFoundation:</p>
+<div class="highlight highlight-text-html-php"><pre><span class="pl-s1"></span>
+<span class="pl-s1"><span class="pl-smi">$cookie</span> <span class="pl-k">=</span> <span class="pl-smi">$request</span><span class="pl-k">-&gt;</span>getCookie(<span class="pl-s"><span class="pl-pds">"</span>my_cookie<span class="pl-pds">"</span></span>);</span>
+<span class="pl-s1"><span class="pl-c1">echo</span> <span class="pl-smi">$cookie</span><span class="pl-k">-&gt;</span><span class="pl-smi">value</span>, <span class="pl-c1">PHP_EOL</span>;</span>
+<span class="pl-s1"></span>
+<span class="pl-s1"><span class="pl-smi">$cookies</span> <span class="pl-k">=</span> <span class="pl-smi">$request</span><span class="pl-k">-&gt;</span>getCookies();</span>
+<span class="pl-s1"></span>
+<span class="pl-s1"><span class="pl-smi">$response</span><span class="pl-k">-&gt;</span>addCookie(<span class="pl-k">new</span> <span class="pl-c1">Cookie</span>(<span class="pl-s"><span class="pl-pds">"</span>wilson_cookie<span class="pl-pds">"</span></span>, <span class="pl-s"><span class="pl-pds">"</span>wilson_rocks<span class="pl-pds">"</span></span>));</span>
+<span class="pl-s1"></span></pre></div>
+<p>See the <code>Wilson\Http\Cookie</code> object for full capabilities.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#events" id="user-content-events"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Events</h2>
+<h3>
+<a aria-hidden="true" class="anchor" href="#preparing-requests-and-responses" id="user-content-preparing-requests-and-responses"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Preparing Requests and Responses</h3>
+<p>The framework allows you to setup headers/parameters against the request/
+responses prior to the routing of the request.</p>
+<div class="highlight highlight-text-html-php"><pre><span class="pl-s1"></span>
+<span class="pl-s1"><span class="pl-smi">$api</span><span class="pl-k">-&gt;</span><span class="pl-smi">prepare</span> <span class="pl-k">=</span> <span class="pl-k">function</span> (<span class="pl-c1">Request</span> <span class="pl-smi">$request</span>, <span class="pl-c1">Response</span> <span class="pl-smi">$response</span>)</span>
+<span class="pl-s1">{</span>
+<span class="pl-s1">    <span class="pl-c"><span class="pl-c">//</span> ...</span></span>
+<span class="pl-s1">};</span>
+<span class="pl-s1"></span></pre></div>
+<h3>
+<a aria-hidden="true" class="anchor" href="#error-handling" id="user-content-error-handling"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Error Handling</h3>
+<p>If an exception is thrown during the dispatch of the request, the
+framework exposes a slot to handle this event:</p>
+<div class="highlight highlight-text-html-php"><pre><span class="pl-s1"></span>
+<span class="pl-s1"><span class="pl-smi">$api</span><span class="pl-k">-&gt;</span><span class="pl-smi">error</span> <span class="pl-k">=</span> <span class="pl-k">function</span> (<span class="pl-c1">Request</span> <span class="pl-smi">$request</span>, <span class="pl-c1">Response</span> <span class="pl-smi">$response</span>, <span class="pl-c1">Services</span> <span class="pl-smi">$services</span>, <span class="pl-c1">Exception</span> <span class="pl-smi">$exception</span>)</span>
+<span class="pl-s1">{</span>
+<span class="pl-s1">    <span class="pl-c"><span class="pl-c">//</span> ...</span></span>
+<span class="pl-s1">};</span>
+<span class="pl-s1"></span></pre></div>
+<h3>
+<a aria-hidden="true" class="anchor" href="#not-found-handling" id="user-content-not-found-handling"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Not Found Handling</h3>
+<p>If a request cannot be routed, the framework exposes a slot to handle this
+event:</p>
+<div class="highlight highlight-text-html-php"><pre><span class="pl-s1"></span>
+<span class="pl-s1"><span class="pl-smi">$api</span><span class="pl-k">-&gt;</span><span class="pl-smi">notFound</span> <span class="pl-k">=</span> <span class="pl-k">function</span> (<span class="pl-c1">Request</span> <span class="pl-smi">$request</span>, <span class="pl-c1">Response</span> <span class="pl-smi">$response</span>, <span class="pl-c1">Services</span> <span class="pl-smi">$services</span>)</span>
+<span class="pl-s1">{</span>
+<span class="pl-s1">    <span class="pl-c"><span class="pl-c">//</span> ...</span></span>
+<span class="pl-s1">};</span>
+<span class="pl-s1"></span></pre></div>
+<h2>
+<a aria-hidden="true" class="anchor" href="#next-services" id="user-content-next-services"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Next: <a href="Service-Location">Services</a>
+</h2>
+
+        </div>
+
+    </div>]

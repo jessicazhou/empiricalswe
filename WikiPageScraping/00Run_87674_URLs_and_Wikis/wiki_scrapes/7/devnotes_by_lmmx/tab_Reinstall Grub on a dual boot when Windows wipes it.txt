@@ -1,0 +1,56 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>Windows (8.1, but probably others) has wiped GRUB twice now when I ran it. To fix (<a href="https://help.ubuntu.com/community/Grub2/Installing" rel="nofollow">via</a>):</p>
+<ul>
+<li>insert Linux Mint live CD</li>
+<li>restart</li>
+<li>hit F12 to enter manual BIOS boot select</li>
+<li>select the CD ROM drive (below the Windows boot)</li>
+</ul>
+<p>This will run the 'trial CD' of a Linux Mint operating system, with access to a shell from which to chroot into the system and install GRUB.</p>
+<blockquote>
+<p>Partitions are observed by running gparted on the Linux Mint OS.</p>
+<p>NB my Linux system partition is <code>sda6</code> - change as appropriate.
+NB I have an EFI System Partition (ESP) - a boot partition - if you don't, omit the line using <code>sda3</code></p>
+<p>In general only view this as a guide, see <a href="https://help.ubuntu.com/community/Grub2/Installing" rel="nofollow">the Ubuntu help page</a></p>
+</blockquote>
+<p>From the terminal:</p>
+<ul>
+<li><code>sudo mkdir /mnt/boot</code></li>
+<li><code>sudo mount /dev/sda6 /mnt</code></li>
+<li><code>sudo mount /dev/sda3 /mnt/boot</code></li>
+<li><code>for i in /dev /dev/pts /proc /sys /run; do sudo mount -B $i /mnt$i; done</code></li>
+<li><code>sudo chroot /mnt</code></li>
+<li><code>grub-install --target=x86_64-efi --efi-directory=/boot/efi --root-directory=/mnt/ /dev/sda</code></li>
+</ul>
+<blockquote>
+<p>If you receive any errors (use man pages/Google to resolve them), next time ensure to run <code>grub-install</code> using the <code>--recheck</code> flag, which deletes a 'device map' (see full workflow explanation <a href="http://ubuntuforums.org/showthread.php?t=1692144" rel="nofollow">here</a>)</p>
+</blockquote>
+<ul>
+<li><code>update-grub</code></li>
+</ul>
+<p>All done. You may want to have a look at the results with <code>ls /boot/efi</code> before exiting chroot.</p>
+<ul>
+<li>(<code>Ctrl</code> + <code>D</code> out of chroot or) <code>exit</code>
+</li>
+<li><code>sudo reboot</code></li>
+</ul>
+<p>(Not necessary to unmount things)</p>
+<ol>
+<li>First attempt to do this did not work <img align="absmiddle" alt=":disappointed:" class="emoji" data-canonical-src="https://assets-cdn.github.com/images/icons/emoji/unicode/1f61e.png" height="20" src="https://camo.githubusercontent.com/84a9aa7233e1997d96d7fc096ca83dd70b421997/68747470733a2f2f6173736574732d63646e2e6769746875622e636f6d2f696d616765732f69636f6e732f656d6f6a692f756e69636f64652f31663631652e706e67" title=":disappointed:" width="20"/>
+</li>
+<li>Second attempt adding <code>--root-directory=/mnt/</code> (<a href="http://community.linuxmint.com/tutorial/view/245" rel="nofollow">via</a>) did not work <img align="absmiddle" alt=":disappointed:" class="emoji" data-canonical-src="https://assets-cdn.github.com/images/icons/emoji/unicode/1f61e.png" height="20" src="https://camo.githubusercontent.com/84a9aa7233e1997d96d7fc096ca83dd70b421997/68747470733a2f2f6173736574732d63646e2e6769746875622e636f6d2f696d616765732f69636f6e732f656d6f6a692f756e69636f64652f31663631652e706e67" title=":disappointed:" width="20"/>
+</li>
+<li>Third attempt adding <code>mkdir /mnt/boot</code> (<a href="http://ubuntuforums.org/showthread.php?t=1581099" rel="nofollow">via</a>)</li>
+</ol>
+<p>NB <a href="https://wiki.archlinux.org/index.php/GRUB#Installation_2" rel="nofollow">the Arch installation wiki</a> goes into the details of the flags (such as <code>grub-install</code>'s <code>--efi-directory</code>, without which I received an error "cannot find EFI directory"). However, the wiki implies this flag should be <code>/boot</code>, whereas it is specified explicitly in <a href="https://bbs.archlinux.org/viewtopic.php?id=173187" rel="nofollow">this</a> Arch user thread as <code>/boot/efi</code></p>
+
+        </div>
+
+        <div class="wiki-footer gollum-markdown-content boxed-group" id="wiki-footer">
+          <div class="boxed-group-inner wiki-auxiliary-content markdown-body">
+            <p><a href="https://github.com/lmmx/devnotes/wiki">Main page</a></p>
+
+          </div>
+        </div>
+    </div>]

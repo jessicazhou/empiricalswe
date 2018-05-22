@@ -1,0 +1,316 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <blockquote>
+<p>The Hybrid mode has been temporarily disabled as there are some issues that need to be fixed</p>
+</blockquote>
+<p><em>"Faceted search, also called faceted navigation or faceted browsing, is a technique for accessing information organized according to a faceted classification system, allowing users to explore a collection of information by applying multiple filters."</em><br/>
+<em>(Source: Wikipedia)</em></p>
+<p>Apache Solr built-in faceting capabilities are nicely described in the official Solr Reference Guide [1] or in the Solr Wiki [2].<br/>
+In SolRDF, due to the nature of the underlying data, faceted search assumes a shape which is a bit different from traditional faceting over structured data. For instance, while in a traditional Solr schema we could have something like this:</p>
+<div class="highlight highlight-text-xml"><pre>&lt;<span class="pl-ent">field</span> <span class="pl-e">name</span>=<span class="pl-s"><span class="pl-pds">"</span>title<span class="pl-pds">"</span></span> .../&gt;
+&lt;<span class="pl-ent">field</span> <span class="pl-e">name</span>=<span class="pl-s"><span class="pl-pds">"</span>author<span class="pl-pds">"</span></span> .../&gt;
+&lt;<span class="pl-ent">field</span> <span class="pl-e">name</span>=<span class="pl-s"><span class="pl-pds">"</span>publisher<span class="pl-pds">"</span></span> .../&gt;
+&lt;<span class="pl-ent">field</span> <span class="pl-e">name</span>=<span class="pl-s"><span class="pl-pds">"</span>publication_year<span class="pl-pds">"</span></span> .../&gt;
+&lt;<span class="pl-ent">field</span> <span class="pl-e">name</span>=<span class="pl-s"><span class="pl-pds">"</span>isbn<span class="pl-pds">"</span></span> .../&gt;
+&lt;<span class="pl-ent">field</span> <span class="pl-e">name</span>=<span class="pl-s"><span class="pl-pds">"</span>subject<span class="pl-pds">"</span></span> .../&gt;
+...</pre></div>
+<p>In SolRDF data is always represented as a sequence of triples, that is, a set of assertions (aka statements),  representing the state of a given entity by means of three / four compounding members: a <strong>s</strong>ubject, a <strong>p</strong>redicate, an <strong>o</strong>bject and an optional <strong>c</strong>ontext.
+The holding schema, which is described better in a <a href="Schema">dedicated section</a> of this Wiki, is, simplifying, something like this:</p>
+<div class="highlight highlight-text-xml"><pre><span class="pl-c"><span class="pl-c">&lt;!--</span> Subject <span class="pl-c">--&gt;</span></span>
+&lt;<span class="pl-ent">field</span> <span class="pl-e">name</span>=<span class="pl-s"><span class="pl-pds">"</span>s<span class="pl-pds">"</span></span> .../&gt;
+
+<span class="pl-c"><span class="pl-c">&lt;!--</span> Predicate <span class="pl-c">--&gt;</span></span>
+&lt;<span class="pl-ent">field</span> <span class="pl-e">name</span>=<span class="pl-s"><span class="pl-pds">"</span>p<span class="pl-pds">"</span></span> .../&gt;
+
+<span class="pl-c"><span class="pl-c">&lt;!--</span> Object <span class="pl-c">--&gt;</span></span>
+&lt;<span class="pl-ent">field</span> <span class="pl-e">name</span>=<span class="pl-s"><span class="pl-pds">"</span>o<span class="pl-pds">"</span></span> .../&gt;</pre></div>
+<p>A "book" entity would be represented, in RDF, in the following way:</p>
+<pre><code>&lt;#xyz&gt;
+    dc:title "La Divina Commedia" ;   
+    dc:creator "Dante Alighieri" ;
+    dc:publisher "ABCD Publishing";
+    ...
+</code></pre>
+<p>A faceted search makes sense only when the target aggregation field or criteria leads to a literal value, a number, something that can be aggregated. That's the reason you will see, in a traditional Solr that indexes books, a request like this:</p>
+<div class="highlight highlight-source-java"><pre>facet<span class="pl-k">=</span><span class="pl-c1">true</span>
+<span class="pl-k">&amp;</span>facet<span class="pl-k">.</span>field<span class="pl-k">=</span>year
+<span class="pl-k">&amp;</span>facet<span class="pl-k">.</span>field<span class="pl-k">=</span>subject
+<span class="pl-k">&amp;</span>facet<span class="pl-k">.</span>field<span class="pl-k">=</span>author </pre></div>
+<p>In the example above, we are requesting facets for three fields: year, subject and author. In SolRDF we don't have such "dedicated" fields like year or author, but we always have s,p,o and an optional c.<br/>
+Faceting on s, p and c, although perfectly possible using plain Solr facet fields (e.g. facet.field=s&amp;facet.field=p), doesn't make much sense because they are always URI or blank nodes. Instead, the field where faceting reveals its power is the object (o). But again, asking for plain faceting on "o" field (i.e. facet.field=o), will result in a facet that aggregates apples and bananas: each object represents a different meaning, it could have a different domain and data-type.  We need a way to identify a given range of objects.<br/>
+In RDF, what determines the range of the object of a given triple, is the second member, the predicate. So instead of indicating what is the target field of a given facet, we will indicate a query that selects a given range of objects values. An example will be surely more clear.</p>
+<p>Solr (field) faceting:</p>
+<div class="highlight highlight-source-java"><pre>facet<span class="pl-k">=</span><span class="pl-c1">true</span>
+<span class="pl-k">&amp;</span>facet<span class="pl-k">.</span>field<span class="pl-k">=</span>author</pre></div>
+<p>SolRDF (field) faceting:</p>
+<div class="highlight highlight-source-java"><pre>facet<span class="pl-k">=</span><span class="pl-c1">true</span>
+<span class="pl-k">&amp;</span>facet<span class="pl-k">.</span>field<span class="pl-k">.</span>q<span class="pl-k">=</span>p<span class="pl-k">:</span><span class="pl-k">&lt;</span>http<span class="pl-k">:</span><span class="pl-c"><span class="pl-c">//</span>purl.org/dc/elements/1.1/creator&gt;</span></pre></div>
+<p>The query will select all objects having an author as value, and then faceting will use those values. The same concept can be applied to range faceting.<br/>
+The following table illustrates a comparison between Solr and SolRDF faceting capabilities:</p>
+<table>
+<thead>
+<tr>
+<th>Solr</th>
+<th>SolRDF</th>
+<th>Tracking issue</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Facet Fields</td>
+<td>Facet Fields</td>
+<td>N.A.</td>
+</tr>
+<tr>
+<td>Facet Queries</td>
+<td></td>
+<td>N.A.</td>
+</tr>
+<tr>
+<td></td>
+<td>Facet Object Queries</td>
+<td><a href="/agazzarini/SolRDF/issues/47">#47</a></td>
+</tr>
+<tr>
+<td>Range Faceting</td>
+<td></td>
+<td>N.A.</td>
+</tr>
+<tr>
+<td></td>
+<td>Object Range Queries Faceting</td>
+<td><a href="/agazzarini/SolRDF/issues/28">#28</a></td>
+</tr>
+<tr>
+<td>Pivot Faceting</td>
+<td></td>
+<td>Not yet planned</td>
+</tr>
+<tr>
+<td>Interval Faceting</td>
+<td></td>
+<td>Not yet planned</td>
+</tr>
+</tbody>
+</table>
+<p>The next sections will describe and detail the several kinds of faceting available in SolRDF.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#facet-fields" id="user-content-facet-fields"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Facet Fields</h2>
+<p>Traditional field faceting is supported on SolRDF: you can have a field (remember: <strong>s</strong>,<strong>p</strong>,<strong>o</strong> or <strong>c</strong>) to be treated as a facet by means of the <em>facet.field</em> parameter. All other parameters described in the Solr Reference Guide [1] are supported. Some examples:</p>
+<h6>
+<a aria-hidden="true" class="anchor" href="#example-1-field-faceting-on-predicates-with-a-minimum-count-of-1" id="user-content-example-1-field-faceting-on-predicates-with-a-minimum-count-of-1"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Example 1: field faceting on predicates with a minimum count of 1</h6>
+<div class="highlight highlight-source-java"><pre>q<span class="pl-k">=</span><span class="pl-c1">SELECT</span> <span class="pl-k">*</span> <span class="pl-c1">WHERE</span> { <span class="pl-k">?</span>s <span class="pl-k">?</span>p <span class="pl-k">?</span>o }  
+<span class="pl-k">&amp;</span>facet<span class="pl-k">=</span><span class="pl-c1">true</span>  
+<span class="pl-k">&amp;</span>facet<span class="pl-k">.</span>field<span class="pl-k">=</span>p  
+<span class="pl-k">&amp;</span>facet<span class="pl-k">.</span>mincount<span class="pl-k">=</span><span class="pl-c1">1</span>    </pre></div>
+<h6>
+<a aria-hidden="true" class="anchor" href="#example-2-field-faceting-on-subjects-and-predicates-with-a-different-minimum-count" id="user-content-example-2-field-faceting-on-subjects-and-predicates-with-a-different-minimum-count"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Example 2: field faceting on subjects and predicates with a different minimum count</h6>
+<div class="highlight highlight-source-java"><pre>q<span class="pl-k">=</span><span class="pl-c1">SELECT</span> <span class="pl-k">*</span> <span class="pl-c1">WHERE</span> { <span class="pl-k">?</span>s <span class="pl-k">?</span>p <span class="pl-k">?</span>o }  
+<span class="pl-k">&amp;</span>facet<span class="pl-k">=</span><span class="pl-c1">true</span>  
+<span class="pl-k">&amp;</span>facet<span class="pl-k">.</span>field<span class="pl-k">=</span>p  
+<span class="pl-k">&amp;</span>facet<span class="pl-k">.</span>field<span class="pl-k">=</span>s  
+<span class="pl-k">&amp;</span>f<span class="pl-k">.</span>s<span class="pl-k">.</span>facet<span class="pl-k">.</span>mincount<span class="pl-k">=</span><span class="pl-c1">1</span>  
+<span class="pl-k">&amp;</span>f<span class="pl-k">.</span>p<span class="pl-k">.</span>facet<span class="pl-k">.</span>mincount<span class="pl-k">=</span><span class="pl-c1">10</span>   </pre></div>
+<h6>
+<a aria-hidden="true" class="anchor" href="#example-2-field-faceting-on-predicates-with-a-prefix-dublin-core-namespace-and-minimum-count-constraints" id="user-content-example-2-field-faceting-on-predicates-with-a-prefix-dublin-core-namespace-and-minimum-count-constraints"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Example 2: field faceting on predicates with a prefix (Dublin Core namespace) and minimum count constraints</h6>
+<div class="highlight highlight-source-java"><pre>q<span class="pl-k">=</span><span class="pl-c1">SELECT</span> <span class="pl-k">*</span> <span class="pl-c1">WHERE</span> { <span class="pl-k">?</span>s <span class="pl-k">?</span>p <span class="pl-k">?</span>o }
+<span class="pl-k">&amp;</span>facet<span class="pl-k">=</span><span class="pl-c1">true</span>  
+<span class="pl-k">&amp;</span>facet<span class="pl-k">.</span>field<span class="pl-k">=</span>p  
+<span class="pl-k">&amp;</span>facet<span class="pl-k">.</span>prefix<span class="pl-k">=</span><span class="pl-k">&lt;</span>http<span class="pl-k">:</span><span class="pl-c"><span class="pl-c">//</span>purl.org/dc/elements/1.1  </span></pre></div>
+<h2>
+<a aria-hidden="true" class="anchor" href="#object-queries-faceting" id="user-content-object-queries-faceting"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Object Queries Faceting</h2>
+<p>Facet field queries have basically the same meaning of facet fields: the only difference is that, instead on indicating a target field, faceting is always done on the <strong>o</strong>(bject) field, and you can indicate, with a query, what are the objects that will be faceted. Some examples:</p>
+<h6>
+<a aria-hidden="true" class="anchor" href="#example-1-field-faceting-on-publishers" id="user-content-example-1-field-faceting-on-publishers"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Example 1: field faceting on publishers</h6>
+<div class="highlight highlight-source-java"><pre>q<span class="pl-k">=</span><span class="pl-c1">SELECT</span> <span class="pl-k">*</span> <span class="pl-c1">WHERE</span> {<span class="pl-k">?</span>s <span class="pl-k">?</span>p <span class="pl-k">?</span>o}
+<span class="pl-k">&amp;</span>facet<span class="pl-k">=</span><span class="pl-c1">true</span>  
+<span class="pl-k">&amp;</span>facet<span class="pl-k">.</span>field<span class="pl-k">.</span>q<span class="pl-k">=</span>p<span class="pl-k">:</span><span class="pl-k">&lt;</span>http<span class="pl-k">:</span><span class="pl-c"><span class="pl-c">//</span>purl.org/dc/elements/1.1/publisher&gt;</span>
+<span class="pl-k">&amp;</span>facet  </pre></div>
+<h6>
+<a aria-hidden="true" class="anchor" href="#example-2-field-faceting-on-names-authors-or-contributors" id="user-content-example-2-field-faceting-on-names-authors-or-contributors"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Example 2: field faceting on names (authors or contributors)</h6>
+<div class="highlight highlight-source-java"><pre>q<span class="pl-k">=</span><span class="pl-c1">SELECT</span> <span class="pl-k">*</span> <span class="pl-c1">WHERE</span> {<span class="pl-k">?</span>s <span class="pl-k">?</span>p <span class="pl-k">?</span>o}
+<span class="pl-k">&amp;</span>facet<span class="pl-k">=</span><span class="pl-c1">true</span>  
+<span class="pl-k">&amp;</span>facet<span class="pl-k">.</span>field<span class="pl-k">.</span>q<span class="pl-k">=</span>
+    p<span class="pl-k">:</span><span class="pl-k">&lt;</span>http<span class="pl-k">:</span><span class="pl-c"><span class="pl-c">//</span>purl.org/dc/elements/1.1/creator&gt; </span>
+    p<span class="pl-k">:</span><span class="pl-k">&lt;</span>http<span class="pl-k">:</span><span class="pl-c"><span class="pl-c">//</span>purl.org/dc/elements/1.1/contributor&gt;  </span></pre></div>
+<h6>
+<a aria-hidden="true" class="anchor" href="#example-3-field-faceting-on-relations-belonging-to-a-given-resource" id="user-content-example-3-field-faceting-on-relations-belonging-to-a-given-resource"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Example 3: field faceting on relations belonging to a given resource</h6>
+<div class="highlight highlight-source-java"><pre>q<span class="pl-k">=</span><span class="pl-c1">SELECT</span> <span class="pl-k">*</span> <span class="pl-c1">WHERE</span> {<span class="pl-k">?</span>s <span class="pl-k">?</span>p <span class="pl-k">?</span>o}
+<span class="pl-k">&amp;</span>facet<span class="pl-k">=</span><span class="pl-c1">true</span>  
+<span class="pl-k">&amp;</span>facet<span class="pl-k">.</span>field<span class="pl-k">.</span>q<span class="pl-k">=</span>
+    <span class="pl-k">+</span>s<span class="pl-k">:</span><span class="pl-k">&lt;</span>http<span class="pl-k">:</span><span class="pl-c"><span class="pl-c">//</span>org.example#xyz&gt; </span>
+    <span class="pl-k">+</span>p<span class="pl-k">:</span><span class="pl-k">&lt;</span>http<span class="pl-k">:</span><span class="pl-c"><span class="pl-c">//</span>purl.org/dc/elements/1.1/relation&gt;  </span></pre></div>
+<p>The <em>facet.field.q</em> parameter can be repeated using an optional progressive number as suffix in the parameter name:</p>
+<div class="highlight highlight-source-java"><pre>q<span class="pl-k">=</span><span class="pl-c1">SELECT</span> <span class="pl-k">*</span> <span class="pl-c1">WHERE</span> {<span class="pl-k">?</span>s <span class="pl-k">?</span>p <span class="pl-k">?</span>o}
+<span class="pl-k">&amp;</span>facet<span class="pl-k">=</span><span class="pl-c1">true</span>  
+<span class="pl-k">&amp;</span>facet<span class="pl-k">.</span>field<span class="pl-k">.</span>q<span class="pl-k">.</span><span class="pl-c1">1</span><span class="pl-k">=</span>p<span class="pl-k">:</span><span class="pl-k">&lt;</span>http<span class="pl-k">:</span><span class="pl-c"><span class="pl-c">//</span>purl.org/dc/elements/1.1/creator&gt; </span>
+<span class="pl-k">&amp;</span>facet<span class="pl-k">.</span>field<span class="pl-k">.</span>q<span class="pl-k">.</span><span class="pl-c1">2</span><span class="pl-k">=</span>p<span class="pl-k">:</span><span class="pl-k">&lt;</span>http<span class="pl-k">:</span><span class="pl-c"><span class="pl-c">//</span>purl.org/dc/elements/1.1/language&gt;  </span></pre></div>
+<p>or</p>
+<div class="highlight highlight-source-java"><pre>q<span class="pl-k">=</span><span class="pl-c1">SELECT</span> <span class="pl-k">*</span> <span class="pl-c1">WHERE</span> {<span class="pl-k">?</span>s <span class="pl-k">?</span>p <span class="pl-k">?</span>o}
+<span class="pl-k">&amp;</span>facet<span class="pl-k">=</span><span class="pl-c1">true</span>  
+<span class="pl-k">&amp;</span>facet<span class="pl-k">.</span>field<span class="pl-k">.</span>q<span class="pl-k">=</span>p<span class="pl-k">:</span><span class="pl-k">&lt;</span>http<span class="pl-k">:</span><span class="pl-c"><span class="pl-c">//</span>purl.org/dc/elements/1.1/creator&gt; </span>
+<span class="pl-k">&amp;</span>facet<span class="pl-k">.</span>field<span class="pl-k">.</span>q<span class="pl-k">=</span>p<span class="pl-k">:</span><span class="pl-k">&lt;</span>http<span class="pl-k">:</span><span class="pl-c"><span class="pl-c">//</span>purl.org/dc/elements/1.1/language&gt;  </span></pre></div>
+<p>In this case you will get a facet for each query, keyed using the query itself:</p>
+<div class="highlight highlight-text-xml"><pre>&lt;<span class="pl-ent">lst</span> <span class="pl-e">name</span>=<span class="pl-s"><span class="pl-pds">"</span>facet_counts<span class="pl-pds">"</span></span>&gt;
+ &lt;<span class="pl-ent">lst</span> <span class="pl-e">name</span>=<span class="pl-s"><span class="pl-pds">"</span>facet_fields<span class="pl-pds">"</span></span>&gt;
+   &lt;<span class="pl-ent">lst</span> <span class="pl-e">name</span>=<span class="pl-s"><span class="pl-pds">"</span>p:&lt;http://purl.org/dc/elements/1.1/creator&gt;<span class="pl-pds">"</span></span>&gt;
+     &lt;<span class="pl-ent">int</span> <span class="pl-e">name</span>=<span class="pl-s"><span class="pl-pds">"</span>Ross, Karlint<span class="pl-pds">"</span></span>&gt;12&lt;/<span class="pl-ent">int</span>&gt;
+     &lt;<span class="pl-ent">int</span> <span class="pl-e">name</span>=<span class="pl-s"><span class="pl-pds">"</span>Earl, James<span class="pl-pds">"</span></span>&gt;9&lt;/<span class="pl-ent">int</span>&gt;
+     &lt;<span class="pl-ent">int</span> <span class="pl-e">name</span>=<span class="pl-s"><span class="pl-pds">"</span>Foo, John<span class="pl-pds">"</span></span>&gt;9&lt;/<span class="pl-ent">int</span>&gt;
+     ...
+   &lt;/<span class="pl-ent">lst</span>&gt;
+   &lt;<span class="pl-ent">lst</span> <span class="pl-e">name</span>=<span class="pl-s"><span class="pl-pds">"</span>p:&lt;http://purl.org/dc/elements/1.1/language&gt;<span class="pl-pds">"</span></span>&gt;
+     &lt;<span class="pl-ent">int</span> <span class="pl-e">name</span>=<span class="pl-s"><span class="pl-pds">"</span>en<span class="pl-pds">"</span></span>&gt;3445&lt;/<span class="pl-ent">int</span>&gt;
+     &lt;<span class="pl-ent">int</span> <span class="pl-e">name</span>=<span class="pl-s"><span class="pl-pds">"</span>de<span class="pl-pds">"</span></span>&gt;2958&lt;/<span class="pl-ent">int</span>&gt;
+     &lt;<span class="pl-ent">int</span> <span class="pl-e">name</span>=<span class="pl-s"><span class="pl-pds">"</span>it<span class="pl-pds">"</span></span>&gt;2865&lt;/<span class="pl-ent">int</span>&gt;
+     ...
+   &lt;/<span class="pl-ent">lst</span>&gt;
+ &lt;/<span class="pl-ent">lst</span>&gt;
+&lt;/<span class="pl-ent">lst</span>&gt;</pre></div>
+<p>The suffix in the parameter name is not required, but it is useful to indicate an alias for each query:</p>
+<div class="highlight highlight-source-java"><pre>q<span class="pl-k">=</span><span class="pl-c1">SELECT</span> <span class="pl-k">*</span> <span class="pl-c1">WHERE</span> {<span class="pl-k">?</span>s <span class="pl-k">?</span>p <span class="pl-k">?</span>o}
+<span class="pl-k">&amp;</span>facet<span class="pl-k">=</span><span class="pl-c1">true</span>  
+<span class="pl-k">&amp;</span>facet<span class="pl-k">.</span>field<span class="pl-k">.</span>q<span class="pl-k">.</span><span class="pl-c1">1</span><span class="pl-k">=</span>p<span class="pl-k">:</span><span class="pl-k">&lt;</span>http<span class="pl-k">:</span><span class="pl-c"><span class="pl-c">//</span>purl.org/dc/elements/1.1/creator&gt; </span>
+<span class="pl-k">&amp;</span>facet<span class="pl-k">.</span>field<span class="pl-k">.</span>q<span class="pl-k">.</span><span class="pl-c1">2</span><span class="pl-k">=</span>p<span class="pl-k">:</span><span class="pl-k">&lt;</span>http<span class="pl-k">:</span><span class="pl-c"><span class="pl-c">//</span>purl.org/dc/elements/1.1/language&gt;  </span>
+<span class="pl-k">&amp;</span>facet<span class="pl-k">.</span>field<span class="pl-k">.</span>q<span class="pl-k">.</span>alias<span class="pl-k">.</span><span class="pl-c1">1</span><span class="pl-k">=</span>creator 
+<span class="pl-k">&amp;</span>facet<span class="pl-k">.</span>field<span class="pl-k">.</span>q<span class="pl-k">.</span>alias<span class="pl-k">.</span><span class="pl-c1">2</span><span class="pl-k">=</span>language  </pre></div>
+<p>The response in this case will be (note that each facet is now associated with the alias):</p>
+<div class="highlight highlight-text-xml"><pre>&lt;<span class="pl-ent">lst</span> <span class="pl-e">name</span>=<span class="pl-s"><span class="pl-pds">"</span>facet_counts<span class="pl-pds">"</span></span>&gt;
+ &lt;<span class="pl-ent">lst</span> <span class="pl-e">name</span>=<span class="pl-s"><span class="pl-pds">"</span>facet_fields<span class="pl-pds">"</span></span>&gt;
+   &lt;<span class="pl-ent">lst</span> <span class="pl-e">name</span>=<span class="pl-s"><span class="pl-pds">"</span>author<span class="pl-pds">"</span></span>&gt;
+     &lt;<span class="pl-ent">int</span> <span class="pl-e">name</span>=<span class="pl-s"><span class="pl-pds">"</span>Ross, Karlint<span class="pl-pds">"</span></span>&gt;12&lt;/<span class="pl-ent">int</span>&gt;
+     &lt;<span class="pl-ent">int</span> <span class="pl-e">name</span>=<span class="pl-s"><span class="pl-pds">"</span>Earl, James<span class="pl-pds">"</span></span>&gt;9&lt;/<span class="pl-ent">int</span>&gt;
+     &lt;<span class="pl-ent">int</span> <span class="pl-e">name</span>=<span class="pl-s"><span class="pl-pds">"</span>Foo, John<span class="pl-pds">"</span></span>&gt;9&lt;/<span class="pl-ent">int</span>&gt;
+     ...
+   &lt;/<span class="pl-ent">lst</span>&gt;
+   &lt;<span class="pl-ent">lst</span> <span class="pl-e">name</span>=<span class="pl-s"><span class="pl-pds">"</span>language<span class="pl-pds">"</span></span>&gt;
+     &lt;<span class="pl-ent">int</span> <span class="pl-e">name</span>=<span class="pl-s"><span class="pl-pds">"</span>en<span class="pl-pds">"</span></span>&gt;3445&lt;/<span class="pl-ent">int</span>&gt;
+     &lt;<span class="pl-ent">int</span> <span class="pl-e">name</span>=<span class="pl-s"><span class="pl-pds">"</span>de<span class="pl-pds">"</span></span>&gt;2958&lt;/<span class="pl-ent">int</span>&gt;
+     &lt;<span class="pl-ent">int</span> <span class="pl-e">name</span>=<span class="pl-s"><span class="pl-pds">"</span>it<span class="pl-pds">"</span></span>&gt;2865&lt;/<span class="pl-ent">int</span>&gt;
+     ...
+   &lt;/<span class="pl-ent">lst</span>&gt;
+ &lt;/<span class="pl-ent">lst</span>&gt;
+&lt;/<span class="pl-ent">lst</span>&gt;</pre></div>
+<h2>
+<a aria-hidden="true" class="anchor" href="#object-range-queries-faceting" id="user-content-object-range-queries-faceting"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Object Range Queries Faceting</h2>
+<p>Range faceting is described in the Solr Reference Guide [1] or in the Solr Wiki [2].  You can get this kind of facet on all fields that support range queries (e.g. dates and numerics).<br/>
+A request like this:</p>
+<div class="highlight highlight-source-java"><pre>facet<span class="pl-k">.</span>range<span class="pl-k">=</span>year
+<span class="pl-k">&amp;</span>facet<span class="pl-k">.</span>range<span class="pl-k">.</span>start<span class="pl-k">=</span><span class="pl-c1">2000</span>
+<span class="pl-k">&amp;</span>facet<span class="pl-k">.</span>range<span class="pl-k">.</span>end<span class="pl-k">=</span><span class="pl-c1">2015</span>
+<span class="pl-k">&amp;</span>facet<span class="pl-k">.</span>range<span class="pl-k">.</span>gap<span class="pl-k">=</span><span class="pl-c1">1</span></pre></div>
+<p>will produce a response like this:</p>
+<div class="highlight highlight-text-xml"><pre>&lt;<span class="pl-ent">lst</span> <span class="pl-e">name</span>=<span class="pl-s"><span class="pl-pds">"</span>facet_ranges<span class="pl-pds">"</span></span>&gt;
+    &lt;<span class="pl-ent">lst</span> <span class="pl-e">name</span>=<span class="pl-s"><span class="pl-pds">"</span>year<span class="pl-pds">"</span></span>&gt;
+      &lt;<span class="pl-ent">lst</span> <span class="pl-e">name</span>=<span class="pl-s"><span class="pl-pds">"</span>counts<span class="pl-pds">"</span></span>&gt;
+          &lt;<span class="pl-ent">int</span> <span class="pl-e">name</span>=<span class="pl-s"><span class="pl-pds">"</span>2000<span class="pl-pds">"</span></span>&gt;3445&lt;/<span class="pl-ent">int</span>&gt;
+          &lt;<span class="pl-ent">int</span> <span class="pl-e">name</span>=<span class="pl-s"><span class="pl-pds">"</span>2001<span class="pl-pds">"</span></span>&gt;2862&lt;/<span class="pl-ent">int</span>&gt;
+          &lt;<span class="pl-ent">int</span> <span class="pl-e">name</span>=<span class="pl-s"><span class="pl-pds">"</span>2002<span class="pl-pds">"</span></span>&gt;2776&lt;/<span class="pl-ent">int</span>&gt;
+          &lt;<span class="pl-ent">int</span> <span class="pl-e">name</span>=<span class="pl-s"><span class="pl-pds">"</span>2003<span class="pl-pds">"</span></span>&gt;2865&lt;/<span class="pl-ent">int</span>&gt;
+          ...  
+       &lt;/<span class="pl-ent">lst</span>&gt;      
+       &lt;<span class="pl-ent">int</span> <span class="pl-e">name</span>=<span class="pl-s"><span class="pl-pds">"</span>gap<span class="pl-pds">"</span></span>&gt;1&lt;/<span class="pl-ent">int</span>&gt;
+       &lt;<span class="pl-ent">int</span> <span class="pl-e">name</span>=<span class="pl-s"><span class="pl-pds">"</span>start<span class="pl-pds">"</span></span>&gt;2000&lt;/<span class="pl-ent">int</span>&gt;
+       &lt;<span class="pl-ent">int</span> <span class="pl-e">name</span>=<span class="pl-s"><span class="pl-pds">"</span>end<span class="pl-pds">"</span></span>&gt;2010&lt;/<span class="pl-ent">int</span>&gt;
+    &lt;/<span class="pl-ent">lst</span>&gt;
+    ...</pre></div>
+<p>As briefly explained before, with semi-structured data like RDF we don't have "year" or "price" or whatever strictly dedicated field for representing a given concept; we always have 3 or 4 fields:</p>
+<ul>
+<li>a <strong>s</strong>(ubject)</li>
+<li>a <strong>p</strong>(redicate)</li>
+<li>an <strong>o</strong>(bject)</li>
+<li>and optionally a <strong>c</strong>(ontext)</li>
+</ul>
+<p>Requesting something like this:</p>
+<div class="highlight highlight-source-java"><pre>facet<span class="pl-k">.</span>range<span class="pl-k">=</span>o</pre></div>
+<p>wouldn't work: we would mix apples and bananas. In addition, without knowing in advance the domain of the target value (e.g. integer, double, date) how could we express a valid <em>facet.range.start</em>, <em>facet.range.end</em> and <em>facet.range.gap</em>?</p>
+<p>Range faceting for <strong>s</strong> or <strong>p</strong> or <strong>c</strong> attributes doesn't make any sense at all because the corresponding URI datatype (i.e. string) doesn't support range queries.</p>
+<p>In order to enable range faceting on SolRDF, the default <em>FacetComponent</em> has been replaced with a custom subclass that does something I called Objects Range Query Faceting, which is actually a mix between facet ranges and facet queries.</p>
+<ul>
+<li>
+<strong>Facet</strong> because, of course, the final results are a set of facets</li>
+<li>
+<strong>Object</strong> because faceting uses the o(bject) field</li>
+<li>
+<strong>Range</strong> because what we are going to compute are facet ranges</li>
+<li>
+<strong>Queries</strong> because instead of indicating the target attribute in request (by means of facet.range parameter), this kind of faceting requires a facet.range.q which is a query (by default parsed by the Solr Query Parser) that selects the objects (i.e. the "o" attribute) of all matching triples (i.e. SolrDocument instances) and then calculates the ranges on them.</li>
+</ul>
+<p>In this way, we can issue a request like this:</p>
+<div class="highlight highlight-source-java"><pre>facet<span class="pl-k">.</span>range<span class="pl-k">.</span>q<span class="pl-k">=</span>p<span class="pl-k">:</span><span class="pl-k">&lt;</span>http<span class="pl-k">:</span><span class="pl-c"><span class="pl-c">//</span>a.b.c#start_year&gt;</span>
+facet<span class="pl-k">.</span>range<span class="pl-k">.</span>start<span class="pl-k">=</span><span class="pl-c1">2000</span>
+facet<span class="pl-k">.</span>range<span class="pl-k">.</span>end<span class="pl-k">=</span><span class="pl-c1">2010</span>
+facet<span class="pl-k">.</span>range<span class="pl-k">.</span>gap<span class="pl-k">=</span><span class="pl-c1">1</span></pre></div>
+<p>or like this</p>
+<div class="highlight highlight-source-java"><pre>facet<span class="pl-k">.</span>range<span class="pl-k">.</span>q<span class="pl-k">=</span>p<span class="pl-k">:</span><span class="pl-k">&lt;</span>http<span class="pl-k">:</span><span class="pl-c"><span class="pl-c">//</span>c.d.e#release_date&gt;</span>
+facet<span class="pl-k">.</span>range<span class="pl-k">.</span>start<span class="pl-k">=</span><span class="pl-c1">2000</span><span class="pl-k">-</span><span class="pl-c1">01</span><span class="pl-k">-</span>10T17<span class="pl-k">:</span><span class="pl-c1">00</span><span class="pl-k">:</span>00Z
+facet<span class="pl-k">.</span>range<span class="pl-k">.</span>end<span class="pl-k">=</span><span class="pl-c1">2010</span><span class="pl-k">-</span><span class="pl-c1">01</span><span class="pl-k">-</span>10T17<span class="pl-k">:</span><span class="pl-c1">00</span><span class="pl-k">:</span>00Z
+facet<span class="pl-k">.</span>range<span class="pl-k">.</span>gap<span class="pl-k">=</span><span class="pl-k">+</span>1MONTH</pre></div>
+<p>You can also have more than one <em>facet.range.q</em> parameter. In this case the facet response will look like this:</p>
+<div class="highlight highlight-text-xml"><pre>&lt;<span class="pl-ent">lst</span> <span class="pl-e">name</span>=<span class="pl-s"><span class="pl-pds">"</span>facet_ranges<span class="pl-pds">"</span></span>&gt;
+    &lt;<span class="pl-ent">lst</span> <span class="pl-e">name</span>=<span class="pl-s"><span class="pl-pds">"</span>p:&lt;http://a.b.c#start_year&gt;<span class="pl-pds">"</span></span>&gt;
+      &lt;<span class="pl-ent">lst</span> <span class="pl-e">name</span>=<span class="pl-s"><span class="pl-pds">"</span>counts<span class="pl-pds">"</span></span>&gt;
+          &lt;<span class="pl-ent">int</span> <span class="pl-e">name</span>=<span class="pl-s"><span class="pl-pds">"</span>2000<span class="pl-pds">"</span></span>&gt;3445&lt;/<span class="pl-ent">int</span>&gt;
+          &lt;<span class="pl-ent">int</span> <span class="pl-e">name</span>=<span class="pl-s"><span class="pl-pds">"</span>2001<span class="pl-pds">"</span></span>&gt;2862&lt;/<span class="pl-ent">int</span>&gt;
+          &lt;<span class="pl-ent">int</span> <span class="pl-e">name</span>=<span class="pl-s"><span class="pl-pds">"</span>2002<span class="pl-pds">"</span></span>&gt;2776&lt;/<span class="pl-ent">int</span>&gt;
+          &lt;<span class="pl-ent">int</span> <span class="pl-e">name</span>=<span class="pl-s"><span class="pl-pds">"</span>2003<span class="pl-pds">"</span></span>&gt;2865&lt;/<span class="pl-ent">int</span>&gt;
+          ...
+       &lt;/<span class="pl-ent">lst</span>&gt;
+       &lt;<span class="pl-ent">int</span> <span class="pl-e">name</span>=<span class="pl-s"><span class="pl-pds">"</span>gap<span class="pl-pds">"</span></span>&gt;1&lt;/<span class="pl-ent">int</span>&gt;
+       &lt;<span class="pl-ent">int</span> <span class="pl-e">name</span>=<span class="pl-s"><span class="pl-pds">"</span>start<span class="pl-pds">"</span></span>&gt;2000&lt;/<span class="pl-ent">int</span>&gt;
+       &lt;<span class="pl-ent">int</span> <span class="pl-e">name</span>=<span class="pl-s"><span class="pl-pds">"</span>end<span class="pl-pds">"</span></span>&gt;2010&lt;/<span class="pl-ent">int</span>&gt;
+    &lt;/<span class="pl-ent">lst</span>&gt;
+    &lt;<span class="pl-ent">lst</span> <span class="pl-e">name</span>=<span class="pl-s"><span class="pl-pds">"</span>p:&lt;http://c.d.e#release_date&gt;<span class="pl-pds">"</span></span>&gt;
+      &lt;<span class="pl-ent">lst</span> <span class="pl-e">name</span>=<span class="pl-s"><span class="pl-pds">"</span>counts<span class="pl-pds">"</span></span>&gt;
+          &lt;<span class="pl-ent">int</span> <span class="pl-e">name</span>=<span class="pl-s"><span class="pl-pds">"</span>2000-03-29T17:06:02Z<span class="pl-pds">"</span></span>&gt;2516&lt;/<span class="pl-ent">int</span>&gt;
+          &lt;<span class="pl-ent">int</span> <span class="pl-e">name</span>=<span class="pl-s"><span class="pl-pds">"</span>2001-04-03T21:30:00Z<span class="pl-pds">"</span></span>&gt;1272&lt;/<span class="pl-ent">int</span>&gt;
+          ...
+       &lt;/<span class="pl-ent">lst</span>&gt;       &lt;<span class="pl-ent">int</span> <span class="pl-e">name</span>=<span class="pl-s"><span class="pl-pds">"</span>gap<span class="pl-pds">"</span></span>&gt;+1YEAR&lt;/<span class="pl-ent">int</span>&gt;
+       &lt;<span class="pl-ent">int</span> <span class="pl-e">name</span>=<span class="pl-s"><span class="pl-pds">"</span>start<span class="pl-pds">"</span></span>&gt;2000-01-10T17:00:00Z&lt;/<span class="pl-ent">int</span>&gt;
+       &lt;<span class="pl-ent">int</span> <span class="pl-e">name</span>=<span class="pl-s"><span class="pl-pds">"</span>end<span class="pl-pds">"</span></span>&gt;2010-01-10T17:00:00Z&lt;/<span class="pl-ent">int</span>&gt;
+    &lt;/<span class="pl-ent">lst</span>&gt;
+    ... </pre></div>
+<p>Aliasing is supported in the same way that has been described for Facet Objects Queries. The same request above with aliases would be:</p>
+<div class="highlight highlight-source-java"><pre>facet<span class="pl-k">.</span>range<span class="pl-k">.</span>q<span class="pl-k">.</span><span class="pl-c1">1</span><span class="pl-k">=</span>p<span class="pl-k">:</span><span class="pl-k">&lt;</span>http<span class="pl-k">:</span><span class="pl-c"><span class="pl-c">//</span>a.b.c#start_year&gt;</span>
+<span class="pl-k">&amp;</span>facet<span class="pl-k">.</span>range<span class="pl-k">.</span>q<span class="pl-k">.</span>alias<span class="pl-k">.</span><span class="pl-c1">1</span><span class="pl-k">=</span>start_year_alias
+<span class="pl-k">&amp;</span>facet<span class="pl-k">.</span>range<span class="pl-k">.</span>q<span class="pl-k">.</span>hint<span class="pl-k">.</span><span class="pl-c1">1</span><span class="pl-k">=</span>num <span class="pl-k">&lt;</span><span class="pl-k">--</span> optional as num(eric) is the <span class="pl-k">default</span> value
+<span class="pl-k">&amp;</span>facet<span class="pl-k">.</span>range<span class="pl-k">.</span>start<span class="pl-k">.</span><span class="pl-c1">1</span><span class="pl-k">=</span><span class="pl-c1">2000</span>
+<span class="pl-k">&amp;</span>facet<span class="pl-k">.</span>range<span class="pl-k">.</span>end<span class="pl-k">.</span><span class="pl-c1">1</span><span class="pl-k">=</span><span class="pl-c1">2010</span>
+<span class="pl-k">&amp;</span>facet<span class="pl-k">.</span>range<span class="pl-k">.</span>gap<span class="pl-k">.</span><span class="pl-c1">1</span><span class="pl-k">=</span><span class="pl-c1">1</span>
+<span class="pl-k">&amp;</span>facet<span class="pl-k">.</span>range<span class="pl-k">.</span>q<span class="pl-k">.</span><span class="pl-c1">2</span><span class="pl-k">=</span>p<span class="pl-k">:</span><span class="pl-k">&lt;</span>http<span class="pl-k">:</span><span class="pl-c"><span class="pl-c">//</span>c.d.e#release_date&gt;</span>
+<span class="pl-k">&amp;</span>facet<span class="pl-k">.</span>range<span class="pl-k">.</span>q<span class="pl-k">.</span>alias<span class="pl-k">.</span><span class="pl-c1">2</span><span class="pl-k">=</span>release_date_alias
+<span class="pl-k">&amp;</span>facet<span class="pl-k">.</span>range<span class="pl-k">.</span>q<span class="pl-k">.</span>hint<span class="pl-k">.</span><span class="pl-c1">2</span><span class="pl-k">=</span>date
+<span class="pl-k">&amp;</span>facet<span class="pl-k">.</span>range<span class="pl-k">.</span>start<span class="pl-k">.</span><span class="pl-c1">2</span><span class="pl-k">=</span><span class="pl-c1">2000</span><span class="pl-k">-</span><span class="pl-c1">01</span><span class="pl-k">-</span>10T17<span class="pl-k">:</span><span class="pl-c1">00</span><span class="pl-k">:</span>00Z
+<span class="pl-k">&amp;</span>facet<span class="pl-k">.</span>range<span class="pl-k">.</span>end<span class="pl-k">.</span><span class="pl-c1">2</span><span class="pl-k">=</span><span class="pl-c1">2010</span><span class="pl-k">-</span><span class="pl-c1">01</span><span class="pl-k">-</span>10T17<span class="pl-k">:</span><span class="pl-c1">00</span><span class="pl-k">:</span>00Z
+<span class="pl-k">&amp;</span>facet<span class="pl-k">.</span>range<span class="pl-k">.</span>gap<span class="pl-k">.</span><span class="pl-c1">2</span><span class="pl-k">=</span><span class="pl-k">+</span>1MONTH</pre></div>
+<p>Note in the response the aliases instead of the full queries:</p>
+<div class="highlight highlight-text-xml"><pre>&lt;<span class="pl-ent">lst</span> <span class="pl-e">name</span>=<span class="pl-s"><span class="pl-pds">"</span>facet_ranges<span class="pl-pds">"</span></span>&gt;
+    &lt;<span class="pl-ent">lst</span> <span class="pl-e">name</span>=<span class="pl-s"><span class="pl-pds">"</span>start_year_alias<span class="pl-pds">"</span></span>&gt;
+      &lt;<span class="pl-ent">lst</span> <span class="pl-e">name</span>=<span class="pl-s"><span class="pl-pds">"</span>counts<span class="pl-pds">"</span></span>&gt;
+          &lt;<span class="pl-ent">int</span> <span class="pl-e">name</span>=<span class="pl-s"><span class="pl-pds">"</span>2000<span class="pl-pds">"</span></span>&gt;3445&lt;/<span class="pl-ent">int</span>&gt;
+          &lt;<span class="pl-ent">int</span> <span class="pl-e">name</span>=<span class="pl-s"><span class="pl-pds">"</span>2001<span class="pl-pds">"</span></span>&gt;2862&lt;/<span class="pl-ent">int</span>&gt;
+          &lt;<span class="pl-ent">int</span> <span class="pl-e">name</span>=<span class="pl-s"><span class="pl-pds">"</span>2002<span class="pl-pds">"</span></span>&gt;2776&lt;/<span class="pl-ent">int</span>&gt;
+          &lt;<span class="pl-ent">int</span> <span class="pl-e">name</span>=<span class="pl-s"><span class="pl-pds">"</span>2003<span class="pl-pds">"</span></span>&gt;2865&lt;/<span class="pl-ent">int</span>&gt;
+          ...
+       &lt;/<span class="pl-ent">lst</span>&gt;
+       &lt;<span class="pl-ent">int</span> <span class="pl-e">name</span>=<span class="pl-s"><span class="pl-pds">"</span>gap<span class="pl-pds">"</span></span>&gt;1&lt;/<span class="pl-ent">int</span>&gt;
+       &lt;<span class="pl-ent">int</span> <span class="pl-e">name</span>=<span class="pl-s"><span class="pl-pds">"</span>start<span class="pl-pds">"</span></span>&gt;2000&lt;/<span class="pl-ent">int</span>&gt;
+       &lt;<span class="pl-ent">int</span> <span class="pl-e">name</span>=<span class="pl-s"><span class="pl-pds">"</span>end<span class="pl-pds">"</span></span>&gt;2010&lt;/<span class="pl-ent">int</span>&gt;
+    &lt;/<span class="pl-ent">lst</span>&gt;
+    &lt;<span class="pl-ent">lst</span> <span class="pl-e">name</span>=<span class="pl-s"><span class="pl-pds">"</span>release_date_alias<span class="pl-pds">"</span></span>&gt;
+      &lt;<span class="pl-ent">lst</span> <span class="pl-e">name</span>=<span class="pl-s"><span class="pl-pds">"</span>counts<span class="pl-pds">"</span></span>&gt;
+          &lt;<span class="pl-ent">int</span> <span class="pl-e">name</span>=<span class="pl-s"><span class="pl-pds">"</span>2000-03-29T17:06:02Z<span class="pl-pds">"</span></span>&gt;2516&lt;/<span class="pl-ent">int</span>&gt;
+          &lt;<span class="pl-ent">int</span> <span class="pl-e">name</span>=<span class="pl-s"><span class="pl-pds">"</span>2001-04-03T21:30:00Z<span class="pl-pds">"</span></span>&gt;1272&lt;/<span class="pl-ent">int</span>&gt;
+          ...
+       &lt;/<span class="pl-ent">lst</span>&gt;       &lt;<span class="pl-ent">int</span> <span class="pl-e">name</span>=<span class="pl-s"><span class="pl-pds">"</span>gap<span class="pl-pds">"</span></span>&gt;+1YEAR&lt;/<span class="pl-ent">int</span>&gt;
+       &lt;<span class="pl-ent">int</span> <span class="pl-e">name</span>=<span class="pl-s"><span class="pl-pds">"</span>start<span class="pl-pds">"</span></span>&gt;2000-01-10T17:00:00Z&lt;/<span class="pl-ent">int</span>&gt;
+       &lt;<span class="pl-ent">int</span> <span class="pl-e">name</span>=<span class="pl-s"><span class="pl-pds">"</span>end<span class="pl-pds">"</span></span>&gt;2010-01-10T17:00:00Z&lt;/<span class="pl-ent">int</span>&gt;
+    &lt;/<span class="pl-ent">lst</span>&gt;
+    ... </pre></div>
+<hr/>
+<p>[1] <a href="https://cwiki.apache.org/confluence/display/solr/Faceting" rel="nofollow">https://cwiki.apache.org/confluence/display/solr/Faceting</a><br/>
+[2] <a href="https://wiki.apache.org/solr/SolrFacetingOverview" rel="nofollow">https://wiki.apache.org/solr/SolrFacetingOverview</a></p>
+
+        </div>
+
+    </div>]

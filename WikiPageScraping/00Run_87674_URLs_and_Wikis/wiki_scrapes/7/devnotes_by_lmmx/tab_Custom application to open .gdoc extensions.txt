@@ -1,0 +1,94 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <h3>
+<a aria-hidden="true" class="anchor" href="#make-a-parsing-script-usrbingdocopensh" id="user-content-make-a-parsing-script-usrbingdocopensh"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Make a parsing script: <code>/usr/bin/gdocopen.sh</code>
+</h3>
+<ul>
+<li>
+<code>cut -d\" -f 4</code> is the URL, just pass it to <code>google-chrome</code>
+</li>
+</ul>
+<pre>google-chrome $(cut -d\" -f 4 "$@")</pre>
+<ul>
+<li>Make it executable: <code>chmod +x /usr/bin/gdocopen.sh</code>
+</li>
+</ul>
+<h3>
+<a aria-hidden="true" class="anchor" href="#make-an-application-to-call-it" id="user-content-make-an-application-to-call-it"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Make an application to call it:</h3>
+<ul>
+<li><code>/usr/share/applications/gdocopen.desktop</code></li>
+</ul>
+<pre>    [Desktop Entry]
+    Name=gdocopen
+    Exec=google-chrome $(cut -d\" -f 4 %U)
+    Terminal=false
+    Type=Application
+    MimeType=application/vnd.google-apps.document;
+</pre>
+<h3>
+<a aria-hidden="true" class="anchor" href="#set-as-default" id="user-content-set-as-default"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Set as default</h3>
+<ul>
+<li>First check <code>gdoc</code> doesn't have an associated mime-type: <code>grep 'gdoc' /etc/mime.types</code>
+</li>
+<li>Add it if not: <code>sudo vim /etc/mime.types</code> (as per <a href="http://askubuntu.com/questions/179865/how-do-i-change-the-mime-type-for-a-file" rel="nofollow">this</a>)</li>
+</ul>
+ <blockquote><pre>application/vnd.google-apps.document				gdoc</pre></blockquote>
+* Set the `.desktop` file (and associated script) as default application for the new MimeType:
+`xdg-mime default gdocopen.desktop "application/vnd.google-apps.document"`
+<h3>
+<a aria-hidden="true" class="anchor" href="#if-this-doesnt-change-anything" id="user-content-if-this-doesnt-change-anything"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><strong>If this doesn't change anything</strong>
+</h3>
+<ul>
+<li>Remove the line and from <code>/etc/mime.types</code> and <a href="https://help.ubuntu.com/community/AddingMimeTypes#Another_way_to_add_a_MIME_Type" rel="nofollow">do it through XML</a>
+</li>
+<li><code>sudo vim /usr/share/mime/application/vnd.google-apps.document.xml</code></li>
+</ul>
+<blockquote>
+<pre>&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;mime-type xmlns="http://www.freedesktop.org/standards/shared-mime-info" type="application/vnd.google-apps.document"&gt;
+  &lt;glob pattern="*.gdoc"/&gt;
+&lt;/mime-type&gt;
+</pre>
+</blockquote>
+<ul>
+<li>Update the system: <code>sudo update-mime-database /usr/share/mime</code>
+</li>
+</ul>
+<p><img align="absmiddle" alt=":-1:" class="emoji" data-canonical-src="https://assets-cdn.github.com/images/icons/emoji/unicode/1f44e.png" height="20" src="https://camo.githubusercontent.com/5b143f5bb1b603ecf3e0ebe50ae5e1ba61dcf729/68747470733a2f2f6173736574732d63646e2e6769746875622e636f6d2f696d616765732f69636f6e732f656d6f6a692f756e69636f64652f31663434652e706e67" title=":-1:" width="20"/> <img align="absmiddle" alt=":-1:" class="emoji" data-canonical-src="https://assets-cdn.github.com/images/icons/emoji/unicode/1f44e.png" height="20" src="https://camo.githubusercontent.com/5b143f5bb1b603ecf3e0ebe50ae5e1ba61dcf729/68747470733a2f2f6173736574732d63646e2e6769746875622e636f6d2f696d616765732f69636f6e732f656d6f6a692f756e69636f64652f31663434652e706e67" title=":-1:" width="20"/> <img align="absmiddle" alt=":-1:" class="emoji" data-canonical-src="https://assets-cdn.github.com/images/icons/emoji/unicode/1f44e.png" height="20" src="https://camo.githubusercontent.com/5b143f5bb1b603ecf3e0ebe50ae5e1ba61dcf729/68747470733a2f2f6173736574732d63646e2e6769746875622e636f6d2f696d616765732f69636f6e732f656d6f6a692f756e69636f64652f31663434652e706e67" title=":-1:" width="20"/> <img align="absmiddle" alt=":-1:" class="emoji" data-canonical-src="https://assets-cdn.github.com/images/icons/emoji/unicode/1f44e.png" height="20" src="https://camo.githubusercontent.com/5b143f5bb1b603ecf3e0ebe50ae5e1ba61dcf729/68747470733a2f2f6173736574732d63646e2e6769746875622e636f6d2f696d616765732f69636f6e732f656d6f6a692f756e69636f64652f31663434652e706e67" title=":-1:" width="20"/> <img align="absmiddle" alt=":-1:" class="emoji" data-canonical-src="https://assets-cdn.github.com/images/icons/emoji/unicode/1f44e.png" height="20" src="https://camo.githubusercontent.com/5b143f5bb1b603ecf3e0ebe50ae5e1ba61dcf729/68747470733a2f2f6173736574732d63646e2e6769746875622e636f6d2f696d616765732f69636f6e732f656d6f6a692f756e69636f64652f31663434652e706e67" title=":-1:" width="20"/> <img align="absmiddle" alt=":-1:" class="emoji" data-canonical-src="https://assets-cdn.github.com/images/icons/emoji/unicode/1f44e.png" height="20" src="https://camo.githubusercontent.com/5b143f5bb1b603ecf3e0ebe50ae5e1ba61dcf729/68747470733a2f2f6173736574732d63646e2e6769746875622e636f6d2f696d616765732f69636f6e732f656d6f6a692f756e69636f64652f31663434652e706e67" title=":-1:" width="20"/> <img align="absmiddle" alt=":-1:" class="emoji" data-canonical-src="https://assets-cdn.github.com/images/icons/emoji/unicode/1f44e.png" height="20" src="https://camo.githubusercontent.com/5b143f5bb1b603ecf3e0ebe50ae5e1ba61dcf729/68747470733a2f2f6173736574732d63646e2e6769746875622e636f6d2f696d616765732f69636f6e732f656d6f6a692f756e69636f64652f31663434652e706e67" title=":-1:" width="20"/> <img align="absmiddle" alt=":-1:" class="emoji" data-canonical-src="https://assets-cdn.github.com/images/icons/emoji/unicode/1f44e.png" height="20" src="https://camo.githubusercontent.com/5b143f5bb1b603ecf3e0ebe50ae5e1ba61dcf729/68747470733a2f2f6173736574732d63646e2e6769746875622e636f6d2f696d616765732f69636f6e732f656d6f6a692f756e69636f64652f31663434652e706e67" title=":-1:" width="20"/> <img align="absmiddle" alt=":-1:" class="emoji" data-canonical-src="https://assets-cdn.github.com/images/icons/emoji/unicode/1f44e.png" height="20" src="https://camo.githubusercontent.com/5b143f5bb1b603ecf3e0ebe50ae5e1ba61dcf729/68747470733a2f2f6173736574732d63646e2e6769746875622e636f6d2f696d616765732f69636f6e732f656d6f6a692f756e69636f64652f31663434652e706e67" title=":-1:" width="20"/> <img align="absmiddle" alt=":-1:" class="emoji" data-canonical-src="https://assets-cdn.github.com/images/icons/emoji/unicode/1f44e.png" height="20" src="https://camo.githubusercontent.com/5b143f5bb1b603ecf3e0ebe50ae5e1ba61dcf729/68747470733a2f2f6173736574732d63646e2e6769746875622e636f6d2f696d616765732f69636f6e732f656d6f6a692f756e69636f64652f31663434652e706e67" title=":-1:" width="20"/> <img align="absmiddle" alt=":-1:" class="emoji" data-canonical-src="https://assets-cdn.github.com/images/icons/emoji/unicode/1f44e.png" height="20" src="https://camo.githubusercontent.com/5b143f5bb1b603ecf3e0ebe50ae5e1ba61dcf729/68747470733a2f2f6173736574732d63646e2e6769746875622e636f6d2f696d616765732f69636f6e732f656d6f6a692f756e69636f64652f31663434652e706e67" title=":-1:" width="20"/> <strong>doesn't work!</strong></p>
+<ul>
+<li>
+<code>update-mime-database</code> deletes the xml file every time and variations on <code>Exec=</code> commands fail</li>
+<li>
+<code>file --mime-type -b ./GoogleDrive/University/{FILE}.gdoc</code> remains <code>text/plain</code>
+</li>
+</ul>
+<h3>
+<a aria-hidden="true" class="anchor" href="#retry-application-rather-than-mimetype" id="user-content-retry-application-rather-than-mimetype"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Retry application rather than MimeType</h3>
+<ul>
+<li><code>sudo ln -s /usr/bin/gdocopen.sh /usr/bin/gdocopen</code></li>
+</ul>
+<pre>#!/bin/bash
+
+gdocurl=$(cut -d\" -f 4 "$@")
+google-chrome "$gdocurl"
+</pre>
+<ul>
+<li>This works in the terminal, but fails when selected as default application in Nautilus</li>
+<li>Changing MimeType in the .desktop file associated with the Nautilus application to <code>text/plain</code> doesn't change Nautilus seeing it as an executable text file. Not being able to change the MimeType is preventing this being as simple as a double-click</li>
+<li>To open a <code>.gdoc</code> file you have to right click &gt; Open with &gt; gdocopen</li>
+<li>The default is applied to all text/plain mimetype files, not just the extension as hoped</li>
+<li>
+<strong>Change the default program for a plain text file back to a text editor</strong>. For some reason this makes Google Docs appear in the Open With dialogue for .gdoc files
+<img alt="" data-canonical-src="http://i.imgur.com/CfXNbWI.jpg" src="https://camo.githubusercontent.com/d40af44bd5d19ffb9b2178e28dbfa0b9716f4254/687474703a2f2f692e696d6775722e636f6d2f4366584e6257492e6a7067"/>
+</li>
+</ul>
+
+        </div>
+
+        <div class="wiki-footer gollum-markdown-content boxed-group" id="wiki-footer">
+          <div class="boxed-group-inner wiki-auxiliary-content markdown-body">
+            <p><a href="https://github.com/lmmx/devnotes/wiki">Main page</a></p>
+
+          </div>
+        </div>
+    </div>]

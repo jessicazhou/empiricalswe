@@ -1,0 +1,128 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>step by step installation for Debian / Ubuntu with virtualenv.</p>
+<p>source : <a href="https://about.okhin.fr/posts/Searx/" rel="nofollow">https://about.okhin.fr/posts/Searx/</a> with some additions</p>
+<h1>
+<a aria-hidden="true" class="anchor" href="#basic-installation" id="user-content-basic-installation"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>basic installation</h1>
+<p>For Ubuntu, be sure to have enable universe repository.</p>
+<p>Install packages :</p>
+<div class="highlight highlight-source-shell"><pre>sudo apt-get install git build-essential libxslt-dev python-dev python-virtualenv python-pybabel zlib1g-dev</pre></div>
+<p>Install searx :</p>
+<div class="highlight highlight-source-shell"><pre><span class="pl-c1">cd</span> /usr/local
+sudo git clone https://github.com/asciimoo/searx.git
+sudo useradd searx -d /usr/local/searx
+sudo chown searx:searx -R /usr/local/searx</pre></div>
+<p>Install dependencies in a virtualenv :</p>
+<div class="highlight highlight-source-shell"><pre>sudo -u searx -i
+<span class="pl-c1">cd</span> /usr/local/searx
+virtualenv searx-ve
+<span class="pl-c1">.</span> ./searx-ve/bin/activate
+pip install -r requirements.txt
+python setup.py install</pre></div>
+<h2>
+<a aria-hidden="true" class="anchor" href="#configuration" id="user-content-configuration"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>configuration</h2>
+<pre><code>sed -i -e "s/ultrasecretkey/`openssl rand -hex 16`/g" searx/settings.yml
+</code></pre>
+<p>Edit searx/settings.yml if necessary.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#check" id="user-content-check"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>check</h2>
+<p>Start searx :</p>
+<pre><code>python searx/webapp.py
+</code></pre>
+<p>Go to <a href="http://localhost:8888" rel="nofollow">http://localhost:8888</a></p>
+<p>If everything works fine, disable the debug option in settings.yml :</p>
+<pre><code>sed -i -e "s/debug : True/debug : False/g" searx/settings.yml
+</code></pre>
+<p>At this point searx is not demonized ; uwsgi allows this.</p>
+<p>You can exit the virtualenv and the searx user bash (enter exit command twice).</p>
+<h1>
+<a aria-hidden="true" class="anchor" href="#uwsgi" id="user-content-uwsgi"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>uwsgi</h1>
+<p>Install packages :</p>
+<pre><code>sudo apt-get install uwsgi uwsgi-plugin-python
+</code></pre>
+<p>Create the configuration file /etc/uwsgi/apps-available/searx.ini with this content :</p>
+<pre><code>[uwsgi]
+# Who will run the code
+uid = searx
+gid = searx
+
+# Number of workers (usually CPU count)
+workers = 4
+
+# The right granted on the created socket
+chmod-socket = 666
+
+# Plugin to use and interpretor config
+single-interpreter = true
+master = true
+plugin = python
+
+# Module to import
+module = searx.webapp
+
+# Virtualenv and python path
+virtualenv = /usr/local/searx/searx-ve/
+</code></pre>
+<p>Activate the uwsgi application and restart :</p>
+<div class="highlight highlight-source-shell"><pre><span class="pl-c1">cd</span> /etc/uwsgi/apps-enabled
+ln -s ../apps-available/searx.ini
+/etc/init.d/uwsgi restart</pre></div>
+<h1>
+<a aria-hidden="true" class="anchor" href="#web-server" id="user-content-web-server"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>web server</h1>
+<h2>
+<a aria-hidden="true" class="anchor" href="#with-nginx" id="user-content-with-nginx"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>with nginx</h2>
+<p>If nginx is not installed (uwsgi will not work with the package nginx-light) :</p>
+<div class="highlight highlight-source-shell"><pre>sudo apt-get install nginx</pre></div>
+<h3>
+<a aria-hidden="true" class="anchor" href="#hosted-at-" id="user-content-hosted-at-"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Hosted at /</h3>
+<p>Create the configuration file /etc/nginx/sites-available/searx with this content :</p>
+<pre><code>server {
+    listen 80;
+    server_name searx.example.com;
+    root /usr/local/searx;
+
+    location / {
+            include uwsgi_params;
+            uwsgi_pass unix:/run/uwsgi/app/searx/socket;
+    }
+}
+</code></pre>
+<p>Restart service :</p>
+<div class="highlight highlight-source-shell"><pre>sudo service nginx restart
+sudo service uwsgi restart</pre></div>
+<h3>
+<a aria-hidden="true" class="anchor" href="#from-subdirectory-url-searx" id="user-content-from-subdirectory-url-searx"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>from subdirectory URL (/searx)</h3>
+<p>Add this configuration in the server config file /etc/nginx/sites-available/default :</p>
+<pre><code>location = /searx { rewrite ^ /searx/; }
+location /searx {
+        try_files $uri @searx; }
+location @searx {
+        uwsgi_param SCRIPT_NAME /searx;
+        include uwsgi_params;
+        uwsgi_modifier1 30;
+        uwsgi_pass unix:/run/uwsgi/app/searx/socket;
+}
+</code></pre>
+<p>Enable base_url in searx/settings.yml</p>
+<pre><code>base_url : http://your.domain.tld/searx/
+</code></pre>
+<p>Restart service :</p>
+<div class="highlight highlight-source-shell"><pre>sudo service nginx restart
+sudo service uwsgi restart</pre></div>
+<h2>
+<a aria-hidden="true" class="anchor" href="#with-apache" id="user-content-with-apache"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>with apache</h2>
+<p>Add wsgi mod :</p>
+<div class="highlight highlight-source-shell"><pre>sudo apt-get install libapache2-mod-uwsgi
+sudo a2enmod uwsgi</pre></div>
+<p>Add this configuration in the file /etc/apache2/apache2.conf :</p>
+<div class="highlight highlight-source-apache-config"><pre>&lt;<span class="pl-ent">Location</span> /&gt;
+    <span class="pl-c1">Options</span> FollowSymLinks Indexes
+    <span class="pl-c1">SetHandler</span> uwsgi-handler
+    uWSGISocket /run/uwsgi/app/searx/socket
+&lt;/<span class="pl-ent">Location</span>&gt;</pre></div>
+<p>Restart Apache :</p>
+<div class="highlight highlight-source-shell"><pre>sudo /etc/init.d/apache2 restart</pre></div>
+
+        </div>
+
+    </div>]

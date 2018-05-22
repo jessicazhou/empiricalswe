@@ -1,0 +1,69 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>According with W3C specs [1], the SPARQL Protocol consists of two operations: query and update. Since the SPARQL 1.1 Protocol is built on top of HTTP, each operation is defined in terms of:</p>
+<ul>
+<li>HTTP method</li>
+<li>HTTP parameters</li>
+<li>HTTP Request body</li>
+<li>HTTP response body</li>
+</ul>
+<blockquote>
+<p><em>default-graph-uri</em> and <em>named-graph-uri</em> parameters are not yet supported.</p>
+</blockquote>
+<h2>
+<a aria-hidden="true" class="anchor" href="#query" id="user-content-query"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Query</h2>
+<p>The query operation is used to send a SPARQL query to a service and receive the results of the query. SolRDF accepts queries issued in one of the following ways:</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#query-via-get" id="user-content-query-via-get"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Query via GET</h3>
+<p>When using the GET method, clients must URL percent encode all parameters. The query string can be indicated by means of the "q" or "query" parameter.</p>
+<pre><code>curl "http://localhost:8080/solr/store/sparql" \   
+--data-urlencode "q=SELECT * WHERE { ?s ?p ?o } LIMIT 10" \   
+-H "Accept: application/sparql-results+json"
+</code></pre>
+<p>or</p>
+<pre><code>curl "http://localhost:8080/solr/store/sparql" \   
+--data-urlencode "query=SELECT * WHERE { ?s ?p ?o } LIMIT 10" \   
+-H "Accept: application/sparql-results+json"
+</code></pre>
+<h3>
+<a aria-hidden="true" class="anchor" href="#query-via-url-encoded-post" id="user-content-query-via-url-encoded-post"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Query via URL-encoded POST</h3>
+<p>When using this method, clients must URL percent encode the "q" or "query" parameter and include within the request body via the <em>application/x-www-form-urlencoded</em> media type. The content type header of the HTTP request must be set to <em>application/x-www-form-urlencoded</em> and the HTTP method is set to POST.</p>
+<pre><code>curl -X POST "http://localhost:8080/solr/store/sparql" \   
+--data-urlencode "q=SELECT * WHERE { ?s ?p ?o } LIMIT 10" \   
+-H "Content-type: application/x-www-form-urlencoded"
+</code></pre>
+<h3>
+<a aria-hidden="true" class="anchor" href="#query-via-post-directly" id="user-content-query-via-post-directly"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Query via POST directly</h3>
+<p>When using this method, clients send the query directly and unencoded in the HTTP request message body without any parameter. The HTTP method must be POST and the content type header must be set to <em>application/sparql-query</em>.</p>
+<pre><code>curl -X POST "http://localhost:8080/solr/store/sparql" \   
+--data-binary "SELECT * WHERE { ?s ?p ?o } LIMIT 10" \   
+-H "Content-type: application/sparql-query"
+</code></pre>
+<h2>
+<a aria-hidden="true" class="anchor" href="#update" id="user-content-update"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Update</h2>
+<p>The update operation is used to send a SPARQL update request to a service. Differently from the query operation we described below, the update parameter can contain one or more operations, separated by a semicolon. SolRDF accepts updates issued in one of the following ways:</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#update-via-url-encoded-post" id="user-content-update-via-url-encoded-post"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Update via URL-encoded POST</h3>
+<p>When using this method, clients must URL percent encode the "update" parameter and include within the request body via the <em>application/x-www-form-urlencoded</em> media type. The content type header of the HTTP request must be set to <em>application/x-www-form-urlencoded</em> and the HTTP method is set to POST.</p>
+<pre><code>curl -X POST "http://localhost:8080/solr/store/sparql" \   
+--data-urlencode "update=INSERT DATA {&lt;a&gt; &lt;b&gt; &lt;x&gt;}" \   
+-H "Content-type: application/x-www-form-urlencoded"
+</code></pre>
+<p>Or</p>
+<pre><code>curl -X POST "http://localhost:8080/solr/store/sparql" \   
+--data-urlencode "update=INSERT DATA {&lt;a&gt; &lt;b&gt; &lt;x&gt;}; DELETE DATA {&lt;c&gt; &lt;d&gt; &lt;e&gt;}" \   
+-H "Content-type: application/x-www-form-urlencoded"
+</code></pre>
+<h3>
+<a aria-hidden="true" class="anchor" href="#update-via-post-directly" id="user-content-update-via-post-directly"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Update via POST directly</h3>
+<p>When using this method, clients send the update command(s) directly and unencoded in the HTTP request message body without any parameter. The HTTP method must be POST and the content type header must be set to <em>application/sparql-update</em>.</p>
+<pre><code>curl -X POST "http://localhost:8080/solr/store/sparql" \   
+--data-binary "INSERT DATA {&lt;a&gt; &lt;b&gt; &lt;x&gt;}; DELETE DATA {&lt;c&gt; &lt;d&gt; &lt;e&gt;}" \   
+-H "Content-type: application/sparql-update"
+</code></pre>
+<hr/>
+<p>[1] <a href="http://www.w3.org/TR/sparql11-protocol" rel="nofollow">http://www.w3.org/TR/sparql11-protocol</a></p>
+
+        </div>
+
+    </div>]

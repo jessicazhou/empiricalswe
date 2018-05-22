@@ -1,0 +1,63 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p><a href="https://isocpp.org/images/uploads/3-Tour-Abstr.pdf" rel="nofollow">Chapter 3</a></p>
+<p>There are 3 important kinds of classes cpp supports:</p>
+<ul>
+<li>concrete</li>
+<li>abstract</li>
+<li>classes in class hierarchies</li>
+</ul>
+<h3>
+<a aria-hidden="true" class="anchor" href="#concrete-types" id="user-content-concrete-types"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Concrete Types</h3>
+<ul>
+<li>user defined types that behave like built-in types e.x. complex number class: a pair of doubles with a bunch of new interfaces for adding them or returning them</li>
+<li>container: a class that holds a bunch of somethings</li>
+</ul>
+<p><strong>eldr: below, they initialize a double * with a call to new double[s], wild</strong></p>
+<div class="highlight highlight-source-c++"><pre><span class="pl-k">class</span> <span class="pl-en">Vector</span> {
+<span class="pl-k">private:</span>
+    <span class="pl-k">double</span> ∗ elem;   <span class="pl-c"><span class="pl-c">//</span> elem points to an array of sz doubles</span>
+    <span class="pl-k">int</span> sz;
+<span class="pl-k">public:</span>
+    <span class="pl-en">Vector</span>(<span class="pl-k">int</span> s) :elem{<span class="pl-k">new</span> <span class="pl-k">double</span>[s]}, sz{s} <span class="pl-c"><span class="pl-c">//</span> eldr: look at this usage of initializer list</span>
+    {
+        <span class="pl-c"><span class="pl-c">//</span> initialize elements</span>
+        <span class="pl-k">for</span> (<span class="pl-k">int</span> i=<span class="pl-c1">0</span>;i&lt;s; ++i) elem[i]=<span class="pl-c1">0</span>;
+    }
+    <span class="pl-en">Vector</span>() { <span class="pl-k">delete[]</span> elem; }
+    <span class="pl-c"><span class="pl-c">//</span> destructor: release resources</span>
+    <span class="pl-k">double</span>&amp; <span class="pl-k">operator</span>[](<span class="pl-k">int</span> i);
+    <span class="pl-k">int</span> <span class="pl-en">size</span>() <span class="pl-k">const</span>;
+}<span class="pl-ii"></span></pre></div>
+<h3>
+<a aria-hidden="true" class="anchor" href="#abstract-types" id="user-content-abstract-types"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Abstract Types</h3>
+<ul>
+<li>a type that insulates a user from implementation details</li>
+<li>
+<code>virtual</code> means that "this method may be redefined in a later derived class</li>
+<li>
+<code>=0</code> means pure virtual which means the derived class must define operator <a href=""></a> and member size()</li>
+</ul>
+<p>This class is similar to vector, but much more abstract</p>
+<div class="highlight highlight-source-c++"><pre><span class="pl-k">class</span> <span class="pl-en">Container</span> {
+<span class="pl-k">public:</span>
+    <span class="pl-k">virtual</span> <span class="pl-k">double</span>&amp; <span class="pl-k">operator</span>[](<span class="pl-k">int</span>) = <span class="pl-c1">0</span>; <span class="pl-c"><span class="pl-c">//</span> pure virtual function</span>
+    <span class="pl-k">virtual</span> <span class="pl-k">int</span> <span class="pl-en">size</span>() <span class="pl-k">const</span> = 0; <span class="pl-c"><span class="pl-c">//</span> const member function</span>
+    <span class="pl-k">virtual</span>  ̃Container() {} <span class="pl-c"><span class="pl-c">//</span> destructor</span>
+};</pre></div>
+<ul>
+<li>if we use container like this:</li>
+</ul>
+<div class="highlight highlight-source-c++"><pre><span class="pl-k">void</span> <span class="pl-en">use</span>(Container&amp; c)
+{
+    <span class="pl-k">const</span> <span class="pl-k">int</span> sz = c.<span class="pl-c1">size</span>();
+    <span class="pl-k">for</span> (<span class="pl-k">int</span> i=<span class="pl-c1">0</span>; i&lt;sz; ++i)
+        cout &lt;&lt; c[i] &lt;&lt; ’\n’;
+}</pre></div>
+<ul>
+<li>note how use doesn't bother with how c's <a href=""></a> and size() functions are implemented this class is known as polymorphic</li>
+</ul>
+
+        </div>
+
+    </div>]

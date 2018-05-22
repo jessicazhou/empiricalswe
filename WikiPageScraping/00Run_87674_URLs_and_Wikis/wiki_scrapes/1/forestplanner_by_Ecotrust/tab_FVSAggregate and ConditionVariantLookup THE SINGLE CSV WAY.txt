@@ -1,0 +1,102 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <h5>
+<a aria-hidden="true" class="anchor" href="#fvsaggregate-and-conditionvariantlookup-the-single-csv-way-for-dev-machines" id="user-content-fvsaggregate-and-conditionvariantlookup-the-single-csv-way-for-dev-machines"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>FVSAggregate and ConditionVariantLookup (THE SINGLE-CSV WAY for dev machines)</h5>
+<ul>
+<li>Run fvsbatch</li>
+</ul>
+<p>IF schema / parsing has changed</p>
+<pre><code>1. manually run extract.py on a single untarred .bz directory.
+2. copy model defn 
+3. schemamigration 
+4. migrate 
+5. alter postgres COPY in import_data to match schema
+</code></pre>
+<p>ELSE</p>
+<ul>
+<li>sed merge csvs (see below)</li>
+</ul>
+<pre><code>cd /usr/local/data/out
+# copy header
+sed -n 1p `ls var*csv | head -n 1` &gt; merged.csv
+#copy all but the first line from all other files
+for i in var*.csv; do sed 1d $i &gt;&gt; merged.csv ; done
+</code></pre>
+<ul>
+<li>make sure number of rows matches expected</li>
+</ul>
+<pre><code>ls -1 var*csv | wc -l  # 402
+cat `ls var*csv | head -n 1` | wc -l # expect 127; minus header =&gt; 126 data rows
+cat merged.csv | wc -l # 402 * 126 + 1 = 50653
+</code></pre>
+<ul>
+<li>make sure number of columns matches expected</li>
+</ul>
+<pre><code># find number of commas
+fgrep -o , merged.csv | wc -l  # 3241792
+# should be exactly divisible by number of rows (eg. 3241792 %  50653 == 0)
+# 3241792/ 50653.0 == 64.0 == (number of expected columns - 1)
+</code></pre>
+<ul>
+<li>
+<p>TODO inspect &amp; QC pre DB</p>
+</li>
+<li>
+<p>copy csv to <code>lot/fixtures/downloads/fvsaggregate.csv</code></p>
+</li>
+<li>
+<p>delete old records</p>
+</li>
+</ul>
+<pre><code>sudo su postgres
+psql -d forestplanner
+    
+DELETE FROM trees_fvsaggregate;
+DELETE FROM trees_conditionvariantlookup;
+</code></pre>
+<ul>
+<li>
+<p>run <code>manage.py import_data</code></p>
+</li>
+<li>
+<p>after data is imported, datamigration is likely necessary:</p>
+</li>
+</ul>
+<p>whenever fake_scenariostands changes:</p>
+<pre><code># Step 1: python manage.py clear_cache
+
+from trees.models import Scenario, Stand, ScenarioNotRunnable
+from trees.utils import fake_scenariostands
+
+# Step 2: rerun impute_nearest_neighbor task on all existing stands
+for stand in Stand.objects.all():
+    stand.cond_id = None
+    stand.save()
+
+# THIS SHOULD NOT BE NECESSARY, but a quick way to assign cond_ids for those stands that nearest neighbor failed.
+for stand in Stand.objects.all():
+    if not stand.cond_id:
+      stand.cond_id = random.choice([27707,29413,7224])
+      stand.save()
+
+# Step 3... wait for it....
+for scenario in Scenario.objects.all():
+    print "-" * 80
+    print scenario, scenario.name
+    try:
+        fake_scenariostands(scenario)
+        scenario.run()
+    except ScenarioNotRunnable:
+        pass
+
+</code></pre>
+<ul>
+<li>TODO
+inspect &amp; QC after loading in database</li>
+</ul>
+<p>TODO create/backup/distribute fixtures &amp; move fvsaggregate.csv up to ninkasi (zipped?)</p>
+<p>profile queries and optimize indices</p>
+
+        </div>
+
+    </div>]

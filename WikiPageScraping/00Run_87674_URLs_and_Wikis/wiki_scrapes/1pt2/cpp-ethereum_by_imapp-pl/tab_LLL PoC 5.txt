@@ -1,0 +1,193 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>LLL is the Ethereum PoC Low-level Lisp-like Language.</p>
+<p>It is Lisp-like in syntax rather than anything deeper and is designed to make easier the task of writing a program in EVM-code 1, aka ES-1. It is automatically compiled in Ethereum PoC series including PoC-3 upwards.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#basic-syntax" id="user-content-basic-syntax"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Basic Syntax</h3>
+<p>A contract written in LLL takes the form of a single expression. An expression may be one of:</p>
+<ul>
+<li>A quoted string e.g. <code>"Hello world!"</code>. Such strings have maximum 32 characters and evaluate to the 32 byte value with the ASCII encoding of the string aligned to the left-side (i.e. in the high-order bytes should it be interpreted as a big endian integer).</li>
+<li>A space-less symbol-less string with a single quote at the beginning, e.g. <code>'HelloWorld</code>. Again such strings have a maximum character limit &amp;c. as above.</li>
+<li>An integer, optionally prefixed with <code>0x</code> for hex base and suffixed with any of the standard Ethereum denominations. e.g. <code>69</code>, <code>0x42</code>, <code>10 ether</code> or <code>3finney</code>.</li>
+<li>An executed expression which takes the form of a parenthesised list of expressions e.g. <code>(add 1 2)</code>, with the first expression of the list being the operation and the others being operands.</li>
+</ul>
+<p>Technically, all instructions of the EVM-code 1 spec are valid. However, they generally shouldn't be used directly since in almost all cases you'll find operations here that do a better job.</p>
+<p>Any comments should begin with a <code>;</code>, after which all text will be ignored until the end of the line.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#control-flow" id="user-content-control-flow"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Control Flow</h3>
+<p>In addition, several control flow operations are provided:</p>
+<ul>
+<li>
+<code>(if PRED Y N)</code> equivalent to the evaluation of <code>Y</code> if <code>PRED</code> evaluates to a non-zero value and otherwise to the evaluation of <code>N</code>.</li>
+<li>
+<code>(when PRED BODY)</code> evaluates <code>BODY</code> (ignoring any result) if and only if <code>PRED</code> evaluates to a non-zero value.</li>
+<li>
+<code>(unless PRED BODY)</code> evaluates <code>BODY</code> (ignoring any result) if and only if <code>PRED</code> evaluates to zero.</li>
+<li>
+<code>(for INIT PRED POST BODY)</code> evaluates <code>INIT</code> once (ignoring any result), then evaluates <code>BODY</code> and <code>POST</code> (discarding the result of both) as long as <code>PRED</code> is true.</li>
+<li>
+<code>(seq EXPR1 EXPR2 ...)</code> evaluates all following expressions in order. Evaluates to the result of the final expression given.</li>
+<li>
+<code>(raw EXPR1 EXPR2 ...)</code> evaluates all following expressions in order. Evaluates to the result of the first non-void expression (i.e. the first expression that leaves anything atop the stack), or void if there is none. This can be used with <code>POP</code> in order to customise exactly which expression's result you wish to have the block evaluate to.</li>
+</ul>
+<p>There's a short form for <code>(seq EXPR1 EXPR2 ...)</code>: <code>{ EXPR1 EXPR2 ... }</code>. You'll generally want to enclose your programs with <code>{ ... }</code> so you can execute more than a single expression.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#memory--storage-access" id="user-content-memory--storage-access"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Memory &amp; Storage Access</h3>
+<p>There's a short form for accessing memory:</p>
+<ul>
+<li>
+<code>@ EXPR</code> expands to <code>(mload EXPR)</code>, used for dereferencing a location in memory. The C-language equivalent would be <code>*EXPR</code>.</li>
+<li>
+<code>[ EXPR1 ] EXPR2</code> expands to <code>(mstore EXPR1 EXPR2)</code>, used for placing a value into a location of memory. The C-language equivalent would be <code>*EXPR1 = EXPR2</code>.</li>
+<li>
+<code>@@ EXPR</code> expands to <code>(sload EXPR)</code>, used for dereferencing a location in storage.</li>
+<li>
+<code>[[ EXPR1 ]] EXPR2</code> expands to <code>(sstore EXPR1 EXPR2)</code>, used for placing a value, <code>EXPR2</code>, into a location in storage, <code>EXPR1</code>.</li>
+</ul>
+<p>In the cases of both <code>[...]</code> and <code>[[...]]</code>, the last closing square-bracket may optionally have a colon inserted for readability.</p>
+<p>Any otherwise undefined text strings are assumed to be variable definitions, thus a for loop to count between 0 to 9 looks something like:</p>
+<pre><code>(for [i]:0 (&lt; @i 10) [i](+ @i 1) 
+  ;; do something
+)
+</code></pre>
+<h3>
+<a aria-hidden="true" class="anchor" href="#arithmetic--logical-operators" id="user-content-arithmetic--logical-operators"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Arithmetic &amp; Logical Operators</h3>
+<p>A number of operators are also valid. These include the bitwise operators:</p>
+<ul>
+<li>
+<code>&amp;</code> (bitwise and)</li>
+<li>
+<code>|</code> (bitwise or)</li>
+<li>
+<code>^</code> (bitwise xor)</li>
+<li>
+<code>~</code> (bitwise not)</li>
+</ul>
+<p>There are also logical operators, which have the same behaviour as in C in that they skip evaluation of later arguments if unneeded and, with the exception of logical not, may be used for any non-zero number of arguments:</p>
+<ul>
+<li>
+<code>&amp;&amp;</code> (logical and)</li>
+<li>
+<code>||</code> (logical or)</li>
+<li>
+<code>!</code> (logical not)</li>
+</ul>
+<p>The multi-ary operators <code>+</code>, <code>-</code>, <code>*</code>, <code>/</code> and <code>%</code> may be used, along side the binary operators <code>&lt;</code>, <code>&lt;=</code>, <code>&gt;</code>, <code>&gt;=</code>, <code>=</code> and <code>!=</code>.</p>
+<p>e.g. <code>(&amp;&amp; 0 (= (+ 2 2 4) 8))</code> would evaluate to (i.e. leave atop the stack) <code>0</code> without evaluating the equality.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#literals--code" id="user-content-literals--code"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Literals &amp; Code</h3>
+<p>When literals must be included that can be placed into memory, there is the <code>lit</code> operation:</p>
+<ul>
+<li>
+<code>(lit POS STRING)</code> Places the string <code>STRING</code> in memory at <code>POS</code> and evaluates to its length.</li>
+<li>
+<code>(lit POS INT1 INT2 ...)</code> Places each of the integers INT1, INT2 &amp;c. in to memory beginning at POS and each 32-bytes apart. Evaluates to total memory used.</li>
+<li>
+<code>(lit POS BIGINT)</code> Places <code>BIGINT</code> into memory at POS and evaluates to the number of bytes it takes. Unlike for the previous case, <code>BIGINT</code> may be arbitrarily large, and thus if specified as hex, can facilitate storing arbitrary binary data.</li>
+</ul>
+<p>For handling cases where code needs to be compiled and passed around, there is the <code>lll</code> operation:</p>
+<ul>
+<li><code>(lll EXPR POS MAXSIZE)</code></li>
+<li><code>(lll EXPR POS)</code></li>
+</ul>
+<p>This places the EVM-code as compiled from <code>EXPR</code> into memory at position <code>POS</code> if and only if said EVM-code is at most <code>MAXSIZE</code> bytes, or if <code>MAXSIZE</code> is not provided. It evaluates to the number of bytes of memory written, i.e. either 0 or the number of bytes of EVM-code; if provided, this is always at most <code>MAXSIZE</code>.</p>
+<p>Contract creation code will typically look something like:</p>
+<pre><code>{
+  ;; Initialisation code goes here
+  ;; This just records who the original creator is
+  [[0]] (caller)
+
+  ;; Return the contract code
+  (return 0 (lll {
+    ;; Contract code goes here
+    ;; This just suicides if called by the original creator
+    (when (= (caller) @@0) (suicide (caller)))
+  } 0))
+}
+</code></pre>
+<h3>
+<a aria-hidden="true" class="anchor" href="#macro-expansion" id="user-content-macro-expansion"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Macro Expansion</h3>
+<p>Macros are supported with the <code>def</code> operation. This works for a single non-parameterised expression as well as one with parameters.</p>
+<ul>
+<li>
+<code>(def NAME EXPR)</code> From this point onwards in the code, any uses of the unquoted <code>NAME</code> as an expression will instead result in the code <code>EXPR</code>. <code>NAME</code> will typically be a quoted string, but if it is a symbol it must resolve through previous definitions into a string.</li>
+<li>
+<code>(def NAME (ARG1, ARG2, ...) EXPR)</code> Similar to the above, but <code>EXPR</code> here may involve the symbols <code>ARG1</code>, <code>ARG2</code>, &amp;c. which will each be substituted at the time of macro expansion.</li>
+</ul>
+<p>The behaviour is similar to <code>#define</code> in C, for example:</p>
+<pre><code>{
+(def 'sixtynine 69)
+(def 'sqr (z) (* z z))
+(when (&gt; (sqr sixtynine) sixtynine) (stop))
+}
+</code></pre>
+<p>This results in the program stopping.</p>
+<p>Unlike in C, macros here are scoped; environmental definitions at the time of the macro's definition are recorded alongside the macro. When a definition must be resolved, definitions made within the present macro are treated preferentially, then arguments to the macro, then definitions &amp; arguments made in the scope of which the macro was called (treated in the same order), then finally definitions &amp; arguments stemming from the scope in which the macro was created (again, treated in the same order).</p>
+<p>This can be used to great effect for implementing counters and some functional-programming-esque idioms.</p>
+<p>To include a whole file, you can use the <code>include</code> operation:</p>
+<ul>
+<li>
+<code>(include FILENAME)</code>: Expands to the contents of the string FILENAME.</li>
+</ul>
+<h3>
+<a aria-hidden="true" class="anchor" href="#including-inline-assembler" id="user-content-including-inline-assembler"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Including Inline Assembler</h3>
+<p>Low-level assembler may be included in line with one caveat; it must have transparent stack usage. This basically means that <code>JUMP</code> or <code>JUMPI</code> are best avoided; if used then ignoring their jump effects (and thus assuming the jump doesn't happen and the PC just gets incremented) must have a valid final result in terms of items deposited on the stack.</p>
+<p>Usage is:</p>
+<ul>
+<li><code>(asm ATOM1 ATOM2 ...)</code></li>
+</ul>
+<p>Where the <code>ATOM</code>s may be either valid, non-<code>PUSH</code> VM instructions (see the formal definition of the machine in the Yellow Paper) or literals (in which case they will result in an appropriate <code>PUSH</code> instruction).</p>
+<p>For example:</p>
+<pre><code>(asm 69 42 ADD)
+</code></pre>
+<p>Evaluates into the value 111. Note any assembler fragment that results in fewer than zero items being deposited on the stack or greater than 1 will almost certainly not interoperate with the rest of the language and thus cause compile errors. Here be (even more than usual) dragons.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#additional-helpers" id="user-content-additional-helpers"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Additional helpers</h3>
+<p>There are several addition helper operations to aid in program construction. These are implemented as macros (for what little it matters).</p>
+<ul>
+<li>
+<code>gav</code>: My address.</li>
+<li>
+<code>config</code>: The address of the configuration contract.</li>
+<li>
+<code>allgas</code>: All gas available, when used as a parameter to <code>send</code>, <code>call</code> or <code>msg</code>.</li>
+<li>
+<code>(sendgavcoin &lt;to&gt; &lt;value&gt;)</code>: Sends <code>&lt;value&gt;</code> GAV to account <code>&lt;to&gt;</code>.</li>
+<li>
+<code>(regname &lt;name&gt;)</code>: Registers the name <code>name</code> with the caller.</li>
+<li>
+<code>(regcoins &lt;currency-code&gt;)</code>: Registers the three-letter upper-case currency code <code>&lt;currency-code&gt;</code> with the caller.</li>
+<li>
+<code>(send &lt;to&gt; &lt;value&gt;)</code>: Sends <code>&lt;value&gt;</code> [Wei] to the account <code>&lt;to&gt;</code>.</li>
+<li>
+<code>(send &lt;gaslimit&gt; &lt;to&gt; &lt;value&gt;)</code>: Sends <code>&lt;value&gt;</code> Wei to the account <code>&lt;to&gt;</code> with a limit on the allowed gas <code>&lt;gaslimit&gt;</code>.</li>
+<li>
+<code>(msg &lt;to&gt; &lt;data&gt;)</code>: Sends a message to the account <code>&lt;to&gt;</code> with word-sized data item <code>&lt;data&gt;</code>, evaluates to the word-sized return value.</li>
+<li>
+<code>(msg &lt;to&gt; &lt;value&gt; &lt;data&gt;)</code>: Sends a message to the account <code>&lt;to&gt;</code> with word-sized data item <code>&lt;data&gt;</code> and <code>&lt;value&gt;</code> Wei, evaluates to the word-sized return value.</li>
+<li>
+<code>(msg &lt;gaslimit&gt; &lt;to&gt; &lt;value&gt; &lt;data&gt;)</code>: Sends a message to the account <code>&lt;to&gt;</code> with word-sized data item <code>&lt;data&gt;</code> and <code>&lt;value&gt;</code> Wei and a limit of gas <code>&lt;gaslimit&gt;</code>, evaluates to the word-sized return value.</li>
+<li>
+<code>(msg &lt;gaslimit&gt; &lt;to&gt; &lt;value&gt; &lt;data&gt; &lt;datasize&gt;)</code>: Sends a message to the account <code>&lt;to&gt;</code> with data of length <code>&lt;datasize&gt;</code>, stored in memory at position <code>&lt;data&gt;</code> and <code>&lt;value&gt;</code> Wei and a limit of gas <code>&lt;gaslimit&gt;</code>, evaluates to the word-sized return value.</li>
+<li>
+<code>(create &lt;code&gt;)</code>: Creates a new contract with initialisation code <code>&lt;code&gt;</code>.</li>
+<li>
+<code>(create &lt;endowment&gt; &lt;code&gt;)</code>: Creates a new contract with <code>endowment</code> Wei and initialisation code <code>&lt;code&gt;</code>.</li>
+<li>
+<code>(sha3 &lt;value&gt;)</code>: Evaluates to the sha3 of the given <code>&lt;value&gt;</code>.</li>
+<li>
+<code>(sha3pair &lt;value1&gt; &lt;value2&gt;)</code>: Evaluates to the sha3 of the 64-bytes given by the concatenation of <code>&lt;value1&gt;</code> and <code>&lt;value2&gt;</code>.</li>
+<li>
+<code>(sha3trip &lt;value1&gt; &lt;value2&gt; &lt;value3&gt;)</code>: Evaluates to the sha3 of the 64-bytes given by the concatenation of <code>&lt;value1&gt;</code>, <code>&lt;value2&gt;</code> and <code>&lt;value3&gt;</code>.</li>
+<li>
+<code>(return &lt;value&gt;)</code>: Returns from the call with the word-sized data <code>&lt;value&gt;</code>.</li>
+<li>
+<code>(returnlll &lt;expression&gt;)</code>: Returns from the call with the code representing the LLL expression <code>&lt;expression&gt;</code>.</li>
+</ul>
+<h3>
+<a aria-hidden="true" class="anchor" href="#examples" id="user-content-examples"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Examples</h3>
+<p>See [LLL Examples](LLL Examples for PoC 5) for examples.</p>
+
+        </div>
+
+    </div>]

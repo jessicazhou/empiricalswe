@@ -1,0 +1,121 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <ul>
+<li>For level 17</li>
+<li>Each elevator is fair (ie no starvation), always goes all the way up before going down (and vice-versa), unless, of course, there is no need to go all the way</li>
+<li>Using direction lights to avoid picking up too many people</li>
+<li>Load balancing using the modulo operator (it is more effective than 'least loaded')</li>
+<li>Local scheduling (ie not global)</li>
+</ul>
+<div class="highlight highlight-source-js"><pre>{
+    <span class="pl-en">init</span><span class="pl-k">:</span> <span class="pl-k">function</span>(<span class="pl-smi">elevators</span>, <span class="pl-smi">floors</span>) {
+        <span class="pl-k">var</span> floorTotal <span class="pl-k">=</span> <span class="pl-smi">floors</span>.<span class="pl-c1">length</span>;
+        <span class="pl-k">var</span> elevatorTotal <span class="pl-k">=</span> <span class="pl-smi">elevators</span>.<span class="pl-c1">length</span>;
+        <span class="pl-k">var</span> goingUp <span class="pl-k">=</span> []; <span class="pl-c"><span class="pl-c">//</span> elevator -&gt; boolean</span>
+        <span class="pl-k">var</span> isDestination <span class="pl-k">=</span> [];  <span class="pl-c"><span class="pl-c">//</span> elevator -&gt; floor -&gt; direction (up = true) -&gt; boolean</span>
+        
+        <span class="pl-k">for</span> (<span class="pl-k">var</span> i <span class="pl-k">=</span> <span class="pl-c1">0</span>; i <span class="pl-k">&lt;</span> elevatorTotal; i<span class="pl-k">++</span>) {
+            goingUp[i] <span class="pl-k">=</span> <span class="pl-c1">true</span>;
+            isDestination[i] <span class="pl-k">=</span> [];
+            <span class="pl-k">for</span> (<span class="pl-k">var</span> j <span class="pl-k">=</span> <span class="pl-c1">0</span>; j <span class="pl-k">&lt;</span> floorTotal; j<span class="pl-k">++</span>) {
+                isDestination[i][j] <span class="pl-k">=</span> [];
+                isDestination[i][j][<span class="pl-c1">false</span>] <span class="pl-k">=</span> <span class="pl-c1">false</span>;
+                isDestination[i][j][<span class="pl-c1">true</span>] <span class="pl-k">=</span> <span class="pl-c1">false</span>;
+            }
+        }
+        
+        <span class="pl-k">for</span> (<span class="pl-k">var</span> i <span class="pl-k">=</span> <span class="pl-c1">0</span>; i <span class="pl-k">&lt;</span> elevatorTotal; i<span class="pl-k">++</span>) {
+            <span class="pl-k">var</span> <span class="pl-en">closure</span> <span class="pl-k">=</span> <span class="pl-k">function</span>(<span class="pl-smi">elevator</span>, <span class="pl-smi">index</span>) {
+                <span class="pl-k">return</span> <span class="pl-k">function</span>(<span class="pl-smi">floorNum</span>) {
+                    isDestination[index][floorNum][floorNum <span class="pl-k">&gt;</span> <span class="pl-smi">elevator</span>.<span class="pl-en">currentFloor</span>()] <span class="pl-k">=</span> <span class="pl-c1">true</span>;
+                }
+            }
+            <span class="pl-k">var</span> elevator <span class="pl-k">=</span> elevators[i];
+            <span class="pl-smi">elevator</span>.<span class="pl-en">on</span>(<span class="pl-s"><span class="pl-pds">"</span>floor_button_pressed<span class="pl-pds">"</span></span>, <span class="pl-en">closure</span>(elevator, i));
+        }
+        
+        <span class="pl-k">for</span> (<span class="pl-k">var</span> i <span class="pl-k">=</span> <span class="pl-c1">0</span>; i <span class="pl-k">&lt;</span> floorTotal; i<span class="pl-k">++</span>) {
+            <span class="pl-k">var</span> <span class="pl-en">closure</span> <span class="pl-k">=</span> <span class="pl-k">function</span>(<span class="pl-smi">floor</span>, <span class="pl-smi">name</span>, <span class="pl-smi">goingUp</span>) {
+                <span class="pl-k">return</span> <span class="pl-k">function</span>() {
+                    <span class="pl-k">var</span> floorNum <span class="pl-k">=</span> <span class="pl-smi">floor</span>.<span class="pl-en">floorNum</span>();
+                    isDestination[floorNum <span class="pl-k">%</span> elevatorTotal][floorNum][goingUp] <span class="pl-k">=</span> <span class="pl-c1">true</span>;
+
+                    <span class="pl-c"><span class="pl-c">//</span> least loaded is less efficient</span>
+                    <span class="pl-c"><span class="pl-c">//</span> var minLoadIndex = 0;</span>
+                    <span class="pl-c"><span class="pl-c">//</span> for (var j = 1; j &lt; elevatorTotal; j++) {</span>
+                    <span class="pl-c"><span class="pl-c">//</span>      if (elevators[j].loadFactor() &lt; elevators[minLoadIndex].loadFactor() ||</span>
+                    <span class="pl-c"><span class="pl-c">//</span>         (elevators[j].loadFactor() == elevators[minLoadIndex].loadFactor() &amp;&amp;</span>
+                    <span class="pl-c"><span class="pl-c">//</span>          Math.abs(elevators[j].currentFloor() - floorNum) &lt; Math.abs(elevators[minLoadIndex].currentFloor() - floorNum))) {</span>
+                    <span class="pl-c"><span class="pl-c">//</span>         minLoadIndex = j;</span>
+                    <span class="pl-c"><span class="pl-c">//</span>     }</span>
+                    <span class="pl-c"><span class="pl-c">//</span> }</span>
+                    <span class="pl-c"><span class="pl-c">//</span> isDestination[minLoadIndex][floorNum][goingUp] = true;</span>
+                }
+            }
+            floors[i].<span class="pl-en">on</span>(<span class="pl-s"><span class="pl-pds">"</span>up_button_pressed<span class="pl-pds">"</span></span>, <span class="pl-en">closure</span>(floors[i], <span class="pl-s"><span class="pl-pds">'</span>up_button_pressed<span class="pl-pds">'</span></span>, <span class="pl-c1">true</span>));
+            floors[i].<span class="pl-en">on</span>(<span class="pl-s"><span class="pl-pds">"</span>down_button_pressed<span class="pl-pds">"</span></span>, <span class="pl-en">closure</span>(floors[i], <span class="pl-s"><span class="pl-pds">'</span>down_button_pressed<span class="pl-pds">'</span></span>, <span class="pl-c1">false</span>));
+        }
+        
+        <span class="pl-k">for</span> (<span class="pl-k">var</span> i <span class="pl-k">=</span> <span class="pl-c1">0</span>; i <span class="pl-k">&lt;</span> elevatorTotal; i<span class="pl-k">++</span>) {
+            <span class="pl-k">var</span> <span class="pl-en">closure</span> <span class="pl-k">=</span> <span class="pl-k">function</span>(<span class="pl-smi">elevator</span>, <span class="pl-smi">index</span>) {
+                <span class="pl-k">return</span> <span class="pl-k">function</span>() {
+                    <span class="pl-k">var</span> current <span class="pl-k">=</span> <span class="pl-smi">elevator</span>.<span class="pl-en">currentFloor</span>();
+                    <span class="pl-k">var</span> done <span class="pl-k">=</span> <span class="pl-c1">false</span>;
+                    <span class="pl-k">var</span> next <span class="pl-k">=</span> <span class="pl-k">-</span><span class="pl-c1">1</span>;
+                    isDestination[index][current][goingUp[index]] <span class="pl-k">=</span> <span class="pl-c1">false</span>;
+                    <span class="pl-k">for</span> (<span class="pl-k">var</span> iteration <span class="pl-k">=</span> <span class="pl-c1">0</span>; iteration <span class="pl-k">&lt;</span> <span class="pl-c1">3</span> <span class="pl-k">&amp;&amp;</span> <span class="pl-k">!</span>done; iteration<span class="pl-k">++</span>) {
+                        <span class="pl-k">if</span> (goingUp[index]) {
+                            <span class="pl-k">for</span> (next <span class="pl-k">=</span> current <span class="pl-k">+</span> <span class="pl-c1">1</span>; next <span class="pl-k">&lt;</span> floorTotal <span class="pl-k">&amp;&amp;</span> <span class="pl-k">!</span>done; next<span class="pl-k">++</span>) {
+                                <span class="pl-k">if</span> (isDestination[index][next][goingUp[index]]) {
+                                    done <span class="pl-k">=</span> <span class="pl-c1">true</span>;
+                                    <span class="pl-k">break</span>;
+                                }
+                            }
+                            <span class="pl-k">if</span> (<span class="pl-k">!</span>done) {
+                                goingUp[index] <span class="pl-k">=</span> <span class="pl-c1">false</span>;
+                                current <span class="pl-k">=</span> floorTotal;
+                            }
+                        } <span class="pl-k">else</span> {
+                            <span class="pl-k">for</span> (next <span class="pl-k">=</span> current <span class="pl-k">-</span> <span class="pl-c1">1</span>; next <span class="pl-k">&gt;=</span><span class="pl-c1">0</span> <span class="pl-k">&amp;&amp;</span> <span class="pl-k">!</span>done; next<span class="pl-k">--</span>) {
+                                <span class="pl-k">if</span> (isDestination[index][next][goingUp[index]]) {
+                                    done <span class="pl-k">=</span> <span class="pl-c1">true</span>;
+                                    <span class="pl-k">break</span>;
+                                }
+                            }
+                            <span class="pl-k">if</span> (<span class="pl-k">!</span>done) {
+                                goingUp[index] <span class="pl-k">=</span> <span class="pl-c1">true</span>;
+                                current <span class="pl-k">=</span> <span class="pl-k">-</span><span class="pl-c1">1</span>;
+                            }
+                        }
+                    }
+                    
+                    <span class="pl-k">if</span> (next <span class="pl-k">==</span> <span class="pl-k">-</span><span class="pl-c1">1</span> <span class="pl-k">||</span> next <span class="pl-k">==</span> floorTotal) {
+                        next <span class="pl-k">=</span> index <span class="pl-k">%</span> floorTotal;
+                    }
+                    
+                    <span class="pl-smi">elevator</span>.<span class="pl-en">goingUpIndicator</span>(goingUp[index]);
+                    <span class="pl-smi">elevator</span>.<span class="pl-en">goingDownIndicator</span>(<span class="pl-k">!</span>goingUp[index]);
+                    <span class="pl-k">if</span> (<span class="pl-smi">elevator</span>.<span class="pl-en">currentFloor</span>() <span class="pl-k">==</span> floorTotal <span class="pl-k">-</span> <span class="pl-c1">1</span> <span class="pl-k">||</span> next <span class="pl-k">==</span> floorTotal <span class="pl-k">-</span><span class="pl-c1">1</span>) {
+                        <span class="pl-smi">elevator</span>.<span class="pl-en">goingDownIndicator</span>(<span class="pl-c1">true</span>);
+                    }
+                    <span class="pl-k">if</span>(<span class="pl-smi">elevator</span>.<span class="pl-en">currentFloor</span>() <span class="pl-k">==</span> <span class="pl-c1">0</span> <span class="pl-k">||</span> next <span class="pl-k">==</span> <span class="pl-c1">0</span>) {
+                        <span class="pl-smi">elevator</span>.<span class="pl-en">goingUpIndicator</span>(<span class="pl-c1">true</span>);
+                    }
+                    
+                    <span class="pl-k">if</span> (next <span class="pl-k">!=</span> <span class="pl-k">-</span><span class="pl-c1">1</span>) {
+                        <span class="pl-smi">elevator</span>.<span class="pl-en">goToFloor</span>(next);
+                    }
+                }
+            }
+            <span class="pl-k">var</span> elevator <span class="pl-k">=</span> elevators[i];
+            <span class="pl-smi">elevator</span>.<span class="pl-en">on</span>(<span class="pl-s"><span class="pl-pds">"</span>idle<span class="pl-pds">"</span></span>, <span class="pl-en">closure</span>(elevator, i));
+        }
+    },
+    <span class="pl-en">update</span><span class="pl-k">:</span> <span class="pl-k">function</span>(<span class="pl-smi">dt</span>, <span class="pl-smi">elevators</span>, <span class="pl-smi">floors</span>) {
+        <span class="pl-c"><span class="pl-c">//</span> We normally don't need to do anything here</span>
+    }
+}</pre></div>
+
+        </div>
+
+    </div>]

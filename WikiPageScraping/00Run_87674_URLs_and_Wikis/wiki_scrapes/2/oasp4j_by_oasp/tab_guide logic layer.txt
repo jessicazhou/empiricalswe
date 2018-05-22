@@ -1,0 +1,265 @@
+[<div class="wiki-body gollum-asciidoc-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <div>
+<div>Table of Contents</div>
+<ul>
+<li>
+<a href="#logic-layer">Logic Layer</a>
+<ul>
+<li>
+<a href="#component-part">Component Part</a>
+<ul>
+<li><a href="#component-part-interface">Component Part Interface</a></li>
+<li><a href="#component-part-with-simple-interface">Component Part with Simple Interface</a></li>
+<li><a href="#component-part-interface-with-use-case-decomposition">Component Part Interface with Use Case Decomposition</a></li>
+</ul>
+</li>
+<li><a href="#component-implementation">Component Implementation</a></li>
+<li><a href="#passing-parameters-among-components">Passing Parameters Among Components</a></li>
+<li>
+<a href="#security">Security</a>
+<ul>
+<li><a href="#direct-object-references">Direct Object References</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</div>
+<h1 id="user-content-logic-layer">
+<a aria-hidden="true" class="anchor" href="#logic-layer" id="user-content-logic-layer"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Logic Layer</h1>
+<div>
+<p>The logic layer is the heart of the application and contains the main business logic.
+According to our <a href="architecture#business-architecture">business architecture</a> we divide an application into <em>business components</em>. The <em>component part</em> <a href="architecture#technical-architecture">(see architecture overview)</a> assigned to the logic layer contains the functional use-cases the business component is responsible for. For further understanding, consult the <a href="architecture#application-architecture">application architecture</a>.</p>
+</div>
+<div>
+<h2 id="user-content-component-part">
+<a aria-hidden="true" class="anchor" href="#component-part" id="user-content-component-part"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Component Part</h2>
+<div>
+<div>
+<h3 id="user-content-component-part-interface">
+<a aria-hidden="true" class="anchor" href="#component-part-interface" id="user-content-component-part-interface"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Component Part Interface</h3>
+<div>
+<p>A component part is accessed through its component part interface.
+The API of the component part interface has to be business oriented. This means that all parameters and return types of a method have to be business <a href="guide-transferobject">transfer-objects</a>, <a href="guide-datatype">datatypes</a> (String, Integer, MyCustomerNumber, etc.), or collections of these.
+The API may only access objects of other business components listed in the (transitive) <a href="architecture#business-architecture">dependencies</a> of the declaring business component part.</p>
+</div>
+<div>
+<p>First we create the interface that contains the method(s) with the business operations documented with JavaDoc.</p>
+</div>
+<div>
+<p>There are two ways of designing a component part interface at the logic layer. Depending on the application’s complexity one of the following approaches should be consistently applied (i.e. you should not use both approaches within the same application).</p>
+</div>
+<div>
+<ul>
+<li>
+<p>Component Part with Simple Interface</p>
+</li>
+<li>
+<p>Component Part Interface with Use Case Decomposition</p>
+</li>
+</ul>
+</div>
+</div>
+<div>
+<h3 id="user-content-component-part-with-simple-interface">
+<a aria-hidden="true" class="anchor" href="#component-part-with-simple-interface" id="user-content-component-part-with-simple-interface"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Component Part with Simple Interface</h3>
+<div>
+<p>For less complex apps with fairly simple component interfaces (even if it contains many methods, e.g. several find methods), you put all methods to be exposed directly into a single interface. The implementation of the component part interface provides all the corresponding methods in one class.</p>
+</div>
+<div>
+<p>Here is an example of a simple interface:</p>
+</div>
+<div>
+<div>
+<div class="highlight highlight-source-java"><pre><span class="pl-c"><span class="pl-c">/**</span></span>
+<span class="pl-c"> * ... StaffManagement.java</span>
+<span class="pl-c"> <span class="pl-c">*/</span></span>
+<span class="pl-k">public</span> <span class="pl-k">interface</span> <span class="pl-en">StaffManagement</span> {
+
+  <span class="pl-c"><span class="pl-c">/**</span></span>
+<span class="pl-c">   * <span class="pl-k">@param</span> id the {<span class="pl-k">@link</span> StaffMemberEto#getId() <span class="pl-corl">ID</span>} of the requested staff member.</span>
+<span class="pl-c">   * <span class="pl-k">@return</span> The {<span class="pl-k">@link</span> StaffMemberEto} with the given &lt;<span class="pl-ent">code</span>&gt;id&lt;/code&gt; or {<span class="pl-k">@code</span><span class="pl-c1"> null</span>} if no such object exists.</span>
+<span class="pl-c">   <span class="pl-c">*/</span></span>
+  <span class="pl-smi">StaffMemberEto</span> <span class="pl-en">findStaffMember</span>(<span class="pl-smi">Long</span> <span class="pl-v">id</span>);
+
+  <span class="pl-c"><span class="pl-c">/**</span></span>
+<span class="pl-c">   * <span class="pl-k">@param</span> login The {<span class="pl-k">@link</span> StaffMemberEto#getName() <span class="pl-corl">login</span>} of the requested staff member.</span>
+<span class="pl-c">   * <span class="pl-k">@return</span> The {<span class="pl-k">@link</span> StaffMemberEto} with the given &lt;<span class="pl-ent">code</span>&gt;login&lt;/code&gt; or {<span class="pl-k">@code</span><span class="pl-c1"> null</span>} if no such object exists.</span>
+<span class="pl-c">   <span class="pl-c">*/</span></span>
+  <span class="pl-smi">StaffMemberEto</span> <span class="pl-en">findStaffMemberByLogin</span>(<span class="pl-smi">String</span> <span class="pl-v">login</span>);
+
+  <span class="pl-c1">...</span>
+}</pre></div>
+</div>
+</div>
+</div>
+<div>
+<h3 id="user-content-component-part-interface-with-use-case-decomposition">
+<a aria-hidden="true" class="anchor" href="#component-part-interface-with-use-case-decomposition" id="user-content-component-part-interface-with-use-case-decomposition"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Component Part Interface with Use Case Decomposition</h3>
+<div>
+<p>For complex applications, component part interfaces consisting of many different use cases, it is recommended to further sub-divide it into separate use-case-interfaces to be aggregated in the main component interface. This suits for better maintainability.</p>
+</div>
+<div>
+<div>
+<img alt="Component facade with use cases." src="images/component-facade-with-use-cases.png" width="450"/>
+</div>
+</div>
+<div>
+<p>The component part interface then extends the available use case interfaces to offer a single interface to the next higher layer, e.g. the service layer. Then, the implementation of the component part interface holds references to all use cases and only delegates method calls. All business logic and data-layer access is performed within the implementations of the use cases. Also, if a use case needs to use functionality of another use case provided by the same layer it will use a reference to the component part interface and <em>not</em> to the use case itself.</p>
+</div>
+<div>
+<div>
+<div class="highlight highlight-source-java"><pre><span class="pl-c"><span class="pl-c">/**</span></span>
+<span class="pl-c"> * ... Salesmanagement.java</span>
+<span class="pl-c"> <span class="pl-c">*/</span></span>
+<span class="pl-k">public</span> <span class="pl-k">interface</span> <span class="pl-en">Salesmanagement</span> <span class="pl-k">extends</span> <span class="pl-e">UcChangeTable</span>, <span class="pl-e">UcFindBill</span>, <span class="pl-e">UcFindOrder</span>, <span class="pl-e">UcFindOrderPosition</span>, <span class="pl-e">UcManageBill</span>,
+    <span class="pl-e">UcManageOrder</span>, <span class="pl-e">UcManageOrderPosition</span> {
+
+}
+
+<span class="pl-c"><span class="pl-c">//</span> ...</span>
+
+<span class="pl-c"><span class="pl-c">/**</span></span>
+<span class="pl-c"> * ... UcChangeTable.java</span>
+<span class="pl-c"> <span class="pl-c">*/</span></span>
+<span class="pl-k">public</span> <span class="pl-k">interface</span> <span class="pl-en">UcChangeTable</span> {
+
+  <span class="pl-c"><span class="pl-c">/**</span></span>
+<span class="pl-c">   * UseCase to change from one {<span class="pl-k">@link</span> TableEto <span class="pl-corl">table</span>} to another. The people sitting at a table are identified by their</span>
+<span class="pl-c">   * {<span class="pl-k">@link</span> OrderEto <span class="pl-corl">order</span>} that has to be provided as argument.</span>
+<span class="pl-c">   *</span>
+<span class="pl-c">   * <span class="pl-k">@param</span> orderId the {<span class="pl-k">@link</span> OrderEto <span class="pl-corl">order</span>}</span>
+<span class="pl-c">   * <span class="pl-k">@param</span> newTableId the new {<span class="pl-k">@link</span> TableEto <span class="pl-corl">table</span>} to switch to.</span>
+<span class="pl-c">   <span class="pl-c">*/</span></span>
+  <span class="pl-k">void</span> <span class="pl-en">changeTable</span>(<span class="pl-k">long</span> <span class="pl-v">orderId</span>, <span class="pl-k">long</span> <span class="pl-v">newTableId</span>);
+
+}</pre></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div>
+<h2 id="user-content-component-implementation">
+<a aria-hidden="true" class="anchor" href="#component-implementation" id="user-content-component-implementation"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Component Implementation</h2>
+<div>
+<div>
+<p>The implementation of the use case typically needs access to the persistent data. This is done by <a href="guide-dependency-injection">injecting</a> the corresponding <a href="guide-dataaccess-layer#data-access-object">DAO</a>. According to the  <a href="architecture#architecture-principles">principle <em>data sovereignty</em></a> , only DAOs of the same business component may be accessed directly from the use case. For accessing data from other components the use case has to use the corresponding <a href="#component-interface">component interface</a>. Further, it shall not expose persistent entities from the persistence layer and has to map them to <a href="guide-transferobject">transfer objects</a>.</p>
+</div>
+<div>
+<p>Within a use-case implementation, entities are mapped via a BeanMapper to <a href="guide-dataaccess-layer#entity">persistent entities</a>. Let’s take a quick look at some of the StaffManagement methods:</p>
+</div>
+<div>
+<div>
+<div class="highlight highlight-source-java"><pre><span class="pl-k">package</span> <span class="pl-smi">io.oasp.gastronomy.restaurant.staffmanagement.logic.impl</span>;
+
+<span class="pl-k">public</span> <span class="pl-k">class</span> <span class="pl-en">StaffManagementImpl</span> <span class="pl-k">extends</span> <span class="pl-e">AbstractComponentFacade</span> <span class="pl-k">implements</span> <span class="pl-e">StaffManagement</span> {
+
+  <span class="pl-k">public</span> <span class="pl-smi">StaffMemberEto</span> <span class="pl-en">getStaffMemberByLogin</span>(<span class="pl-smi">String</span> <span class="pl-v">login</span>) {
+    <span class="pl-smi">StaffMemberEntity</span> staffMember <span class="pl-k">=</span> getStaffMemberDao()<span class="pl-k">.</span>searchByLogin(login);
+    <span class="pl-k">return</span> getBeanMapper()<span class="pl-k">.</span>map(staffMember, <span class="pl-smi">StaffMemberEto</span><span class="pl-k">.</span>class);
+  }
+
+  <span class="pl-k">public</span> <span class="pl-smi">StaffMemberEto</span> <span class="pl-en">getStaffMember</span>(<span class="pl-smi">Login</span> <span class="pl-v">id</span>) {
+    <span class="pl-smi">StaffMemberEntity</span> staffMember <span class="pl-k">=</span> getStaffMemberDao()<span class="pl-k">.</span>find(id);
+    <span class="pl-k">return</span> getBeanMapper()<span class="pl-k">.</span>map(staffMember, <span class="pl-smi">StaffMemberEto</span><span class="pl-k">.</span>class);
+  }
+}</pre></div>
+</div>
+</div>
+<div>
+<p>As you can see, provided entities are mapped to corresponding business objects (here StaffMemberEto.class). These business objects are simple POJOs (Plain Old Java Objects) and stored in:<br/>
+&lt;package-name-prefix&gt;.&lt;domain&gt;.&lt;application-name&gt;.&lt;component&gt;.api.<br/>
+The mapping process of these entities and the declaration of the AbstractLayerImpl class are described <a href="#passing-parameters-among-components">here</a>. For every business object there has to be a mapping entry in the src/main/resources/config/app/common/dozer-mapping.xml file. For example, the mapping entry of a TableEto to a Table looks like this:</p>
+</div>
+<div>
+<div>
+<div class="highlight highlight-text-html-basic"><pre>  &lt;<span class="pl-ent">mapping</span>&gt;
+    &lt;<span class="pl-ent">class-a</span>&gt;io.oasp.gastronomy.restaurant.tablemanagement.logic.api.TableEto&lt;/<span class="pl-ent">class-a</span>&gt;
+    &lt;<span class="pl-ent">class-b</span>&gt;io.oasp.gastronomy.restaurant.tablemanagement.persistence.api.entity.Table&lt;/<span class="pl-ent">class-b</span>&gt;
+  &lt;/<span class="pl-ent">mapping</span>&gt;</pre></div>
+</div>
+</div>
+<div>
+<p>Below, a class diagram illustrating the pattern is shown (here: the <code>StaffManagement</code> business component):</p>
+</div>
+<div>
+<div>
+<img alt="logic layer component pattern" src="images/guide-logic-layer.png" width="450"/>
+</div>
+</div>
+<div>
+<p>As the picture above illustrates, the necessary <a href="guide-dataaccess-layer#data-access-object">DAO</a> entity to access the database is provided by an abstract class. Use Cases that need access to this DAO entity, have to extend that abstract class. Needed dependencies (in this case the staffMemberDao) are resolved by Spring, see <a href="#component-interface">here</a>. For the validation (e.g. to check if all needed attributes of the StaffMember have been set) either Java code or <a href="http://www.jboss.org/drools/" rel="nofollow">Drools</a>, a business rule management system, can be used.</p>
+</div>
+</div>
+</div>
+<div>
+<h2 id="user-content-passing-parameters-among-components">
+<a aria-hidden="true" class="anchor" href="#passing-parameters-among-components" id="user-content-passing-parameters-among-components"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Passing Parameters Among Components</h2>
+<div>
+<div>
+<p><a href="guide-dataaccess-layer#entity">Entities</a> have to be detached for the reasons of data sovereignty, if entities are passed among components or <a href="architecture#technical-architecture">layers</a> (to service layer). For further details see <a href="guide-beanmapping">Bean-Mapping</a>. Therefore we are using <a href="guide-transferobject">transfer-objects</a> (TO) with the same attributes as the entity that is persisted. The packages are:<br/></p>
+</div>
+<table>
+<colgroup>
+<col/>
+<col/>
+</colgroup>
+<tbody>
+<tr>
+<td><p>Persistence Entities</p></td>
+<td><p>&lt;package-name-prefix&gt;.&lt;domain&gt;.&lt;application-name&gt;.&lt;component&gt;.persistence.api.entity</p></td>
+</tr>
+<tr>
+<td><p>Transfer Objects(TOs)</p></td>
+<td><p>&lt;package-name-prefix&gt;.&lt;domain&gt;.&lt;application-name&gt;.&lt;component&gt;.logic.api</p></td>
+</tr>
+</tbody>
+</table>
+<div>
+<p>This mapping is a simple copy process. So changes out of the scope of the owning component to any TO do not directly affect the persistent entity.</p>
+</div>
+</div>
+</div>
+<div>
+<h2 id="user-content-security">
+<a aria-hidden="true" class="anchor" href="#security" id="user-content-security"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Security</h2>
+<div>
+<div>
+<p>The logic layer is the heart of the application. It is also responsible for authorization and hence security is important here. Every method exposed in an interface needs to be annotated with an authorization check, stating what role(s) a caller must provide in order to be allowed to make the call. The authorization concept is described <a href="guide-security#authorization">here</a>.</p>
+</div>
+<div>
+<h3 id="user-content-direct-object-references">
+<a aria-hidden="true" class="anchor" href="#direct-object-references" id="user-content-direct-object-references"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Direct Object References</h3>
+<div>
+<p>A security threat are <a href="https://www.owasp.org/index.php/Top_10_2013-A4-Insecure_Direct_Object_References" rel="nofollow">Insecure Direct Object References</a>. This simply gives you two options:</p>
+</div>
+<div>
+<ul>
+<li>
+<p>avoid direct object references at all</p>
+</li>
+<li>
+<p>ensure that direct object references are secure</p>
+</li>
+</ul>
+</div>
+<div>
+<p>Especially when using REST, direct object references via technical IDs are common sense. This implies that you have a proper <a href="#authorization">authorization</a> in place. This is especially tricky when your authorization does not only rely on the type of the data and according static permissions but also on the data itself. Vulnerabilities for this threat can easily happen by design flaws and inadvertence. Here is an example from our sample application:</p>
+</div>
+<div>
+<p>We have a generic use-case to manage BLOBs. In the first place it makes sense to write a generic REST service to load and save these BLOBs. However, the permission to read or even update such BLOB depend on the business object hosting the BLOB. Therefore, such a generic REST service would open the door for this OWASP A4 vulnerability. To solve this in a secure way, you need individual services for each hosting business object to manage the linked BLOB and have to check permissions based on the parent business object. In this example the ID of the BLOB would be the direct object reference and the ID of the business object (and a BLOB property indicator) would be the indirect object reference.</p>
+</div>
+</div>
+</div>
+</div>
+        </div>
+
+        <div class="wiki-footer gollum-markdown-content boxed-group" id="wiki-footer">
+          <div class="boxed-group-inner wiki-auxiliary-content markdown-body">
+            <p><a href="http://creativecommons.org/licenses/by-nd/4.0/" rel="nofollow"><img alt="Creative Commons License Agreement" data-canonical-src="http://i.creativecommons.org/l/by-nd/4.0/88x31.png" src="https://camo.githubusercontent.com/171d004f9ccb9199e35ac8ec3d99ede916037a9f/687474703a2f2f692e6372656174697665636f6d6d6f6e732e6f72672f6c2f62792d6e642f342e302f38387833312e706e67"/></a><br/><span>This documentation</span> is licensed under the <a href="http://creativecommons.org/licenses/by-nd/4.0/" rel="nofollow">Creative Commons License (Attribution-NoDerivatives 4.0 International)</a>.</p>
+
+          </div>
+        </div>
+    </div>]

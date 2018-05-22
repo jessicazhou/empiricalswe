@@ -1,0 +1,158 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <ol>
+<li>
+<p>Prerequisites</p>
+<p>JDK 1.7</p>
+<p>Make sure you are using JDK 1.7 -- running <code>java -version</code> should output something like:</p>
+<pre lang="txt"><code>java version "1.7.0_10"
+Java(TM) SE Runtime Environment (build 1.7.0_10-b18)
+Java HotSpot(TM) 64-Bit Server VM (build 23.6-b04, mixed mode)
+</code></pre>
+<p>If you are using JDK 1.6 or before, download JDK 1.7 from Oracle: <a href="http://www.oracle.com/technetwork/java/javase/downloads/index.html" rel="nofollow">http://www.oracle.com/technetwork/java/javase/downloads/index.html</a></p>
+<p>Image Magick and Ffmpeg for derivatives processing (we recommend using <a href="http://mxcl.github.com/homebrew/">Homebrew</a>:</p>
+<div class="highlight highlight-source-shell"><pre>brew install imagemagick
+brew install ffmpeg</pre></div>
+</li>
+<li>
+<p>Database</p>
+<ul>
+<li>MySQL</li>
+</ul>
+<p>Install MySQL.</p>
+<div class="highlight highlight-source-shell"><pre>brew install mysql</pre></div>
+<p>Set a root password, and create a new database and user:</p>
+<div class="highlight highlight-source-shell"><pre>$ mysqladmin -u root password ABC
+$ mysql -uroot -pABC
+mysql<span class="pl-k">&gt;</span> create database dams<span class="pl-k">;</span>
+mysql<span class="pl-k">&gt;</span> grant all privileges on <span class="pl-k">*</span>.<span class="pl-k">*</span> to <span class="pl-s"><span class="pl-pds">'</span>dams<span class="pl-pds">'</span></span>@<span class="pl-s"><span class="pl-pds">'</span>localhost<span class="pl-pds">'</span></span> identified by <span class="pl-s"><span class="pl-pds">'</span>XYZ<span class="pl-pds">'</span></span><span class="pl-k">;</span></pre></div>
+<ul>
+<li>PostgreSQL</li>
+</ul>
+<p>Install PostgreSQL</p>
+<div class="highlight highlight-source-shell"><pre>brew install postgresql</pre></div>
+<p>Setup DAMS database and user:</p>
+<div class="highlight highlight-source-shell"><pre>$ sudo -u postgres psql
+postgres=<span class="pl-c"><span class="pl-c">#</span> create user tomcat with password 'dams';</span>
+postgres=<span class="pl-c"><span class="pl-c">#</span> create database dams owner tomcat;</span>
+postgres-# <span class="pl-cce">\q</span></pre></div>
+</li>
+<li>
+<p>Environment</p>
+<p>Create a directory to hold DAMS Repo config and files.  Add DAMS_HOME environment variable to your shell environment (e.g., ~/.bash_profile):</p>
+<div class="highlight highlight-source-shell"><pre>DAMS_HOME=/pub/dams</pre></div>
+<p>Close any open terminal windows or run ". ~/.bash_profile"</p>
+<p>Clone private_config repo from stash:</p>
+<div class="highlight highlight-source-shell"><pre>git clone ssh://git@lib-stash.ucsd.edu:7999/ND/private_config.git</pre></div>
+<p>Copy private_config/gimili/dams.properties to this directory and edit to match your local settings.</p>
+<p>Setup Ant build.properties</p>
+<div class="highlight highlight-source-shell"><pre>catalina.home=/pub/tomcat
+deploy.home=<span class="pl-smi">${catalina.home}</span>/webapps
+xsl.home=/pub/dams/xsl</pre></div>
+</li>
+<li>
+<p>Tomcat</p>
+<p>Download Tomcat 7</p>
+<p><a href="http://tomcat.apache.org/download-70.cgi" rel="nofollow">http://tomcat.apache.org/download-70.cgi</a></p>
+<p>Edit Tomcat conf/server.xml and add to the GlobalNamingResources:</p>
+<div class="highlight highlight-text-xml"><pre>&lt;<span class="pl-ent">Environment</span> <span class="pl-e">name</span>=<span class="pl-s"><span class="pl-pds">"</span>dams/home<span class="pl-pds">"</span></span> <span class="pl-e">value</span>=<span class="pl-s"><span class="pl-pds">"</span>/pub/dams<span class="pl-pds">"</span></span> <span class="pl-e">type</span>=<span class="pl-s"><span class="pl-pds">"</span>java.lang.String<span class="pl-pds">"</span></span>/&gt;
+&lt;<span class="pl-ent">Resource</span> <span class="pl-e">name</span>=<span class="pl-s"><span class="pl-pds">"</span>jdbc/dams<span class="pl-pds">"</span></span> <span class="pl-e">auth</span>=<span class="pl-s"><span class="pl-pds">"</span>Container<span class="pl-pds">"</span></span> <span class="pl-e">type</span>=<span class="pl-s"><span class="pl-pds">"</span>javax.sql.DataSource<span class="pl-pds">"</span></span>
+    <span class="pl-e">username</span>=<span class="pl-s"><span class="pl-pds">"</span>dams<span class="pl-pds">"</span></span> <span class="pl-e">password</span>=<span class="pl-s"><span class="pl-pds">"</span>XXXX<span class="pl-pds">"</span></span> <span class="pl-e">driverClassName</span>=<span class="pl-s"><span class="pl-pds">"</span>com.mysql.jdbc.Driver<span class="pl-pds">"</span></span>
+    <span class="pl-e">url</span>=<span class="pl-s"><span class="pl-pds">"</span>jdbc:mysql://localhost:3306/dams<span class="pl-pds">"</span></span> <span class="pl-e">maxActive</span>=<span class="pl-s"><span class="pl-pds">"</span>10<span class="pl-pds">"</span></span> <span class="pl-e">maxIdle</span>=<span class="pl-s"><span class="pl-pds">"</span>3<span class="pl-pds">"</span></span>
+    <span class="pl-e">maxWait</span>=<span class="pl-s"><span class="pl-pds">"</span>5000<span class="pl-pds">"</span></span> <span class="pl-e">validationQuery</span>=<span class="pl-s"><span class="pl-pds">"</span>select 1<span class="pl-pds">"</span></span> <span class="pl-e">logAbandoned</span>=<span class="pl-s"><span class="pl-pds">"</span>true<span class="pl-pds">"</span></span>
+    <span class="pl-e">removeAbandonedTimeout</span>=<span class="pl-s"><span class="pl-pds">"</span>60<span class="pl-pds">"</span></span> <span class="pl-e">removeAbandoned</span>=<span class="pl-s"><span class="pl-pds">"</span>true<span class="pl-pds">"</span></span> <span class="pl-e">testOnReturn</span>=<span class="pl-s"><span class="pl-pds">"</span>true<span class="pl-pds">"</span></span>
+    <span class="pl-e">testOnBorrow</span>=<span class="pl-s"><span class="pl-pds">"</span>true<span class="pl-pds">"</span></span>/&gt;</pre></div>
+<p>If using PostgreSQL, use <code>org.postgresql.Driver</code> for the driver class name, and <code>jdbc:postgresql://localhost/dams</code> for the JDBC URL.</p>
+<p>To enable SSL on port 8443, uncomment and update the SSL connector config:</p>
+<div class="highlight highlight-text-xml"><pre>&lt;<span class="pl-ent">Connector</span> <span class="pl-e">port</span>=<span class="pl-s"><span class="pl-pds">"</span>8443<span class="pl-pds">"</span></span> <span class="pl-e">protocol</span>=<span class="pl-s"><span class="pl-pds">"</span>HTTP/1.1<span class="pl-pds">"</span></span> <span class="pl-e">SSLEnabled</span>=<span class="pl-s"><span class="pl-pds">"</span>true<span class="pl-pds">"</span></span>
+    <span class="pl-e">maxThreads</span>=<span class="pl-s"><span class="pl-pds">"</span>150<span class="pl-pds">"</span></span> <span class="pl-e">scheme</span>=<span class="pl-s"><span class="pl-pds">"</span>https<span class="pl-pds">"</span></span> <span class="pl-e">secure</span>=<span class="pl-s"><span class="pl-pds">"</span>true<span class="pl-pds">"</span></span>
+    <span class="pl-e">keystoreFile</span>=<span class="pl-s"><span class="pl-pds">"</span>conf/tomcat.keystore<span class="pl-pds">"</span></span> <span class="pl-e">keystorePass</span>=<span class="pl-s"><span class="pl-pds">"</span>XXXXXXXX<span class="pl-pds">"</span></span>
+    <span class="pl-e">clientAuth</span>=<span class="pl-s"><span class="pl-pds">"</span>false<span class="pl-pds">"</span></span> <span class="pl-e">sslProtocol</span>=<span class="pl-s"><span class="pl-pds">"</span>TLS<span class="pl-pds">"</span></span> /&gt;
+</pre></div>
+<p>Then generate a keystore in the tomcat/conf/ directory:</p>
+<div class="highlight highlight-source-shell"><pre>keytool -genkey -alias tomcat -keyalg RSA -keystore tomcat.keystore -validity 3650</pre></div>
+<p>When prompted, enter the same password as the keystorePass parameter above, and fill
+answer the questions about the name/organization creating the keystore (the answers to
+these aren't important).</p>
+<p>Add a user to tomcat/conf/tomcat-users.xml:</p>
+<div class="highlight highlight-text-xml"><pre>&lt;?<span class="pl-ent">xml</span><span class="pl-e"> version</span>=<span class="pl-s"><span class="pl-pds">'</span>1.0<span class="pl-pds">'</span></span><span class="pl-e"> encoding</span>=<span class="pl-s"><span class="pl-pds">'</span>utf-8<span class="pl-pds">'</span></span>?&gt;
+&lt;<span class="pl-ent">tomcat-users</span>&gt;
+  &lt;<span class="pl-ent">role</span> <span class="pl-e">rolename</span>=<span class="pl-s"><span class="pl-pds">"</span>dams-repository<span class="pl-pds">"</span></span>/&gt;
+  &lt;<span class="pl-ent">user</span> <span class="pl-e">username</span>=<span class="pl-s"><span class="pl-pds">"</span>lib-app-damspas<span class="pl-pds">"</span></span> <span class="pl-e">password</span>=<span class="pl-s"><span class="pl-pds">"</span>XXXXXXXX<span class="pl-pds">"</span></span> <span class="pl-e">roles</span>=<span class="pl-s"><span class="pl-pds">"</span>dams-repository<span class="pl-pds">"</span></span>/&gt;
+&lt;/<span class="pl-ent">tomcat-users</span>&gt;</pre></div>
+<p>Start Tomcat.</p>
+</li>
+<li>
+<p>Solr</p>
+<p>Create solr home directory with solr.war file, solr.xml and a core with
+Hydra's config.  These can be copied from hydra-jetty:</p>
+<div class="highlight highlight-source-shell"><pre>cp -a jetty/solr /pub/solr
+cp jetty/webapps/solr.war /pub/solr/solr.war</pre></div>
+<p>Deploy solr deployment descriptor to tomcat/conf/Catalina/localhost/solr.xml:</p>
+<div class="highlight highlight-text-xml"><pre>&lt;<span class="pl-ent">Context</span> <span class="pl-e">docBase</span>=<span class="pl-s"><span class="pl-pds">"</span>/pub/solr/solr.war<span class="pl-pds">"</span></span> <span class="pl-e">debug</span>=<span class="pl-s"><span class="pl-pds">"</span>0<span class="pl-pds">"</span></span> <span class="pl-e">crossContext</span>=<span class="pl-s"><span class="pl-pds">"</span>true<span class="pl-pds">"</span></span> &gt;
+    &lt;<span class="pl-ent">Environment</span> <span class="pl-e">name</span>=<span class="pl-s"><span class="pl-pds">"</span>solr/home<span class="pl-pds">"</span></span> <span class="pl-e">type</span>=<span class="pl-s"><span class="pl-pds">"</span>java.lang.String<span class="pl-pds">"</span></span> <span class="pl-e">value</span>=<span class="pl-s"><span class="pl-pds">"</span>/pub/solr<span class="pl-pds">"</span></span> <span class="pl-e">override</span>=<span class="pl-s"><span class="pl-pds">"</span>true<span class="pl-pds">"</span></span> /&gt;
+&lt;/<span class="pl-ent">Context</span>&gt;</pre></div>
+</li>
+<li>
+<p>ARK minter</p>
+<p>In your CGI directory (in MacOSX: /Library/WebServer/CGI-Executables/, in RHEL: /var/www/cgi-bin/), create a Perl script called minter:</p>
+<div class="highlight highlight-source-perl"><pre><span class="pl-c"><span class="pl-c">#</span>!/usr/bin/perl</span>
+<span class="pl-c1">open</span>( FILE, <span class="pl-s"><span class="pl-pds">"</span>&lt;<span class="pl-pds">"</span></span>, <span class="pl-s"><span class="pl-pds">"</span>minter.dat<span class="pl-pds">"</span></span> );
+<span class="pl-smi">$num</span> = &lt;FILE&gt;;
+<span class="pl-c1">close</span> FILE;
+<span class="pl-c1">print</span> <span class="pl-s"><span class="pl-pds">"</span>Content-Type: text/plain<span class="pl-cce">\n\n</span><span class="pl-pds">"</span></span>;
+<span class="pl-smi">$n</span> = <span class="pl-smi">$ENV</span>{<span class="pl-s"><span class="pl-pds">'</span>QUERY_STRING<span class="pl-pds">'</span></span>};
+<span class="pl-k">unless</span> ( <span class="pl-smi">$n</span> ) { <span class="pl-smi">$n</span> = 1; }
+<span class="pl-k">for</span> ( <span class="pl-smi">$i</span> = 0; <span class="pl-smi">$i</span> &lt; <span class="pl-smi">$n</span>; <span class="pl-smi">$i</span>++ )
+{
+    <span class="pl-smi">$num</span>++;
+    <span class="pl-c1">print</span> <span class="pl-s"><span class="pl-pds">"</span>id: 20775/zz<span class="pl-pds">"</span></span> . <span class="pl-c1">sprintf</span>(<span class="pl-s"><span class="pl-pds">"</span>%08d<span class="pl-pds">"</span></span>,<span class="pl-smi">$num</span>) . <span class="pl-s"><span class="pl-pds">"</span><span class="pl-cce">\n</span><span class="pl-pds">"</span></span>;
+}
+<span class="pl-c1">open</span>( FILE, <span class="pl-s"><span class="pl-pds">"</span>&gt;<span class="pl-pds">"</span></span>, <span class="pl-s"><span class="pl-pds">"</span>minter.dat<span class="pl-pds">"</span></span> );
+<span class="pl-c1">print</span> FILE <span class="pl-smi">$num</span>;
+<span class="pl-c1">close</span> FILE;</pre></div>
+<pre><code>chmod 755 minter
+</code></pre>
+<p>Create the minter data file:</p>
+<div class="highlight highlight-source-shell"><pre>touch minter.dat
+chmod a+w minter.dat</pre></div>
+<p>Make sure Apache is running by minting an ark:</p>
+<pre><code>http://localhost/cgi-bin/minter
+</code></pre>
+</li>
+<li>
+<p>DAMS Repository</p>
+<p>Clone this repo:</p>
+<div class="highlight highlight-source-shell"><pre>git clone git@github.com:ucsdlib/damsprivate.git</pre></div>
+<p>Copy the MySQL JAR file to the Tomcat lib directory:</p>
+<div class="highlight highlight-source-shell"><pre>cp srb/lib2/mysql-connector-java-5.0.4-bin.jar /pub/tomcat/lib/</pre></div>
+<p>Build dams.war and deploy to tomcat</p>
+<div class="highlight highlight-source-shell"><pre>ant clean webapp local-deploy</pre></div>
+<p>Initialize events and object triplestores.</p>
+<div class="highlight highlight-source-shell"><pre>tmp/commands/ts-init.sh dams
+tmp/commands/ts-init.sh events
+tmp/commands/test_01_init.sh</pre></div>
+</li>
+<li>
+<p>ActiveMQ/DAMSolrizer (Optional)</p>
+<p>Download ActiveMQ</p>
+<pre><code>http://activemq.apache.org/download.html
+</code></pre>
+<p>Copy the activemq.xml config file from private_repository</p>
+<div class="highlight highlight-source-shell"><pre>cp private_config/gimili/activemq.xml activemq/conf/</pre></div>
+<p>Add ACTIVEMQ_HOME to your environment (.profile, etc.)</p>
+<div class="highlight highlight-source-shell"><pre><span class="pl-k">export</span> ACTIVEMQ_HOME=/pub/activemq</pre></div>
+<p>Start the ActiveMQ daemon</p>
+<div class="highlight highlight-source-shell"><pre>$ activemq/bin/activemq start</pre></div>
+<p>Uncomment the queue.url and queue.name properties in dams.properties and redeploy DAMS Repo.</p>
+<p>Setup DAMSolrizer daemon to index objects from the ActiveMQ queue.  This does not need to be on the same server as ActiveMQ (it requires the damspas application, so it could be setup on that machine).</p>
+<p>Clone the damspas repo:</p>
+<div class="highlight highlight-source-shell"><pre>git clone git@github.com:ucsdlib/damspas.git</pre></div>
+<p>Start the solrizerd daemon, with the hydra_home parameter specifying the damspas application directory, and the host parameter specifying the host ActiveMQ is running on:</p>
+<div class="highlight highlight-source-shell"><pre>RAILS_ENV=localdams /pub/damspas/bin/damsolrizerd start --hydra_home /pub/damspas --host localhost</pre></div>
+</li>
+</ol>
+
+        </div>
+
+    </div>]

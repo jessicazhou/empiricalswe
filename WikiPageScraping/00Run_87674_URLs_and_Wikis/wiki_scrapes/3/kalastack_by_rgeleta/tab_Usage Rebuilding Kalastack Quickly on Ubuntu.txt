@@ -1,0 +1,82 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>Sometimes it happens where your stack just doesn't work right anymore.  Weird glitchy errors happen and it is better to just start over then fight it.  Do not fret, with this method all you need to do is re-download your Databases.  See Database section at bottom as well regarding the DBs.  Just follow these steps and you will be back up and running within an hour.
+Step-by-step guide
+In your broken / glitchy Kalastack
+vagrant ssh into your soon to be ex Kalastack (if you still can, which you should)
+Run these commands</p>
+<div class="highlight highlight-source-shell"><pre>$ cp -rf /etc/drush/ /var/www
+$ cp -rf /etc/kalastack/ /var/www</pre></div>
+<p>exit and vagrant halt your soon to be ex-kalastack</p>
+<p>Then run these commands:</p>
+<div class="highlight highlight-source-shell"><pre>$ <span class="pl-c1">cd</span> <span class="pl-k">~</span>/
+$ git clone https://github.com/kalamuna/kalastack.git kalastack-new
+$ <span class="pl-c1">cd</span> kalastack-new
+$ vagrant plugin install vagrant-hostsupdater
+$ vagrant up
+$ vagrant ssh</pre></div>
+<p>Now inside your new shiny kalastack run these commands:</p>
+<div class="highlight highlight-source-shell"><pre>$ sudo rm -rf /etc/drush
+$ sudo rm -rf /etc/kalastack
+$ sudo mv /var/www/drush /etc
+$ sudo mv /var/www/kalastack /etc
+$ sudo chown -R vagrant:vagrant /etc/drush
+$ sudo chown -R vagrant:vagrant /etc/kalastack
+$ sudo chmod -R 777 /etc/drush
+$ sudo chmod -R 777 /etc/kalastack</pre></div>
+<p>Now your stack is almost there, I would then run these:</p>
+<div class="highlight highlight-source-shell"><pre>$ git config --global user.name <span class="pl-s"><span class="pl-pds">"</span>Your Name<span class="pl-pds">"</span></span>
+$ git config --global user.email youremail@example.com
+$ drush pauth
+$ drush ta</pre></div>
+<p>Now lets get xdebug working right with Ubuntu based configs, copy and replace the text in each .ini with the text below:</p>
+<div class="highlight highlight-source-shell"><pre>$ sudo nano /etc/php5/fpm/conf.d/xdebug.ini
+$ sudo nano /etc/php5/cli/conf.d/xdebug.ini</pre></div>
+<p>Replace each .ini with:<br/>
+zend_extension=/usr/lib/php5/20090626/xdebug.so<br/>
+xdebug.remote_enable=On<br/>
+xdebug.remote_host=host.kala<br/>
+xdebug.remote_port=9001<br/>
+xdebug.remote_handler=dbgp<br/>
+xdebug.remote_mode = req<br/>
+xdebug.remote_log = "/var/log/xdebug.log"<br/>
+xdebug.remote_autostart = 1<br/></p>
+<p><em>Note: I would check your /usr/lib/php5/ folder to make sure the number folder is correct where the xdebug.so for your stack</em></p>
+<p>Now, you can either install front end tools in two ways, automatically or manually (if you dont want them all) as below:</p>
+<p>Read <a href="https://github.com/kalamuna/kalastack/wiki/Configuration-Adding-Front-End-Tooling">THIS</a> to install it all at once</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#or" id="user-content-or"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>OR</h3>
+<p>Re-install Grunt with this article <a href="https://kalamuna.atlassian.net/wiki/display/KALA/Install+Grunt+on+Ubuntu" rel="nofollow">HERE</a></p>
+<p>Re-install Ruby / Compass with this article <a href="https://kalamuna.atlassian.net/wiki/pages/viewpage.action?pageId=23134210" rel="nofollow">HERE</a></p>
+<p>That's it, you are back up and running.  All that is left to do is re-grab your databases for your instances.  See the Database section below for your method of preference.  You can keep your old VM Kalastack around if you need to go back in for some reason.  I usually keep mine for about a week then destroy it.</p>
+<h1>
+<a aria-hidden="true" class="anchor" href="#databases" id="user-content-databases"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>DATABASES</h1>
+<p>You have 2 routes with your old databases, depending on how quickly you need to get up and running.  I personally prefer just to grab them again from Pantheon.  Here are the 2 ways of doing this.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#using-your-old-databases" id="user-content-using-your-old-databases"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Using your Old Databases.</h2>
+<p>In your old broken kalastack, you can grab the dbs you need like this:<br/></p>
+<ol>
+<li>drush sql-dump &gt; /var/www/dbname.sql<br/>
+</li>
+<li>Rinse and repeat for as many as you would like<br/>
+</li>
+<li>Then in your new stack, go to <a href="http://php.kala" rel="nofollow">http://php.kala</a> and recreate the databases by clicking the database tab, then add your databases like sitename_kala<br/>
+</li>
+<li>go to your stack and in your instance run drush sql-cli &lt; /var/www/dbname.sql<br/>
+</li>
+</ol>
+<h2>
+<a aria-hidden="true" class="anchor" href="#using-pantheon" id="user-content-using-pantheon"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Using Pantheon</h2>
+<p>go into each of your instances and run</p>
+<div class="highlight highlight-source-shell"><pre>drush pulldata SITENAME.dev</pre></div>
+<p>This takes a little longer, than the above method.</p>
+
+        </div>
+
+        <div class="wiki-footer gollum-markdown-content boxed-group" id="wiki-footer">
+          <div class="boxed-group-inner wiki-auxiliary-content markdown-body">
+            <p>Copyright © 2014 Kalamuna, LLC</p>
+
+          </div>
+        </div>
+    </div>]

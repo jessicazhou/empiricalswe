@@ -1,0 +1,716 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <h1>
+<a aria-hidden="true" class="anchor" href="#music-5000-fpga-notes" id="user-content-music-5000-fpga-notes"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Music 5000 FPGA Notes</h1>
+<p>This page is a write-up of the notes I made when trying to understand the operation of the original Music 5000 hardware, with a view to re-implementing a compatible version of the design in a modern FPGA.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#wave-ram" id="user-content-wave-ram"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Wave RAM</h2>
+<p>The registers in the Music 5000 hardware are implemented as a 2048 byte block of memory, called the Wave RAM. All functionality of the Music 5000 is controlled by writing to locations in the Wave RAM.</p>
+<p>The Wave RAM serves two purposes:</p>
+<ol>
+<li>
+<p>It stores the Wave Definitions for 14 distinct waveforms. Each waveform is represented as 128 8-bit logarithmic samples (logarithmic because the Music 5000 uses a Companding DAC).</p>
+</li>
+<li>
+<p>It stores the Channel Registers for each of the 16 channels. Each channel has two sets of registers, normal and alternative, each comprising six registers (frequency lo, frequency mid, frequency hi, amplitude, waveform and control).</p>
+</li>
+</ol>
+<p>The reason for the two sets of registers is to support modulation of any controllable parameter, inc. frequency, amplitude, phase (for synchronisation) etc. For example, it is possible to program different characteristics in each set in one channel (e.g. different frequencies), and then use the channel two positions earlier in the table of sixteen channels to switch between them at audio frequency.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#register-addressing" id="user-content-register-addressing"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Register Addressing</h2>
+<p>The Wave RAM interfaces to the BBC using the 1MHz Bus and appears as eight 256 byte pages of memory that can be individually paged in to &amp;FD00-&amp;FDFF.</p>
+<p>The Wave RAM is "addressed" by writing the value "0011BBBx" to the paging register at &amp;FCFF.</p>
+<table>
+<thead>
+<tr>
+<th>Bit</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Bit 7-4</td>
+<td>Write gate - must be 0011 for the Wave RAM to be paged in</td>
+</tr>
+<tr>
+<td>Bit 3-1</td>
+<td>Selects one of eight pages of the Wave RAM</td>
+</tr>
+<tr>
+<td>Bit 0</td>
+<td>Unused</td>
+</tr>
+</tbody>
+</table>
+<p>If the top nibble is not "0011", writes to &amp;FDxx will be ignored. This allows multiple Hybrid devices (e.g. the Music 3000 Expander) to be connected in parallel.</p>
+<p>In the original hardware, addresses &amp;FD00-&amp;FDFF are write only. In this FPGA version, they can also be read back, because the FPGA uses a true dual-port RAM.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#wave-ram-memory-map-summary" id="user-content-wave-ram-memory-map-summary"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Wave RAM Memory Map Summary</h2>
+<table>
+<thead>
+<tr>
+<th>Bank</th>
+<th>&amp;FCFF</th>
+<th>&amp;FDxx Address</th>
+<th>Function</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0</td>
+<td>&amp;30</td>
+<td>&amp;00-&amp;7F</td>
+<td>Wave 0 Definition</td>
+</tr>
+<tr>
+<td>0</td>
+<td>&amp;30</td>
+<td>&amp;80-&amp;FF</td>
+<td>Wave 1 Definition</td>
+</tr>
+<tr>
+<td>1</td>
+<td>&amp;32</td>
+<td>&amp;00-&amp;7F</td>
+<td>Wave 2 Definition</td>
+</tr>
+<tr>
+<td>1</td>
+<td>&amp;32</td>
+<td>&amp;80-&amp;FF</td>
+<td>Wave 3 Definition</td>
+</tr>
+<tr>
+<td>2</td>
+<td>&amp;34</td>
+<td>&amp;00-&amp;7F</td>
+<td>Wave 4 Definition</td>
+</tr>
+<tr>
+<td>2</td>
+<td>&amp;34</td>
+<td>&amp;80-&amp;FF</td>
+<td>Wave 5 Definition</td>
+</tr>
+<tr>
+<td>3</td>
+<td>&amp;36</td>
+<td>&amp;00-&amp;7F</td>
+<td>Wave 6 Definition</td>
+</tr>
+<tr>
+<td>3</td>
+<td>&amp;36</td>
+<td>&amp;80-&amp;FF</td>
+<td>Wave 7 Definition</td>
+</tr>
+<tr>
+<td>4</td>
+<td>&amp;38</td>
+<td>&amp;00-&amp;7F</td>
+<td>Wave 8 Definition</td>
+</tr>
+<tr>
+<td>4</td>
+<td>&amp;38</td>
+<td>&amp;80-&amp;FF</td>
+<td>Wave 9 Definition</td>
+</tr>
+<tr>
+<td>5</td>
+<td>&amp;3A</td>
+<td>&amp;00-&amp;7F</td>
+<td>Wave 10 Definition</td>
+</tr>
+<tr>
+<td>5</td>
+<td>&amp;3A</td>
+<td>&amp;80-&amp;FF</td>
+<td>Wave 11 Definition</td>
+</tr>
+<tr>
+<td>6</td>
+<td>&amp;3C</td>
+<td>&amp;00-&amp;7F</td>
+<td>Wave 12 Definition</td>
+</tr>
+<tr>
+<td>6</td>
+<td>&amp;3C</td>
+<td>&amp;80-&amp;FF</td>
+<td>Wave 13 Definition</td>
+</tr>
+<tr>
+<td>7</td>
+<td>&amp;3E</td>
+<td>&amp;00-&amp;0F</td>
+<td>Channel 0-15 Frequency Lo Registers</td>
+</tr>
+<tr>
+<td>7</td>
+<td>&amp;3E</td>
+<td>&amp;10-&amp;1F</td>
+<td>Channel 0-15 Frequency Mid Registers</td>
+</tr>
+<tr>
+<td>7</td>
+<td>&amp;3E</td>
+<td>&amp;20-&amp;2F</td>
+<td>Channel 0-15 Frequency Hi Registers</td>
+</tr>
+<tr>
+<td>7</td>
+<td>&amp;3E</td>
+<td>&amp;30-&amp;4F</td>
+<td>Unused</td>
+</tr>
+<tr>
+<td>7</td>
+<td>&amp;3E</td>
+<td>&amp;50-&amp;5F</td>
+<td>Channel 0-15 Waveform Registers</td>
+</tr>
+<tr>
+<td>7</td>
+<td>&amp;3E</td>
+<td>&amp;60-&amp;6F</td>
+<td>Channel 0-15 Amplitude Registers</td>
+</tr>
+<tr>
+<td>7</td>
+<td>&amp;3E</td>
+<td>&amp;70-&amp;7F</td>
+<td>Channel 0-15 Control Registers</td>
+</tr>
+<tr>
+<td>7</td>
+<td>&amp;3E</td>
+<td>&amp;80-&amp;8F</td>
+<td>Channel 0-15 Frequency Lo Registers (Alt)</td>
+</tr>
+<tr>
+<td>7</td>
+<td>&amp;3E</td>
+<td>&amp;90-&amp;9F</td>
+<td>Channel 0-15 Frequency Mid Registers (Alt)</td>
+</tr>
+<tr>
+<td>7</td>
+<td>&amp;3E</td>
+<td>&amp;A0-&amp;AF</td>
+<td>Channel 0-15 Frequency Hi Registers (Alt)</td>
+</tr>
+<tr>
+<td>7</td>
+<td>&amp;3E</td>
+<td>&amp;B0-&amp;CF</td>
+<td>Unused</td>
+</tr>
+<tr>
+<td>7</td>
+<td>&amp;3E</td>
+<td>&amp;D0-&amp;DF</td>
+<td>Channel 0-15 Waveform Registers (Alt)</td>
+</tr>
+<tr>
+<td>7</td>
+<td>&amp;3E</td>
+<td>&amp;E0-&amp;EF</td>
+<td>Channel 0-15 Amplitude Registers (Alt)</td>
+</tr>
+<tr>
+<td>7</td>
+<td>&amp;3E</td>
+<td>&amp;F0-&amp;FF</td>
+<td>Channel 0-15 Control Registers (Alt)</td>
+</tr>
+</tbody>
+</table>
+<h2>
+<a aria-hidden="true" class="anchor" href="#wave-definitions" id="user-content-wave-definitions"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Wave Definitions</h2>
+<p>The format of each Wave Definition is 128 consecutive 8-bit samples.</p>
+<table>
+<thead>
+<tr>
+<th>Bit</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Bit 7</td>
+<td>Sign bit (0 for positive, 1 for negative)</td>
+</tr>
+<tr>
+<td>Bit 6-0</td>
+<td>Wave value</td>
+</tr>
+</tbody>
+</table>
+<p>The Music 5000 uses an AM6070 companding DAC. This means that the values stored in the Wave Definition need to be carefully encoded to match the transfer characteristic of the DAC.</p>
+<p>This uses the Bell System u-225 logarithmic law which can be written as:</p>
+<ul>
+<li>Y = 0.18 ln (1 + u |X|) sgn(X)
+where:</li>
+<li>X = the encoder input (normalized to the range -1.0 to +1.0)</li>
+<li>Y = the encoder output (normalized to the range -1.0 to +1.0)</li>
+<li>u = 255</li>
+</ul>
+<p>To calculate the 7-bit values to write into the Music 5000 wave table, use:</p>
+<ul>
+<li>Y = 22.903 ln (1 + 255 |X|)
+where:</li>
+<li>X = the waveform input (normalized to the range -1.0 to +1.0, e.g. a sine wave)</li>
+<li>e.g. when X=0.0, Y=0</li>
+<li>e.g. when X=1.0, Y=127</li>
+</ul>
+<p>This value goes in bits 6 to 0 of the sample, and bit 7 is the sign bit (i.e. sign-and-mangnitude representation, not two's compliment).</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#standard-wave-definitions" id="user-content-standard-wave-definitions"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Standard Wave Definitions</h2>
+<p>These are some example Wave Definitions used by AMPLE:</p>
+<p><img alt="" src="https://github.com/hoglet67/Music5000/raw/master/doc/WAVE00.gif"/>
+<img alt="" src="https://github.com/hoglet67/Music5000/raw/master/doc/WAVE01.gif"/>
+<img alt="" src="https://github.com/hoglet67/Music5000/raw/master/doc/WAVE02.gif"/>
+<img alt="" src="https://github.com/hoglet67/Music5000/raw/master/doc/WAVE03.gif"/>
+<img alt="" src="https://github.com/hoglet67/Music5000/raw/master/doc/WAVE04.gif"/>
+<img alt="" src="https://github.com/hoglet67/Music5000/raw/master/doc/WAVE05.gif"/>
+<img alt="" src="https://github.com/hoglet67/Music5000/raw/master/doc/WAVE06.gif"/>
+<img alt="" src="https://github.com/hoglet67/Music5000/raw/master/doc/WAVE07.gif"/>
+<img alt="" src="https://github.com/hoglet67/Music5000/raw/master/doc/WAVE08.gif"/>
+<img alt="" src="https://github.com/hoglet67/Music5000/raw/master/doc/WAVE09.gif"/>
+<img alt="" src="https://github.com/hoglet67/Music5000/raw/master/doc/WAVE10.gif"/>
+<img alt="" src="https://github.com/hoglet67/Music5000/raw/master/doc/WAVE11.gif"/>
+<img alt="" src="https://github.com/hoglet67/Music5000/raw/master/doc/WAVE12.gif"/>
+<img alt="" src="https://github.com/hoglet67/Music5000/raw/master/doc/WAVE13.gif"/></p>
+<p>A program to display these wave definitions is shown below:</p>
+<pre><code> 10  FOR A=0 TO 13
+ 20  MODE 4
+ 30  PRINT '"WAVEFORM ";A
+ 40  ?&amp;FCFF=A
+ 50  B=128*(A MOD 2)
+ 60  MOVE 0,512
+ 70  PLOT 21,1270,512
+ 80  FOR X=0 TO 127
+ 90  Y=?(&amp;FD00+B+X)
+100  S=-8
+110  IF Y&gt;127 THEN S=-S:Y=Y-128
+120  Y=512+S*EXP(Y/32)
+130  IF X=0 MOVE X*10,Y
+140  IF X&lt;&gt;0 DRAW X*10,Y
+150  NEXT
+160  N$=STR$(A)
+170  IF A&lt;10 N$="0"+N$
+180  OSCLI("SAVE WAVE"+N$+" 5800 +2800")
+190  NEXT
+</code></pre>
+<h2>
+<a aria-hidden="true" class="anchor" href="#channel-registers" id="user-content-channel-registers"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Channel Registers</h2>
+<p>The registers for a channel are organized as follows:</p>
+<table>
+<thead>
+<tr>
+<th>Register Offset</th>
+<th>Name</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>&amp;00</td>
+<td>Frequency Lo</td>
+</tr>
+<tr>
+<td>&amp;10</td>
+<td>Frequency Med</td>
+</tr>
+<tr>
+<td>&amp;20</td>
+<td>Frequency Hi</td>
+</tr>
+<tr>
+<td>&amp;30</td>
+<td>unused - wave access timeslot</td>
+</tr>
+<tr>
+<td>&amp;40</td>
+<td>unused - process access timeslot</td>
+</tr>
+<tr>
+<td>&amp;50</td>
+<td>Waveform</td>
+</tr>
+<tr>
+<td>&amp;60</td>
+<td>Amplitude</td>
+</tr>
+<tr>
+<td>&amp;70</td>
+<td>Control</td>
+</tr>
+</tbody>
+</table>
+<h3>
+<a aria-hidden="true" class="anchor" href="#frequency-register" id="user-content-frequency-register"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Frequency Register</h3>
+<ul>
+<li>Lo byte: Register Address: Channel Base + &amp;00</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th>Bit</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Bits 7-1</td>
+<td>Bits 7-1 of 24-bit Frequency</td>
+</tr>
+<tr>
+<td>Bit 0</td>
+<td>Channel Disable</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li>Mid Byte: Register Address: Channel Base + &amp;10</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th>Bit</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Bits 7-0</td>
+<td>Bits 15-8 of 24-bit Frequency</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li>Hi Byte: Register Address: Channel Base + &amp;20</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th>Bit</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Bits 7-0</td>
+<td>Bits 23-16 of 24-bit Frequency</td>
+</tr>
+</tbody>
+</table>
+<p>These three 8-bit registers combine to give a 24-bit frequency register.</p>
+<p>The Music 5000 runs off a 6MHz clock and takes 128 clock cycles to update all channels. This means each channel is updated at 46.875KHz. Every time the channel is updated, the 24-bit frequency value is added to a phase accumulator. The top 7 bits of the phase accumulate (which look like a ramp) are then used as in index into the 128-byte Wave Definition.</p>
+<p>Here's an example.</p>
+<p>Assume the Wave Definition contains a single cycle of a sine wave, and you want to generate a 1.0 KHz tone.</p>
+<p>The frequency register needs to be set to:</p>
+<ul>
+<li>2^24 * 1.0 / 48.875</li>
+<li>= 343267</li>
+<li>= &amp;053CE3</li>
+</ul>
+<p>So:</p>
+<ul>
+<li>Frequency Lo = &amp;E2</li>
+<li>Frequency Mid = &amp;3C</li>
+<li>Frequency Hi = &amp;05</li>
+</ul>
+<p>Bit 0 of Frequency Lo must be zero, or the channel is disabled.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#unused-register" id="user-content-unused-register"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Unused Register</h3>
+<ul>
+<li>Register Address: Channel Base + &amp;30</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th>Bit</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Bits 7-0</td>
+<td>Unused</td>
+</tr>
+</tbody>
+</table>
+<p>The register is unused because at this time the Wave RAM is performing waveform lookup cycle.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#unused-register-1" id="user-content-unused-register-1"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Unused Register</h3>
+<ul>
+<li>Register  Address: Channel Base + &amp;40</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th>Bit</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Bits 7-0</td>
+<td>Unused</td>
+</tr>
+</tbody>
+</table>
+<p>The register is unused because at this time the Wave RAM is performing processor access cycle.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#waveform-register" id="user-content-waveform-register"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Waveform Register</h3>
+<ul>
+<li>Register Address: Channel Base + &amp;50</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th>Bit</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Bits 7-4</td>
+<td>Waveform Number</td>
+</tr>
+<tr>
+<td>Bits 3-0</td>
+<td>Unused</td>
+</tr>
+</tbody>
+</table>
+<h3>
+<a aria-hidden="true" class="anchor" href="#amplitude-register" id="user-content-amplitude-register"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Amplitude Register</h3>
+<ul>
+<li>Register Address: Channel Base + &amp;60</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th>Bit</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Bits 7-0</td>
+<td>Log Amplitude for the Channel</td>
+</tr>
+</tbody>
+</table>
+<p>The minimum amplitude is &amp;00.</p>
+<p>The maximum amplitude is &amp;80.</p>
+<p>Values below &amp;40 are inaudible.</p>
+<p>Values above &amp;80 seem to cause distortion.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#control-register" id="user-content-control-register"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Control Register</h3>
+<ul>
+<li>Register Address: Channel Base + &amp;70</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th>Bit</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Bits 7-6</td>
+<td>Unused</td>
+</tr>
+<tr>
+<td>Bit 5</td>
+<td>Modulate Adjacent Channel</td>
+</tr>
+<tr>
+<td>Bit 4</td>
+<td>Invert Waveform</td>
+</tr>
+<tr>
+<td>Bits 3-0</td>
+<td>Stereo Position</td>
+</tr>
+</tbody>
+</table>
+<p>The stereo position allows 3-bit stereo position control (7 possible positions) as follows:</p>
+<table>
+<thead>
+<tr>
+<th>Value</th>
+<th>Left</th>
+<th>Right</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1000</td>
+<td>0%</td>
+<td>100%</td>
+</tr>
+<tr>
+<td>1001</td>
+<td>0%</td>
+<td>100%</td>
+</tr>
+<tr>
+<td>1010</td>
+<td>0%</td>
+<td>100%</td>
+</tr>
+<tr>
+<td>1011</td>
+<td>17%</td>
+<td>83%</td>
+</tr>
+<tr>
+<td>1100</td>
+<td>33%</td>
+<td>66%</td>
+</tr>
+<tr>
+<td>1101</td>
+<td>50%</td>
+<td>50%</td>
+</tr>
+<tr>
+<td>1110</td>
+<td>67%</td>
+<td>33%</td>
+</tr>
+<tr>
+<td>1111</td>
+<td>83%</td>
+<td>17%</td>
+</tr>
+<tr>
+<td>0000</td>
+<td>100%</td>
+<td>0%</td>
+</tr>
+<tr>
+<td>0001</td>
+<td>100%</td>
+<td>0%</td>
+</tr>
+<tr>
+<td>0010</td>
+<td>100%</td>
+<td>0%</td>
+</tr>
+<tr>
+<td>0011</td>
+<td>100%</td>
+<td>0%</td>
+</tr>
+<tr>
+<td>0100</td>
+<td>100%</td>
+<td>0%</td>
+</tr>
+<tr>
+<td>0101</td>
+<td>100%</td>
+<td>0%</td>
+</tr>
+<tr>
+<td>0110</td>
+<td>100%</td>
+<td>0%</td>
+</tr>
+<tr>
+<td>0111</td>
+<td>100%</td>
+<td>0%</td>
+</tr>
+</tbody>
+</table>
+<p>Typically you will see &amp;D (1101) used, which centres the channel</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#default-channel-register-values" id="user-content-default-channel-register-values"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Default Channel Register Values</h2>
+<p>The below table illustrates the initial values of the channel registers when AMPLE has initialized.</p>
+<pre><code>    00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F
+00: BE BE BE BE BE BE BE BE BE BE BE BE BE BE BE BE    (Freq Lo)
+10: 6D 6D 6D 6D 6D 6D 6D 6D 6D 6D 6D 6D 6D 6D 6D 6D    (Freq Mid)
+20: 01 01 01 01 01 01 01 01 01 01 01 01 01 01 01 01    (Freq Hi)
+30:                                                    (Unused)
+40:                                                    (Unused)
+50: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00    (Waveform)
+60: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00    (Amplitude)
+70: 2D 0D 2D 0D 2D 0D 2D 0D 2D 0D 2D 0D 2D 0D 2D 0D    (Control)
+
+80:    BE    BE    BE    BE    BE    BE    BE    BE    (Freq Lo)
+90:    6D    6D    6D    6D    6D    6D    6D    6D    (Freq Mid)
+A0:    01    01    01    01    01    01    01    01    (Freq Hi)
+B0:                                                    (Unused)
+C0:                                                    (Unused)
+D0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00    (Waveform)
+E0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00    (Amplitude)
+F0: 2D 0D 2D 0D 2D 0D 2D 0D 2D 0D 2D 0D 2D 0D 2D 0D    (Control)
+</code></pre>
+<p>The blank entries indicate locations that appear not be be written by the AMPLE initialization code.</p>
+<p>The initial frequency value of &amp;16DBE (93630) corresponds to a frequency of:</p>
+<ul>
+<li>(6MHz / 128) / (2^24 / 93630)</li>
+<li>= 261.5992 Hz</li>
+</ul>
+<p>Middle C happens to be 261.625565 Hz (which would correspond to 93639). I'm not sure why the numbers don't quite match up.</p>
+<p>A program to generate this table is shown below:</p>
+<pre><code>10  MODE 0:@%=3
+20  ?&amp;FCFF=&amp;3E
+30  FOR A=0 TO 15
+40  PRINT~A;
+50  FOR B=0 TO 15
+60  PRINT~?(&amp;FD00+A*16+B);
+70  NEXT
+80  PRINT
+90  NEXT
+</code></pre>
+<h2>
+<a aria-hidden="true" class="anchor" href="#example-of-using-frequency-modulation" id="user-content-example-of-using-frequency-modulation"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Example of using Frequency Modulation</h2>
+<p>In this example we will configure channel 0 to cause channel 1 to modulate between two different frequencies.</p>
+<p>First, load some Wave Definitions by running AMPLE and playing some music (e.g. concert) then hit break followed by control break to get back to BASIC.</p>
+<p>Next, set channel 0 to a very low frequency (a couple of Hz):</p>
+<pre><code>?&amp;FD00=&amp;00
+?&amp;FD10=&amp;05
+?&amp;FD20=&amp;00
+?&amp;FD50=&amp;00 ;; Waveform 0 is a square wave
+?&amp;FD60=&amp;00 ;; Min amplitude
+?&amp;FD70=&amp;2D ;; Set bit 5 to modulate adjacent channel
+</code></pre>
+<p>Next, set channel 1 "normal" registers to (approx middle C):</p>
+<pre><code>?&amp;FD01=&amp;BE
+?&amp;FD11=&amp;6D
+?&amp;FD21=&amp;01
+?&amp;FD51=&amp;C0 ;; Waveform 12 is a sin wave
+?&amp;FD61=&amp;70 ;; Normal volume
+?&amp;FD71=&amp;0D ;; Clear bit 5 not modulate adjacent channel
+</code></pre>
+<p>Finally, set channel 1 "alternative" registers to a higher frequency:</p>
+<pre><code>?&amp;FD81=&amp;BE
+?&amp;FD91=&amp;6D
+?&amp;FDA1=&amp;02
+?&amp;FDD1=&amp;C0 ;; Waveform 12 is a sin wave
+?&amp;FDE1=&amp;70 ;; Normal volume
+?&amp;FDF1=&amp;0D ;; Clear bit 5 not modulate adjacent channel
+</code></pre>
+<p>You should now hear a sound like a old two-tone police car siren.</p>
+<p>The modulation frequency can be adjusted by writing different values to ?&amp;FD10.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#references" id="user-content-references"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>References</h2>
+<p>The original <a href="http://www.retro-kit.co.uk/user/custom/Acorn/3rdParty/Hybrid/documents/HybridTechnologyHTMusicSynthesiser-Schematic.pdf" rel="nofollow">Music 5000 schematic</a>.</p>
+<p>A description of <a href="http://www.colinfraser.com/m5000/m5-eti.htm" rel="nofollow">How Music 5000 Works</a> from ETI (Electronics Today International).</p>
+<p>The datasheet for the <a href="http://www.synfo.nl/datasheets/AM6070.pdf" rel="nofollow">AM6070 Companding DAC</a>.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#acknowledgements" id="user-content-acknowledgements"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Acknowledgements</h2>
+<p>Chris Jordan, the original hardware designer, for a very clever design and for being supportive of my efforts to reverse engineer it.</p>
+
+        </div>
+
+    </div>]

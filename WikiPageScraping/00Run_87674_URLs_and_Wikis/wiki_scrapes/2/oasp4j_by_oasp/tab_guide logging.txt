@@ -1,0 +1,303 @@
+[<div class="wiki-body gollum-asciidoc-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <div>
+<div>Table of Contents</div>
+<ul>
+<li>
+<a href="#logging">Logging</a>
+<ul>
+<li>
+<a href="#usage">Usage</a>
+<ul>
+<li><a href="#maven-integration">Maven Integration</a></li>
+<li><a href="#configuration">Configuration</a></li>
+<li><a href="#logger-access">Logger Access</a></li>
+<li><a href="#how-to-log">How to log</a></li>
+</ul>
+</li>
+<li>
+<a href="#operations">Operations</a>
+<ul>
+<li><a href="#log-files">Log Files</a></li>
+<li><a href="#output-format">Output format</a></li>
+</ul>
+</li>
+<li><a href="#security">Security</a></li>
+<li><a href="#correlating-separate-requests">Correlating separate requests</a></li>
+</ul>
+</li>
+</ul>
+</div>
+<h1 id="user-content-logging">
+<a aria-hidden="true" class="anchor" href="#logging" id="user-content-logging"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Logging</h1>
+<div>
+<p>We use <a href="http://www.slf4j.org/" rel="nofollow">SLF4J</a> as API for logging. The recommended implementation is <a href="http://logback.qos.ch/" rel="nofollow">Logback</a> for which we provide additional value such as configuration templates and an appender that prevents log-forging and reformatting of stack-traces for operational optimizations.</p>
+</div>
+<div>
+<h2 id="user-content-usage">
+<a aria-hidden="true" class="anchor" href="#usage" id="user-content-usage"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Usage</h2>
+<div>
+<div>
+<h3 id="user-content-maven-integration">
+<a aria-hidden="true" class="anchor" href="#maven-integration" id="user-content-maven-integration"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Maven Integration</h3>
+<div>
+<p>In the pom.xml of your application add this dependency (that also adds transitive dependencies to SLF4J and logback):</p>
+</div>
+<div>
+<div>
+<div class="highlight highlight-text-xml"><pre>&lt;<span class="pl-ent">dependency</span>&gt;
+  &lt;<span class="pl-ent">groupId</span>&gt;io.oasp.java&lt;/<span class="pl-ent">groupId</span>&gt;
+  &lt;<span class="pl-ent">artifactId</span>&gt;oasp4j-logging&lt;/<span class="pl-ent">artifactId</span>&gt;
+  &lt;<span class="pl-ent">version</span>&gt;2.4.0&lt;/<span class="pl-ent">version</span>&gt;
+&lt;/<span class="pl-ent">dependency</span>&gt;</pre></div>
+</div>
+</div>
+</div>
+<div>
+<h3 id="user-content-configuration">
+<a aria-hidden="true" class="anchor" href="#configuration" id="user-content-configuration"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Configuration</h3>
+<div>
+<p>The configuration file is logback.xml and is to put in the directory src/main/resources of your main application. For details consult the <a href="http://logback.qos.ch/manual/configuration.html" rel="nofollow">logback configuration manual</a>. OASP4J provides a production ready configuration <a href="https://github.com/oasp/oasp4j/blob/develop/samples/server/src/main/resources/logback.xml">here</a>. Simply copy this configuration into your application in order to benefit from the provided <a href="#operations">operational</a> and <a href="#security">Security</a> aspects. We do not include the configuration into the oasp4j-logging module to give you the freedom of customizations (e.g. tune log levels for components and integrated products and libraries of your application).</p>
+</div>
+<div>
+<p>The provided logback.xml is configured to use variables defined on the config/application.properties file. On our example, the log files path point to ../logs/ in order to log to tomcat log directory when starting tomcat on the bin folder. Change it according to your custom needs.</p>
+</div>
+<div>
+<div>config/application.properties</div>
+<div>
+<div class="highlight highlight-source-ini"><pre><span class="pl-k">log.dir</span>=../logs/</pre></div>
+</div>
+</div>
+</div>
+<div>
+<h3 id="user-content-logger-access">
+<a aria-hidden="true" class="anchor" href="#logger-access" id="user-content-logger-access"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Logger Access</h3>
+<div>
+<p>The general pattern for accessing loggers from your code is a static logger instance per class. We pre-configured the development environment so you can just type LOG and hit [ctrl][space] (and then [arrow up]) to insert the code pattern line into your class:</p>
+</div>
+<div>
+<div>
+<div class="highlight highlight-source-java"><pre><span class="pl-k">public</span> <span class="pl-k">class</span> <span class="pl-en">MyClass</span> {
+  <span class="pl-k">private</span> <span class="pl-k">static</span> <span class="pl-k">final</span> <span class="pl-smi">Logger</span> <span class="pl-c1">LOG</span> <span class="pl-k">=</span> <span class="pl-smi">LoggerFactory</span><span class="pl-k">.</span>getLogger(<span class="pl-smi">MyClass</span><span class="pl-k">.</span>class);
+  <span class="pl-c1">...</span>
+}</pre></div>
+</div>
+</div>
+<div>
+<p>Please note that in this case we are not using injection pattern but use the convenient static alternative. This is already a common solution and also has performance benefits.</p>
+</div>
+</div>
+<div>
+<h3 id="user-content-how-to-log">
+<a aria-hidden="true" class="anchor" href="#how-to-log" id="user-content-how-to-log"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>How to log</h3>
+<div>
+<p>We use a common understanding of the log-levels as illustrated by the following table. This helps for better maintenance and operation of the systems by combining both views.</p>
+</div>
+<table>
+<caption>Table 1. Log-levels</caption>
+<colgroup>
+<col/>
+<col/>
+<col/>
+<col/>
+</colgroup>
+<thead>
+<tr>
+<th><strong>Log-level</strong></th>
+<th><strong>Description</strong></th>
+<th><strong>Impact</strong></th>
+<th><strong>Active Environments</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><p>FATAL</p></td>
+<td><p>Only used for fatal errors that prevent the application to work at all (e.g. startup fails or shutdown/restart required)</p></td>
+<td><p>Operator has to react immediately</p></td>
+<td><p>all</p></td>
+</tr>
+<tr>
+<td><p>ERROR</p></td>
+<td><p>An abnormal error indicating that the processing failed due to technical problems.</p></td>
+<td><p>Operator should check for known issue and otherwise inform development</p></td>
+<td><p>all</p></td>
+</tr>
+<tr>
+<td><p>WARNING</p></td>
+<td><p>A situation where something worked not as expected. E.g. a business exception or user validation failure occurred.</p></td>
+<td><p>No direct reaction required. Used for problem analysis.</p></td>
+<td><p>all</p></td>
+</tr>
+<tr>
+<td><p>INFO</p></td>
+<td><p>Important information such as context, duration, success/failure of request or process</p></td>
+<td><p>No direct reaction required. Used for analysis.</p></td>
+<td><p>all</p></td>
+</tr>
+<tr>
+<td><p>DEBUG</p></td>
+<td><p>Development information that provides additional context for debugging problems.</p></td>
+<td><p>No direct reaction required. Used for analysis.</p></td>
+<td><p>development and testing</p></td>
+</tr>
+<tr>
+<td><p>TRACE</p></td>
+<td><p>Like DEBUG but exhaustive information and for code that is run very frequently. Will typically cause large log-files.</p></td>
+<td><p>No direct reaction required. Used for problem analysis.</p></td>
+<td><p>none (turned off by default)</p></td>
+</tr>
+</tbody>
+</table>
+<div>
+<p>Exceptions (with their stacktrace) should only be logged on FATAL or ERROR level. For business exceptions typically a WARNING including the message of the exception is sufficient.</p>
+</div>
+</div>
+</div>
+</div>
+<div>
+<h2 id="user-content-operations">
+<a aria-hidden="true" class="anchor" href="#operations" id="user-content-operations"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Operations</h2>
+<div>
+<div>
+<h3 id="user-content-log-files">
+<a aria-hidden="true" class="anchor" href="#log-files" id="user-content-log-files"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Log Files</h3>
+<div>
+<p>We always use the following log files:</p>
+</div>
+<div>
+<ul>
+<li>
+<p><strong>Error Log</strong>: Includes log entries to detect errors.</p>
+</li>
+<li>
+<p><strong>Info Log</strong>: Used to analyze system status and to detect bottlenecks.</p>
+</li>
+<li>
+<p><strong>Debug Log</strong>: Detailed information for error detection.</p>
+</li>
+</ul>
+</div>
+<div>
+<p>The log file name pattern is as follows:</p>
+</div>
+<div>
+<div>
+<pre><code>&lt;LOGTYPE&gt;_log_&lt;HOST&gt;_&lt;APPLICATION&gt;_&lt;TIMESTAMP&gt;.log</code></pre>
+</div>
+</div>
+<table>
+<caption>Table 2. Segments of Logfilename</caption>
+<colgroup>
+<col/>
+<col/>
+<col/>
+</colgroup>
+<thead>
+<tr>
+<th><strong>Element</strong></th>
+<th><strong>Value</strong></th>
+<th><strong>Description</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><p>&lt;LOGTYPE&gt;</p></td>
+<td><p>info, error, debug</p></td>
+<td><p>Type of log file</p></td>
+</tr>
+<tr>
+<td><p>&lt;HOST&gt;</p></td>
+<td><p>e.g. mywebserver01</p></td>
+<td><p>Name of server, where logs are generated</p></td>
+</tr>
+<tr>
+<td><p>&lt;APPLICATION&gt;</p></td>
+<td><p>e.g. myapp</p></td>
+<td><p>Name of application, which causes logs</p></td>
+</tr>
+<tr>
+<td><p>&lt;TIMESTAMP&gt;</p></td>
+<td><p>YYYY-MM-DD_HH00</p></td>
+<td><p>date of log file</p></td>
+</tr>
+</tbody>
+</table>
+<div>
+<p>Example:
+error_log_mywebserver01_myapp_2013-09-16_0900.log</p>
+</div>
+<div>
+<p>Error log from mywebserver01 at application myapp at 16th September 2013 9pm.</p>
+</div>
+</div>
+<div>
+<h3 id="user-content-output-format">
+<a aria-hidden="true" class="anchor" href="#output-format" id="user-content-output-format"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Output format</h3>
+<div>
+<p>We use the following output format for all log entries to ensure that searching and filtering of log entries work consistent for all logfiles:</p>
+</div>
+<div>
+<div>
+<pre><code> [D: &lt;timestamp&gt;] [P: &lt;priority (Level)&gt;] [C: &lt;NDC&gt;][T: &lt;thread&gt;][L: &lt;logger name&gt;]-[M: &lt;message&gt;]</code></pre>
+</div>
+</div>
+<div>
+<ul>
+<li>
+<p><strong>D</strong>: Date ( ISO8601: 2013-09-05 16:40:36,464)</p>
+</li>
+<li>
+<p><strong>P</strong>: Priority (the log level)</p>
+</li>
+<li>
+<p><strong>C</strong>: Correlation ID (ID to identify users across multiple systems, needed when application is distributed)</p>
+</li>
+<li>
+<p><strong>T</strong>: Thread (Name of thread)</p>
+</li>
+<li>
+<p><strong>L</strong>: Logger name (use class name)</p>
+</li>
+<li>
+<p><strong>M</strong>: Message (log message)</p>
+</li>
+</ul>
+</div>
+<div>
+<p>Example:</p>
+</div>
+<div>
+<div>
+<pre><code> [D: 2013-09-05 16:40:36,464] [P: DEBUG] [C: 12345] [T: main] [L: my.package.MyClass]-[M: My message...]</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div>
+<h2 id="user-content-security">
+<a aria-hidden="true" class="anchor" href="#security" id="user-content-security"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Security</h2>
+<div>
+<div>
+<p>In order to prevent <a href="https://www.owasp.org/index.php/Log_Forging" rel="nofollow">log forging</a> attacks we provide a special appender for logback in <a href="https://github.com/oasp/oasp4j/wiki/guide-logging">oasp4j-logging</a>. If you use it (see <a href="#configuration">Configuration</a>) you are safe from such attacks.</p>
+</div>
+</div>
+</div>
+<div>
+<h2 id="user-content-correlating-separate-requests">
+<a aria-hidden="true" class="anchor" href="#correlating-separate-requests" id="user-content-correlating-separate-requests"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Correlating separate requests</h2>
+<div>
+<div>
+<p>In order to correlate separate HTTP requests to services belonging to the same user / session, we provide a servlet filter called "DiagnosticContextFilter". This filter first searches for a configurable HTTP header containing a correlation id. If none was found, it will generate a new correlation id. By default the HTTP header used is called "CorrelationId".</p>
+</div>
+</div>
+</div>
+        </div>
+
+        <div class="wiki-footer gollum-markdown-content boxed-group" id="wiki-footer">
+          <div class="boxed-group-inner wiki-auxiliary-content markdown-body">
+            <p><a href="http://creativecommons.org/licenses/by-nd/4.0/" rel="nofollow"><img alt="Creative Commons License Agreement" data-canonical-src="http://i.creativecommons.org/l/by-nd/4.0/88x31.png" src="https://camo.githubusercontent.com/171d004f9ccb9199e35ac8ec3d99ede916037a9f/687474703a2f2f692e6372656174697665636f6d6d6f6e732e6f72672f6c2f62792d6e642f342e302f38387833312e706e67"/></a><br/><span>This documentation</span> is licensed under the <a href="http://creativecommons.org/licenses/by-nd/4.0/" rel="nofollow">Creative Commons License (Attribution-NoDerivatives 4.0 International)</a>.</p>
+
+          </div>
+        </div>
+    </div>]

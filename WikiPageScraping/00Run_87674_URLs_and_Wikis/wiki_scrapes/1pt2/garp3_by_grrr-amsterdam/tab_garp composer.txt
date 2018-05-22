@@ -1,0 +1,32 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <h2>
+<a aria-hidden="true" class="anchor" href="#migration" id="user-content-migration"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Migration</h2>
+<p>Garp has been made into an official Composer package.</p>
+<p>That means the old subtree style is deprecated and Garp should be included in a project as a Composer dependency.</p>
+<p>To help the migration, a Golem script was created.<br/>
+After updating golem, the following oneliner will move you to the new setup:</p>
+<pre><code>g composer migrate
+</code></pre>
+<p>You have to manually delete the <code>garp</code> directory from the root of your project. Just make sure there are no changes left in there you wish to keep.</p>
+<p><em>Note</em>: Composer can be a bit whiney sometimes and you might want to add <code>"minimum-stability": "dev"</code> to the host project's <code>composer.json</code>.</p>
+<p>Also, historically <code>google/apiclient</code> might be a dependency in the host project. Its version might conflict with Garp's dependent version, but you can safely remove it.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#some-important-things-to-consider" id="user-content-some-important-things-to-consider"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Some important things to consider</h3>
+<p>The migration script fixes <em>known references to garp in the old location</em>. For instance the inclusion of <code>init.php</code> in <code>public/index.php</code> or the inclusion of Garp's routes file in <code>application/configs/routes.ini</code>.<br/>
+If your project references <code>/garp</code> in a non-traditional way you will have to change it manually to reference <code>/vendor/grrr-amsterdam/garp3</code>.</p>
+<p>One known place that you probably have to update by hand that just can't be done with a migration script is the cron job on your project's servers.</p>
+<p><img align="absmiddle" alt=":exclamation:" class="emoji" data-canonical-src="https://assets-cdn.github.com/images/icons/emoji/unicode/2757.png" height="20" src="https://camo.githubusercontent.com/9679afa5df318e5db422aa1b784aa9f98a18c5f7/68747470733a2f2f6173736574732d63646e2e6769746875622e636f6d2f696d616765732f69636f6e732f656d6f6a692f756e69636f64652f323735372e706e67" title=":exclamation:" width="20"/> Make sure you go into the server and fix the cronjobs after migrating Garp!</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#making-changes" id="user-content-making-changes"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Making changes</h2>
+<p>Changes to Garp are no longer pushed from a host project (git subtree style), but should be made directly to the Garp3 repo.</p>
+<p>Garp3 has its own <code>master</code> / <code>develop</code> setup as you would expect from all our projects. The usual <code>git flow</code> rules apply: <code>master</code> should be stable, <code>develop</code> contains ongoing development. Releases are done thru <code>git flow release start</code> and should update <code>.semver</code> in the root.</p>
+<p>Note that Packagist (the package repository for Composer) looks for tags in your repo to allow installation of specific versions. The above workflow using <code>git flow</code> provides such tags but you have to push them to the remote yourself:</p>
+<pre><code>git push origin --tags
+</code></pre>
+<p>This allows implementing authors to freeze Garp at a specific version.</p>
+<p>More info on <a href="contributing">Contributing to the Garp codebase</a>.</p>
+
+        </div>
+
+    </div>]

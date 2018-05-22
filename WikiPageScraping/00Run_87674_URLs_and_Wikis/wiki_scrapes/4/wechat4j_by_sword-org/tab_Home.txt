@@ -1,0 +1,120 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <h1>
+<a aria-hidden="true" class="anchor" href="#wechat4j" id="user-content-wechat4j"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>wechat4j</h1>
+<p>##What is wechat4j?
+wechat develop framework for java(微信开发框架JAVA版，最简单易用微信开发框架)</p>
+<p>##wechat4j可以用来干什么？
+wechat4j是一个帮助你开发微信应用的jar包，使用它，你开发微信公众号应用只需要几秒钟的时间，完全不用关注太细节的东西。</p>
+<p>##wechat4j快速开始
+可以去下载wechat4j示例项目，然后在其基础之上修改即可。如果你要自己搭建，那么使用wechat4j只需要两步就可以搭建微信开发环境。</p>
+<ol>
+<li>创建一个web工程，导入jdk和相关的web工程jar包。</li>
+<li>下载wechat4j.jar包，下载地址<a href="https://github.com/sword-org/wechat4j/releases">wechat4j下载</a>。</li>
+<li>创建wechat4j配置文件，在src目录下（java根目录）创建wechat4j.properties文件，配置你微信公众号的相关信息。内容如下：</li>
+</ol>
+<div class="highlight highlight-source-ini"><pre><span class="pl-c"><span class="pl-c">#</span>you server url</span>
+<span class="pl-k">wechat.url</span>=
+<span class="pl-c"><span class="pl-c">#</span>you wechat token</span>
+<span class="pl-k">wechat.token</span>=token
+<span class="pl-c"><span class="pl-c">#</span>message secret key,if don't set then message is cleartext</span>
+<span class="pl-k">wechat.encodingaeskey</span>=
+
+<span class="pl-c"><span class="pl-c">#</span>wechat appid</span>
+<span class="pl-k">wechat.appid</span>=appid
+<span class="pl-c"><span class="pl-c">#</span>wechat app secret</span>
+<span class="pl-k">wechat.appsecret</span>=secret
+
+<span class="pl-c"><span class="pl-c">#</span>wechat access token server ,when you save in db,must implement you server class</span>
+<span class="pl-c"><span class="pl-c">#</span>this class must extend org.sword.wechat4j.token.DbAccessTokenServer</span>
+<span class="pl-c"><span class="pl-c">#</span>if no this property,then token server is default memery accesstoken server()</span>
+<span class="pl-k">wechat.accessToken.server.class</span>=
+
+<span class="pl-c"><span class="pl-c">#</span>jsapi_ticket customer server class name,</span>
+<span class="pl-c"><span class="pl-c">#</span>this class must extend  org.sword.wechat4j.token.server.CustomerServer</span>
+<span class="pl-c"><span class="pl-c">#</span>if no this property,then ticket server is default memery ticket server</span>
+<span class="pl-k">wechat.ticket.jsapi.server.class</span>=
+</pre></div>
+<p>你也可以在jar包的META-INF目录下找到wechat4j.properties.sample文件，复制到src目录下修改名称即可。wechat4j.properties配置文件的配置项意义参见<a href="https://github.com/sword-org/wechat4j/wiki/wechat4j%E9%85%8D%E7%BD%AE%E6%96%87%E4%BB%B6%E8%A7%A3%E8%AF%BB">wechat4j配置文件解读</a></p>
+<p>通过以上步骤，你的微信工程就完全搭好了。</p>
+<p>##wechat4j 运行环境
+wechat4j要求的最低java运行环境是jdk1.6</p>
+<p>wechat4j.jar的依赖jar包</p>
+<blockquote>
+<ul>
+<li>commons-codec.jar  1.3以上</li>
+<li>commons-lang3.jar</li>
+<li>log4j.jar 1.2以上</li>
+<li>fastjson-1.2.0.jar</li>
+<li>fluent-hc-4.3.6.jar（httpclient依赖）</li>
+<li>httpclient-4.3.6.jar</li>
+<li>httpcore-4.3.3.jar （httpclient依赖）</li>
+<li>servlet-api.jar  如果你是web工程，导入支持web工程的包就会包括，例如tomcat包</li>
+</ul>
+</blockquote>
+<p>##开发自己的微信应用
+wechat4j开发环境搭好之后，就可以开始开发自己的微信应用了。比如我有一个微信号的token是lejian,下面就以她为例子来说明。
+###创建自己公众号服务类
+创建自己的微信公众号服务类，需要继承wechat4j的WechatSupport类，然后实现其抽象方法即可，下面以文本消息处理为例子</p>
+<div class="highlight highlight-source-java"><pre><span class="pl-k">public</span> <span class="pl-k">class</span> <span class="pl-en">Lejian</span> <span class="pl-k">extends</span> <span class="pl-e">WechatSupport</span>{
+	<span class="pl-k">public</span> <span class="pl-en">Lejian</span>(<span class="pl-smi">HttpServletRequest</span> <span class="pl-v">request</span>, <span class="pl-smi">String</span> <span class="pl-v">token</span>) {
+		<span class="pl-c1">super</span>(request, token);
+	}
+
+	<span class="pl-k">@Override</span>
+	<span class="pl-k">protected</span> <span class="pl-k">void</span> <span class="pl-en">onText</span>() {
+		<span class="pl-c1">this</span><span class="pl-k">.</span>wechatRequest<span class="pl-k">.</span>getFromUserName();
+		<span class="pl-smi">String</span> content <span class="pl-k">=</span> <span class="pl-s"><span class="pl-pds">"</span>test ok<span class="pl-pds">"</span></span>;
+		responseText(content);
+	}
+}</pre></div>
+<p>上面代码中的<code>onText()</code>是WechatSupport的抽象方法，需要你自己的类来实现，表示对文本消息的处理，示例中是接收到用户的消息之后，返回给用户“test ok”文本消息。</p>
+<p>###创建微信服务地址
+创建微信服务地址（微信公众平台中配置的自己服务器地址）servlet类。如果是springmvc则创建对应的controller，如果是struts则创建对应的action类。servlet类示例如下：</p>
+<div class="highlight highlight-source-java"><pre>  <span class="pl-k">protected</span> <span class="pl-k">void</span> doGet(<span class="pl-smi">HttpServletRequest</span> request, <span class="pl-smi">HttpServletResponse</span> response) throws <span class="pl-smi">ServletException</span>, <span class="pl-smi">IOException</span> {
+<span class="pl-k">!!!!!!!!!!</span><span class="pl-c1">EEEEERRRRRRRR</span><span class="pl-k">!!!!</span><span class="pl-smi">Lejian</span> lejian <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-smi">Lejian</span>(request, <span class="pl-c1">TOKEN</span>);<span class="pl-k">!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!</span>
+		<span class="pl-smi">String</span> result <span class="pl-k">=</span> lejian<span class="pl-k">.</span>execute();
+		response<span class="pl-k">.</span>getOutputStream()<span class="pl-k">.</span>write(result<span class="pl-k">.</span>getBytes());
+	}
+	<span class="pl-k">protected</span> <span class="pl-k">void</span> doPost(<span class="pl-smi">HttpServletRequest</span> request, <span class="pl-smi">HttpServletResponse</span> response) throws <span class="pl-smi">ServletException</span>, <span class="pl-smi">IOException</span> {
+		<span class="pl-smi">Lejian</span> lejian <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-smi">Lejian</span>(request, <span class="pl-c1">TOKEN</span>);
+		<span class="pl-smi">String</span> result <span class="pl-k">=</span> lejian<span class="pl-k">.</span>execute();
+		response<span class="pl-k">.</span>getOutputStream()<span class="pl-k">.</span>write(result<span class="pl-k">.</span>getBytes());
+
+	}</pre></div>
+<p>通过上面两步你的微信服务就可以运行了</p>
+<p>##如何得到微信的请求参数
+继承了<code>WechatSupport</code>类之后，你可以通过<code>wechatRequest.getFromUserName()</code>类似的方法来得到微信服务器请求的参数。详细信息请阅读<a href="https://github.com/sword-org/wechat4j/wiki/%E5%BE%97%E5%88%B0%E5%BE%AE%E4%BF%A1%E8%AF%B7%E6%B1%82%E5%8F%82%E6%95%B0">微信请求参数</a>
+##如何设置响应参数
+继承了<code>WechatSupport</code>类之后，你可以通过<code>wechatResponse.setFromUserName(fromUser)</code>类似的方法来设置给微信服务器的响应参数。详细信息请阅读<a href="https://github.com/sword-org/wechat4j/wiki/%E8%AE%BE%E7%BD%AE%E5%93%8D%E5%BA%94%E5%BE%AE%E4%BF%A1%E5%8F%82%E6%95%B0">响应微信服务器参数</a>
+##如何响应用户信息
+以文本信息为例，响应文本信息只需要在你的<code>onText</code>方法中使用<code>responseText(content)</code>即可（参见上面的代码例子）</p>
+<p>##wechat4j示例项目</p>
+<ul>
+<li><a href="https://github.com/repoproject/wechat4jDemo">wechat4jDemo</a></li>
+</ul>
+<p>如果你有好的demo项目，请邮件或者修改本文件然后pull request给我，我会列在上面。</p>
+<p>##技术支持</p>
+<ul>
+<li>wechat4j技术交流QQ群  <strong>423134346</strong>
+</li>
+<li>支持邮件 <a href="mailto:sword_org@163.com">sword_org@163.com</a>
+</li>
+<li>wechat4j暂无论坛，欢迎开通论坛交流版块，如果开通请邮件，我会添加到这里。</li>
+</ul>
+<p>##贡献代码</p>
+<ol>
+<li>如果你觉得本项目不错，希望你能够点击一下右上角的star</li>
+<li>如果你希望参与改进本项目，那么请点击右上角的fork，修改之后pull request即可。如果你的贡献不错，你就会收到加入<a href="https://github.com/sword-org">sword</a>开源社区的邀请。</li>
+<li>如果你发现了一个bug，请你创建一个issue来报告。
+非常非常欢迎你能够参与本项目的建设，每人做出一点点贡献，对整个项目来说就是一个非常大的贡献，希望集合众人的力量，让项目走的更好，能够为更多的人服务。</li>
+</ol>
+<p>###贡献者列表</p>
+<ul>
+<li><a href="https://github.com/chengn">@chengn</a></li>
+<li><a href="https://github.com/truecn">@truecn</a></li>
+</ul>
+
+        </div>
+
+    </div>]

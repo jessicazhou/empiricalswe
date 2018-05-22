@@ -1,0 +1,183 @@
+[<div class="wiki-body gollum-mediawiki-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          
+<p>1) Create fresh ubuntu 14.04 (Trusty Tahr) VM
+</p>
+<pre>    http://cdimage.ubuntu.com/daily-live/current/trusty-desktop-amd64.iso
+</pre>
+
+
+<p>2) Install packages
+</p>
+<pre>    $ sudo apt-get update &amp;&amp; sudo apt-get upgrade
+    $ sudo apt-get install build-essential libgmp-dev libgmp3-dev git cmake m4 \
+        libboost-all-dev automake libtool libleveldb-dev yasm unzip lzip libminiupnpc-dev \
+        mingw-w64 gcc-mingw-w64 g++-mingw-w64 binutils-mingw-w64
+</pre>
+
+
+<p>For full Qt client:
+</p>
+<pre>    $ sudo apt-get install qtbase5-dev qt5-default
+</pre>
+
+
+<p>3) Build boost for windows
+</p>
+<pre>    $ wget http://downloads.sourceforge.net/project/boost/boost/1.55.0/boost_1_55_0.tar.bz2
+    $ tar xjvf boost_1_55_0.tar.bz2
+    $ cd boost_1_55_0
+    $ ./bootstrap.sh --without-icu
+    $ echo "using gcc : mingw32 : x86_64-w64-mingw32-g++ : &lt;rc&gt;x86_64-w64-mingw32-windres &lt;archiver&gt;x86_64-w64-mingw32-ar &lt;ranlib&gt;x86_64-w64-mingw32-ranlib ;" &gt; user-config.jam
+    $ sudo ./bjam toolset=gcc address-model=64 target-os=windows variant=release threading=multi threadapi=win32 \
+        link=static runtime-link=static --prefix=/usr/x86_64-w64-mingw32 --user-config=user-config.jam \
+        --without-mpi --without-python -sNO_BZIP2=1 --layout=tagged install
+    $ cd ..
+</pre>
+
+
+<p>(-Wno-unused-local-typedefs to suppress warnings)
+</p>
+<p>4) Build zlib for windows (required by Qt5)
+</p>
+<pre>    $ wget http://zlib.net/zlib-1.2.8.tar.gz
+    $ tar xzvf zlib-1.2.8.tar.gz
+    $ cd zlib-1.2.8
+    $ CC=x86_64-w64-mingw32-gcc AR=x86_64-w64-mingw32-ar RANLIB=x86_64-w64-mingw32-ranlib ./configure --prefix=/usr/x86_64-w64-mingw32 --static
+    $ make
+    $ sudo make install
+    $ cd ..
+</pre>
+
+
+<p>5) Build Qt5 for windows (not required for headless daemon)
+</p>
+<pre>    $ wget http://download.qt-project.org/official_releases/qt/5.2/5.2.1/single/qt-everywhere-opensource-src-5.2.1.tar.gz 
+    $ tar xzvf qt-everywhere-opensource-src-5.2.1.tar.gz
+</pre>
+
+
+<p>Qt5.2.1 has some problems with preprocessor definitions when building with MinGW.
+</p>
+<pre>    $ sed -i -e 's/QT_NO_SESSIONMANAGER/__QT_NO_SESSIONMANAGER/g' \
+        ~/qt-everywhere-opensource-src-5.2.1/qtbase/src/gui/kernel/qplatformsessionmanager.h \
+        ~/qt-everywhere-opensource-src-5.2.1/qtbase/src/gui/kernel/qsessionmanager.h
+</pre>
+
+
+
+<pre>    $ export INSTALLPREFIX=/usr/x86_64-w64-mingw32
+    $ mkdir qt5-w64-build
+    $ cd qt5-w64-build
+    $ ../qt-everywhere-opensource-src-5.2.1/configure -prefix / -hostprefix $INSTALLPREFIX/host -plugindir /plugins -translationdir /translations \
+        -xplatform win32-g++ -device-option CROSS_COMPILE=x86_64-w64-mingw32- -sysroot $INSTALLPREFIX -confirm-license -release -opensource -static -qt-pcre \
+        -no-icu -no-glib -no-javascript-jit -no-sql-sqlite -no-nis -no-cups -no-iconv -no-dbus  -nomake examples \
+        -no-feature-style-plastique -no-feature-style-cleanlooks -no-feature-style-motif -no-feature-style-cde -no-feature-style-windowsce \
+        -no-feature-style-windowsmobile -no-feature-style-s60 -no-pch -no-sql-odbc -no-compile-examples -no-qml-debug -no-sm \
+        -skip qtwebkit -skip qtwebkit-examples -skip qtactiveqt -no-openssl -qt-zlib
+    $ make
+    $ sudo make install
+    $ cd ..
+</pre>
+
+
+<p>(-Wno-strict-overflow -Wno-strict-aliasing -Wno-unused-parameters to suppress warnings)
+</p>
+<p>Patch Qt5.2.1 to work with cmake for static build.
+Windows uses library naming convention name.lib, MinGW uses libname.a. So we must replace the names:
+</p>
+<pre>    $ cd /usr/x86_64-w64-mingw32/lib/cmake
+    $ sudo sed -i -e 's/\/\([^\.]*\)\.lib/\/lib\1\.a/g' $(find * -type f)
+</pre>
+
+
+<p>6) Build leveldb for windows
+</p>
+<pre>    $ git clone https://github.com/bitcoin/bitcoin.git
+    $ cp bitcoin/src/leveldb ./ -R
+    $ cd leveldb
+    $ TARGET_OS=NATIVE_WINDOWS CC=x86_64-w64-mingw32-gcc CXX=x86_64-w64-mingw32-g++ AR=x86_64-w64-mingw32-ar \
+        make libleveldb.a libmemenv.a
+    $ sudo cp include/leveldb /usr/x86_64-w64-mingw32/include/ -R
+    $ sudo cp *.a /usr/x86_64-w64-mingw32/lib/
+    $ cd ..
+</pre>
+
+
+<p>7) Build gmp for windows
+</p>
+<pre>    $ wget https://gmplib.org/download/gmp/gmp-5.1.3.tar.lz
+    $ lzip -d gmp-5.1.3.tar.lz
+    $ tar xvf gmp-5.1.3.tar
+    $ mkdir gmp-w64-build
+    $ cd gmp-w64-build 
+    $ ../gmp-5.1.3/configure --host=x86_64-w64-mingw32 --prefix=/usr/x86_64-w64-mingw32
+    $ make
+    $ sudo make install
+    $ cd ..
+</pre>
+
+
+<p>8) Build miniupnpc for windows
+</p>
+<pre>    $ wget http://miniupnp.free.fr/files/download.php?file=miniupnpc-1.9.tar.gz -O miniupnpc-1.9.tar.gz
+    $ tar xzvf miniupnpc-1.9.tar.gz
+    $ cd miniupnpc-1.9
+    $ CC=x86_64-w64-mingw32-gcc AR=x86_64-w64-mingw32-ar CFLAGS="-DSTATICLIB -I/usr/x86_64-w64-mingw32/include" LDFLAGS=-L/usr/x86_64-w64-mingw32/lib \
+        make libminiupnpc.a
+    $ sudo mkdir /usr/x86_64-w64-mingw32/include/miniupnpc
+    $ sudo cp *.h /usr/x86_64-w64-mingw32/include/miniupnpc/
+    $ sudo cp libminiupnpc.a /usr/x86_64-w64-mingw32/lib/
+    $ cd ..
+</pre>
+
+
+<p>9) Build cryptopp-5.6.2 for linux and windows
+</p>
+<pre>    $ mkdir cryptopp562
+    $ cd cryptopp562
+    $ wget http://www.cryptopp.com/cryptopp562.zip
+    $ unzip cryptopp562.zip
+</pre>
+
+
+
+<pre>    Linux
+    $ make static
+    $ sudo mkdir /usr/include/cryptopp
+    $ sudo cp *.h /usr/include/cryptopp
+    $ sudo cp libcryptopp.a /usr/lib
+    $ make clean
+</pre>
+
+
+
+<pre>    Windows
+    $ CXX=x86_64-w64-mingw32-g++ AR=x86_64-w64-mingw32-ar make static
+    $ x86_64-w64-mingw32-ranlib libcryptopp.a
+    $ sudo mkdir /usr/x86_64-w64-mingw32/include/cryptopp
+    $ sudo cp *.h /usr/x86_64-w64-mingw32/include/cryptopp
+    $ sudo cp libcryptopp.a /usr/x86_64-w64-mingw32/lib
+    $ make clean
+</pre>
+
+
+
+<pre>    (-Wno-deprecated to suppress warnings)
+</pre>
+
+
+
+<pre>    $ cd .. 
+</pre>
+
+
+<p>10) Qt5.2.1 + cmake opengl issue workaround. Qt5GuiConfigExtras.cmake tries to use opengl (glu32). Prevent it from looking for it.
+</p>
+<pre>    $ sudo sed -i -e 's/_qt5gui_find_extra_libs(OPENGL/#_qt5gui_find_extra_libs(OPENGL/g' \
+        /usr/x86_64-w64-mingw32/lib/cmake/Qt5Gui/Qt5GuiConfigExtras.cmake
+</pre>
+
+        </div>
+
+    </div>]

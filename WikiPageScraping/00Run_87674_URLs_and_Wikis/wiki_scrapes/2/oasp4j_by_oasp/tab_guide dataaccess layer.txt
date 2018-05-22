@@ -1,0 +1,1069 @@
+[<div class="wiki-body gollum-asciidoc-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <div>
+<div>Table of Contents</div>
+<ul>
+<li>
+<a href="#data-access-layer">Data-Access Layer</a>
+<ul>
+<li>
+<a href="#persistence">Persistence</a>
+<ul>
+<li><a href="#entity">Entity</a></li>
+<li><a href="#data-access-object">Data Access Object</a></li>
+<li><a href="#queries">Queries</a></li>
+<li><a href="#relationships">Relationships</a></li>
+<li><a href="#embeddable">Embeddable</a></li>
+<li><a href="#inheritance">Inheritance</a></li>
+<li><a href="#concurrency-control">Concurrency Control</a></li>
+<li><a href="#database-auditing">Database Auditing</a></li>
+<li><a href="#testing-entities-and-daos">Testing Entities and DAOs</a></li>
+<li><a href="#principles">Principles</a></li>
+</ul>
+</li>
+<li>
+<a href="#database-configuration">Database Configuration</a>
+<ul>
+<li><a href="#database-system-and-access">Database System and Access</a></li>
+<li><a href="#database-migration">Database Migration</a></li>
+<li><a href="#database-logging">Database Logging</a></li>
+</ul>
+</li>
+<li>
+<a href="#security">Security</a>
+<ul>
+<li><a href="#sql-injection">SQL-Injection</a></li>
+<li><a href="#limited-permissions-for-application">Limited Permissions for Application</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</div>
+<h1 id="user-content-data-access-layer">
+<a aria-hidden="true" class="anchor" href="#data-access-layer" id="user-content-data-access-layer"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Data-Access Layer</h1>
+<div>
+<p>The data-access layer is responsible for all outgoing connections to access and process data. This is mainly about accessing data from a persistent data-store but also about invoking external services.</p>
+</div>
+<div>
+<h2 id="user-content-persistence">
+<a aria-hidden="true" class="anchor" href="#persistence" id="user-content-persistence"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Persistence</h2>
+<div>
+<div>
+<p>For mapping java objects to a relational database we use the <a href="http://www.oracle.com/technetwork/java/javaee/tech/persistence-jsp-140049.html" rel="nofollow">Java Persistence API (JPA)</a>.
+As JPA implementation we recommend to use <a href="http://hibernate.org/orm/" rel="nofollow">hibernate</a>. For general documentation about JPA and hibernate follow the links above as we will not replicate the documentation. Here you will only find guidelines and examples how we recommend to use it properly. The following examples show how to map the data of a database to an entity. As we use JPA we abstract from <a href="guide-sql">SQL</a> here. However, you will still need a <a href="https://en.wikipedia.org/wiki/Data_definition_language" rel="nofollow">DDL</a> script for your schema and during maintenance also <a href="guide-database-migration">database migrations</a>. Please follow our <a href="guide-sql">SQL guide</a> for such artefacts.</p>
+</div>
+<div>
+<h3 id="user-content-entity">
+<a aria-hidden="true" class="anchor" href="#entity" id="user-content-entity"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Entity</h3>
+<div>
+<p>Entities are part of the persistence layer and contain the actual data. They are POJOs (Plain Old Java Objects) on which the relational data of a database is mapped and vice versa. The mapping is configured via JPA annotations (javax.persistence). Usually an entity class corresponds to a table of a database and a property to a column of that table. A persistent entity instance then represents a row of the database table.</p>
+</div>
+<div>
+<h4 id="user-content-a-simple-entity">
+<a aria-hidden="true" class="anchor" href="#a-simple-entity" id="user-content-a-simple-entity"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>A Simple Entity</h4>
+<div>
+<p>The following listing shows a simple example:</p>
+</div>
+<div>
+<div>
+<div class="highlight highlight-source-java"><pre><span class="pl-k">@Entity</span>
+<span class="pl-k">@Table</span>(<span class="pl-c1">name</span><span class="pl-k">=</span><span class="pl-s"><span class="pl-pds">"</span>TEXTMESSAGE<span class="pl-pds">"</span></span>)
+<span class="pl-k">public</span> <span class="pl-k">class</span> <span class="pl-en">MessageEntity</span> <span class="pl-k">extends</span> <span class="pl-e">ApplicationPersistenceEntity</span> <span class="pl-k">implements</span> <span class="pl-e">Message</span>{
+
+  <span class="pl-k">private</span> <span class="pl-smi">String</span> text;
+
+  <span class="pl-k">public</span> <span class="pl-smi">String</span> <span class="pl-en">getText</span>() {
+    <span class="pl-k">return</span> <span class="pl-c1">this</span><span class="pl-k">.</span>text;
+  }
+
+  <span class="pl-k">public</span> <span class="pl-k">void</span> <span class="pl-en">setText</span>(<span class="pl-smi">String</span> <span class="pl-v">text</span>) {
+    <span class="pl-c1">this</span><span class="pl-k">.</span>text <span class="pl-k">=</span> text;
+  }
+ }</pre></div>
+</div>
+</div>
+<div>
+<p>The @Entity annotation defines that instances of this class will be entities which can be stored in the database. The @Table annotation is optional and can be used to define the name of the corresponding table in the database. If it is not specified, the simple name of the entity class is used instead.</p>
+</div>
+<div>
+<p>In order to specify how to map the attributes to columns we annotate the corresponding getter methods (technically also private field annotation is also possible but approaches can not be mixed).
+The @Id annotation specifies that a property should be used as <a href="#primary-keys">primary key</a>.
+With the help of the @Column annotation it is possible to define the name of the column that an attribute is mapped to as well as other aspects such as nullable or unique. If no column name is specified, the name of the property is used as default.</p>
+</div>
+<div>
+<p>Note that every entity class needs a constructor with public or protected visibility that does not have any arguments. Moreover, neither the class nor its getters and setters may be final.</p>
+</div>
+<div>
+<p>Entities should be simple POJOs and not contain business logic.</p>
+</div>
+</div>
+<div>
+<h4 id="user-content-entities-and-datatypes">
+<a aria-hidden="true" class="anchor" href="#entities-and-datatypes" id="user-content-entities-and-datatypes"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Entities and Datatypes</h4>
+<div>
+<p>Standard datatypes like Integer, BigDecimal, String, etc. are mapped automatically by JPA. Custom <a href="guide-datatype">datatypes</a> are mapped as serialized <a href="#blob">BLOB</a> by default what is typically undesired.
+In order to map atomic custom datatypes (implementations of SimpleDatatype) we implement an AttributeConverter. Here is a simple example:</p>
+</div>
+<div>
+<div>
+<div class="highlight highlight-source-java"><pre><span class="pl-k">@Converter</span>(<span class="pl-c1">autoApply</span> <span class="pl-k">=</span> <span class="pl-c1">true</span>)
+<span class="pl-k">public</span> <span class="pl-k">class</span> <span class="pl-en">MoneyAttributeConverter</span> <span class="pl-k">implements</span> <span class="pl-e">AttributeConverter&lt;<span class="pl-smi">Money</span>, <span class="pl-smi">BigDecimal</span>&gt;</span> {
+
+  <span class="pl-k">public</span> <span class="pl-smi">BigDecimal</span> <span class="pl-en">convertToDatabaseColumn</span>(<span class="pl-smi">Money</span> <span class="pl-v">attribute</span>) {
+    <span class="pl-k">return</span> attribute<span class="pl-k">.</span>getValue();
+  }
+
+  <span class="pl-k">public</span> <span class="pl-smi">Money</span> <span class="pl-en">convertToEntityAttribute</span>(<span class="pl-smi">BigDecimal</span> <span class="pl-v">dbData</span>) {
+    <span class="pl-k">return</span> <span class="pl-k">new</span> <span class="pl-smi">Money</span>(dbData);
+  }
+}</pre></div>
+</div>
+</div>
+<div>
+<p>The annotation @Converter is detected by the JPA vendor if the annotated class is in the packages to scan (see beans-jpa.xml). Further, autoApply = true implies that the converter is automatically used for all properties of the handled datatype. Therefore all entities with properties of that datatype will automatically be mapped properly (in our example Money is mapped as BigDecimal).</p>
+</div>
+<div>
+<p>In case you have a composite datatype that you need to map to multiple columns the JPA does not offer a real solution. As a workaround you can use a bean instead of a real datatype and declare it as <a href="#embeddable">@Embeddable</a>. If you are using hibernate you can implement CompositeUserType. Via the @TypeDef annotation it can be registered to hibernate. If you want to annotate the CompositeUserType implementation itself you also need another annoation (e.g. MappedSuperclass tough not technically correct) so it is found by the scan.</p>
+</div>
+<div>
+<h5 id="user-content-enumerations">
+<a aria-hidden="true" class="anchor" href="#enumerations" id="user-content-enumerations"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Enumerations</h5>
+<div>
+<p>By default JPA maps Enums via their ordinal. Therefore the database will only contain the ordinals (0, 1, 2, etc.) . So , inside the database you can not easily understand their meaning. Using @Enumerated with EnumType.STRING allows to map the enum values to their name (Enum.name()). Both approaches are fragile when it comes to code changes and refactorings (if you change the order of the enum values or rename them) after the application is deployed to production. If you want to avoid this and get a robust mapping you can define a dedicated string in each enum value for database representation that you keep untouched. Then you treat the enum just like any other <a href="#entities-and-datatypes">custom datatype</a>.</p>
+</div>
+</div>
+<div>
+<h5 id="user-content-blob">
+<a aria-hidden="true" class="anchor" href="#blob" id="user-content-blob"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>BLOB</h5>
+<div>
+<p>If binary or character large objects (BLOB/CLOB) should be used to store the value of an attribute, e.g. to store an icon, the @Lob annotation should be used as shown in the following listing:</p>
+</div>
+<div>
+<div>
+<div class="highlight highlight-source-java"><pre><span class="pl-k">@Lob</span>
+<span class="pl-k">public</span> <span class="pl-k">byte</span>[] getIcon() {
+  <span class="pl-k">return</span> <span class="pl-c1">this</span><span class="pl-k">.</span>icon;
+}</pre></div>
+</div>
+</div>
+<div>
+<table>
+<tbody><tr>
+<td>
+<div>Warning</div>
+</td>
+<td>
+Using a byte array will cause problems if BLOBs get large because the entire BLOB is loaded into the RAM of the server and has to be processed by the garbage collector. For larger BLOBs the type <a href="http://docs.oracle.com/javase/7/docs/api/java/sql/Blob.html" rel="nofollow">Blob</a> and streaming should be used.
+</td>
+</tr>
+</tbody></table>
+</div>
+<div>
+<div>
+<div class="highlight highlight-source-java"><pre><span class="pl-k">public</span> <span class="pl-smi">Blob</span> getAttachment() {
+  <span class="pl-k">return</span> <span class="pl-c1">this</span><span class="pl-k">.</span>attachment;
+}</pre></div>
+</div>
+</div>
+</div>
+<div>
+<h5 id="user-content-date-and-time">
+<a aria-hidden="true" class="anchor" href="#date-and-time" id="user-content-date-and-time"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Date and Time</h5>
+<div>
+<p>To store date and time related values, the temporal annotation can be used as shown in the listing below:</p>
+</div>
+<div>
+<div>
+<div class="highlight highlight-source-java"><pre><span class="pl-k">@Temporal</span>(<span class="pl-smi">TemporalType</span><span class="pl-c1"><span class="pl-k">.</span>TIMESTAMP</span>)
+<span class="pl-k">public</span> <span class="pl-smi">java.util<span class="pl-k">.</span>Date</span> getStart() {
+  <span class="pl-k">return</span> start;
+}</pre></div>
+</div>
+</div>
+<div>
+<p>Until Java8 the java data type java.util.Date (or Jodatime) has to be used.
+TemporalType defines the granularity. In this case, a precision of nanoseconds is used. If this granularity is not wanted, TemporalType.DATE can be used instead, which only has a granularity of milliseconds.
+Mixing these two granularities can cause problems when comparing one value to another. This is why we <strong>only</strong>  use TemporalType.TIMESTAMP.</p>
+</div>
+</div>
+<div>
+<h5 id="user-content-querydsl-and-custom-types">
+<a aria-hidden="true" class="anchor" href="#querydsl-and-custom-types" id="user-content-querydsl-and-custom-types"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>QueryDSL and Custom Types</h5>
+<div>
+<p>Using the Aliases API of QueryDSL might result in an InvalidDataAccessApiUsageException when using custom datatypes in entity properties. This can be circumvented in two steps (tested with QueryDSL 4.0.2 &amp; 4.1.0):</p>
+</div>
+<div>
+<ol>
+<li>
+<p>Add the following maven dependencies to support custom types via the Aliases API:</p>
+<div>
+<div>
+<div class="highlight highlight-text-xml"><pre>&lt;<span class="pl-ent">dependency</span>&gt;
+  &lt;<span class="pl-ent">groupId</span>&gt;org.ow2.asm&lt;/<span class="pl-ent">groupId</span>&gt;
+  &lt;<span class="pl-ent">artifactId</span>&gt;asm&lt;/<span class="pl-ent">artifactId</span>&gt;
+  &lt;<span class="pl-ent">version</span>&gt;5.0.3&lt;/<span class="pl-ent">version</span>&gt;
+&lt;/<span class="pl-ent">dependency</span>&gt;
+&lt;<span class="pl-ent">dependency</span>&gt;
+  &lt;<span class="pl-ent">groupId</span>&gt;cglib&lt;/<span class="pl-ent">groupId</span>&gt;
+  &lt;<span class="pl-ent">artifactId</span>&gt;cglib&lt;/<span class="pl-ent">artifactId</span>&gt;
+  &lt;<span class="pl-ent">version</span>&gt;3.1&lt;/<span class="pl-ent">version</span>&gt;
+&lt;/<span class="pl-ent">dependency</span>&gt;</pre></div>
+</div>
+</div>
+</li>
+<li>
+<p>Make sure, that all your custom types used in entities provide a non-argument constructor with at least visibility level protected.</p>
+</li>
+</ol>
+</div>
+</div>
+</div>
+<div>
+<h4 id="user-content-primary-keys">
+<a aria-hidden="true" class="anchor" href="#primary-keys" id="user-content-primary-keys"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Primary Keys</h4>
+<div>
+<p>We only use simple Long values as primary keys (IDs). By default it is auto generated (@GeneratedValue(strategy=GenerationType.AUTO)). This is already provided by the class io.oasp.&lt;projectName&gt;.general.dataaccess.api.AbstractPersistenceEntity that you can extend.
+In case you have business oriented keys (often as String), you can define an additional property for it and declare it as unique (@Column(unique=true)).
+Be sure to include "AUTO_INCREMENT" in your sql table field ID to be able to persist data (or similar for other databases).</p>
+</div>
+</div>
+</div>
+<div>
+<h3 id="user-content-data-access-object">
+<a aria-hidden="true" class="anchor" href="#data-access-object" id="user-content-data-access-object"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Data Access Object</h3>
+<div>
+<p><em>Data Acccess Objects</em> (DAOs) are part of the persistence layer. They are responsible for a specific <a href="#entity">entity</a> and should be named &lt;Entity&gt;Dao[Impl]. The DAO offers the so called CRUD-functionalities (create, retrieve, update, delete) for the corresponding entity. Additionally a DAO may offer advanced operations such as query or locking methods.</p>
+</div>
+<div>
+<h4 id="user-content-dao-interface">
+<a aria-hidden="true" class="anchor" href="#dao-interface" id="user-content-dao-interface"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>DAO Interface</h4>
+<div>
+<p>For each DAO there is an interface named &lt;Entity&gt;Dao that defines the API. For CRUD support and common naming we derive it from the interface io.oasp.module.jpa.persistence.api.MasterDataDao:</p>
+</div>
+<div>
+<div>
+<div class="highlight highlight-source-java"><pre><span class="pl-k">public</span> <span class="pl-k">interface</span> <span class="pl-en">MyEntityDao</span> <span class="pl-k">extends</span> <span class="pl-e">ApplicationDao&lt;<span class="pl-smi">MyEntity</span>&gt;</span>, <span class="pl-e">MasterDataDao&lt;<span class="pl-smi">MyEntity</span>&gt;</span> {
+
+  <span class="pl-k">List&lt;<span class="pl-smi">MyEntity</span>&gt;</span> <span class="pl-en">findByCriteria</span>(<span class="pl-smi">MyEntitySearchCriteria</span> <span class="pl-v">criteria</span>);
+}</pre></div>
+</div>
+</div>
+<div>
+<p>As you can see, the interface MasterDataDao has a type parameter for the entity class. All CRUD operations are only inherited so you only have to declare the additional methods.</p>
+</div>
+</div>
+<div>
+<h4 id="user-content-dao-implementation">
+<a aria-hidden="true" class="anchor" href="#dao-implementation" id="user-content-dao-implementation"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>DAO Implementation</h4>
+<div>
+<p>Implementing a DAO is quite simple. We create a class named &lt;Entity&gt;DaoImpl that extends io.oasp.&lt;projectName&gt;.general.dataaccess.base.dao.ApplicationMasterDataDaoImpl and implements your &lt;Entity&gt;Dao interface:</p>
+</div>
+<div>
+<div>
+<div class="highlight highlight-source-java"><pre><span class="pl-k">public</span> <span class="pl-k">class</span> <span class="pl-en">MyEntityDaoImpl</span> <span class="pl-k">extends</span> <span class="pl-e">ApplicationMasterDataDaoImpl&lt;<span class="pl-smi">MyEntity</span>&gt;</span> <span class="pl-k">implements</span> <span class="pl-e">MyEntityDao</span> {
+
+  <span class="pl-k">public</span> <span class="pl-k">List&lt;<span class="pl-smi">MyEntity</span>&gt;</span> <span class="pl-en">findByCriteria</span>(<span class="pl-smi">MyEntitySearchCriteria</span> <span class="pl-v">criteria</span>) {
+    <span class="pl-k">TypedQuery&lt;<span class="pl-smi">MyEntity</span>&gt;</span> query <span class="pl-k">=</span> createQuery(criteria, getEntityManager());
+    <span class="pl-k">return</span> query<span class="pl-k">.</span>getResultList();
+  }
+  <span class="pl-c1">...</span>
+}</pre></div>
+</div>
+</div>
+<div>
+<p>As you can see MasterDataDao already implements the CRUD operations so you only have to implement the additional methods that you have declared in your &lt;Entity&gt;Dao interface.
+In the DAO implementation you can use the method getEntityManager() to access the EntityManager from the JPA. You will need the EntityManager to create and execute <a href="#queries">queries</a>.</p>
+</div>
+</div>
+</div>
+<div>
+<h3 id="user-content-queries">
+<a aria-hidden="true" class="anchor" href="#queries" id="user-content-queries"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Queries</h3>
+<div>
+<p>The <a href="http://www.oracle.com/technetwork/java/javaee/tech/persistence-jsp-140049.html" rel="nofollow">Java Persistence API (JPA)</a> defines its own query language, the java persistence query language (JPQL), which is similar to SQL but operates on entities and their attributes instead of tables and columns.</p>
+</div>
+<div>
+<h4 id="user-content-static-queries">
+<a aria-hidden="true" class="anchor" href="#static-queries" id="user-content-static-queries"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Static Queries</h4>
+<div>
+<p>The OASP4J advises to specify all queries in one mapping file src\main\resources\META-INF\orm.xml.</p>
+</div>
+<div>
+<p>Add the following query to this file:</p>
+</div>
+<div>
+<div>
+<div class="highlight highlight-text-xml"><pre>&lt;?<span class="pl-ent">xml</span><span class="pl-e"> version</span>=<span class="pl-s"><span class="pl-pds">"</span>1.0<span class="pl-pds">"</span></span><span class="pl-e"> encoding</span>=<span class="pl-s"><span class="pl-pds">"</span>UTF-8<span class="pl-pds">"</span></span>?&gt;
+&lt;<span class="pl-ent">entity-mappings</span> <span class="pl-e">version</span>=<span class="pl-s"><span class="pl-pds">"</span>1.0<span class="pl-pds">"</span></span> <span class="pl-e">xmlns</span>=<span class="pl-s"><span class="pl-pds">"</span>http://java.sun.com/xml/ns/persistence/orm<span class="pl-pds">"</span></span> <span class="pl-e">xmlns</span><span class="pl-e">:</span><span class="pl-e">xsi</span>=<span class="pl-s"><span class="pl-pds">"</span>http://www.w3.org/2001/XMLSchema-instance<span class="pl-pds">"</span></span>
+  <span class="pl-e">xsi</span><span class="pl-e">:</span><span class="pl-e">schemaLocation</span>=<span class="pl-s"><span class="pl-pds">"</span>http://java.sun.com/xml/ns/persistence/orm http://java.sun.com/xml/ns/persistence/orm_1_0.xsd<span class="pl-pds">"</span></span>&gt;
+  &lt;<span class="pl-ent">named-query</span> <span class="pl-e">name</span>=<span class="pl-s"><span class="pl-pds">"</span>get.open.order.positions.for.order<span class="pl-pds">"</span></span>&gt;
+    &lt;<span class="pl-ent">query</span>&gt;<span class="pl-s"><span class="pl-pds">&lt;![CDATA[</span>SELECT op FROM OrderPosition op where op.order.id = ? AND op.state NOT IN (PAYED, CANCELLED)<span class="pl-pds">]]&gt;</span></span>&lt;/<span class="pl-ent">query</span>&gt;
+  &lt;/<span class="pl-ent">named-query</span>&gt;
+  ...
+&lt;/<span class="pl-ent">hibernate-mapping</span>&gt;</pre></div>
+</div>
+</div>
+<div>
+<p>To avoid redundant occurrences of the query name (get.open.order.positions.for.order) we define the constants for each named query:</p>
+</div>
+<div>
+<div>
+<div class="highlight highlight-source-java"><pre><span class="pl-k">package</span> <span class="pl-smi">io.oasp.gastronomy.restaurant.general.common.api.constants</span>;
+
+<span class="pl-k">public</span> <span class="pl-k">class</span> <span class="pl-en">NamedQueries</span> {
+  <span class="pl-k">public</span> <span class="pl-k">static</span> <span class="pl-k">final</span> <span class="pl-smi">String</span> <span class="pl-c1">GET_OPEN_ORDER_POSITIONS_FOR_ORDER</span><span class="pl-k">=</span> <span class="pl-s"><span class="pl-pds">"</span>get.open.order.positions.for.order<span class="pl-pds">"</span></span>;
+}</pre></div>
+</div>
+</div>
+<div>
+<p>Note that changing the name of the java constant (GET_OPEN_ORDER_POSITIONS_FOR_ORDER) can be done easily with refactoring. Further you can trace where the query is used by searching the references of the constant.</p>
+</div>
+<div>
+<p>The following listing shows how to use this query (in class StaffMemberDaoImpl, remember to adapt StaffMemberDao!):</p>
+</div>
+<div>
+<div>
+<div class="highlight highlight-source-java"><pre><span class="pl-k">public</span> <span class="pl-k">List&lt;<span class="pl-smi">StaffMember</span>&gt;</span> getStaffMemberByName(<span class="pl-smi">String</span> firstName, <span class="pl-smi">String</span> lastName) {
+  <span class="pl-smi">Query</span> query <span class="pl-k">=</span> getEntityManager()<span class="pl-k">.</span>createNamedQuery(<span class="pl-smi">NamedQueries</span><span class="pl-c1"><span class="pl-k">.</span>STAFFMEMBER_SEARCH_BY_NAME</span>);
+
+  query<span class="pl-k">.</span>setParameter(<span class="pl-s"><span class="pl-pds">"</span>firstName<span class="pl-pds">"</span></span>, firstName);
+  query<span class="pl-k">.</span>setParameter(<span class="pl-s"><span class="pl-pds">"</span>lastName<span class="pl-pds">"</span></span>, lastName);
+
+  <span class="pl-k">return</span> query<span class="pl-k">.</span>getResultList();
+}</pre></div>
+</div>
+</div>
+<div>
+<p>The EntityManager contains a method called createNamedQuery(String), which takes as parameter the name of the query and creates a new query object. As the query has two parameters, these have to be set using the setParameter(String, Object) method.<br/>
+Note that using the createQuery(String) method, which takes as parameter the query as string (this string already contains the parameters) is not allowed as this makes the application vulnerable to SQL injection attacks.<br/>
+When the method getResultList() is invoked, the query is executed and the result is delivered as list. As an alternative, there is a method called getSingleResult(), which returns the entity if the query returned exactly one and throws an exception otherwise.</p>
+</div>
+<div>
+<h5 id="user-content-using-queries-to-avoid-bidirectional-relationships">
+<a aria-hidden="true" class="anchor" href="#using-queries-to-avoid-bidirectional-relationships" id="user-content-using-queries-to-avoid-bidirectional-relationships"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Using Queries to Avoid Bidirectional Relationships</h5>
+<div>
+<p>With the usage of queries it is possible to avoid bidirectional relationships, which have some disadvantages (see <a href="#relationships">relationships</a>). So for example to get all WorkingTime's for a specific StaffMember without having an attribute in the StaffMember's class that stores these WorkingTime's, the following query is needed:</p>
+</div>
+<div>
+<div>
+<div class="highlight highlight-text-xml"><pre>&lt;<span class="pl-ent">query</span> <span class="pl-e">name</span>=<span class="pl-s"><span class="pl-pds">"</span>working.time.search.by.staff.member<span class="pl-pds">"</span></span>&gt;
+
+  <span class="pl-s"><span class="pl-pds">&lt;![CDATA[</span>select work from WorkingTime work where work.staffMember = :staffMember<span class="pl-pds">]]&gt;</span></span>
+
+&lt;/<span class="pl-ent">query</span>&gt;</pre></div>
+</div>
+</div>
+<div>
+<p>The method looks as follows (extract of class WorkingTimeDaoImpl):</p>
+</div>
+<div>
+<div>
+<div class="highlight highlight-source-java"><pre><span class="pl-k">public</span> <span class="pl-k">List&lt;<span class="pl-smi">WorkingTime</span>&gt;</span> getWorkingTimesForStaffMember(<span class="pl-smi">StaffMember</span> staffMember) {
+  <span class="pl-smi">Query</span> query <span class="pl-k">=</span> getEntityManager()<span class="pl-k">.</span>createNamedQuery(<span class="pl-smi">NamedQueries</span><span class="pl-c1"><span class="pl-k">.</span>WORKING_TIMES_SEARCH_BY_STAFFMEMBER</span>);
+  query<span class="pl-k">.</span>setParameter(<span class="pl-s"><span class="pl-pds">"</span>staffMember<span class="pl-pds">"</span></span>, staffMember);
+  <span class="pl-k">return</span> query<span class="pl-k">.</span>getResultList();
+}</pre></div>
+</div>
+</div>
+<div>
+<p>Do not forget to adapt the WorkingTimeDao interface and the NamedQueries class accordingly.</p>
+</div>
+<div>
+<p>To get a more detailed description of how to create queries using JPQL, please have a look <a href="https://docs.oracle.com/javaee/7/tutorial/persistence-querylanguage.htm#BNBTG" rel="nofollow">here</a> or <a href="http://m-m-m.sourceforge.net/apidocs/net/sf/mmm/persistence/api/jpql/JpqlSyntax.html#JPQL_STATEMENT" rel="nofollow">here</a>.</p>
+</div>
+</div>
+</div>
+<div>
+<h4 id="user-content-dynamic-queries">
+<a aria-hidden="true" class="anchor" href="#dynamic-queries" id="user-content-dynamic-queries"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Dynamic Queries</h4>
+<div>
+<p>For dynamic queries we recommend to use <a href="http://www.querydsl.com/" rel="nofollow">QueryDSL</a>. It allows to implement queries in a powerful but readable and type-safe way (unlike Criteria API). If you already know JPQL you will quickly be able to read and write QueryDSL code. It feels like JPQL but implemented in Java instead of plain text.</p>
+</div>
+<div>
+<p>Please be aware that code-generation can be painful especially with large teams. We therefore recommend to use QueryDSL without code-generation. Here is an example from our sample application:</p>
+</div>
+<div>
+<div>
+<div class="highlight highlight-source-java"><pre>  <span class="pl-k">public</span> <span class="pl-k">List&lt;<span class="pl-smi">OrderEntity</span>&gt;</span> findOrders(<span class="pl-smi">OrderSearchCriteriaTo</span> criteria) {
+
+    <span class="pl-smi">OrderEntity</span> order <span class="pl-k">=</span> <span class="pl-smi">Alias</span><span class="pl-k">.</span>alias(<span class="pl-smi">OrderEntity</span><span class="pl-k">.</span>class);
+    <span class="pl-k">EntityPathBase&lt;<span class="pl-smi">OrderEntity</span>&gt;</span> alias <span class="pl-k">=</span> <span class="pl-smi">Alias</span><span class="pl-k">.</span>$(order);
+    <span class="pl-smi">JPAQuery</span> query <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-smi">JPAQuery</span>(getEntityManager())<span class="pl-k">.</span>from(alias);
+    <span class="pl-smi">Long</span> tableId <span class="pl-k">=</span> criteria<span class="pl-k">.</span>getTableId();
+    <span class="pl-k">if</span> (tableId <span class="pl-k">!=</span> <span class="pl-c1">null</span>) {
+      query<span class="pl-k">.</span>where(<span class="pl-smi">Alias</span><span class="pl-k">.</span>$(order<span class="pl-k">.</span>getTableId())<span class="pl-k">.</span>eq(tableId));
+    }
+    <span class="pl-smi">OrderState</span> state <span class="pl-k">=</span> criteria<span class="pl-k">.</span>getState();
+    <span class="pl-k">if</span> (state <span class="pl-k">!=</span> <span class="pl-c1">null</span>) {
+      query<span class="pl-k">.</span>where(<span class="pl-smi">Alias</span><span class="pl-k">.</span>$(order<span class="pl-k">.</span>getState())<span class="pl-k">.</span>eq(state));
+    }
+    applyCriteria(criteria, query);
+    <span class="pl-k">return</span> query<span class="pl-k">.</span>list(alias);
+  }</pre></div>
+</div>
+</div>
+</div>
+<div>
+<h4 id="user-content-using-wildcards">
+<a aria-hidden="true" class="anchor" href="#using-wildcards" id="user-content-using-wildcards"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Using Wildcards</h4>
+<div>
+<p>For flexible queries it is often required to allow wildcards (especially in <a href="#dynamic_queries">dynamic queries</a>). While users intuitively expect glob syntax the SQL and JPQL standards work different. Therefore a mapping is required (see <a href="http://m-m-m.sourceforge.net/apidocs/net/sf/mmm/persistence/api/jpql/JpqlSyntax.html#PATTERN_VALUE" rel="nofollow">here</a>).</p>
+</div>
+</div>
+<div>
+<h4 id="user-content-pagination">
+<a aria-hidden="true" class="anchor" href="#pagination" id="user-content-pagination"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Pagination</h4>
+<div>
+<p>The OASP provides the method findPaginated in AbstractGenericDao that executes a given query (for now only QueryDSL is supported) with pagination parameters based on SearchCriteriaTo. So all you need to do is derive your individual search criteria objects from SearchCriteriaTo, prepare a QueryDSL-query with the needed custom search criterias, and call findPaginated. Here is an example from our sample application:</p>
+</div>
+<div>
+<div>
+<div class="highlight highlight-source-java"><pre>  <span class="pl-k">@Override</span>
+  <span class="pl-k">public</span> <span class="pl-k">PaginatedListTo&lt;<span class="pl-smi">OrderEntity</span>&gt;</span> findOrders(<span class="pl-smi">OrderSearchCriteriaTo</span> criteria) {
+
+    <span class="pl-smi">OrderEntity</span> order <span class="pl-k">=</span> <span class="pl-smi">Alias</span><span class="pl-k">.</span>alias(<span class="pl-smi">OrderEntity</span><span class="pl-k">.</span>class);
+    <span class="pl-k">EntityPathBase&lt;<span class="pl-smi">OrderEntity</span>&gt;</span> alias <span class="pl-k">=</span> <span class="pl-smi">Alias</span><span class="pl-k">.</span>$(order);
+    <span class="pl-smi">JPAQuery</span> query <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-smi">JPAQuery</span>(getEntityManager())<span class="pl-k">.</span>from(alias);
+
+    <span class="pl-smi">Long</span> tableId <span class="pl-k">=</span> criteria<span class="pl-k">.</span>getTableId();
+    <span class="pl-k">if</span> (tableId <span class="pl-k">!=</span> <span class="pl-c1">null</span>) {
+      query<span class="pl-k">.</span>where(<span class="pl-smi">Alias</span><span class="pl-k">.</span>$(order<span class="pl-k">.</span>getTableId())<span class="pl-k">.</span>eq(tableId));
+    }
+    <span class="pl-smi">OrderState</span> state <span class="pl-k">=</span> criteria<span class="pl-k">.</span>getState();
+    <span class="pl-k">if</span> (state <span class="pl-k">!=</span> <span class="pl-c1">null</span>) {
+      query<span class="pl-k">.</span>where(<span class="pl-smi">Alias</span><span class="pl-k">.</span>$(order<span class="pl-k">.</span>getState())<span class="pl-k">.</span>eq(state));
+    }
+
+    <span class="pl-k">return</span> findPaginated(criteria, query, alias);
+  }</pre></div>
+</div>
+</div>
+<div>
+<p>Then the query allows pagination by setting pagination.size (SearchCriteriaTo.getPagination().setSize(Integer)) to the number of hits per page and pagination.page (SearchCriteriaTo.getPagination().setPage(int)) to the desired page.
+If you allow the client to specify pagination.size, it is recommended to limit this value on the server side (SearchCriteriaTo.limitMaximumPageSize(int)) to prevent performance problems or DOS-attacks.
+If you need to also return the total number of hits available, you can set SearchCriteria.getPagination().setTotal(boolean) to true.</p>
+</div>
+<div>
+<h5 id="user-content-pagination-example">
+<a aria-hidden="true" class="anchor" href="#pagination-example" id="user-content-pagination-example"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Pagination example</h5>
+<div>
+<p>For the table entity we can make a search request by accessing the REST endpoint with pagination support like in the following examples:</p>
+</div>
+<div>
+<div>
+<div class="highlight highlight-source-json"><pre>POST oasp<span class="pl-c1">4</span>j-sample-server/services/rest/tablemanagement/v<span class="pl-c1">1</span>/table/search
+{
+  <span class="pl-s"><span class="pl-pds">"</span>pagination<span class="pl-pds">"</span></span>: {
+    <span class="pl-s"><span class="pl-pds">"</span>size<span class="pl-pds">"</span></span>:<span class="pl-c1">2</span>,
+    <span class="pl-s"><span class="pl-pds">"</span>total<span class="pl-pds">"</span></span>:<span class="pl-c1">true</span>
+  }
+}
+
+//Response
+{
+    <span class="pl-s"><span class="pl-pds">"</span>pagination<span class="pl-pds">"</span></span>: {
+        <span class="pl-s"><span class="pl-pds">"</span>size<span class="pl-pds">"</span></span>: <span class="pl-c1">2</span>,
+        <span class="pl-s"><span class="pl-pds">"</span>page<span class="pl-pds">"</span></span>: <span class="pl-c1">1</span>,
+        <span class="pl-s"><span class="pl-pds">"</span>total<span class="pl-pds">"</span></span>: <span class="pl-c1">11</span>
+    },
+    <span class="pl-s"><span class="pl-pds">"</span>result<span class="pl-pds">"</span></span>: [
+        {
+            <span class="pl-s"><span class="pl-pds">"</span>id<span class="pl-pds">"</span></span>: <span class="pl-c1">101</span>,
+            <span class="pl-s"><span class="pl-pds">"</span>modificationCounter<span class="pl-pds">"</span></span>: <span class="pl-c1">1</span>,
+            <span class="pl-s"><span class="pl-pds">"</span>revision<span class="pl-pds">"</span></span>: <span class="pl-c1">null</span>,
+            <span class="pl-s"><span class="pl-pds">"</span>waiterId<span class="pl-pds">"</span></span>: <span class="pl-c1">null</span>,
+            <span class="pl-s"><span class="pl-pds">"</span>number<span class="pl-pds">"</span></span>: <span class="pl-c1">1</span>,
+            <span class="pl-s"><span class="pl-pds">"</span>state<span class="pl-pds">"</span></span>: <span class="pl-s"><span class="pl-pds">"</span>OCCUPIED<span class="pl-pds">"</span></span>
+        },
+        {
+            <span class="pl-s"><span class="pl-pds">"</span>id<span class="pl-pds">"</span></span>: <span class="pl-c1">102</span>,
+            <span class="pl-s"><span class="pl-pds">"</span>modificationCounter<span class="pl-pds">"</span></span>: <span class="pl-c1">1</span>,
+            <span class="pl-s"><span class="pl-pds">"</span>revision<span class="pl-pds">"</span></span>: <span class="pl-c1">null</span>,
+            <span class="pl-s"><span class="pl-pds">"</span>waiterId<span class="pl-pds">"</span></span>: <span class="pl-c1">null</span>,
+            <span class="pl-s"><span class="pl-pds">"</span>number<span class="pl-pds">"</span></span>: <span class="pl-c1">2</span>,
+            <span class="pl-s"><span class="pl-pds">"</span>state<span class="pl-pds">"</span></span>: <span class="pl-s"><span class="pl-pds">"</span>FREE<span class="pl-pds">"</span></span>
+        }
+    ]
+}</pre></div>
+</div>
+</div>
+<div>
+<table>
+<tbody><tr>
+<td>
+<div>Note</div>
+</td>
+<td>
+As we are requesting with the total property set to true the server responds with the total count of rows for the query.
+</td>
+</tr>
+</tbody></table>
+</div>
+<div>
+<p>For retrieving a concrete page, we provide the page attribute with the desired value. Here we also left out the total property so the server doesn’t incur on the effort to calculate it:</p>
+</div>
+<div>
+<div>
+<div class="highlight highlight-source-json"><pre>POST oasp<span class="pl-c1">4</span>j-sample-server/services/rest/tablemanagement/v<span class="pl-c1">1</span>/table/search
+{
+  <span class="pl-s"><span class="pl-pds">"</span>pagination<span class="pl-pds">"</span></span>: {
+    <span class="pl-s"><span class="pl-pds">"</span>size<span class="pl-pds">"</span></span>:<span class="pl-c1">2</span>,
+    <span class="pl-s"><span class="pl-pds">"</span>page<span class="pl-pds">"</span></span>:<span class="pl-c1">2</span>
+  }
+}
+
+//Response
+
+{
+    <span class="pl-s"><span class="pl-pds">"</span>pagination<span class="pl-pds">"</span></span>: {
+        <span class="pl-s"><span class="pl-pds">"</span>size<span class="pl-pds">"</span></span>: <span class="pl-c1">2</span>,
+        <span class="pl-s"><span class="pl-pds">"</span>page<span class="pl-pds">"</span></span>: <span class="pl-c1">2</span>,
+        <span class="pl-s"><span class="pl-pds">"</span>total<span class="pl-pds">"</span></span>: <span class="pl-c1">null</span>
+    },
+    <span class="pl-s"><span class="pl-pds">"</span>result<span class="pl-pds">"</span></span>: [
+        {
+            <span class="pl-s"><span class="pl-pds">"</span>id<span class="pl-pds">"</span></span>: <span class="pl-c1">103</span>,
+            <span class="pl-s"><span class="pl-pds">"</span>modificationCounter<span class="pl-pds">"</span></span>: <span class="pl-c1">1</span>,
+            <span class="pl-s"><span class="pl-pds">"</span>revision<span class="pl-pds">"</span></span>: <span class="pl-c1">null</span>,
+            <span class="pl-s"><span class="pl-pds">"</span>waiterId<span class="pl-pds">"</span></span>: <span class="pl-c1">null</span>,
+            <span class="pl-s"><span class="pl-pds">"</span>number<span class="pl-pds">"</span></span>: <span class="pl-c1">3</span>,
+            <span class="pl-s"><span class="pl-pds">"</span>state<span class="pl-pds">"</span></span>: <span class="pl-s"><span class="pl-pds">"</span>FREE<span class="pl-pds">"</span></span>
+        },
+        {
+            <span class="pl-s"><span class="pl-pds">"</span>id<span class="pl-pds">"</span></span>: <span class="pl-c1">104</span>,
+            <span class="pl-s"><span class="pl-pds">"</span>modificationCounter<span class="pl-pds">"</span></span>: <span class="pl-c1">1</span>,
+            <span class="pl-s"><span class="pl-pds">"</span>revision<span class="pl-pds">"</span></span>: <span class="pl-c1">null</span>,
+            <span class="pl-s"><span class="pl-pds">"</span>waiterId<span class="pl-pds">"</span></span>: <span class="pl-c1">null</span>,
+            <span class="pl-s"><span class="pl-pds">"</span>number<span class="pl-pds">"</span></span>: <span class="pl-c1">4</span>,
+            <span class="pl-s"><span class="pl-pds">"</span>state<span class="pl-pds">"</span></span>: <span class="pl-s"><span class="pl-pds">"</span>FREE<span class="pl-pds">"</span></span>
+        }
+    ]
+}</pre></div>
+</div>
+</div>
+</div>
+</div>
+<div>
+<h4 id="user-content-query-meta-parameters">
+<a aria-hidden="true" class="anchor" href="#query-meta-parameters" id="user-content-query-meta-parameters"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Query Meta-Parameters</h4>
+<div>
+<p>Queries can have meta-parameters and the OASP currently provides support for <em>timeout</em>.
+The OASP provides the method applyCriteria in AbstractGenericDao that applies meta-parameters to a query based on SearchCriteriaTo.
+If you already use the pagination support (see above), you do not need to call applyCriteria manually, as it is called internally by findPaginated.</p>
+</div>
+</div>
+</div>
+<div>
+<h3 id="user-content-relationships">
+<a aria-hidden="true" class="anchor" href="#relationships" id="user-content-relationships"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Relationships</h3>
+<div>
+<h4 id="user-content-n-1-and-1-1-relationships">
+<a aria-hidden="true" class="anchor" href="#n1-and-11-relationships" id="user-content-n1-and-11-relationships"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>n:1 and 1:1 Relationships</h4>
+<div>
+<p>Entities often do not exist independently but are in some relation to each other. For example, for every period of time one of the StaffMember’s of the restaurant example has worked, which is represented by the class WorkingTime, there is a relationship to this StaffMember.</p>
+</div>
+<div>
+<p>The following listing shows how this can be modeled using JPA:</p>
+</div>
+<div>
+<div>
+<div class="highlight highlight-source-java"><pre><span class="pl-c1">...</span>
+
+<span class="pl-k">@Entity</span>
+<span class="pl-k">public</span> <span class="pl-k">class</span> <span class="pl-en">WorkingTime</span> {
+   <span class="pl-c1">...</span>
+
+   <span class="pl-k">private</span> <span class="pl-smi">StaffMember</span> staffMember;
+
+   <span class="pl-k">@ManyToOne</span>
+   <span class="pl-k">@JoinColumn</span>(<span class="pl-c1">name</span><span class="pl-k">=</span><span class="pl-s"><span class="pl-pds">"</span>STAFFMEMBER<span class="pl-pds">"</span></span>)
+   <span class="pl-k">public</span> <span class="pl-smi">StaffMember</span> <span class="pl-en">getStaffMember</span>() {
+      <span class="pl-k">return</span> staffMember;
+   }
+
+   <span class="pl-k">public</span> <span class="pl-k">void</span> <span class="pl-en">setStaffMember</span>(<span class="pl-smi">StaffMember</span> <span class="pl-v">staffMember</span>) {
+      <span class="pl-c1">this</span><span class="pl-k">.</span>staffMember <span class="pl-k">=</span> staffMember;
+   }
+}</pre></div>
+</div>
+</div>
+<div>
+<p>To represent the relationship, an attribute of the type of the corresponding entity class that is referenced has been introduced. The relationship is a n:1 relationship, because every WorkingTime belongs to exactly one StaffMember, but a StaffMember usually worked more often than once.<br/>
+This is why the @ManyToOne annotation is used here. For 1:1 relationships the @OneToOne annotation can be used which works basically the same way. To be able to save information about the relation in the database, an additional column in the corresponding table of WorkingTime is needed which contains the primary key of the referenced StaffMember. With the name element of the @JoinColumn annotation it is possible to specify the name of this column.</p>
+</div>
+</div>
+<div>
+<h4 id="user-content-1-n-and-n-m-relationships">
+<a aria-hidden="true" class="anchor" href="#1n-and-nm-relationships" id="user-content-1n-and-nm-relationships"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>1:n and n:m Relationships</h4>
+<div>
+<p>The relationship of the example listed above is currently an unidirectional one, as there is a getter method for retrieving the StaffMember from the WorkingTime object, but not vice versa.</p>
+</div>
+<div>
+<p>To make it a bidirectional one, the following code has to be added to StaffMember:</p>
+</div>
+<div>
+<div>
+<div class="highlight highlight-source-java"><pre>  <span class="pl-k">private</span> <span class="pl-k">Set&lt;<span class="pl-smi">WorkingTimes</span>&gt;</span> workingTimes;
+
+  <span class="pl-k">@OneToMany</span>(<span class="pl-c1">mappedBy</span><span class="pl-k">=</span><span class="pl-s"><span class="pl-pds">"</span>staffMember<span class="pl-pds">"</span></span>)
+  <span class="pl-k">public</span> <span class="pl-k">Set&lt;<span class="pl-smi">WorkingTime</span>&gt;</span> getWorkingTimes() {
+    <span class="pl-k">return</span> workingTimes;
+  }
+
+  <span class="pl-k">public</span> <span class="pl-k">void</span> setWorkingTimes(<span class="pl-k">Set&lt;<span class="pl-smi">WorkingTime</span>&gt;</span> workingTimes) {
+    <span class="pl-c1">this</span><span class="pl-k">.</span>workingTimes <span class="pl-k">=</span> workingTimes;
+  }</pre></div>
+</div>
+</div>
+<div>
+<p>To make the relationship bidirectional, the tables in the database do not have to be changed. Instead the column that corresponds to the attribute staffMember in class WorkingTime is used, which is specified by the mappedBy element of the @OneToMany annotation. Hibernate will search for corresponding WorkingTime objects automatically when a StaffMember is loaded.</p>
+</div>
+<div>
+<p>The problem with bidirectional relationships is that if a WorkingTime object is added to the set or list workingTimes in StaffMember, this does not have any effect in the database unless
+the staffMember attribute of that WorkingTime object is set. That is why the OASP4J advices not to use bidirectional relationships but to use queries instead. How to do this is shown <a href="#queries">here</a>. If a bidirectional relationship should be used nevertheless, approriate add and remove methods must be used.</p>
+</div>
+<div>
+<p>For 1:n and n:m relations, the OASP4J demands that (unordered) Sets and no other collection types are used, as shown in the listing above. The only exception is whenever an ordering is really needed, (sorted) lists can be used.<br/>
+For example, if WorkingTime objects should be sorted by their start time, this could be done like this:</p>
+</div>
+<div>
+<div>
+<div class="highlight highlight-source-java"><pre>  <span class="pl-k">private</span> <span class="pl-k">List&lt;<span class="pl-smi">WorkingTimes</span>&gt;</span> workingTimes;
+
+  <span class="pl-k">@OneToMany</span>(<span class="pl-c1">mappedBy</span> <span class="pl-k">=</span> <span class="pl-s"><span class="pl-pds">"</span>staffMember<span class="pl-pds">"</span></span>)
+  <span class="pl-k">@OrderBy</span>(<span class="pl-s"><span class="pl-pds">"</span>startTime asc<span class="pl-pds">"</span></span>)
+  <span class="pl-k">public</span> <span class="pl-k">List&lt;<span class="pl-smi">WorkingTime</span>&gt;</span> getWorkingTimes() {
+    <span class="pl-k">return</span> workingTimes;
+  }
+
+  <span class="pl-k">public</span> <span class="pl-k">void</span> setWorkingTimes(<span class="pl-k">List&lt;<span class="pl-smi">WorkingTime</span>&gt;</span> workingTimes) {
+    <span class="pl-c1">this</span><span class="pl-k">.</span>workingTimes <span class="pl-k">=</span> workingTimes;
+  }</pre></div>
+</div>
+</div>
+<div>
+<p>The value of the @OrderBy annotation consists of an attribute name of the class followed by asc (ascending) or desc (descending).</p>
+</div>
+<div>
+<p>To store information about a n:m relationship, a separate table has to be used, as one column cannot store several values (at least if the database schema is in first normal form).<br/>
+For example if one wanted to extend the example application so that all ingredients of one FoodDrink can be saved and to model the ingredients themselves as entities (e.g. to store additional information about them), this could be modeled as follows (extract of class FoodDrink):</p>
+</div>
+<div>
+<div>
+<div class="highlight highlight-source-java"><pre>  <span class="pl-k">private</span> <span class="pl-k">Set&lt;<span class="pl-smi">Order</span>&gt;</span> ingredients;
+
+  <span class="pl-k">@ManyToMany</span>
+  <span class="pl-k">@JoinTable</span>
+  <span class="pl-k">public</span> <span class="pl-k">Set&lt;<span class="pl-smi">Ingredient</span>&gt;</span> getIngredients() {
+    <span class="pl-k">return</span> ingredients;
+  }
+
+  <span class="pl-k">public</span> <span class="pl-k">void</span> setOrders(<span class="pl-k">Set&lt;<span class="pl-smi">Ingredient</span>&gt;</span> ingredients) {
+    <span class="pl-c1">this</span><span class="pl-k">.</span>ingredients <span class="pl-k">=</span> ingredients;
+  }</pre></div>
+</div>
+</div>
+<div>
+<p>Information about the relation is stored in a table called BILL_ORDER that has to have two columns, one for referencing the Bill, the other one for referencing the Order. Note that the @JoinTable annotation is not needed in this case because a separate table is the default solution here (same for n:m relations) unless there is a mappedBy element specified.</p>
+</div>
+<div>
+<p>For 1:n relationships this solution has the disadvantage that more joins (in the database system) are needed to get a Bill with all the Orders it refers to. This might have a negative impact on performance so that the solution to store a reference to the Bill row/entity in the Order’s table is probably the better solution in most cases.</p>
+</div>
+<div>
+<p>Note that bidirectional n:m relationships are not allowed for applications based on the OASP4J. Instead a third entity has to be introduced, which "represents" the relationship (it has two n:1 relationships).</p>
+</div>
+</div>
+<div>
+<h4 id="user-content-eager-vs-lazy-loading">
+<a aria-hidden="true" class="anchor" href="#eager-vs-lazy-loading" id="user-content-eager-vs-lazy-loading"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Eager vs. Lazy Loading</h4>
+<div>
+<p>Using JPA/Hibernate it is possible to use either lazy or eager loading. Eager loading means that for entities retrieved from the database, other entities that are referenced by these entities are also retrieved, whereas lazy loading means that this is only done when they are actually needed, i.e. when the corresponding getter method is invoked.</p>
+</div>
+<div>
+<p>Application based on the OASP4J must use lazy loading by default. Projects generated with the project generator are already configured so that this is actually the case (this is done in the file NamedQueries.hbm.xml).</p>
+</div>
+<div>
+<p>For some entities it might be beneficial if eager loading is used. For example if every time a Bill is processed, the Order entities it refers to are needed, eager loading can be used as shown in the following listing:</p>
+</div>
+<div>
+<div>
+<div class="highlight highlight-source-java"><pre>  <span class="pl-k">@OneToMany</span>(<span class="pl-c1">fetch</span> <span class="pl-k">=</span> <span class="pl-smi">FetchType</span><span class="pl-c1"><span class="pl-k">.</span>EAGER</span>)
+  <span class="pl-k">@JoinTable</span>
+  <span class="pl-k">public</span> <span class="pl-k">Set&lt;<span class="pl-smi">Order</span>&gt;</span> getOrders() {
+    <span class="pl-k">return</span> orders;
+  }</pre></div>
+</div>
+</div>
+<div>
+<p>This can be done with all four types of relationships (annotations: @OneToOne, @ManyToOne, @OneToMany, @ManyToOne).</p>
+</div>
+</div>
+<div>
+<h4 id="user-content-cascading-relationships">
+<a aria-hidden="true" class="anchor" href="#cascading-relationships" id="user-content-cascading-relationships"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Cascading Relationships</h4>
+<div>
+<p>It is not only possible to specify what happens if an entity is loaded that has some relationship to other entities (see above), but also if an entity is for example persisted or deleted. By default, nothing is done in these situations.<br/>
+This can be changed by using the cascade element of the annotation that specifies the relation type (@OneToOne, @ManyToOne, @OneToMany, @ManyToOne). For example, if a StaffMember is persisted, all its WorkingTime's should be persisted and if the same applies for deletions (and some other situations, for example if an entity is reloaded from the database, which can be done using the refresh(Object) method of an EntityManager), this can be realized as shown in the following listing (extract of the StaffMember class):</p>
+</div>
+<div>
+<div>
+<div class="highlight highlight-source-java"><pre>  <span class="pl-k">@OneToMany</span>(<span class="pl-c1">mappedBy</span> <span class="pl-k">=</span> <span class="pl-s"><span class="pl-pds">"</span>staffMember<span class="pl-pds">"</span></span>, <span class="pl-c1">cascade</span><span class="pl-k">=</span><span class="pl-smi">CascadeType</span><span class="pl-c1"><span class="pl-k">.</span>ALL</span>)
+  <span class="pl-k">public</span> <span class="pl-k">Set&lt;<span class="pl-smi">WorkingTime</span>&gt;</span> getWorkingTime() {
+    <span class="pl-k">return</span> workingTime;
+  }</pre></div>
+</div>
+</div>
+<div>
+<p>There are several CascadeTypes, e.g. to specify that a "cascading behavior" should only
+be used if an entity is persisted (CascadeType.PERSIST) or deleted (CascadeType.REMOVE), see <a href="http://meri-stuff.blogspot.de/2012/03/jpa-tutorial.html" rel="nofollow">here</a> for more information.</p>
+</div>
+</div>
+</div>
+<div>
+<h3 id="user-content-embeddable">
+<a aria-hidden="true" class="anchor" href="#embeddable" id="user-content-embeddable"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Embeddable</h3>
+<div>
+<p>An embeddable Object is a way to implement <a href="#relationships">relationships</a> between <a href="#entity">entities</a>, but with a mapping in which both entities are in the same database table. If these entities are often needed together, this is a good way to speed up database operations, as only one access to a table is needed to retrieve both entities.</p>
+</div>
+<div>
+<p>Suppose the restaurant example application has to be extended in a way that it is possible to store information about the addresses of StaffMember's, this can be done with a new Address class:</p>
+</div>
+<div>
+<div>
+<div class="highlight highlight-source-java"><pre><span class="pl-c1">...</span>
+<span class="pl-k">@Embeddable</span>
+<span class="pl-k">public</span> <span class="pl-k">class</span> <span class="pl-en">Address</span> {
+
+  <span class="pl-k">private</span> <span class="pl-smi">String</span> street;
+
+  <span class="pl-k">private</span> <span class="pl-smi">String</span> number;
+
+  <span class="pl-k">private</span> <span class="pl-smi">Integer</span> zipCode;
+
+  <span class="pl-k">private</span> <span class="pl-smi">String</span> city;
+
+  <span class="pl-k">@Column</span>(<span class="pl-c1">name</span><span class="pl-k">=</span><span class="pl-s"><span class="pl-pds">"</span>STREETNUMBER<span class="pl-pds">"</span></span>)
+  <span class="pl-k">public</span> <span class="pl-smi">String</span> <span class="pl-en">getNumber</span>() {
+    <span class="pl-k">return</span> number;
+  }
+
+  <span class="pl-k">public</span> <span class="pl-k">void</span> <span class="pl-en">setNumber</span>(<span class="pl-smi">String</span> <span class="pl-v">number</span>) {
+    <span class="pl-c1">this</span><span class="pl-k">.</span>number <span class="pl-k">=</span> number;
+  }
+
+  <span class="pl-c1">...</span>  <span class="pl-c"><span class="pl-c">//</span> other getter and setter methods, equals, hashCode</span>
+}</pre></div>
+</div>
+</div>
+<div>
+<p>This class looks a bit like an entity class, apart from the fact that the @Embeddable annotation is used instead of the @Entity annotation and no primary key is needed here. In addition to that the methods equals(Object) and hashCode() need to be implemented as this is required by Hibernate (it is not required for entities because they can be unambiguously identified by their primary key). For some hints on how to implement the hashCode() method please have a look <a href="http://stackoverflow.com/questions/113511/hash-code-implementation" rel="nofollow">here</a>.</p>
+</div>
+<div>
+<p>Using the address in the StaffMember entity class can be done as shown in the following listing:</p>
+</div>
+<div>
+<div>
+<div class="highlight highlight-source-java"><pre><span class="pl-c1">...</span>
+
+<span class="pl-k">@Entity</span>
+<span class="pl-k">public</span> <span class="pl-k">class</span> <span class="pl-en">StaffMemberEntity</span> <span class="pl-k">implements</span> <span class="pl-e">StaffMember</span> {
+
+  <span class="pl-c1">...</span>
+  <span class="pl-k">private</span> <span class="pl-smi">Address</span> address;
+  <span class="pl-c1">...</span>
+
+  <span class="pl-k">@Embedded</span>
+  <span class="pl-k">public</span> <span class="pl-smi">Address</span> <span class="pl-en">getAddress</span>() {
+    <span class="pl-k">return</span> address;
+  }
+
+  <span class="pl-k">public</span> <span class="pl-k">void</span> <span class="pl-en">setAddress</span>(<span class="pl-smi">Address</span> <span class="pl-v">address</span>) {
+    <span class="pl-c1">this</span><span class="pl-k">.</span>address <span class="pl-k">=</span> address;
+  }
+}</pre></div>
+</div>
+</div>
+<div>
+<p>The @Embedded annotation needs to be used for embedded attributes. Note that if in all columns in the StaffMember's table that belong to the Address embeddable there are null values, the Address is null when retrieving the StaffMember entity from the database. This has to be considered when implementing the application core to avoid NullPointerException’s.</p>
+</div>
+<div>
+<p>Moreover, if the database tables are created automatically by Hibernate and a primitive data type is used in the embeddable (in the example this would be the case if int is used instead of Integer as data type for the zipCode), there will be a not null constraint on the corresponding column (reason: a primitive data type can never be null in java, so hibernate always introduces a not null constraint). This constraint would be violated if one tries to insert a StaffMember without an Address object (this might be considered as a bug in Hibernate).</p>
+</div>
+<div>
+<p>Another way to realize the one table mapping are Hibernate UserType’s, as described <a href="https://theodoreyoung.wordpress.com/2012/02/07/custom-user-types-with-jpa-and-spring/" rel="nofollow">here</a>.</p>
+</div>
+</div>
+<div>
+<h3 id="user-content-inheritance">
+<a aria-hidden="true" class="anchor" href="#inheritance" id="user-content-inheritance"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Inheritance</h3>
+<div>
+<p>Just like normal java classes, <a href="#entity">entity</a> classes can inherit from others. The only difference is that you need to specify how to map a subtype hierarchy to database tables.</p>
+</div>
+<div>
+<p>The <a href="http://www.oracle.com/technetwork/java/javaee/tech/persistence-jsp-140049.html" rel="nofollow">Java Persistence API (JPA)</a> offers three ways to do this:</p>
+</div>
+<div>
+<div>
+<div>
+<ul>
+<li>
+<p>One table per hierarchy. This table contains all columns needed to store all types of entities in the hierarchy. If a column is not needed for an entity because of its type, there is a null value in this column. An additional column is introduced, which denotes the type of the entity (called "dtype" which is of type varchar and stores the class name).</p>
+</li>
+<li>
+<p>One table per subclass. For each concrete entity class there is a table in the database that can store such an entity with all its attributes. An entity is only saved in the table corresponding to its most concrete type. To get all entities of a type that has subtypes, joins are needed.</p>
+</li>
+<li>
+<p>One table per subclass: joined subclasses. In this case there is a table for every entity class (this includes abstract classes), which contains all columns needed to store an entity of that class apart from those that are already included in the table of the supertype. Additionally there is a primary key column in every table. To get an entity of a class that is a subclass of another one, joins are needed.</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div>
+<p>Each of the three approaches has its advantages and drawbacks, which are discussed in detail <a href="http://openjpa.apache.org/builds/1.0.4/apache-openjpa-1.0.4/docs/manual/jpa_overview_mapping_inher.html#jpa_overview_mapping_inher_tpc" rel="nofollow">here</a>. In most cases, the first one should be used, because it is usually the fastest way to do the mapping, as no joins are needed when retrieving entities and persisting a new entity or updating one only affects one table. Moreover it is rather simple and easy to understand.<br/>
+One major disadvantage is that the first approach could lead to a table with a lot of null values, which might have a negative impact on the database size.</p>
+</div>
+<div>
+<p>The following listings show how to realize a class hierarchy among entity classes for the class FoodDrink and its subclass Drink:</p>
+</div>
+<div>
+<div>
+<div class="highlight highlight-source-java"><pre><span class="pl-c1">...</span>
+
+<span class="pl-k">@Entity</span>
+<span class="pl-k">@Inheritance</span>(<span class="pl-c1">strategy</span><span class="pl-k">=</span><span class="pl-smi">InheritanceType</span><span class="pl-c1"><span class="pl-k">.</span>SINGLE_TABLE</span>)
+<span class="pl-k">public</span> <span class="pl-k">abstract</span> <span class="pl-k">class</span> <span class="pl-en">FoodDrink</span> {
+
+  <span class="pl-k">private</span> <span class="pl-k">long</span> id;
+
+  <span class="pl-k">private</span> <span class="pl-smi">String</span> description;
+
+  <span class="pl-k">private</span> <span class="pl-k">byte</span>[] picture;
+
+  <span class="pl-k">private</span> <span class="pl-k">long</span> version;
+
+  <span class="pl-k">@Id</span>
+  <span class="pl-k">@Column</span>(<span class="pl-c1">name</span> <span class="pl-k">=</span> <span class="pl-s"><span class="pl-pds">"</span>ID<span class="pl-pds">"</span></span>)
+  <span class="pl-k">@GeneratedValue</span>(<span class="pl-c1">generator</span> <span class="pl-k">=</span> <span class="pl-s"><span class="pl-pds">"</span>SEQ_GEN<span class="pl-pds">"</span></span>)
+  <span class="pl-k">@SequenceGenerator</span>(<span class="pl-c1">name</span> <span class="pl-k">=</span> <span class="pl-s"><span class="pl-pds">"</span>SEQ_GEN<span class="pl-pds">"</span></span>, <span class="pl-c1">sequenceName</span> <span class="pl-k">=</span> <span class="pl-s"><span class="pl-pds">"</span>SEQ_FOODDRINK<span class="pl-pds">"</span></span>)
+  <span class="pl-k">public</span> <span class="pl-k">long</span> <span class="pl-en">getId</span>() {
+    <span class="pl-k">return</span> <span class="pl-c1">this</span><span class="pl-k">.</span>id;
+  }
+
+  <span class="pl-k">public</span> <span class="pl-k">void</span> <span class="pl-en">setId</span>(<span class="pl-k">long</span> <span class="pl-v">id</span>) {
+    <span class="pl-c1">this</span><span class="pl-k">.</span>id <span class="pl-k">=</span> id;
+  }
+
+  <span class="pl-c1">...</span>
+}
+
+<span class="pl-c1">...</span>
+
+<span class="pl-k">@Entity</span>
+<span class="pl-k">public</span> <span class="pl-k">class</span> <span class="pl-en">Drink</span> <span class="pl-k">extends</span> <span class="pl-e">FoodDrink</span> {
+
+  <span class="pl-k">private</span> <span class="pl-k">boolean</span> alcoholic;
+
+  <span class="pl-k">public</span> <span class="pl-k">boolean</span> <span class="pl-en">isAlcoholic</span>() {
+    <span class="pl-k">return</span> alcoholic;
+  }
+
+  <span class="pl-k">public</span> <span class="pl-k">void</span> <span class="pl-en">setAlcoholic</span>(<span class="pl-k">boolean</span> <span class="pl-v">alcoholic</span>) {
+    <span class="pl-c1">this</span><span class="pl-k">.</span>alcoholic <span class="pl-k">=</span> alcoholic;
+  }
+}</pre></div>
+</div>
+</div>
+<div>
+<p>To specify how to map the class hierarchy, the @Inheritance annotation is used. Its element strategy defines which type of mapping is used and can have the following values: InheritanceType.SINGLE_TABLE (= one table per hierarchy), InheritanceType.TABLE_PER_CLASS (= one table per subclass) and InheritanceType.JOINED (= one table per subclass, joined tables).</p>
+</div>
+<div>
+<p>As a best practice we advise you to avoid deep class hierarchies among entity classes (unless they reduce complexity).</p>
+</div>
+</div>
+<div>
+<h3 id="user-content-concurrency-control">
+<a aria-hidden="true" class="anchor" href="#concurrency-control" id="user-content-concurrency-control"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Concurrency Control</h3>
+<div>
+<p>The concurrency control defines the way concurrent access to the same data of a database is handled. When several users (or threads of application servers) concurrently access a database, anomalies may happen, e.g. a transaction is able to see changes from another transaction although that one did, not yet commit these changes. Most of these anomalies are automatically prevented by the database system, depending on the <a href="http://en.wikipedia.org/wiki/Isolation_(database_systems)" rel="nofollow"><em>isolation level</em></a> (property hibernate.connection.isolation in the jpa.xml, see <a href="http://docs.jboss.org/hibernate/orm/5.0/manual/en-US/html/ch03.html" rel="nofollow">here</a>).</p>
+</div>
+<div>
+<p>Another anomaly is when two stakeholders concurrently access a record, do some changes and write them back to the database. The JPA addresses this with different locking strategies (see <a href="http://www.objectdb.com/java/jpa/persistence/lock" rel="nofollow">here</a>).</p>
+</div>
+<div>
+<p>As a best practice we are using optimistic locking for regular end-user <a href="guide-service-layer">services</a> (OLTP) and pessimistic locking for <a href="guide-batch-layer">batches</a>.</p>
+</div>
+<div>
+<h4 id="user-content-optimistic-locking">
+<a aria-hidden="true" class="anchor" href="#optimistic-locking" id="user-content-optimistic-locking"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Optimistic Locking</h4>
+<div>
+<p>The class io.oasp.module.jpa.persistence.api.AbstractPersistenceEntity already provides optimistic locking via a modificationCounter with the @Version annotation. Therefore JPA takes care of optimistic locking for you. When entities are transferred to clients, modified and sent back for update you need to ensure the modificationCounter is part of the game. If you follow our guides about <a href="guide-transferobject">transfer-objects</a> and <a href="guide-service-layer">services</a> this will also work out of the box.
+You only have to care about two things:</p>
+</div>
+<div>
+<ul>
+<li>
+<p>How to deal with optimistic locking in <a href="#relationships">relationships</a>?<br/>
+Assume an entity A contains a collection of B entities. Should there be a locking conflict if one user modifies an instance of A while another user in parallel modifies an instance of B that is contained in the other instance? To address this , take a look at <a href="https://oasp.github.io/oasp4j_content/2.4.0/maven/apidocs/io/oasp/module/jpa/dataaccess/api/GenericDao.html#forceIncrementModificationCounter(E)" rel="nofollow">GenericDao.forceIncrementModificationCounter</a>.</p>
+</li>
+<li>
+<p>What should happen in the UI if an OptimisticLockException occurred?<br/>
+According to KISS our recommendation is that the user gets an error displayed that tells him to do his change again on the recent data. Try to design your system and the work processing in a way to keep such conflicts rare and you are fine.</p>
+</li>
+</ul>
+</div>
+</div>
+<div>
+<h4 id="user-content-pessimistic-locking">
+<a aria-hidden="true" class="anchor" href="#pessimistic-locking" id="user-content-pessimistic-locking"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Pessimistic Locking</h4>
+<div>
+<p>For back-end <a href="guide-service-layer">services</a> and especially for <a href="guide-batch-layer">batches</a> optimistic locking is not suitable. A human user shall not cause a large batch process to fail because he was editing the same entity. Therefore such use-cases use pessimistic locking what gives them a kind of priority over the human users.
+In your <a href="#data-access-object">DAO</a> implementation you can provide methods that do pessimistic locking via <a href="http://docs.oracle.com/javaee/7/api/javax/persistence/EntityManager.html" rel="nofollow">EntityManager</a> operations that take a <a href="http://docs.oracle.com/javaee/7/api/javax/persistence/LockModeType.html" rel="nofollow">LockModeType</a>. Here is a simple example:</p>
+</div>
+<div>
+<div>
+<div class="highlight highlight-source-java"><pre>  getEntityManager()<span class="pl-k">.</span>lock(entity, <span class="pl-smi">LockModeType</span><span class="pl-c1"><span class="pl-k">.</span>READ</span>);</pre></div>
+</div>
+</div>
+<div>
+<p>When using the lock(Object, LockModeType) method with LockModeType.READ, Hibernate will issue a select ... for update. This means that no one else can update the entity (see <a href="http://docs.oracle.com/cd/B28359_01/server.111/b28286/statements_10002.htm" rel="nofollow">here</a> for more information on the statement). If LockModeType.WRITE is specified, Hibernate issues a select ... for update nowait instead, which has has the same meaning as the statement above, but if there is already a lock, the program will not wait for this lock to be released. Instead, an exception is raised.<br/>
+Use one of the types if you want to modify the entity later on, for read only access no lock is required.</p>
+</div>
+<div>
+<p>As you might have noticed, the behavior of Hibernate deviates from what one would expect by looking at the LockModeType (especially LockModeType.READ should not cause a select ... for update to be issued). The framework actually deviates from what is <a href="http://docs.oracle.com/javaee/7/api/javax/persistence/LockModeType.html" rel="nofollow">specified</a> in the JPA for unknown reasons.</p>
+</div>
+</div>
+</div>
+<div>
+<h3 id="user-content-database-auditing">
+<a aria-hidden="true" class="anchor" href="#database-auditing" id="user-content-database-auditing"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Database Auditing</h3>
+<div>
+<p>See <a href="guide-auditing">auditing guide</a>.</p>
+</div>
+</div>
+<div>
+<h3 id="user-content-testing-entities-and-daos">
+<a aria-hidden="true" class="anchor" href="#testing-entities-and-daos" id="user-content-testing-entities-and-daos"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Testing Entities and DAOs</h3>
+<div>
+<p>See <a href="guide-testing#integration-testing">testing guide</a>.</p>
+</div>
+</div>
+<div>
+<h3 id="user-content-principles">
+<a aria-hidden="true" class="anchor" href="#principles" id="user-content-principles"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Principles</h3>
+<div>
+<p>We strongly recommend these principles:</p>
+</div>
+<div>
+<ul>
+<li>
+<p>Use the JPA where ever possible and use vendor (hibernate) specific features only for situations when JPA does not provide a solution. In the latter case consider first if you really need the feature.</p>
+</li>
+<li>
+<p>Create your entities as simple POJOs and use JPA to annotate the getters in order to define the mapping.</p>
+</li>
+<li>
+<p>Keep your entities simple and avoid putting advanced logic into entity methods.</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+<div>
+<h2 id="user-content-database-configuration">
+<a aria-hidden="true" class="anchor" href="#database-configuration" id="user-content-database-configuration"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Database Configuration</h2>
+<div>
+<div>
+<p>The <a href="guide-configuration">configuration</a> for spring and hibernate is already provided by OASP in our sample application and the application template. So you only need to worry about a few things to customize.</p>
+</div>
+<div>
+<h3 id="user-content-database-system-and-access">
+<a aria-hidden="true" class="anchor" href="#database-system-and-access" id="user-content-database-system-and-access"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Database System and Access</h3>
+<div>
+<p>Obviously you need to configure which type of database you want to use as well as the location and credentials to access it. The defaults are configured in application-default.properties that is bundled and deployed with the release of the software. It should therefore contain the properties as in the given example:</p>
+</div>
+<div>
+<div>
+<div class="highlight highlight-source-ini"><pre>  <span class="pl-k">database.url</span>=jdbc:postgresql://database.enterprise.com/app
+  <span class="pl-k">database.user.login</span>=appuser01
+  <span class="pl-k">database.hibernate.dialect</span> = org.hibernate.dialect.PostgreSQLDialect
+  <span class="pl-k">database.hibernate.hbm2ddl.auto</span>=validate</pre></div>
+</div>
+</div>
+<div>
+<p>The environment specific settings (especially passwords) are configured by the operators in application.properties. For further details consult the <a href="guide-configuration">configuration guide</a>. It can also override the default values. The relevant configuration properties can be seen by the following example for the development environment (located in src/test/resources):</p>
+</div>
+<div>
+<div>
+<div class="highlight highlight-source-ini"><pre>  <span class="pl-k">database.url</span>=jdbc:postgresql://localhost/app
+  <span class="pl-k">database.user.password</span>=************
+  <span class="pl-k">database.hibernate.hbm2ddl.auto</span>=create</pre></div>
+</div>
+</div>
+<div>
+<p>For further details about database.hibernate.hbm2ddl.auto please see <a href="http://docs.jboss.org/hibernate/orm/5.0/manual/en-US/html/ch03.html#configuration-misc-properties" rel="nofollow">here</a>. For production and acceptance environments we use the value validate that should be set as default.</p>
+</div>
+</div>
+<div>
+<h3 id="user-content-database-migration">
+<a aria-hidden="true" class="anchor" href="#database-migration" id="user-content-database-migration"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Database Migration</h3>
+<div>
+<p>See <a href="guide-database-migration">database migration</a>.</p>
+</div>
+</div>
+<div>
+<h3 id="user-content-database-logging">
+<a aria-hidden="true" class="anchor" href="#database-logging" id="user-content-database-logging"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Database Logging</h3>
+<div>
+<p>Add the following properties to <code>application.properties</code> to enable logging of database queries for debugging purposes.</p>
+</div>
+<div>
+
+<div class="highlight highlight-source-ini"><pre><span class="pl-k">spring.jpa.properties.hibernate.show_sql</span>=true
+<span class="pl-k">spring.jpa.properties.hibernate.use_sql_comments</span>=true
+<span class="pl-k">spring.jpa.properties.hibernate.format_sql</span>=true</pre></div>
+
+</div>
+</div>
+</div>
+</div>
+<div>
+<h2 id="user-content-security">
+<a aria-hidden="true" class="anchor" href="#security" id="user-content-security"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Security</h2>
+<div>
+<div>
+<h3 id="user-content-sql-injection">
+<a aria-hidden="true" class="anchor" href="#sql-injection" id="user-content-sql-injection"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>SQL-Injection</h3>
+<div>
+<p>A common <a href="guide-security">security</a> threat is <a href="http://en.wikipedia.org/wiki/SQL_injection" rel="nofollow">SQL-injection</a>. Never build queries with string concatenation or your code might be vulnerable as in the following example:</p>
+</div>
+<div>
+<div>
+<div class="highlight highlight-source-java"><pre>  <span class="pl-smi">String</span> query <span class="pl-k">=</span> <span class="pl-s"><span class="pl-pds">"</span>Select op from OrderPosition op where op.comment = <span class="pl-pds">"</span></span> <span class="pl-k">+</span> userInput;
+  <span class="pl-k">return</span> getEntityManager()<span class="pl-k">.</span>createQuery(query)<span class="pl-k">.</span>getResultList();</pre></div>
+</div>
+</div>
+<div>
+<p>Via the parameteter userInput an attacker can inject SQL (JPQL) and execute arbitrary statements in the database causing extreme damage. In order to prevent such injections you have to strictly follow our rules for <a href="#queries">queries</a>: Use named queries for static queries and QueryDSL for dynamic queries. Please also consult the <a href="https://www.owasp.org/index.php/SQL_Injection_Prevention_Cheat_Sheet" rel="nofollow">SQL Injection Prevention Cheat Sheet</a>.</p>
+</div>
+</div>
+<div>
+<h3 id="user-content-limited-permissions-for-application">
+<a aria-hidden="true" class="anchor" href="#limited-permissions-for-application" id="user-content-limited-permissions-for-application"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Limited Permissions for Application</h3>
+<div>
+<p>We suggest that you operate your application with a database user that has limited permissions so he can not modify the SQL schema (e.g. drop tables). For initializing the schema (DDL) or to do schema migrations use a separate user that is not used by the application itself.</p>
+</div>
+</div>
+</div>
+</div>
+        </div>
+
+        <div class="wiki-footer gollum-markdown-content boxed-group" id="wiki-footer">
+          <div class="boxed-group-inner wiki-auxiliary-content markdown-body">
+            <p><a href="http://creativecommons.org/licenses/by-nd/4.0/" rel="nofollow"><img alt="Creative Commons License Agreement" data-canonical-src="http://i.creativecommons.org/l/by-nd/4.0/88x31.png" src="https://camo.githubusercontent.com/171d004f9ccb9199e35ac8ec3d99ede916037a9f/687474703a2f2f692e6372656174697665636f6d6d6f6e732e6f72672f6c2f62792d6e642f342e302f38387833312e706e67"/></a><br/><span>This documentation</span> is licensed under the <a href="http://creativecommons.org/licenses/by-nd/4.0/" rel="nofollow">Creative Commons License (Attribution-NoDerivatives 4.0 International)</a>.</p>
+
+          </div>
+        </div>
+    </div>]

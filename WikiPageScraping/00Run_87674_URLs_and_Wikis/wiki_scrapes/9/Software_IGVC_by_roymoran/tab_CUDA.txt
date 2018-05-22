@@ -1,0 +1,62 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>Currently we aren't using any custom-written CUDA code, but this tutorial was ported over from the old wiki.</p>
+<h1>
+<a aria-hidden="true" class="anchor" href="#introduction-from-wikipedia" id="user-content-introduction-from-wikipedia"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Introduction (from Wikipedia)</h1>
+<p>CUDA (formerly Compute Unified Device Architecture) is a parallel computing platform and programming model created by NVIDIA and implemented by the graphics processing units (GPUs) that they produce. Using CUDA, the latest Nvidia GPUs become accessible for computation like CPUs. Unlike CPUs, however, GPUs have a parallel throughput architecture that emphasizes executing many concurrent threads slowly, rather than executing a single thread very quickly.</p>
+<h1>
+<a aria-hidden="true" class="anchor" href="#quick-installation-guide-linux" id="user-content-quick-installation-guide-linux"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Quick Installation Guide (Linux)</h1>
+<ul>
+<li>Make sure the Linux distro is supported (check <a href="http://docs.nvidia.com/cuda/cuda-toolkit-release-notes/index.html" rel="nofollow">CUDA toolkit release notes</a>).</li>
+<li>Make sure gcc is installed.</li>
+<li>Download and install the <a href="https://developer.nvidia.com/cuda-downloads" rel="nofollow">NVIDIA CUDA Toolkit</a>. Refer to the <a href="http://docs.nvidia.com/cuda/cuda-getting-started-guide-for-linux/index.html" rel="nofollow">Linux Getting Started Guide</a> for installation instructions.</li>
+<li>**Note: **Steps needed not mentioned in above guide (using Ubuntu 10.04 and 12.04) include making symbolic links to libglut.so and libcuda.so (because of a difference in file names). It's usually solved by linking your libglut.so file (just apt-get install freeglut3 if you don't have it) to /usr/lib/ directory. Sometimes, the file name has to be changed from libglut.so.3 to libglut.so. Use this <a href="http://stackoverflow.com/questions/13081854/cannot-install-cuda-5-samples-on-ubuntu-12-04" rel="nofollow">link</a> for help. Also, use the nvidia driver that comes with the toolkit instead of whatever Ubuntu offers to install as proprietary driver.</li>
+</ul>
+<h1>
+<a aria-hidden="true" class="anchor" href="#getting-a-basic-understanding-of-cuda" id="user-content-getting-a-basic-understanding-of-cuda"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Getting a Basic Understanding of CUDA</h1>
+<p>CUDA code can be saved as a .cu file, and is compiled by the nvcc (from the installed CUDA toolchain). Obviously, the GPU runs the CUDA code (not the CPU). The terminology used is <strong>"host" (for the CPU) and "device" (for the GPU).</strong>
+Refer to the general procedure below.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#kernels" id="user-content-kernels"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Kernels</h2>
+<p>Functions in CUDA are called "kernels" (will be used interchangeably here). Kernels are basically all the actual CUDA code. Note: some restrictions apply to what kernels can do (they can't be recursive or return any values or use variable number of arguments or use system memory).
+Kernel qualifiers are special keywords that indicate what type of kernel is being defined. They can be one of three types:</p>
+<ul>
+<li>
+<strong>global</strong> (these kernels are called by the host, and are run on the device; the basic kind of kernel that the host will invoke the device to run)</li>
+<li>
+<strong>device</strong> (these kernels are called by the device and run on the device; think of them as helper methods that are called within <strong>global</strong> kernels)</li>
+<li>
+<strong>host</strong> (normal host function; doesn't run on device. Basically normal C function that the host runs. Same if no qualifier is included)
+Furthermore, whenever the host calls a kernel, it has to specify certain launch configurations in triple brackets <strong>&lt;&lt;&lt;numberOfBlocks, numberOfThreadsPerBlock&gt;&gt;&gt;</strong>.</li>
+</ul>
+<h2>
+<a aria-hidden="true" class="anchor" href="#memory-handling" id="user-content-memory-handling"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Memory Handling</h2>
+<p>The device cannot access the host memory (RAM) directly, and in the same way, the host cannot access the device memory (GPU RAM). The solution around this is to copy the data back and forth from the host memory to the device memory (and vice versa). The method called to copy the data back and forth is:</p>
+<ul>
+<li>
+<em><em>cudaMemcpy(void</em> dest, void</em> src, size_t sizeInBytes, enum direction);**</li>
+</ul>
+<p>dest is the destination pointer, src is the source pointer, and direction is (usually) either cudaMemcpyHostToDevice or cudaMemcpyDeviceToHost
+To allocate memory on the device, you use the cudaMalloc method (analogous to plain ol' C). The syntax is:</p>
+<ul>
+<li><strong>cudaMalloc( void ** devPtr, size_t sizeInBytes);</strong></li>
+</ul>
+<p>This function basically reserves memory for a pointer and gives it a specific size in bytes.
+To deallocate memory on the device, you use the cudaFree method (again, same as plain C). The syntax is:</p>
+<ul>
+<li><strong>cudaFree( vid ** devPtr);</strong></li>
+</ul>
+<p>This function releases memory previously allocated by cudaMalloc().</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#blocks-and-threads-todo" id="user-content-blocks-and-threads-todo"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Blocks and Threads (TODO)</h2>
+<p>This concept is the final piece in the puzzle. Once I understand this, coding CUDA will be a breeze.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#general-procedure" id="user-content-general-procedure"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>General Procedure</h2>
+<p>The basic procedure is to first Malloc the needed pointers (or data structures) on the device memory. Then, we copy the required data (the stuff that will go into the kernel) from the host memory to the device memory. We then call the kernel with the Malloc'ed pointers as arguments (there are also the blocks and threads configuration parameters). Afterwards, we copy the data back from the device memory to the host memory. Finally, we free the Malloc'ed pointers we made on the device memory.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#example-code-todo" id="user-content-example-code-todo"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Example Code (TODO)</h2>
+<p>Fill this in later on...</p>
+
+        </div>
+
+    </div>]

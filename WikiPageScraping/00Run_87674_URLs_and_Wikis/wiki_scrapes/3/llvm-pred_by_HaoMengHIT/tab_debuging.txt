@@ -1,0 +1,348 @@
+[<div class="wiki-body gollum-rest-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <h1>
+<a aria-hidden="true" class="anchor" href="#ir-source-level-advanced-debuging" id="user-content-ir-source-level-advanced-debuging"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>IR Source Level Advanced Debuging</h1>
+<p>首先是如何发现错误，常见的错误包括</p>
+<ol>
+<li>没有清理完MPI函数造成无法编译</li>
+<li>不恰当删除造成无法运行(段错误)</li>
+<li>过度删除造成运行数据偏差大</li>
+</ol>
+<a name="user-content-quick-make-sh"></a>
+<h2>
+<a aria-hidden="true" class="anchor" href="#quick-makesh-%E8%84%9A%E6%9C%AC" id="user-content-quick-makesh-脚本"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>quick-make.sh 脚本</h2>
+<a name="user-content-couldn-t-compile"></a>
+<h2>
+<a aria-hidden="true" class="anchor" href="#couldnt-compile" id="user-content-couldnt-compile"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>couldn't compile</h2>
+<p>在编译完成之后通常会出现下面的错误提示:</p>
+<pre>/tmp/cg.A.4.O1.2.o：在函数‘MAIN__’中：
+/tmp/cg.A.4.O1.2.ll:(.text+0x3b01)：对‘mpi_irecv_’未定义的引用
+collect2: 错误：ld 返回 1
+</pre>
+<p>说明mpi_irecv_函数没有正确的处理. 如果是使用新版本的Reduce.cpp, 那么在开启WITH_DEBUG
+和WITH_MORE_DEBUG模式后会出现详细的输出信息, 不仅仅包括删除的指令, 还包括没有删
+除的指令和原因.仔细寻找可以找到如下的说明:</p>
+<pre>call void bitcast (void (...)* @mpi_irecv_ to void ([2 x double]*, i32*,
+   i32*, i32*, i32*, i32*, i32*, i32*)*)([2 x double]* %norm_temp2, i32*
+   @41, i32* getelementptr inbounds (%7* @mpistuff_, i64 0, i32 3), i32*
+   %67, i32* %i, i32* @42, i32* %request, i32* %ierr) #2
+   couldn't removed because:
+found visit :   %111 = load double* %89, align 8
+</pre>
+<p>说明 %111 阻碍了该函数的删除, 下一步则是首先如何删除 %111, 从而就能自动清除
+<code>mpi_irecv_</code> 函数了.</p>
+<ol>
+<li>
+<p>查看CallGraph, 确定哪些是输出, 计算部分, 初始化部分:</p>
+<pre>opt -load src/libLLVMPred.so -Cg cgpop.O1.bc
+</pre>
+</li>
+<li>
+<p>运行Reduce优化:</p>
+<pre>opt -load src/libLLVMPred.so -PerfPred -insert-pred-profling cgpop.O1.bc -o /tmp/cgpop.1.ll -S
+opt -inline /tmp/cgpop.1.ll -o /tmp/cgpop.2.ll -S # 可选操作
+opt -load src/libLLVMPred.so -Reduce /tmp/cgpop.2.ll -o /tmp/cgpop.3.ll -S
+</pre>
+</li>
+<li>
+<p>从下至上, 检查每个函数里面的MPI调用是否被完全的消除, 可以再次借助Cg工具:</p>
+<pre>opt -load src/libLLVMPred.so -Cg /tmp/cgpop.3.ll
+</pre>
+<p>例如以cgpop为例, 查看到下面的一个函数中有 mpi_allreduce 没有删干净:</p>
+<pre>├─ __reductions_MOD_global_sum_scalar_dbl
+│   └─ mpi_allreduce_
+</pre>
+<p>首先检查Reduce Pass中是否处理的mpi_allreduce, 如果已经处理了, 检查ir文件, 定
+位到函数, 查看为什么没有被删除. 结果看到是由于 return 指令引用了结果, 所以没
+删. 再检查所有调用其实都没有用返回值, 那么这里的return就没什么用了, 将 返回
+值改成 undef 值即可, 然后再运行Reduce, 发现这个mpi函数已经被删干净了.</p>
+<p>又例如看到下面有一个 mpi_isend 没有删干净:</p>
+<pre>│   ├─ __mpi2s_gshalo_MOD_mpi2s_gshalo_update_2d_dbl
+│   │   └─ mpi_isend_
+</pre>
+<p>发现是 Reduce 中的 getAttribute 没有处理 isend, 我们非常高兴, 加入处理代码之
+后就删除干净了.</p>
+<p>再例如看到下面有一个 mpi_allreduce 没删干净:</p>
+<pre>├─ __mpi2s_gshalo_MOD_mpi2s_gshalo_init
+│   ├─ __mpi2s_gshalo_MOD_insertintoarray
+│   ├─ mpi_allreduce_
+</pre>
+<p>再仔细深入发现该调用无法被删除，详见 <a class="internal" href="#cgpop-log">cgpop log</a> 。对于这些无法删除的调用只
+能牺牲一些精确度, 进行强制删除.</p>
+</li>
+<li>
+<p>再次使用Force的Reduce, 之前一些不能删除的MPI函数, 在Force模式中会被强制删除.
+因此会引入新的误差, 不过如果是这个误差比较小的话, 还是可以接受的:</p>
+<pre>opt -load src/libLLVMPred.so -Reduce /tmp/cgpop.3.ll -o /tmp/cgpop.4.ll -S
+</pre>
+</li>
+<li>
+<p>之后就可以编译运行了:</p>
+<pre>clang /tmp/cgpop.4.ll -o /tmp/cgpop.4.o -c
+gfortran /tmp/cgpop.4.o -o cgpop.4 -lnetcdf -lnetcdff -lprofile_rt
+MPI_RANK=1 MPI_SIZE=24 ./cgpop.4
+</pre>
+<p>在目录下会生成 llvmprof.out 的文件, 就是预测的结果.</p>
+</li>
+</ol>
+<a name="user-content-couldn-t-run"></a>
+<h2>
+<a aria-hidden="true" class="anchor" href="#couldnt-run" id="user-content-couldnt-run"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>couldn't run</h2>
+<ol start="6">
+<li>
+<p>如果不幸的出现段错误, 可能是Reduce的时候错误的进行了错误的优化, 例如用gdb工
+具发现并定位到ir中的一处错误:</p>
+<pre>%0 = tail call i32 @__netcdf_MOD_nf90_open([0 x i8]* noalias null, i32*
+noalias null, i32* noalias null, i32* null, i32* null, i32* null, float*
+null, i32* null, i32* null, i32 80) #0
+</pre>
+<p>明显这里不应该是null, 造成读取初始化数据文件的时候出现了错误. 最后检查出来是
+LLVM 的 DeadArgumentElimition Pass删得太猛了</p>
+<p>又例如在cgpop中, 运行 <code>MPI_RANK=1 MPI_SIZE=24 ./cgpop.4</code> 的时候, 其实只要
+RANK不等于0, 就会预测结果基本块执行次数会非常的小, 这是因为类似于 cgpop 这种
+程序, 会在 <em>主进程</em> 中完成初始化数据, 然后使用MPI扩散到其它进程. 所以当我们
+预测其它进程的时候, 无法取得初始化的数据, 就直接退出了. 总之, 对于 cgpop 这
+种程序, 就只能预测主进程的结果. 这算是一个限制, 可惜知道得太晚了.</p>
+<p>然后, 在运行 <code>MPI_RANK=0 MPI_SIZE=24 ./cgpop.4</code> 的时候, 出现了段错误了, 这
+个时候只能用gdb分析汇编了, 因为又不能编译debug符号. 汇编代码如下:</p>
+<pre>0x0000000000402241 &lt;+1505&gt;:       mov    -0x330(%rbp),%rdi
+0x0000000000402248 &lt;+1512&gt;:       add    %rcx,%rdi
+0x000000000040224b &lt;+1515&gt;:       mov    %r10d,(%rdi) &lt;=
+0x000000000040224e &lt;+1518&gt;:       mov    %rax,%rcx
+0x0000000000402251 &lt;+1521&gt;:       add    $0x1,%rcx
+</pre>
+<p>用 gdb 查看 <code>%rdi</code> 寄存器, 发现为 <code>0x0</code>, 也就是说, 这里是向一个空地址进
+行store. 自然的是非法的. 下面就是如何定位这段汇编到ir的位置了. 首先可以看到
+这个函数是 <code>__io_serial_MOD_read_appmd</code>, 然后这个指令是一个 StoreInst, 前
+面是一个加法, 再前面是一个 LoadInst, 肯定不是全局变量的读取, 因为用到了栈了.</p>
+<p>简单看一下就只能得到这些基本的印象了, 具体定位的话需要利用汇编代码, <code>clang
+-S /tmp/cgpop.4.ll -o /tmp/cgpop.4.s</code> 然后定位到函数上, 接下来, 定位代码位
+置的话, 可以利用特殊函数标记法, 向上查看, 有一个调用
+<code>__netcdf_MOD_nf90_get_var_1d_fourbyteint</code> 的特殊函数, 然后汇编从下找, 能
+够很快的找到代码出处:</p>
+<pre>movq  -816(%rbp), %rdi        # 8-byte Reload
+addq  %rcx, %rdi
+movl  %r10d, (%rdi)
+movq  %rax, %rcx
+addq  $1, %rcx
+</pre>
+<p>并且通过注释, 我们知道这个是 <code>%37</code> 号基本块, 对应的ir为:</p>
+<pre>%60 = getelementptr inbounds i32* %54, i64 %59
+%61 = load i32* %60, align 4, !tbaa !12
+%62 = getelementptr inbounds %struct.appmd_t* %55, i64 %58, i32 0
+store i32 %61, i32* %62, align 8, !tbaa !12
+%63 = add nsw i64 %56, 1
+</pre>
+<p>阅读代码后发现, 这实际上是向一个结构体数组写入, fortran 先创建一个临时数组,
+然后用nf系列函数初始化好值, 再用一个循环, 写入 blocks 结构体数组,
+getelementptr 表明是像第0号元素写入, 阅读源码之后了解即为 blocks(:)%block_id</p>
+<p>之后再了解到, 是有一个malloc被错误的删除了, 阅读Reduce的log知道是302行出现的
+错误, 利用下面的代码暂时开启输出DDG的功能:</p>
+<pre>Dbg_EnablePrintGraph = true;
+flag = noused(SI-&gt;getOperandUse(1))
+Dbg_EnablePrintGraph = false;
+flag = flag &amp;&amp; noused_param(Arg);
+</pre>
+<p>最后排查出来是 noused 函数gep部分处理有误.</p>
+</li>
+<li>
+<p>有时候也会出来其它的一些问题, 例如 double free 问题, 这个时候, 使用我们的大
+杀器 valgrind, 相比gdb能获得更多的一些信息. 例如下面的一个 double free:</p>
+<pre>*** Error in `./cgpop.4': double free or corruption (fasttop): 0x0000000007be2600 ***
+
+Program received signal SIGABRT: Process abort signal.
+
+Backtrace for this error:
+#0  0x7FA563A117D7
+#1  0x7FA563A11DDE
+#2  0x7FA563666C2F
+#3  0x7FA563666BB9
+#4  0x7FA563669FC7
+#5  0x7FA5636A3E13
+#6  0x7FA5636B00ED
+#7  0x411769 in __mpi2s_gshalo_MOD_mpi2s_gshalo_init
+#8  0x40F6AB in __linear_MOD_initdof
+#9  0x41728F in __solvers_MOD_init_solvers
+</pre>
+<p>从上面的信息中, 只能看出来是和 mpi2s_gshalo_init 相关. 使用 valgrind 之后可
+以了解到更加详细的信息:</p>
+<pre>==28125== Invalid free() / delete / delete[] / realloc()
+==28125==    at 0x743CDEC: free (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
+==28125==    by 0x411769: __mpi2s_gshalo_MOD_mpi2s_gshalo_init (in /home/xiehuc/cgpop/mpi2s1D/cgpop.4)
+==28125==    by 0x40F6AB: __linear_MOD_initdof (in /home/xiehuc/cgpop/mpi2s1D/cgpop.4)
+==28125==    by 0x41728F: __solvers_MOD_init_solvers (in /home/xiehuc/cgpop/mpi2s1D/cgpop.4)
+==28125==    by 0x40C567: main (in /home/xiehuc/cgpop/mpi2s1D/cgpop.4)
+==28125==  Address 0xdd17810 is 0 bytes inside a block of size 96 free'd
+==28125==    at 0x743CDEC: free (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
+==28125==    by 0x41175D: __mpi2s_gshalo_MOD_mpi2s_gshalo_init (in /home/xiehuc/cgpop/mpi2s1D/cgpop.4)
+==28125==    by 0x40F6AB: __linear_MOD_initdof (in /home/xiehuc/cgpop/mpi2s1D/cgpop.4)
+==28125==    by 0x41728F: __solvers_MOD_init_solvers (in /home/xiehuc/cgpop/mpi2s1D/cgpop.4)
+==28125==    by 0x40C567: main (in /home/xiehuc/cgpop/mpi2s1D/cgpop.4)
+</pre>
+<p>不过valgrind中只能看到是同一个函数中引起的double free问题, 实际上要确定是具
+体的位置, 还是得借助gdb. 很快, 我们锁定到ir出问题的两行:</p>
+<pre>store i32 %133, i32* %nsend, align 4, !tbaa !102
+call void @free(i8* %30) #0
+call void @free(i8* %30) #0
+%134 = load i32* %nrecv, align 4, !tbaa !102
+</pre>
+<p>真是很明显啊.</p>
+<p>定位出来是由于 Force Reduce 中的 mpi_allreduce 直接将recvbuf 替换成了
+sendbuf, 因此 free recvbuf 和 free sendbuf 就成了两个相同的free了.</p>
+<p>解决方法是将 sendbuf 的 free强制删除, 虽然这个有些拆东墙补西墙的感觉。</p>
+<div>
+<p>Note</p>
+<p>不过后来将 all_reduce(send, recv) 替换成了 memcpy(send, recv)。这样错误的
+概率要小一些。</p>
+</div>
+</li>
+</ol>
+<a name="user-content-bad-result"></a>
+<h2>
+<a aria-hidden="true" class="anchor" href="#bad-result" id="user-content-bad-result"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>bad result</h2>
+<ol start="8">
+<li>
+<p>如果运气比较好, 上面的Reduce也过去了, 也正常运行没有段错误了, 但是还可能会遇
+到溢出的问题, 例如用 llvm-prof 查看 cgpop.1 (只进行了 PerfPred 过程, 检查第
+一步是否是正确的插桩的), 可以看到:</p>
+<pre>##      %%        Frequency
+ 1. 19.3163% 4294967295/2.2235e+10        __solvers_MOD_esolver() - 3
+ 2. 19.3163% 4294967295/2.2235e+10        __simple_domain_MOD_create_local_block_ids() - 3
+ 3. 19.3163% 4294967295/2.2235e+10        __timers_MOD_get_timer() - vector.body88
+ 4. 19.3163% 4294965757/2.2235e+10        __mpi2s_gshalo_MOD_mpi2s_gshalo_init() - 10.i98
+ 5. 6.74832% 1500487259/2.2235e+10        __linear_MOD_formhalodofck() - 6.i3
+ 6. 6.51825% 1449332221/2.2235e+10        __linear_MOD_formhalodofck() - 8.i6
+</pre>
+<p>明显, 前4个都溢出了, 这在第一阶段似乎是难以理解的, 因为第一阶段没有进行任何
+Reduce, 理应和原来的行为保持一致. 因此再查看下Edge的结果:</p>
+<pre>##      %%        Frequency
+ 1. 21.4584% 694632755/3.23711e+09        __linear_MOD_formhalodofck() - 6.i3
+ 2. 21.4582% 694626898/3.23711e+09        __linear_MOD_formhalodofck() - 8.i6
+ 3. 8.93842% 289346526/3.23711e+09        __matrix_mod_MOD_matvec() - 4
+ 4. 7.53339% 243864438/3.23711e+09        __mpi2s_gshalo_MOD_mpi2s_gshalo_init() - 14.i101
+ 5. 7.53335% 243862899/3.23711e+09        __mpi2s_gshalo_MOD_mpi2s_gshalo_init() - 22.i111
+ 6. 7.53335% 243862899/3.23711e+09        __mpi2s_gshalo_MOD_mpi2s_gshalo_init() - 20.i108
+ 7. 7.53335% 243862899/3.23711e+09        __mpi2s_gshalo_MOD_mpi2s_gshalo_init() - 17.i104
+</pre>
+<p>除去溢出的那些不谈, 光是对 6.i3 基本块的预测结果就超出了1倍, 简直是不可接受
+的. 而 <code>esolver() - 3</code> 应该是 0, <code>create_local_block_ids() - 3</code> 也是 0.
+最后排查出来是由于 promote 操作导致在分支的时候, 将本不该进入循环所在分支的
+情况也统计进去了. 具体的分析参见相关 notebook.</p>
+</li>
+</ol>
+<a name="user-content-misc"></a>
+<h2>
+<a aria-hidden="true" class="anchor" href="#misc" id="user-content-misc"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>misc</h2>
+<a name="user-content-gdb-advance-usage"></a>
+<h3>
+<a aria-hidden="true" class="anchor" href="#gdb-advance-usage" id="user-content-gdb-advance-usage"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>gdb advance usage</h3>
+<p>在熟悉了gdb的高级使用之后, 就基本上不再需要下面的 ValueProfiling了.</p>
+<a name="user-content-cgpop-log"></a>
+<h3>
+<a aria-hidden="true" class="anchor" href="#cgpop-log" id="user-content-cgpop-log"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>cgpop log</h3>
+<p>一些无法消除的函数见下:</p>
+<a name="user-content-mpi2s-gshalo-mod-mpi2s-gshalo-init"></a>
+<h4>
+<a aria-hidden="true" class="anchor" href="#__mpi2s_gshalo_mod_mpi2s_gshalo_init" id="user-content-__mpi2s_gshalo_mod_mpi2s_gshalo_init"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>__mpi2s_gshalo_MOD_mpi2s_gshalo_init</h4>
+<ol>
+<li>call void bitcast (void (...)* @mpi_allreduce_ to void (i8*, i8*, i32*,
+i32*, i32*, i32*, i32*)*)(i8* %39, i8* %58, i32*
+@__mpi2s_gshalo_MOD_nprocs, i32* @121, i32* @122, i32* noalias %comm, i32*
+%ierr) #1 in block:"139"</li>
+</ol>
+<div class="highlight highlight-source-fortran-modern"><pre>sCount<span class="pl-k">=</span><span class="pl-c1">0</span>
+<span class="pl-k">do</span> i<span class="pl-k">=</span><span class="pl-c1">1</span>,nRecv
+   sCount(rNeigh(i)) <span class="pl-k">=</span> <span class="pl-c1">1</span>
+<span class="pl-k">enddo</span>
+<span class="pl-k">call</span> MPI_Allreduce(sCount,sCount2,nprocs,MPI_INTEGER,MPI_SUM,COMM,ierr)
+
+nSend<span class="pl-k">=</span>sCount2(my_task)</pre></div>
+<p>由源代码来看, 是无法消除的, 因为后面的循环次数依赖 <code>sCount2</code> .</p>
+<ol>
+<li>call void bitcast (void (...)* @mpi_irecv_ to void (i32*, i32*, i32*, i32*,
+i32*, i32*, i32*, i32*)*)(i32* %550, i32* %len, i32* @128, i32* %src, i32*
+%tag, i32* noalias %comm, i32* %547, i32* %ierr) #1 in block:"479"</li>
+</ol>
+<div class="highlight highlight-source-fortran-modern"><pre><span class="pl-k">do</span> i<span class="pl-k">=</span><span class="pl-c1">1</span>,nSend
+   len <span class="pl-k">=</span> SendCnt(i)
+   iptr <span class="pl-k">=</span> ptrSend(i)
+   src  <span class="pl-k">=</span> sNeigh(i)
+   <span class="pl-k">call</span> MPI_Irecv(rtmpBuf(iptr),len,MPI_INTEGER,src, &amp;
+       tag, COMM,Srequest(i),ierr)
+<span class="pl-k">enddo</span>
+
+<span class="pl-k">do</span> i<span class="pl-k">=</span><span class="pl-c1">1</span>,lenSendBuffer
+   ig <span class="pl-k">=</span> rtmpBuf(i)
+   <span class="pl-k">call</span> LinearOrderedFind(LinearGdof(<span class="pl-c1">1</span>:nActive),ig,found,idx)
+   halo2send(i) <span class="pl-k">=</span> idx
+<span class="pl-k">enddo</span></pre></div>
+<p>由代码看来, 该函数也无法消除. 其参数 <code>rtmpBuf</code> 会赋值给 <code>ig</code>, 而该赋值语句
+之后会传递给 <code>LinearOrderedFind</code> 函数.</p>
+<p>在编译完成后, 为了检查是否是异常退出, 可以用gdb 捕获
+<code>__exit_mod_MOD_exit_pop</code> 函数.</p>
+<a name="user-content-valueprofiling"></a>
+<h3>
+<a aria-hidden="true" class="anchor" href="#valueprofiling%E7%9A%84%E5%9F%BA%E6%9C%AC%E4%BD%BF%E7%94%A8" id="user-content-valueprofiling的基本使用"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>ValueProfiling的基本使用</h3>
+<p>众所周知, 直接调试IR级别的源代码是非常困难的, 因此我们创造了ValueProfling工具来
+帮助完成这项工作, 下面介绍如何深度的使用ValueProfiling来辅助我们手工的定位由于
+优化过度而出错的地方</p>
+<p>在 <code>cookbook.rest</code> 和 <code>loops.rest</code> 中已经介绍了, 如何使用ValueProfling:</p>
+<div class="highlight highlight-source-shell"><pre>opt -load src/libLLVMPred.so -Insert-Trip-Count -insert-value-profiling</pre></div>
+<p>具体来说, 需要一个Pass来告诉ValueProfling捕获哪些 <em>感兴趣</em> 的值,
+Insert-Trip-Count 就是关心所有Loop的循环次数. 这样就完成了插桩了.</p>
+<a name="user-content-id1"></a>
+<h3>
+<a aria-hidden="true" class="anchor" href="#valueprofiling%E7%9A%84%E8%BF%9B%E9%98%B6%E4%BD%BF%E7%94%A8" id="user-content-valueprofiling的进阶使用"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>ValueProfiling的进阶使用</h3>
+<p>有时候我们可能只关心某些值的内容, 例如跟踪一个数据的变化过程, 确定是哪一步开始
+出现了偏差, 从而好定位到那个地方, 阅读IR找出问题. 这个时候就需要手工插桩了.</p>
+<p>ValueProfiling 的准备有两种方法:</p>
+<ol>
+<li>
+<p>借助前面的命令, 让它给我们 <em>搭建</em> 好ValueProfling的框架环境, ValueProfling 需要
+一个 <code>@ValueProfCounters = internal global [? x i32] zeroinitializer</code> 来记录
+一共有多少条捕获调用 <strong>?</strong> 的地方需要替换成具体的数字.然后每个捕获都是类似于
+<code>call void @llvm_profiling_trap_value(i32 ?, i32 %2, i32 0)</code> , <strong>?</strong> 的地方是
+对应的id. 因此也就是说, 如果我们手工插入call的话, 需要修改这两个地方保持一致.</p>
+</li>
+<li>
+<p>完全手动插桩, 直接在需要捕获的地方手写 <code>call void
+@llvm_profiling_trap_value(i32 0, i32 %2, i32 0)</code> , id 从 0 开始增加, 然后随便
+某个地方写入 <code>declare void @llvm_profiling_trap_value(i32, i32, i32)</code>. 对ir修
+改完成之后使用 <code>opt -insert-value-profling</code> 由于没有一个Pass指定捕获哪些变量,
+会在整个module中搜寻那些我们手写的 trap_value 函数, 并自动补充其它缺失的部分.</p>
+<p>由于这个时候混合了两种桩, Perf 和 Value, Perf 要求使用插桩前的 bitcode, 这个
+时候就看不到Value的结果. Value 要求使用插桩后的 bitcode, 这个时候 Perf 的信息
+就是错误的. 需要特别注意.</p>
+</li>
+</ol>
+<p>下面是一个示例: 我们需要确定NAS的cg程序中sparse函数里面跟踪%rowstr这个变量, 因
+为它在我们使用 <code>Reduce</code> 优化之后出现了异常, 里面的数据不对. 很明显是变量的初
+始化部分出错了, 因此找到变量的初始化主要在sparse函数中.</p>
+<p>首先找到前两条关于 %rowstr 的指令是:</p>
+<pre>%9 = getelementptr [0 x i32]* %rowstr, i64 0, i64 %8
+store i32 0, i32* %9, align 4
+</pre>
+<p>明显, store的地方不需要捕获, 捕获了也是0, 也许 %8 有捕获的价值, 但这里就跳过了.</p>
+<p>接下来找到:</p>
+<pre>%30 = getelementptr [0 x i32]* %rowstr, i64 0, i64 %29
+%31 = load i32* %30, align 4
+</pre>
+<p>明显我们可以捕获 %31, 看看 %rowstr里面的内容, 因此修改成下面的样子:</p>
+<pre>%30 = getelementptr [0 x i32]* %rowstr, i64 0, i64 %29
+%31 = load i32* %30, align 4
+call void @llvm_profiling_trap_value(i32 54, i32 %31, i32 0)
+</pre>
+<p>由于自动插入的是id为0-53的捕获, 因此这里trap_value的id保持继续自增就行了.</p>
+<p>最后修改完, id变成59了, 因此再回过头来修改计数器和初始化调用:</p>
+<pre>@ValueProfCounters = internal global [60 x i32] zeroinitializer
+%newargc = call i32 @llvm_start_value_profiling(i32 %argc, i8** %argv, i32* \
+   getelementptr inbounds ([60 x i32]* @ValueProfCounters, i64 0, i64 0), i32 \
+   60)
+</pre>
+<p>对优化后的IR的修改就完成了, 然后再同样的去修改优化前的IR, 两个都拿去编译运行,
+把跑出来的结果进行对比, 就能够发现rowstr是从哪里开始出现偏差的了.</p>
+
+
+        </div>
+
+    </div>]

@@ -1,0 +1,107 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>#Issues format string
+The issues format string allows you to specify the output format of issues when printed in the console. This page describes the details of the format.</p>
+<p>##<a href="#set-format">Specifying format</a>
+<strong>The format string can be specified by setting it in a configuration file</strong></p>
+<p>The <code>issues.format</code> key in configuration files is used to specify the format for any future calls to the issues command.
+The format can be specified in a configuration file using either of the following commands:</p>
+<pre><code>github config --set issues.format &lt;format&gt;
+github config --global --set issues.format &lt;format&gt;
+</code></pre>
+<p><strong>...or  by passing it as an argument to the issues command</strong></p>
+<p>The <code>--format</code> (or <code>-f</code>) parameter will set the issues format for a single execution of the issues command.
+The format is specified as below:</p>
+<pre><code>github issues --format &lt;format&gt; [other parameters]
+</code></pre>
+<blockquote>
+<p><strong>Note for PowerShell</strong> The format for the issues format string, as described below, uses $-characters for variables/placeholders. PowerShell uses the same construct and will see this as its own variables. Using <strong>$title</strong> as format and listing issues in PowerShell like this:</p>
+</blockquote>
+<pre><code>github issues --format $title
+</code></pre>
+<p>Will (typically) result in empty lines, as PowerShell is replacing $title with the value of its $title variable (which typically is empty).
+To avoid this you must escape your format:</p>
+<pre><code>github issues --format '$title'
+</code></pre>
+<p>Note that " will not work when escaping a format as PowerShell will still replace variables within that string. The behaviour is similar to PHP.</p>
+<p>##<a href="#elements">Format elements</a>
+The format for listing issues is implemented using the <a href="https://github.com/deaddog/CommandLineParsing/blob/master/FormattedPrinter.cs">FormattedPrinter</a>.
+As this type is not well described all information is listed below.</p>
+<blockquote>
+<p>Note that <code>\</code> is <strong>always</strong> used to escape a character. Thus <code>\\</code> is required to write a single \ character.
+Any character can be specified by escaping it.
+As the elements below all rely on the use of special characters, escaping might come in handy.</p>
+</blockquote>
+<p>###<a href="#variables">Variables</a>
+Variables are represented as <code>$variable</code> and they are replaced using the definitions below:</p>
+<ul>
+<li>
+<code>$number</code>: The issue number</li>
+<li>
+<code>$assignee</code>: The username of the user currently assigned to the issue</li>
+<li>
+<code>$title</code>: The issues title</li>
+<li>
+<code>$description</code>: The issues description</li>
+<li>
+<code>$label</code>: The name of a label - only valid in the context of a @labels function (see <a href="#functions">functions</a>)</li>
+</ul>
+<p>###<a href="#padding">Padding</a>
+Padding can be applied to variables to align the output. Padding can be applied to the left or right side of a variable, or both - centering the value. Padding is added by appending or prepending a variable name with <code>+</code>.</p>
+<blockquote>
+<p><em>Example</em> Printing issue numbers with more than 100 issues the following applies to issue 2:</p>
+</blockquote>
+<pre><code>$number = '2'
+$+number = '  2'
+$number+ = '2  '
+$+number+ = ' 2 '
+</code></pre>
+<p>The following variables support padding:</p>
+<ul>
+<li>
+<code>$number</code>, <code>$assignee</code>
+</li>
+</ul>
+<p>###<a href="#coloring">Coloring</a>
+Coloring can be specified for parts of the format. The color <code>color</code> is applied to <code>text</code> using following syntax: <code>[&lt;color&gt;:&lt;text&gt;]</code>.
+If the text that is colored contains a single variable <code>auto</code> can be specified for color.
+This is supported for these variables:</p>
+<ul>
+<li>
+<code>[auto:$number]</code>: The string is printed in yellow for open issues and red for closed issues.</li>
+<li>
+<code>[auto:$assignee]</code>: The string is printed in dark cyan if the user is assigned to the issue, otherwise cyan is used.</li>
+<li>
+<code>[auto:$label]</code>: The color of the label (on GitHub.com) is approximated in the console.</li>
+</ul>
+<p>###<a href="#conditionals">Conditionals</a>
+Using the syntax <code>?condition{&lt;format&gt;}</code> the format string is only printed if the condition holds.
+The following conditions are supported:</p>
+<ul>
+<li>
+<code>?labels{&lt;format&gt;}</code>: The issue must have labels</li>
+<li>
+<code>?assignee{&lt;format&gt;}</code>: The issue must have an assignee</li>
+<li>
+<code>?open{&lt;format&gt;}</code>: The issue must be open</li>
+<li>
+<code>?closed{&lt;format&gt;}</code>: The issue must be closed</li>
+<li>
+<code>?mine{&lt;format&gt;}</code>: The issue is assigned to the user</li>
+<li>
+<code>?description{&lt;format&gt;}</code>: The issue has a description</li>
+</ul>
+<p>###<a href="#functions">Functions</a>
+Using the syntax <code>@function{[arg1[@arg2...]]}</code> a function can be executed with a set of arguments.
+Currently only one function is supported: The <code>@labels</code> function.
+It lists the labels for the issue.
+The first argument is the format used for each label - all of the above applies to this format.
+The remaining arguments (0, 1 or 2) specify strings that are placed between the labels:</p>
+<pre><code>@labels{$label}  prints 'bug feature duplicate'
+@labels{$label@ and }  prints 'bug and feature and duplicate'
+@labels{$label@, @ and }  prints 'bug, feature and duplicate'
+</code></pre>
+
+        </div>
+
+    </div>]

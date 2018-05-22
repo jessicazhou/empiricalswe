@@ -1,0 +1,41 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <h1>
+<a aria-hidden="true" class="anchor" href="#static-cache-controller-actions" id="user-content-static-cache-controller-actions"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Static cache controller actions</h1>
+<p>Add the following to your controller:</p>
+<div class="highlight highlight-text-html-php"><pre><span class="pl-s1"><span class="pl-k">public</span> <span class="pl-k">function</span> <span class="pl-en">init</span>() {</span>
+<span class="pl-s1">    <span class="pl-smi">$this</span><span class="pl-k">-&gt;</span><span class="pl-smi">_helper</span><span class="pl-k">-&gt;</span>cache(<span class="pl-c1">array</span>(<span class="pl-s"><span class="pl-pds">'</span>index<span class="pl-pds">'</span></span>, <span class="pl-s"><span class="pl-pds">'</span>termsandconditions<span class="pl-pds">'</span></span>, <span class="pl-s"><span class="pl-pds">'</span>about<span class="pl-pds">'</span></span>));</span>
+<span class="pl-s1">}</span></pre></div>
+<p>Where the various names in the array are controller actions. This will save requests to those actions as HTML files in <em>/public/cached/</em>.</p>
+<p>In order to clear these cached files, you must tag certain paths with model names. Changes to these models will then automatically clear the cache.
+Add these tags to <strong>/application/configs/cache.ini</strong>, like this:</p>
+<pre><code>; Cinema
+staticcaching.tags.Model_Cinema[] = "index.html"
+staticcaching.tags.Model_Cinema[] = "events.html"
+</code></pre>
+<p>(<em>index.html</em> is the cached version of a call to <em>/</em>, while <em>events.html</em> refers to <em>/events</em>)</p>
+<pre><code>; Event
+staticcaching.tags.Model_Event[] = "events*"
+staticcaching.tags.Model_Event[] = "zoek*"
+
+; Genre
+staticcaching.tags.Model_Genre[] = "events.html"
+staticcaching.tags.Model_Genre[] = "films.html"
+</code></pre>
+<p>Note that the paths can contain wildcards. Under the hood these paths are fed directly to bash's <em>rm</em> – to give you an idea how to format these paths. You should choose paths created from actions that read from the given model.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#caching-json-output" id="user-content-caching-json-output"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Caching JSON output</h2>
+<p>Note that by default cache files are stored as HTML files. Sometimes your app will return JSON (or any other output for that matter) and in this case you can add some parameters to the <code>cache</code> helper's call:</p>
+<div class="highlight highlight-text-html-php"><pre><span class="pl-s1"><span class="pl-smi">$this</span><span class="pl-k">-&gt;</span><span class="pl-smi">_helper</span><span class="pl-k">-&gt;</span>cache(<span class="pl-smi">$actions</span>, <span class="pl-c1">array</span>(), <span class="pl-s"><span class="pl-pds">'</span>json<span class="pl-pds">'</span></span>);</span></pre></div>
+<p>This instructs the cache helper to create a JSON file instead of an HTML file.
+The <code>.htaccess</code> file does not by default read these JSON files, so you should add something like the following in order to actually read the cache files:</p>
+<pre><code># JSON output from API
+RewriteCond %{REQUEST_URI} /api/ [OR]
+RewriteCond %{REQUEST_URI} as_json
+RewriteCond %{DOCUMENT_ROOT}/cached/%{REQUEST_URI}.json -f
+RewriteRule .* cached/%{REQUEST_URI}.json [L,T=text/javascript]
+</code></pre>
+
+        </div>
+
+    </div>]

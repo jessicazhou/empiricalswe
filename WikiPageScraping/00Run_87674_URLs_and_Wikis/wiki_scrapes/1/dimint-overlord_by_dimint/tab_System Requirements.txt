@@ -1,0 +1,311 @@
+[<div class="wiki-body gollum-textile-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <h1>
+<a aria-hidden="true" class="anchor" href="#system-requirements" id="user-content-system-requirements"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>System Requirements</h1>
+<p>Nexon 분산된 key-value storage<br/>
+프로젝트 Team J</p>
+<p>컴퓨터공학부 2008-11572 김재찬<br/>
+컴퓨터공학부 2008-11662 유재성<br/>
+컴퓨터공학부 2012-11256 염지혜</p>
+<p>{{toc}}</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#1-introduction" id="user-content-1-introduction"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>1. <span>INTRODUCTION</span>
+</h2>
+<ol>
+	<li>Introduction
+	<ul>
+		<li>분산된 노드로 구성된 대량의 key-value형 데이터를 밸런싱하여 저장하는 안정된 저장소를 구현한다.</li>
+		<li>저장소와 저장소에 접근하기 위한 라이브러리 그리고 해당 라이브러리를 이용한 간단한 클라이언트를 구성한다.</li>
+	</ul>
+</li>
+	<li>References
+	<ul>
+		<li>NoSQL : http://en.wikipedia.org/wiki/NoSQL</li>
+		<li>Redis : http://redis.io/</li>
+		<li>Redis cluster Specification (work in progress) : http://redis.io/topics/cluster-spec</li>
+		<li>Free &amp; open source, high-performance, distributed memory object caching system : http://www.memcached.org/</li>
+		<li>MongoDB : http://www.mongodb.com/</li>
+		<li>ZeroMQ Concurrency Framework로써 수행가능한 소켓 라이브러리 : http://kr.zeromq.org/</li>
+		<li>ZooKeeper : http://zookeeper.apache.org/</li>
+		<li>Consistent hashing : http://en.wikipedia.org/wiki/Consistent_hashing</li>
+		<li>Multi-master replication : http://en.wikipedia.org/wiki/Convolutional_neural_network</li>
+		<li>Query Offloading for Improved Performance and Better Resource Utilization : http://www.oracleimg.com/ocom/idcplg?IdcService=GET_FILE&amp;dID=332542&amp;dDocName=336615</li>
+	</ul>
+</li>
+	<li>Definitions
+	<ul>
+		<li>key-value store : Key-value (KV) stores use the associative array (also known as a map or dictionary) as their fundamental data model. In this model, data is represented as a collection of key-value pairs, such that each possible key appears at most once in the collection.(http://en.wikipedia.org/wiki/NoSQL#Key-value_stores)</li>
+		<li>Relational database : A relational database is a database that stores information about both the data and how it is related.(http://en.wikipedia.org/wiki/Relational_database)</li>
+		<li>NoSQL : A NoSQL or Not Only <span>SQL</span> database provides a mechanism for storage and retrieval of data that is modeled in means other than the tabular relations used in relational databases.(http://en.wikipedia.org/wiki/NoSQL)</li>
+		<li>Distributed data store : A distributed data store is a computer network where information is stored on more than one node, often in a replicated fashion.(http://en.wikipedia.org/wiki/Distributed_data_store)</li>
+		<li>Consistent hashing : Consistent hashing is a special kind of hashing such that when a hash table is resized and consistent hashing is used, only K/n keys need to be remapped on average, where K is the number of keys, and n is the number of slots. In contrast, in most traditional hash tables, a change in the number of array slots causes nearly all keys to be remapped.(http://en.wikipedia.org/wiki/Consistent_hashing)</li>
+		<li>Partition tolerance : the system continues to operate despite arbitrary message loss or failure of part of the system(http://en.wikipedia.org/wiki/CAP_theorem)</li>
+	</ul>
+</li>
+</ol>
+<h2>
+<a aria-hidden="true" class="anchor" href="#2-system-overview" id="user-content-2-system-overview"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>2. <span>SYSTEM</span> <span>OVERVIEW</span>
+</h2>
+
+	<ul>
+		<li>시스템은 Command를 사용하는 DiMint Client, 분산 시스템의 주된 역할을 하는 Overlords 서버, 실제 데이터를 보관하는 Nodes들로 구성되어 있다.<br/>
+<img alt="" src="overview.png"/>
+</li>
+	</ul><ol>
+	<li>System Elements
+	<ol>
+		<li>Client Library
+		<ul>
+			<li>Client Library 파트는 실제 DiMint 서비스를 사용하기 위한 Command들을 Interface 형태로 제공한다.</li>
+			<li>테스트를 위해 Python용 Micro Framework인 Flask로 실제 이 Client Library를 사용한다.</li>
+		</ul>
+</li>
+		<li>Overlords 서버
+		<ul>
+			<li>클라이언트들을 비롯한 다수의 Nodes들과의 연결을 관리한다.</li>
+			<li>클라이언트들에게서 받은 key-value 데이터들을 hashing 및 rebalancing 하여 분산 시스템을 구현한다.</li>
+			<li>또, Partition Tolerance를 통해 분산 스토리지의 완성도를 높인다.</li>
+		</ul>
+</li>
+		<li>Nodes
+		<ul>
+			<li>Nodes들은 실제로 데이터들을 보관한다. Partition Tolerance를 위해 Master-Slave model을 통해 데이터들을 백업한다.</li>
+			<li>이때, Master Node들은 Write-only operation, Slave Node들은 Read-only operation을 수행한다.</li>
+		</ul>
+</li>
+	</ol>
+</li>
+</ol>
+<h2>
+<a aria-hidden="true" class="anchor" href="#3-functional-use-cases" id="user-content-3-functional-use-cases"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>3. <span>FUNCTIONAL</span> <span>USE</span> <span>CASES</span>
+</h2>
+<ol>
+	<li>DiMint Client
+	<ol>
+		<li>User Interface(Web Client)
+		<ul>
+			<li>DiMint의 기본적인 동작을 확인하기 위한 테스트를 한다.</li>
+			<li>Nodes의 데이터 개수와 메모리 부하 측정 결과를 확인한다.</li>
+		</ul>
+</li>
+		<li>Flask with DiMint Client Library(Web Server)
+		<ul>
+			<li>DiMint Client Library를 직접 사용하여 테스트한다.</li>
+		</ul>
+</li>
+	</ol>
+</li>
+	<li>Overlords 서버
+	<ol>
+		<li>key-value 데이터 hashing
+		<ul>
+			<li>분산 스토리지에서 데이터가 각 Node에 균형있게 쌓여야 하기 때문에 hashing을 이용하여 Node별로 데이터의 개수와 용량이 균형있게 저장한다.</li>
+		</ul>
+</li>
+		<li>Nodes의 데이터 개수와 메모리 부하 측정
+		<ul>
+			<li>Nodes와 지속적인 연결을 통해 Nodes의 데이터 개수 및 메모리 부하를 측정하도록 한다.</li>
+		</ul>
+</li>
+		<li>서로 다른 Node 사이의 rebalancing 주관
+		<ul>
+			<li>동적으로 Node가 추가/삭제되었을 때 기존 Node의 데이터들을 rebalancing 해야하는데, 이 때 Node 사이의 데이터 통신을 주관한다.</li>
+		</ul>
+</li>
+	</ol>
+</li>
+	<li>Nodes
+	<ol>
+		<li>Replication
+		<ul>
+			<li>Master Node와 Slave Node 사이의 replication을 위해 non-blocking snapshotting을 사용한다.</li>
+			<li>snapshotting 이후의 쓰기 operation(write/update) 할 때 연산을 모두 logging 하도록 한다.</li>
+		</ul>
+</li>
+	</ol>
+</li>
+</ol>
+<h2>
+<a aria-hidden="true" class="anchor" href="#4-system-features" id="user-content-4-system-features"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>4. <span>SYSTEM</span> <span>FEATURES</span>
+</h2>
+<ol>
+	<li>DiMint Client
+	<ol>
+		<li>User Interface(Web Client)
+		<ul>
+			<li>DiMint의 기본적인 동작을 확인하기 위한 테스트를 수행한다</li>
+			<li>DiMint 서버의 Nodes 정보, Node에 속해 있는 데이터 개수, 메모리 부하 등을 측정하고 결과를 확인할 수 있게 한다.</li>
+		</ul>
+</li>
+		<li>Flask with DiMint Client Library(Web Server)<br/>
+DiMint Client Library를 직접 사용하여 테스트를 수행한다.</li>
+		<li>DiMint Client Library
+		<ul>
+			<li>DiMint 서버를 이용하기 위한 인터페이스들이 존재한다.</li>
+			<li>Connect, Set, Get, Monitor가 기본적인 커맨드이다.
+			<ul>
+				<li>Connect 명령은 DiMint 서버에 접속하기 위한 명령어로, 인자로는 Overloads 서버(들)의 IP Address, port 등이 들어간다.</li>
+				<li>Get은 DiMint에 저장되어 있는 value를 꺼내기 위한 명령으로, 인자로는 key를 받는다</li>
+				<li>Set은 DiMint에 값을 저장하기 위한 명령으로, 인자로는 key와 value를 받는다.</li>
+				<li>Monitor 명령은 DiMint 서버 상의 노드들의 상태를 실시간으로 확인할 수 있는 명령이다.
+				<ul>
+					<li>결국 노드를 추가하고 DiMint에 추가하는 존재는 사람이기 때문에, 사람이 DiMint의 상태를 실시간으로 파악하는 것은 매우 중요하다.</li>
+				</ul>
+</li>
+			</ul>
+</li>
+		</ul>
+</li>
+	</ol>
+</li>
+	<li>Overlords 서버
+	<ul>
+		<li>Client 쪽의 모든 요청은 Overlords 서버를 거친다. 응답 또한 Overlords 서버를 거쳐서 Client에 전달된다.</li>
+		<li>key-value 데이터를 받아, key를 consistent hashing하여 어느 노드로 해당 데이터를 보낼 것인지 결정한다.
+		<ul>
+			<li>일반적인 key hash 및 나머지 연산으로는 서비스 중 노드의 추가/제거에 대응할 수 없기에, 노드의 추가와 제거에도 비교적 쉽게 대응할 수 있는 consistent hashing 기법을 이용한다.</li>
+		</ul>
+</li>
+		<li>Node의 갯수 및 각 Node의 주소, Node의 Master/Slave 여부, 각 Node에 들어있는 키 갯수 등을 알고 있다.</li>
+		<li>Node가 추가되거나 제거될 경우, 데이터 rebalancing을 주관한다.</li>
+		<li>Node가 장애를 일으키고 해당 Node가 Master Node라면, 장애를 파악하고 해당 Node의 Slave Node를 찾아 그 중 한 Node를 새로운 Master Node로 elect한다.</li>
+		<li>Overlords 서버가 장애를 일으키면 서비스 전체가 마비되기 때문에, Overlords 서버는 3개로 운영된다.</li>
+	</ul>
+</li>
+	<li>Nodes
+	<ul>
+		<li>DiMint는 key-value 데이터를 메모리에 저장하여 관리한다.</li>
+		<li>단, 메모리는 Node가 다운되었을 때 데이터가 유실되는 문제가 있다.</li>
+		<li>이 문제를 해결하기 위해 DiMint는 Nodes를 Master-Slave model로 구성하였다.</li>
+		<li>Master Node
+		<ul>
+			<li>Master Node는 snapshotting 방식을 이용해서 Slave Node로 데이터를 replicate한다.</li>
+			<li>이 때 snapshotting은 non-blocking 방식이지만, Node에 많은 부담이 가기 때문에 매 operation 마다 할 수 없다.</li>
+			<li>따라서 주기적으로 주기적으로 snapshotting하고, snapshotting 한 이후부터 write/update operation을 logging한다.</li>
+			<li>이 두 방식을 통해 Master Node와 Slave Node는 거의 유사한 데이터들을 가지게 되므로 Consistency가 높아지게 된다.</li>
+			<li>Write-only operation
+			<ul>
+				<li>Master Node는 Write-only operation을 주로 수행하며, 살아있는 Slave Node가 하나도 없다면 Read operation도 수행한다.</li>
+				<li>Slave Node가 복구되면 Master Node의 데이터들을 replicate하고 이것마저 완료되면 다시 Write-only operation만을 수행한다.</li>
+			</ul>
+</li>
+		</ul>
+</li>
+		<li>Slave Node
+		<ul>
+			<li>Master Node의 데이터를 replicate하며, Master Node가 shutdown되었을 때 Slave Nodes중에 하나가 Master Node로 선출된다.</li>
+			<li>Read-only operation
+			<ul>
+				<li>Slave Node는 Read-only operation을 주로 수행한다.</li>
+				<li>Slave Node가 여러개라면 Overlords 서버에서 Read-only operation을 여러 Slave Node에서 나눠서 수행하는 방식으로 작동한다.</li>
+			</ul>
+</li>
+		</ul>
+</li>
+	</ul>
+</li>
+</ol>
+<h2>
+<a aria-hidden="true" class="anchor" href="#5-external-system-features" id="user-content-5-external-system-features"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>5. <span>EXTERNAL</span> <span>SYSTEM</span> <span>FEATURES</span>
+</h2>
+<ol>
+	<li>External Library
+	<ol>
+		<li>Zookeeper
+		<ul>
+			<li>
+<span>GNU</span>/Linux is supported as a development and production platform for both server and client.</li>
+			<li>Sun Solaris is supported as a development and production platform for both server and client.</li>
+			<li>FreeBSD is supported as a development and production platform for clients only. Java <span>NIO</span> selector support in the FreeBSD <span>JVM</span> is broken.</li>
+			<li>Win32 is supported as a development platform only for both server and client.</li>
+			<li>MacOSX is supported as a development platform only for both server and client.</li>
+		</ul>
+</li>
+		<li>ZeroMQ
+		<ol>
+			<li>ØMQ Language Bindings
+			<ul>
+				<li>Ada Binding	By martin_sustrik	2010-Mar-31</li>
+				<li>Bash Binding	By pieterh	2011-May-30</li>
+				<li>Basic Binding	By MikeTrader	2010-Jul-13</li>
+				<li>C Binding	By pieterh	2013-Oct-11</li>
+				<li>Chicken Scheme Binding</li>
+				<li>Common Lisp Binding	By martin_sustrik	2010-Jan-28</li>
+				<li>C# Binding (.<span>NET</span> &amp; Mono)	By martin_sustrik	2010-Mar-20</li>
+				<li>C++ Binding	By martin_sustrik	2010-Apr-5</li>
+				<li>D Binding	By martin_sustrik	2010-Sep-9</li>
+				<li>delphi binding	By bvarga	2012-Oct-17</li>
+				<li>Eiffel Binding	By manus_eiffel	2013-Jul-31</li>
+				<li>Erlang Binding	By pieterh	2010-May-16</li>
+				<li>F# Binding	By pblasucci	2011-May-4</li>
+				<li>Felix	By Yttrill	2012-Jan-19</li>
+				<li>Flex (ActionScript)	By rimus	2011-Nov-8</li>
+				<li>Go Binding	By martin_sustrik	2010-Apr-28</li>
+				<li>Guile Binding	By Andy Wingo	2011-Apr-25</li>
+				<li>Haskell Binding	By martin_sustrik	2010-Jan-27</li>
+				<li>Haxe Binding	By rj_smith	2011-May-24</li>
+				<li>Java binding	By martin_sustrik	2010-Jan-28</li>
+				<li>JavaScript (Flash) Binding	By Brugeman	2011-May-29</li>
+				<li>Julia	By Tim Holy	2012-Oct-1</li>
+				<li>LabVIEW	By mjasperse	2012-Jul-12</li>
+				<li>Lua bindings	By martin_sustrik	2010-Feb-17</li>
+				<li>Nimrod Binding	By dom96	2013-Apr-15</li>
+				<li>Node.js Binding	By justin tulloss	2010-Nov-15</li>
+				<li>Objective-C	By jeremyw	2010-Jul-3</li>
+				<li>Objective Caml binding	By martin_sustrik	2011-Apr-4</li>
+				<li>ooc Binding	By nddrylliog	2010-Jun-17</li>
+				<li>Perl Bindings	By martin_sustrik	2010-Jun-13</li>
+				<li>
+<span>PHP</span> binding	By martin_sustrik	2010-Apr-2</li>
+				<li>Python binding	By martin_sustrik	2010-Jan-27</li>
+				<li>Q	By hjh	2012-Jul-20</li>
+				<li>Racket Binding	By je_apostrophe	2010-Oct-20</li>
+				<li>R Binding	By Whit Armstrong	2011-Oct-24</li>
+				<li>
+<span>REBOL</span> 2 Binding	By Kaj de Vos	2011-Mar-27</li>
+				<li>
+<span>REBOL</span> 3 Binding	By Kaj de Vos	2011-Mar-27</li>
+				<li>Red Binding	By Kaj de Vos	2011-Mar-27</li>
+				<li>Ruby Binding	By martin_sustrik	2010-Jan-27</li>
+				<li>Ruby Binding (<span>FFI</span>)	By martin_sustrik	2010-May-8</li>
+				<li>Scala Binding	By karimikifi	2011-Sep-30</li>
+				<li>Smalltalk	By vijaymathew	2011-Mar-23</li>
+				<li>Tcl	By Jos Decoster	2012-Apr-4</li>
+				<li>Twisted (Python) Bindings	By smira	2011-Apr-29</li>
+				<li>
+<span>XPCOM</span> Binding	By Rack Lin	2013-Apr-2</li>
+			</ul>
+</li>
+		</ol>
+</li>
+	</ol>
+</li>
+</ol>
+<h2>
+<a aria-hidden="true" class="anchor" href="#6-other-considerations" id="user-content-6-other-considerations"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>6. <span>OTHER</span> <span>CONSIDERATIONS</span>
+</h2>
+<ol>
+	<li>Network Overhead
+	<ul>
+		<li>DiMint Client는 Overlords 서버와 실제로 데이터를 저장하는 Nodes까지 두개의 Network 통신을 한다.</li>
+		<li>이 때 Overlords 서버와 Nodes 사이의 Network Overhead는 매우 작다고 가정할 것이다.</li>
+		<li>실제 테스트환경에서도 같은 머신에서 돌리거나, 같은 네트워크를 사용하는 머신들로 구성할 것이다.</li>
+	</ul>
+</li>
+</ol>
+<ol>
+	<li>Memory Optimization Issues
+	<ul>
+		<li>DiMint는 빠른 성능을 위해서 In-memory database 형식을 취하고 있다.</li>
+		<li>단, 프로젝트에서 분산 시스템 구성에 집중하고 있기 때문에 Memory Usage Optimization에는 다소 소홀할 수 있고,</li>
+		<li>시스템 비교 대상도 상용의 In-memory database와의 속도 성능보다는 Partition Tolerance, Consistent hashing를 이용한 동적 Node 추가/제거로 얻을 수 있는 부분에 대해 집중할 것이다.</li>
+		<li>따라서, 추후에 Memory Usage Optimization을 통해 DiMint의 성능이 많이 개선될 수 있을 것으로 기대된다.</li>
+	</ul>
+</li>
+</ol>
+<h2>
+<a aria-hidden="true" class="anchor" href="#7-appendix" id="user-content-7-appendix"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>7. <span>APPENDIX</span>
+</h2>
+        </div>
+
+    </div>]

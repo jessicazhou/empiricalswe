@@ -1,0 +1,104 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p><code>.bashrc</code> functions to automate image hosting at <a href="http://github.com/lmmx/shots">github.com/lmmx/shots</a></p>
+<div class="highlight highlight-source-shell"><pre><span class="pl-k">function</span> <span class="pl-en">take-shot</span> 	(){
+  <span class="pl-c"><span class="pl-c">#</span> Allow take-shot without versioning: create array if one doesn't exist</span>
+  <span class="pl-k">if</span> [ <span class="pl-k">-z</span> <span class="pl-smi">${shots+x}</span> ]<span class="pl-k">;</span> <span class="pl-k">then</span> shots=()<span class="pl-k">;</span> <span class="pl-k">fi</span>
+  <span class="pl-c"><span class="pl-c">#</span> would leave array lying around so needs wrapper to clean up: make-shots</span>
+  shootyear=<span class="pl-s"><span class="pl-pds">"</span><span class="pl-s"><span class="pl-pds">$(</span>date <span class="pl-k">|</span> awk <span class="pl-s"><span class="pl-pds">'</span>{print $6}<span class="pl-pds">'</span></span><span class="pl-pds">)</span></span><span class="pl-pds">"</span></span><span class="pl-k">;</span>
+  shootmonth=<span class="pl-s"><span class="pl-pds">"</span><span class="pl-s"><span class="pl-pds">$(</span>date <span class="pl-k">|</span> awk <span class="pl-s"><span class="pl-pds">'</span>{print $2}<span class="pl-pds">'</span></span><span class="pl-pds">)</span></span><span class="pl-pds">"</span></span><span class="pl-k">;</span>
+  mkdir -p <span class="pl-s"><span class="pl-pds">"</span>/gits/shots/<span class="pl-smi">$shootyear</span>/<span class="pl-smi">$shootmonth</span><span class="pl-pds">"</span></span><span class="pl-k">;</span>
+  shotfile=<span class="pl-s"><span class="pl-pds">"</span><span class="pl-s"><span class="pl-pds">$(</span>echo <span class="pl-s"><span class="pl-pds">"</span><span class="pl-smi">$@</span><span class="pl-pds">"</span></span><span class="pl-pds">)</span></span><span class="pl-pds">"</span></span><span class="pl-k">;</span>
+  cp <span class="pl-s"><span class="pl-pds">"</span><span class="pl-smi">$shotfile</span><span class="pl-pds">"</span></span> <span class="pl-s"><span class="pl-pds">"</span>/gits/shots/<span class="pl-smi">$shootyear</span>/<span class="pl-smi">$shootmonth</span><span class="pl-pds">"</span></span><span class="pl-k">;</span>
+  shotfilename=<span class="pl-s"><span class="pl-pds">$(</span>basename <span class="pl-s"><span class="pl-pds">"</span><span class="pl-smi">$shotfile</span><span class="pl-pds">"</span></span><span class="pl-pds">)</span></span><span class="pl-k">;</span>
+  encodedshot=<span class="pl-s"><span class="pl-pds">"</span><span class="pl-s"><span class="pl-pds">$(</span>python -c <span class="pl-s"><span class="pl-pds">'</span>from urllib import quote; print quote("<span class="pl-pds">'</span></span><span class="pl-s"><span class="pl-pds">"</span><span class="pl-smi">$shotfilename</span><span class="pl-pds">"</span></span><span class="pl-s"><span class="pl-pds">'</span>").encode("utf-8")<span class="pl-pds">'</span></span><span class="pl-pds">)</span></span><span class="pl-pds">"</span></span>
+  shots+=(<span class="pl-s"><span class="pl-pds">"</span>https://raw.githubusercontent.com/lmmx/shots/master/<span class="pl-smi">$shootyear</span>/<span class="pl-smi">$shootmonth</span>/<span class="pl-smi">$encodedshot</span><span class="pl-pds">"</span></span>)<span class="pl-k">;</span>
+}
+<span class="pl-k">function</span> <span class="pl-en">make-shots</span>	(){ <span class="pl-k">for</span> <span class="pl-smi">shot</span> <span class="pl-k">in</span> <span class="pl-s"><span class="pl-pds">"</span><span class="pl-smi">$@</span><span class="pl-pds">"</span></span><span class="pl-k">;</span> <span class="pl-k">do</span> take-shot <span class="pl-smi">$shot</span><span class="pl-k">;</span> <span class="pl-k">done</span>; shots=<span class="pl-s"><span class="pl-pds">"</span><span class="pl-pds">"</span></span><span class="pl-k">;</span> }
+<span class="pl-k">function</span> <span class="pl-en">take-shots</span>	(){ <span class="pl-k">for</span> <span class="pl-smi">shot</span> <span class="pl-k">in</span> <span class="pl-s"><span class="pl-pds">"</span><span class="pl-smi">$@</span><span class="pl-pds">"</span></span><span class="pl-k">;</span> <span class="pl-k">do</span> take-shot <span class="pl-smi">$shot</span><span class="pl-k">;</span> <span class="pl-k">done</span>; }
+<span class="pl-k">function</span> <span class="pl-en">shoot</span>      (){
+  shots=()<span class="pl-k">;</span>
+  take-shots <span class="pl-s"><span class="pl-pds">"</span><span class="pl-smi">$@</span><span class="pl-pds">"</span></span><span class="pl-k">;</span>
+  <span class="pl-c1">cd</span> /gits/shots/<span class="pl-k">;</span>
+  git add <span class="pl-c1">.</span><span class="pl-k">;</span>
+  git commit -m <span class="pl-s"><span class="pl-pds">"</span>Added <span class="pl-smi">$@</span><span class="pl-pds">"</span></span><span class="pl-k">;</span>
+  git push origin master<span class="pl-k">;</span>
+  <span class="pl-c1">cd</span> - <span class="pl-k">&gt;</span> /dev/null<span class="pl-k">;</span>
+  <span class="pl-c1">printf</span> <span class="pl-s"><span class="pl-pds">'</span>%s\n<span class="pl-pds">'</span></span> <span class="pl-s"><span class="pl-pds">"</span><span class="pl-smi">${shots[@]}</span><span class="pl-pds">"</span></span><span class="pl-k">;</span>
+}</pre></div>
+<blockquote>
+<p><a href="https://gist.github.com/lmmx/ff57a8f7dff07effda2a">gist</a></p>
+</blockquote>
+<h3>
+<a aria-hidden="true" class="anchor" href="#take-shots" id="user-content-take-shots"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><code>take-shots</code>
+</h3>
+<ul>
+<li>Adds one or more images to git-versioned repository,</li>
+<li>Commits and pushes,</li>
+<li>Repeats the URLs to use (percent-encodes characters with Python <a href="http://stackoverflow.com/questions/6431061/python-encoding-characters-with-urllib-quote" rel="nofollow"><code>urllib.quote</code></a>),</li>
+<li>Returns to the original directory</li>
+</ul>
+<h3>
+<a aria-hidden="true" class="anchor" href="#make-shots" id="user-content-make-shots"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><code>make-shots</code>
+</h3>
+<p><code>make-shots</code> just copies the file(s) into the directory (make a commit when you're ready).</p>
+<p>See also: <a href="https://github.com/lmmx/devnotes/wiki/Automated-git-status-summary"><code>gnews</code></a>, which parses the <code>git status --porcelain</code> output to produce an automated summary message for a git commit. Useful here for adding multiple shots separately (<code>make-shots</code>) then moving everything to <code>origin master</code> in a single command</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#further" id="user-content-further"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Further</h2>
+<ul>
+<li>
+<code>shootlastpic</code> : combining:
+<ul>
+<li>xbel recency check (Py3: <a href="https://github.com/lmmx/dot-scripts/blob/master/exports/last-xbel-to-gimp">last-xbel-to-gimp</a>⇢<a href="https://github.com/lmmx/dot-scripts/blob/master/xbel_parse/xbel-pic-parse.py">../xbel_parse/xbel-pic-parse.py</a>)
+<ul>
+<li>
+<strong>but</strong> modify subprocess called with an argument
+<ul>
+<li>[requiring keyword i.e. flag to confirm]
+<ul>
+<li>
+<strong>NB</strong> potentially destructive action</li>
+</ul>
+</li>
+<li>use <code>shoot:</code> to save, with name provided [<em>required</em>]
+<ul>
+<li>Go has nice and simple flag library
+<ul>
+<li>or rather <em>libraries</em>? options for options? arg!</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+<ul>
+<li>shots versioning to quickly version a screenshot [optionally file rename via a single provided arg, enforced if format is Screenshot-0000-0000-etc-etc.png]</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h3>
+<a aria-hidden="true" class="anchor" href="#learning-machine-vision" id="user-content-learning-machine-vision"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Learning: machine vision</h3>
+<ul>
+<li>
+<code>shoot</code> will version, but a call to a learning process could provide a sense and reasoning system about images
+<ul>
+<li>based on their use within thought libraries at <a href="http://permut.co" rel="nofollow">permut.co</a>, <a href="https://github.com/lmmx/NAlogical/">@nalogical</a>, <strong><a href="https://github.com/lmmx/carets">carets</a></strong>
+</li>
+</ul>
+</li>
+</ul>
+
+        </div>
+
+        <div class="wiki-footer gollum-markdown-content boxed-group" id="wiki-footer">
+          <div class="boxed-group-inner wiki-auxiliary-content markdown-body">
+            <p><a href="https://github.com/lmmx/devnotes/wiki">Main page</a></p>
+
+          </div>
+        </div>
+    </div>]

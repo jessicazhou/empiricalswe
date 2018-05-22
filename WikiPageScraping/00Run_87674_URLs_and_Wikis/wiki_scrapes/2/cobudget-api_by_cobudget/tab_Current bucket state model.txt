@@ -1,0 +1,275 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <h1>
+<a aria-hidden="true" class="anchor" href="#the-bucket-state-model-at-october-2017" id="user-content-the-bucket-state-model-at-october-2017"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>The bucket state model at October 2017</h1>
+<p>The purpose of these changes was to make it clear how much money was needed to be available in the group. To do that it was necessary to add information about whether the money contributed to a bucket was paid out or not.</p>
+<p>The changes was done in way that did not require changes to all bucket records in the database.</p>
+<p>These are the states a bucket can be in:</p>
+<ul>
+<li>
+<strong>Idea</strong> - New bucket. Only used for discussion at this point. The target is not fixed yet.
+<ul>
+<li><code>status == 'draft'</code></li>
+<li>
+<code>archived_at</code> not set.</li>
+<li>It can transition to <strong>Funding</strong> or <strong>Cancelled</strong>.</li>
+<li>No contributions should exist.</li>
+</ul>
+</li>
+<li>
+<strong>Funding</strong> - People can start contributing to the bucket. The bucket is not yet fully funded and not cancelled.
+<ul>
+<li><code>status == 'live'</code></li>
+<li>
+<code>archived_at</code> not set.</li>
+<li>It can transition to <strong>Funded</strong> or <strong>Cancelled</strong>.</li>
+<li>Contributions can exist.</li>
+<li>
+<code>target</code> is now fixed and can’t be changed.</li>
+<li>If a <code>contribution</code> is added that makes the sum of contribution go over <code>target</code>, it will be adjusted down. Thus no buckets should have contributions that are over <code>target</code>. This is an invariant.</li>
+<li>If a contribution is added that makes the sum of contributions equal to <code>target</code> the <code>status</code> get set to <code>funded</code>
+</li>
+</ul>
+</li>
+<li>
+<strong>Funded</strong> - The bucket is fully funded. It’s not completed and it's not cancelled.
+<ul>
+<li><code>status == 'funded'</code></li>
+<li>
+<code>paid_at</code> not set.</li>
+<li>It can transition to <strong>Completed</strong> or <strong>Cancelled</strong>.</li>
+<li>Contributions can exist.</li>
+<li>
+<code>archived_at</code> can be set or not. If <code>archived_at</code> is set, it means the bucket was <strong>Archived</strong> in the old state model.</li>
+</ul>
+</li>
+<li>
+<strong>Completed</strong> - The bucket is funded and the money has been paid. It's less visible on the group page.
+<ul>
+<li><code>status == 'funded'</code></li>
+<li>
+<code>paid_at</code> is set.</li>
+<li>There's no transition out of this state.</li>
+<li>Contributions can exist.</li>
+<li>
+<code>archived_at</code> can be set or not. If <code>archived_at</code> is set, it means the bucket was <strong>Archived</strong> in the old state model.</li>
+</ul>
+</li>
+<li>
+<strong>Cancelled</strong> - The bucket is cancelled. It’s not possible to contribute to it. Any previous contributions has been deleted. It’s less visible on the group page.
+<ul>
+<li>
+<code>archived_at</code> is set.</li>
+<li>
+<code>paid_at</code> is not set.</li>
+<li><code>(status == 'draft') || (status == 'live') || (status == 'refunded')</code></li>
+<li>There's no transition out of this state.</li>
+<li>No contributions should exist.</li>
+</ul>
+</li>
+</ul>
+<h2>
+<a aria-hidden="true" class="anchor" href="#the-change-from-the-old-state-model-to-the-new-state-model" id="user-content-the-change-from-the-old-state-model-to-the-new-state-model"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>The change from the old state model to the new state model</h2>
+<table>
+<thead>
+<tr>
+<th>Old state</th>
+<th>New state</th>
+<th>Comments</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Idea</td>
+<td>Idea</td>
+<td></td>
+</tr>
+<tr>
+<td>Funding</td>
+<td>Funding</td>
+<td></td>
+</tr>
+<tr>
+<td>Funded</td>
+<td>Funded</td>
+<td>
+<code>paid_at</code> is null at creation, so it stays in the same state</td>
+</tr>
+<tr>
+<td>Archived</td>
+<td>Funded</td>
+<td>We're just ignoring <code>archived_at</code> since we know it's not cancelled</td>
+</tr>
+<tr>
+<td>Cancelled</td>
+<td>Cancelled</td>
+<td>
+<code>paid_at</code> is null. Old <strong>Archived</strong> buckets that get's cancelled set <code>status = 'refunded'</code>
+</td>
+</tr>
+</tbody>
+</table>
+<h2>
+<a aria-hidden="true" class="anchor" href="#a-simple-way-of-determining-state" id="user-content-a-simple-way-of-determining-state"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>A simple way of determining state</h2>
+<p>We create a bit vector. The elements are <code>status</code>, if <code>archived_at</code> is set and if <code>paid_at</code> is set.</p>
+<p>We set the values of <code>status</code> to:</p>
+<table>
+<thead>
+<tr>
+<th><code>status</code></th>
+<th>Decimal value</th>
+<th>Binary value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>draft</code></td>
+<td>0</td>
+<td>00</td>
+</tr>
+<tr>
+<td><code>live</code></td>
+<td>1</td>
+<td>01</td>
+</tr>
+<tr>
+<td><code>funded</code></td>
+<td>2</td>
+<td>10</td>
+</tr>
+<tr>
+<td><code>refunded</code></td>
+<td>3</td>
+<td>11</td>
+</tr>
+</tbody>
+</table>
+<p>For <code>archived_at</code> and <code>paid_at</code> we define a value of 1 if it's set and 0 if it's not set.</p>
+<p>We define the bit-vector: &lt;<code>status</code> 2 bits&gt;&lt;<code>archived_at</code> 1 bit&gt;&lt;<code>paid_at</code> 1 bit&gt;. 4 bits in total giving it values between 0 and 15.</p>
+<p>The states then become:</p>
+<table>
+<thead>
+<tr>
+<th>Decimal vector value</th>
+<th>Binary vector value</th>
+<th>State</th>
+<th>Comment</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0</td>
+<td>0000</td>
+<td>Idea</td>
+<td></td>
+</tr>
+<tr>
+<td>1</td>
+<td>0001</td>
+<td><em>Illegal</em></td>
+<td>
+<code>paid_at</code> shouldn't be set if <code>status == 'draft'</code>
+</td>
+</tr>
+<tr>
+<td>2</td>
+<td>0010</td>
+<td>Cancelled</td>
+<td></td>
+</tr>
+<tr>
+<td>3</td>
+<td>0011</td>
+<td><em>Illegal</em></td>
+<td>
+<code>paid_at</code> shouldn't be set if <code>status == 'draft'</code>
+</td>
+</tr>
+<tr>
+<td>4</td>
+<td>0100</td>
+<td>Funding</td>
+<td></td>
+</tr>
+<tr>
+<td>5</td>
+<td>0101</td>
+<td><em>Illegal</em></td>
+<td>´paid_at<code>shouldn't be set when</code>status == 'live'`</td>
+</tr>
+<tr>
+<td>6</td>
+<td>0110</td>
+<td>Cancelled</td>
+<td></td>
+</tr>
+<tr>
+<td>7</td>
+<td>0111</td>
+<td><em>Illegal</em></td>
+<td>´paid_at<code>shouldn't be set when</code>status == 'live'`</td>
+</tr>
+<tr>
+<td>8</td>
+<td>1000</td>
+<td>Funded</td>
+<td>Ignoring <code>archived_at</code>
+</td>
+</tr>
+<tr>
+<td>9</td>
+<td>1001</td>
+<td>Completed</td>
+<td>Ignoring <code>archived_at</code>
+</td>
+</tr>
+<tr>
+<td>10</td>
+<td>1010</td>
+<td>Funded</td>
+<td>Ignoring <code>archived_at</code>
+</td>
+</tr>
+<tr>
+<td>11</td>
+<td>1011</td>
+<td>Completed</td>
+<td>Ignoring <code>archived_at</code>
+</td>
+</tr>
+<tr>
+<td>12</td>
+<td>1100</td>
+<td><em>Illegal</em></td>
+<td>
+<code>archived_at</code> should be set when <code>status == 'refunded'</code>
+</td>
+</tr>
+<tr>
+<td>13</td>
+<td>1101</td>
+<td><em>Illegal</em></td>
+<td>
+<code>paid_at</code> should not be set when <code>status == 'refunded'</code>
+</td>
+</tr>
+<tr>
+<td>14</td>
+<td>1110</td>
+<td>Cancelled</td>
+<td></td>
+</tr>
+<tr>
+<td>15</td>
+<td>1111</td>
+<td><em>Illegal</em></td>
+<td>
+<code>paid_at</code> should not be set when <code>status == 'refunded'</code>
+</td>
+</tr>
+</tbody>
+</table>
+
+        </div>
+
+    </div>]

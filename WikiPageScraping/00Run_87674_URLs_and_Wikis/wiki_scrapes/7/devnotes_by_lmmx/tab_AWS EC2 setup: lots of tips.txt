@@ -1,0 +1,158 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>Tips from <a href="https://wblinks.com/notes/aws-tips-i-wish-id-known-before-i-started/" rel="nofollow">AWS Tips I Wish I'd Known Before I Started</a>, inspired by <a href="https://launchbylunch.com/posts/2014/Jan/29/aws-tips/" rel="nofollow">Sehrope Sarkuni's post</a></p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#application-develoment" id="user-content-application-develoment"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Application develoment</h2>
+<ul>
+<li>
+<p>Look at <a href="http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-instance-metadata.html" rel="nofollow">docs on Instance Metadata and User Data</a></p>
+</li>
+<li>
+<p>change in thinking, from e.g. caring about each individual host to 'cloud' advantages re: provisioning</p>
+</li>
+<li>
+<p>store no application state on your servers - store session data on S3 databases</p>
+<ul>
+<li>if a server gets killed you won't lose state</li>
+<li>uploads can also go to S3</li>
+</ul>
+</li>
+<li>
+<p>use Debian not Ubuntu for outward-facing servers (first 2 people I asked use Debian on server)</p>
+<ul>
+<li>via <a href="https://www.reddit.com/r/linux/comments/3vnri7/debian_8_jessie_vs_ubuntu_1404_lts_for_a_server/" rel="nofollow">this thread</a> on the merits of each distro:</li>
+</ul>
+<blockquote>
+<p>Debian provides security support for all 10k+ packages.
+Ubuntu provides security support for 1k tops.
+i would never let a single package from Universe touch an outward facing server.</p>
+</blockquote>
+<hr/>
+<blockquote>
+<p>14.04 is really old right now. Debian 8 has much newer software.
+A new Ubuntu LTS will be out in April 2016.</p>
+</blockquote>
+<p>(at time of writing Ubuntu 16.04 is there, but 14 is on the front AMI page)</p>
+</li>
+<li>
+<p>AMI = Amazon Machine Image, "a template that contains the software configuration (operating system, application server, and applications) required to launch your instance. You can select an AMI provided by AWS, our user community, or the AWS Marketplace; or you can select one of your own AMIs."</p>
+</li>
+<li>
+<p>NB: I have heard differently...</p>
+</li>
+<li>
+<p>Store more info in logs:</p>
+<blockquote>
+<p>Log lines normally have information like timestamp, pid, etc. You'll also probably want to add instance-id, region, availability-zone and environment (staging, production, etc), as these will help debugging considerably. You can get this information from the instance metadata service. The method I use is to grab this information as part of my bootstrap scripts, and store it in files on the filesystem (/env/az, /env/region, etc). This way I'm not constantly querying the metadata service for the information. You should make sure this information gets updated properly when your instances reboot, as you don't want to save an AMI and have the same data persist, as it will then be incorrect.</p>
+</blockquote>
+<ul>
+<li>
+<p>"bootstrap" scripts are commands to be run on startup (<a href="https://docs.docker.com/engine/reference/builder/" rel="nofollow">Dockerfiles</a> follow a similar logic in setting up an environment)</p>
+<ul>
+<li>rather than just being a matter of reproducibility, AWS bootstrap scripts are intended to pass user data into the instance. <a href="http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/user-data.html" rel="nofollow">Via AWS docs</a>:</li>
+</ul>
+<blockquote>
+<p>You can also pass this data into the launch wizard as plain text, as a file (this is useful for launching instances via the command line tools), or as base64-encoded text (for API calls).</p>
+</blockquote>
+</li>
+<li>
+<p>from the CLI: use the <code>--user-data</code> parameter with the <code>run-instances</code> command.</p>
+<ul>
+<li>for Amazon EC2 CLI, make that <code>ec2-run-instances</code>, and for the Query API use the <code>UserData</code> parameter with the <code>RunInstances</code> command.</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+<p>use an SDK: {Android, browser, iOS, Java, .NET, Node.js, PHP, Python, Ruby, Go, C++ (developer preview)}</p>
+</li>
+<li>
+<p>final recommendation on development from wblinks is to have a sysadmin tool, syslog viewer, or something to view current real-time log info w/o need to SSH into a running instance. Logs should be centralised elsewhere anyway.</p>
+</li>
+</ul>
+<h2>
+<a aria-hidden="true" class="anchor" href="#operations" id="user-content-operations"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Operations</h2>
+<blockquote>
+<p>If you have to SSH into your servers, then your automation has failed</p>
+</blockquote>
+<p>"Disable SSH access to all servers", at the firewall level cf. on servers themselves to "transition to this mindset".</p>
+<blockquote>
+<p>It forced me to get my automation into a decent state, but it might not be for everyone.</p>
+</blockquote>
+<ul>
+<li>
+<p>See: <a href="https://news.ycombinator.com/item?id=7173361" rel="nofollow">discussion of this tip on HN</a></p>
+</li>
+<li>
+<p>Don't care about servers, just about the service (servers will fail, so what).</p>
+</li>
+<li>
+<p>Don't give servers static/elastic IPs. Put things behind a <a href="https://aws.amazon.com/elasticloadbalancing/" rel="nofollow">load balancer</a></p>
+</li>
+<li>
+<p><strong>Get your alerts to become notifications</strong></p>
+</li>
+<li>
+<p><strong>Catch runaway billing with granular bills</strong></p>
+</li>
+</ul>
+<h2>
+<a aria-hidden="true" class="anchor" href="#security" id="user-content-security"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Security</h2>
+<ul>
+<li>
+<p>use EC2 roles, don't give applications an IAM account</p>
+<ul>
+<li>"If you give an application AWS credentials, you're doing it wrong".</li>
+<li>specify permissions per role</li>
+<li>very easy to use SDK with these - will receive <strong>temporary credentials</strong>
+</li>
+</ul>
+</li>
+<li>
+<p>Assign permissions to groups, not users</p>
+</li>
+<li>
+<p>Don't log into master, use IAM</p>
+</li>
+<li>
+<p>Multi-factor auth</p>
+</li>
+<li>
+<p>Check for changes in security settings, prevent against intrusions (<a href="https://www.youtube.com/user/AmazonWebServices/Cloud?x=us-en_reinvent_1878_35" rel="nofollow">video</a>, <a href="http://awsmedia.s3.amazonaws.com/SEC402.pdf" rel="nofollow">presentation</a>)</p>
+</li>
+<li>
+<p>use CloudTrail to keep an audit log, logs any action performed via API or web console to S3 bucket</p>
+<ul>
+<li>version bucket to ensure not modifiable - you hope that you'll never need to use this</li>
+</ul>
+</li>
+</ul>
+<h2>
+<a aria-hidden="true" class="anchor" href="#s3" id="user-content-s3"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>S3</h2>
+<ul>
+<li>Use <code>-</code> not <code>.</code> in bucket names, for SSL to avoid mismatch errors (cannot change once created)</li>
+<li>Avoid filesystem mounts</li>
+<li>You don't need to use CloudFront in front of S3 (but it can help if you need speed over scale)
+<ul>
+<li>CDN that copies your content to edge locations</li>
+</ul>
+</li>
+</ul>
+<blockquote>
+<p>This seems like a strange idea, but one of the implementation details of S3 is that Amazon use the object key to determine where a file is physically placed in S3. So files with the same prefix might end up on the same hard disk for example. By randomising your key prefixes, you end up with a better distribution of your object files. (Source: <a href="http://aws.typepad.com/aws/2012/03/amazon-s3-performance-tips-tricks-seattle-hiring-event.html" rel="nofollow">S3 Performance Tips &amp; Tricks</a>)</p>
+</blockquote>
+<hr/>
+<ul>
+<li>AWS has a CLI tool <a href="http://aws.amazon.com/tools/" rel="nofollow">here</a>
+</li>
+</ul>
+
+        </div>
+
+        <div class="wiki-footer gollum-markdown-content boxed-group" id="wiki-footer">
+          <div class="boxed-group-inner wiki-auxiliary-content markdown-body">
+            <p><a href="https://github.com/lmmx/devnotes/wiki">Main page</a></p>
+
+          </div>
+        </div>
+    </div>]

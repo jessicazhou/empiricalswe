@@ -1,0 +1,209 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p><a href="https://github.com/Sensorino/sensorino-smarthome/blob/master/base_lib.py"><code>base_lib.py</code></a> in the source tree is a python module to make integration of new Radio-Access-Technologies (RATs) with Sensorino networks easy.</p>
+<p>The Sensorino server allows any number of Base scripts being connected to it at the same time, working as gateways to the actual radio modules and, through them, to remote devices.  Only two scripts are currently included in the source tree:</p>
+<ul>
+<li>
+<code>base-connect.py</code> to connect to a Sensorino Base and through it to remote Sensorino nodes..</li>
+<li>
+<code>base-ble-dbus.py</code> to connect to a Bluetooth Low-Energy adapter and remote Bluetooth devices.</li>
+</ul>
+<p>One more script <code>base-test.py</code> can be used to simulate a Base and a remote node for development.  <code>base-test.py</code> and <code>base-ble-dbus.py</code> are based on the <code>base_lib</code> module.</p>
+<p>A Base script needs to communicate with both the radio adapter in question and the Sensorino Smarthome server.  The Base API helps with the latter task.</p>
+<h1>
+<a aria-hidden="true" class="anchor" href="#base_lib-example" id="user-content-base_lib-example"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>base_lib Example</h1>
+<p>This creates a very simple network with one remote node, one service and two data channels: one sensor and one actuator.  See <a href="https://github.com/Sensorino/sensorino-smarthome/blob/master/base-test.py"><code>base-test.py</code></a> and <a href="https://github.com/Sensorino/sensorino-smarthome/blob/master/base-ble-dbus.py"><code>base-ble-dbus.py</code></a> for more elaborate examples.</p>
+<div class="highlight highlight-source-python"><pre><span class="pl-k">import</span> base_lib
+
+node_addr <span class="pl-k">=</span> <span class="pl-c1">10</span>
+service_id <span class="pl-k">=</span> <span class="pl-c1">5</span>
+
+node <span class="pl-k">=</span> base_lib.base_create_node(node_addr)
+service <span class="pl-k">=</span> node.create_service(service_id)
+actuator_channel <span class="pl-k">=</span> service.create_channel(<span class="pl-s"><span class="pl-pds">'</span>switch<span class="pl-pds">'</span></span>, <span class="pl-c1">True</span>)
+sensor_channel <span class="pl-k">=</span> service.create_channel(<span class="pl-s"><span class="pl-pds">'</span>temperature<span class="pl-pds">'</span></span>, <span class="pl-c1">False</span>)
+
+<span class="pl-c"><span class="pl-c">#</span> Run until interrupted or server boots us</span>
+base_lib.base_init(<span class="pl-s"><span class="pl-pds">'</span>example-name<span class="pl-pds">'</span></span>)
+<span class="pl-k">while</span> <span class="pl-c1">True</span>:
+    <span class="pl-k">try</span>:
+        base_lib.base_run(<span class="pl-c1">60</span>)
+    <span class="pl-k">except</span> <span class="pl-c1">KeyboardInterrupt</span>:
+        <span class="pl-k">break</span>
+    <span class="pl-k">except</span> base_lib.BaseDisconnect:
+        <span class="pl-k">break</span>
+base_lib.base_done()</pre></div>
+<h1>
+<a aria-hidden="true" class="anchor" href="#base_lib-api" id="user-content-base_lib-api"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>base_lib API</h1>
+<p>Three main classes are defined.  See <a href="https://github.com/Sensorino/Sensorino/wiki/Sensorino-Architecture">Sensorino Architecture</a> in the Sensorino wiki for term definitions.</p>
+<ul>
+<li>
+<p><code>base_lib.base_node</code> Objects of this class represent one remote node each.  There's generally no point in subclassing <code>base_node</code>.</p>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>__init__(addr)</code></td>
+<td>Constructor, requires the new device's address as a parameter.  The address can be a string or a number.</td>
+</tr>
+<tr>
+<td><code>get_addr()</code></td>
+<td></td>
+</tr>
+<tr>
+<td><code>set_name(name)</code></td>
+<td></td>
+</tr>
+<tr>
+<td><code>create_service(...)</code></td>
+<td>Creates a <code>base_lib.base_service</code> object, see further down.  Accepts same parameters as the <code>base_service</code> constructor.  The service is added to this <code>base_node</code> object.</td>
+</tr>
+<tr>
+<td><code>add_service(service)</code></td>
+<td>Adds an existing <code>base_lib.base_service</code> object to this node.  Use this for example when subclassing <code>base_service</code>.</td>
+</tr>
+</tbody>
+</table>
+</li>
+<li>
+<p><code>base_lib.base_service</code> Objects of this class implement a <code>base_node</code>'s services.  You may use objects of <code>base_service</code> as is or subclass it.</p>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>__init__(service_id)</code></td>
+<td>Constructor, requires the new service's ID.  The ID must be a number, see <a href="https://github.com/Sensorino/Sensorino/wiki/Sensorino-Architecture">Sensorino Architecture</a> for details.</td>
+</tr>
+<tr>
+<td><code>get_id()</code></td>
+<td></td>
+</tr>
+<tr>
+<td><code>set_name(name)</code></td>
+<td></td>
+</tr>
+<tr>
+<td><code>create_channel(...)</code></td>
+<td>Creates a <code>base_lib.base_channel</code> object, see documentation further down.  Accepts same parameters as the <code>base_channel</code> constructor.  The channel is added to this <code>base_service</code> object.</td>
+</tr>
+<tr>
+<td><code>add_channel(channel)</code></td>
+<td>Adds an existing <code>base_lib.base_channel</code> object to this service.  Use this for example when subclassing <code>base_channel</code>.</td>
+</tr>
+<tr>
+<td><code>get_values(types)</code></td>
+<td>Returns list of current values of this service's channels matching any type in <code>types</code>, ordered as in the <a href="https://github.com/Sensorino/Sensorino/wiki/Sensorino-Protocol">Sensorino Protocol</a>.  Not usually called by the module user, may be overloaded by user.</td>
+</tr>
+<tr>
+<td><code>set_values(value_map)</code></td>
+<td>Called with a <code>dict</code> mapping channel IDs (pair of type and channel number within that type) to new values, when new values are to be set, either because this is being requested by the server (for actuator channels) or the user is publishing new values of sensor channels through <code>publish_values</code> (see below).  May be overloaded.</td>
+</tr>
+<tr>
+<td><code>publish_values(value_map)</code></td>
+<td>Notifies the server that a subset of channels, defined by <code>value_map</code> in the same way as in <code>set_values</code>, is being updated with new values.  Should only be normally called for <em>sensor channels</em>.  Calls <code>set_values</code> (see above).</td>
+</tr>
+</tbody>
+</table>
+</li>
+<li>
+<p><code>base_lib.base_channel</code> Objects of this class implement a <code>base_service</code>'s channels.  The module user will normally want to subclass <code>base_channel</code> for actuators in order to handle the server's <code>.set_value</code> calls.</p>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>__init__(type, writable, init_val=None)</code></td>
+<td>Creates a <code>base_lib.base_channel</code> object.  <code>type</code> is the new channel's physical data type (implies measurement unit of the values published and accepted from server).  <code>writable</code> should be true for actuator channels, false otherwise.  <code>init_val</code> is the optional initial value for the channel.</td>
+</tr>
+<tr>
+<td><code>get_type()</code></td>
+<td></td>
+</tr>
+<tr>
+<td><code>get_chan_num(service)</code></td>
+<td>Accepts a <code>base_lib.base_service</code> parameter and returns the channel number of this channel within the service.  Together the channel data type and channel number form the channel ID, unique within the service.  If channel is not part of the service, an exception will be raised.</td>
+</tr>
+<tr>
+<td><code>is_actuator()</code></td>
+<td>True if <code>__init__</code>'s <code>writable</code> argument was True.</td>
+</tr>
+<tr>
+<td><code>set_name()</code></td>
+<td></td>
+</tr>
+<tr>
+<td><code>get_value()</code></td>
+<td>Returns channel's current value -- this may be the last value published (for sensors) or set (for actuators) or, if overloaded, it may trigger reading the value at the time of the call from a remote device.</td>
+</tr>
+<tr>
+<td><code>set_value(new_value)</code></td>
+<td>Sets a new value for this channel.  User code is not expect to use this method, but may overload it to implement actuator channels.  Server will call this when it requests a new actuator value to be set and <code>.publish_value</code> (see below) will call this for sensor channels.</td>
+</tr>
+<tr>
+<td><code>publish_value(new_value)</code></td>
+<td>Updates the channel's value and sends the new value to the server.  Should normally only be called for sensor channels.</td>
+</tr>
+</tbody>
+</table>
+</li>
+</ul>
+<p>The following functions are also defined:</p>
+<table>
+<thead>
+<tr>
+<th>Function</th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>base_lib.base_create_node(...)</code></td>
+<td>Creates a new <code>base_lib.base_node</code> object (same as if the constructor was called) and adds it to the base_lib's state making it visible to the server.</td>
+</tr>
+<tr>
+<td><code>base_lib.base_add_node(node)</code></td>
+<td>Adds an existing <code>base_node</code> object to base_lib's state.</td>
+</tr>
+</tbody>
+</table>
+<p>Main loop functions:</p>
+<table>
+<thead>
+<tr>
+<th>Function</th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>base_lib.base_init(base_name)</code></td>
+<td>Connects this base script to the server and introduces ourselves as <code>base_name</code>.  The name should be a unique local radio adapter's name or identifier so that the server knows which radio adapter to use for traffic addressed to a node which has been detect through this base script instance.</td>
+</tr>
+<tr>
+<td><code>base_lib.base_run(timeout)</code></td>
+<td>Run the server communication main loop for <code>timeout</code> seconds.  It is possible to integrate this main loop with other python main loops based on <code>select</code> calls.</td>
+</tr>
+<tr>
+<td><code>base_lib.base_done()</code></td>
+<td>Call this to close the server connection and free up any resources.</td>
+</tr>
+</tbody>
+</table>
+
+        </div>
+
+    </div>]

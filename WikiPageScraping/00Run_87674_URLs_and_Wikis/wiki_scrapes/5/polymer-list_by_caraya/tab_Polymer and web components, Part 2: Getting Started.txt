@@ -1,0 +1,174 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <h2>
+<a aria-hidden="true" class="anchor" href="#the-project-list-app" id="user-content-the-project-list-app"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>The project list app</h2>
+<p>To test Web Components and validate assumptions and challenges, I've developed a project list application using Polymer and <a href="https://www.firebase.com/" rel="nofollow">Firebase</a>. I will walk through the process and some of the challenges I've found.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#getting-started-conceptualizing-the-application" id="user-content-getting-started-conceptualizing-the-application"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Getting started: Conceptualizing the application</h3>
+<p>Before we start coding we need to think about what we want the application to do. This makes the coding easier as it gives you direction in your coding and it constrains development (follow the plan and don't go crazy coding)</p>
+<p>In the case of the project list application the goals are the following:</p>
+<ul>
+<li>Display a list of projects I'm working on or have recently completed</li>
+<li>For each project provide the following information
+<ul>
+<li>Type of project (writing, code, other)</li>
+<li>Project status (research, in progress, completed)</li>
+<li>Links to code, writing and other resources</li>
+<li>A description of the project</li>
+<li>Any additional notes for the project</li>
+</ul>
+</li>
+<li>Add new projects</li>
+<li>Edit existing projects</li>
+<li>Provide additional information about me</li>
+</ul>
+<p>Initially I chose to use JSON for the project. I didn't see a reason to spend money on database hosts or other expensive options.</p>
+<p>The JSON for one of the projects looks like this (formated for clarity):</p>
+<div class="highlight highlight-source-json"><pre>{
+      <span class="pl-s"><span class="pl-pds">"</span>name<span class="pl-pds">"</span></span>: <span class="pl-s"><span class="pl-pds">"</span>Material Component Experiment<span class="pl-pds">"</span></span>,
+      <span class="pl-s"><span class="pl-pds">"</span>description<span class="pl-pds">"</span></span>: <span class="pl-s"><span class="pl-pds">"</span>Creating a the web front end for a web application </span>
+<span class="pl-s">      using Web Compontents and Google Paper components. Learn How to use </span>
+<span class="pl-s">      components and how to integrate Paper’s material look <span class="pl-pds">"</span></span>,
+      <span class="pl-s"><span class="pl-pds">"</span>url<span class="pl-pds">"</span></span>: {
+        <span class="pl-s"><span class="pl-pds">"</span>writeup<span class="pl-pds">"</span></span>: <span class="pl-s"><span class="pl-pds">"</span><span class="pl-pds">"</span></span>,
+        <span class="pl-s"><span class="pl-pds">"</span>code<span class="pl-pds">"</span></span>: <span class="pl-s"><span class="pl-pds">"</span>https://github.com/caraya/polymer-playground<span class="pl-pds">"</span></span>,
+        <span class="pl-s"><span class="pl-pds">"</span>other<span class="pl-pds">"</span></span>: <span class="pl-s"><span class="pl-pds">"</span><span class="pl-pds">"</span></span>
+      },
+      <span class="pl-s"><span class="pl-pds">"</span>type<span class="pl-pds">"</span></span>: <span class="pl-s"><span class="pl-pds">"</span>Code<span class="pl-pds">"</span></span>,
+      <span class="pl-s"><span class="pl-pds">"</span>stage<span class="pl-pds">"</span></span>: <span class="pl-s"><span class="pl-pds">"</span>Early Research and code<span class="pl-pds">"</span></span>,
+      <span class="pl-s"><span class="pl-pds">"</span>notes<span class="pl-pds">"</span></span>: <span class="pl-s"><span class="pl-pds">"</span><span class="pl-pds">"</span></span>
+  }</pre></div>
+<p>Using this model, I built a list of projects. This is the data source.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#getting-started-first-look-at-code" id="user-content-getting-started-first-look-at-code"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Getting started: First look at code</h3>
+<p>Now that we have our data in a model, we can start coding.  There are two questions at this point:</p>
+<ul>
+<li>How do we want the project to look like?</li>
+<li>How are we going to connect the data to the view of our project</li>
+</ul>
+<p>While we answer these questions we'll visit some important concepts of Web Components and Polymer.</p>
+<h4>
+<a aria-hidden="true" class="anchor" href="#importing-necessary-elements" id="user-content-importing-necessary-elements"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Importing necessary elements</h4>
+<div class="highlight highlight-text-html-basic"><pre>&lt;<span class="pl-ent">link</span> <span class="pl-e">rel</span>=<span class="pl-s"><span class="pl-pds">"</span>import<span class="pl-pds">"</span></span> <span class="pl-e">href</span>=<span class="pl-s"><span class="pl-pds">"</span>bower_components/polymer/polymer.html<span class="pl-pds">"</span></span>&gt;
+&lt;<span class="pl-ent">link</span> <span class="pl-e">rel</span>=<span class="pl-s"><span class="pl-pds">"</span>import<span class="pl-pds">"</span></span> <span class="pl-e">href</span>=<span class="pl-s"><span class="pl-pds">"</span>bower_components/core-toolbar/core-toolbar.html<span class="pl-pds">"</span></span>&gt;
+&lt;<span class="pl-ent">link</span> <span class="pl-e">rel</span>=<span class="pl-s"><span class="pl-pds">"</span>import<span class="pl-pds">"</span></span> <span class="pl-e">href</span>=<span class="pl-s"><span class="pl-pds">"</span>bower_components/font-roboto/roboto.html<span class="pl-pds">"</span></span>&gt;
+&lt;<span class="pl-ent">link</span> <span class="pl-e">rel</span>=<span class="pl-s"><span class="pl-pds">"</span>import<span class="pl-pds">"</span></span> <span class="pl-e">href</span>=<span class="pl-s"><span class="pl-pds">"</span>bower_components/core-ajax/core-ajax.html<span class="pl-pds">"</span></span>&gt;</pre></div>
+<p>Before we start our mock of the project list we need to do some imports. This uses the <a href="http://www.w3.org/TR/html-imports/" rel="nofollow">HTML Imports</a> specification. The imports are similar to the way we link CSS stylesheets, the difference is in what we use in the rel attribute, instead of linking a stylesheet we tell the browser that t his is an import.</p>
+<p>We first import the Polymer Library itself to make sure that all the Polymer-specific goodness will work as we plan.</p>
+<p>Then we import the <code>core-toolbar</code> element to create the heading for each project</p>
+<p>The <code>font-roboto</code> element is a wrapper around a link to the Roboto Draft font using the Google Font link syntax. It is equivalent to using the following link: <code>&lt;link href='//fonts.googleapis.com/css?family=RobotoDraft:regular,bold,italic,thin,light,bolditalic,black,medium&amp;amp;lang=en' rel='stylesheet' type='text/css'&gt;</code> using a tag instead of the link.</p>
+<p>Like the <code>font-roboto</code> element, <code>core-ajax</code> is a wrapper for XHR functionality. We don't have to write Javascript to get AJAX working on our application, it's all markup!</p>
+<h4>
+<a aria-hidden="true" class="anchor" href="#the-polymer-element-creating-our-tag" id="user-content-the-polymer-element-creating-our-tag"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>The polymer-element: Creating our tag</h4>
+<p>The main component of a Polymer custom element is the <code>polymer-element</code> tag which wraps all of the element's functionality. The two parameters we use for this particular element are <code>name</code> which is the name of the tag that we'll use in our parent component.</p>
+<div class="highlight highlight-text-html-basic"><pre>&lt;<span class="pl-ent">polymer-element</span> <span class="pl-e">name</span>=<span class="pl-s"><span class="pl-pds">"</span>project-list<span class="pl-pds">"</span></span>&gt;
+  <span class="pl-c"><span class="pl-c">&lt;!--</span> Template goes here <span class="pl-c">--&gt;</span></span>
+&lt;/<span class="pl-ent">polymer-element</span>&gt;</pre></div>
+<h4>
+<a aria-hidden="true" class="anchor" href="#templates-creating-reusable-chunks-of-content" id="user-content-templates-creating-reusable-chunks-of-content"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Templates, creating reusable chunks of content</h4>
+<p>Templates provide developers with the means to create templates for our tag's content</p>
+<div class="highlight highlight-text-html-basic"><pre>&lt;<span class="pl-ent">polymer-element</span> <span class="pl-e">name</span>=<span class="pl-s"><span class="pl-pds">"</span>project-list<span class="pl-pds">"</span></span> <span class="pl-e">attribute</span>=<span class="pl-s"><span class="pl-pds">"</span>url<span class="pl-pds">"</span></span>&gt;
+  &lt;<span class="pl-ent">template</span>&gt;
+    <span class="pl-c"><span class="pl-c">&lt;!--</span> Template content goes here <span class="pl-c">--&gt;</span></span>
+  &lt;/<span class="pl-ent">template</span>&gt;
+&lt;/<span class="pl-ent">polymer-element</span>&gt;</pre></div>
+<h4>
+<a aria-hidden="true" class="anchor" href="#pulling-the-data-for-our-application" id="user-content-pulling-the-data-for-our-application"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Pulling the data for our application</h4>
+<div class="highlight highlight-text-html-basic"><pre>&lt;<span class="pl-ent">polymer-element</span> <span class="pl-e">name</span>=<span class="pl-s"><span class="pl-pds">"</span>project-list<span class="pl-pds">"</span></span> <span class="pl-e">attributes</span>=<span class="pl-s"><span class="pl-pds">"</span>url<span class="pl-pds">"</span></span>&gt;
+  &lt;<span class="pl-ent">template</span>&gt;
+      &lt;<span class="pl-ent">core-ajax</span> 
+         <span class="pl-e">auto</span> 
+         <span class="pl-e">url</span>=<span class="pl-s"><span class="pl-pds">"</span>{{url}}<span class="pl-pds">"</span></span> 
+         <span class="pl-e">handleAs</span>=<span class="pl-s"><span class="pl-pds">"</span>json<span class="pl-pds">"</span></span>
+         <span class="pl-e">response</span>=<span class="pl-s"><span class="pl-pds">"</span>{{projects}}<span class="pl-pds">"</span></span>&gt;
+      &lt;/<span class="pl-ent">core-ajax</span>&gt;
+      <span class="pl-c"><span class="pl-c">&lt;!--</span> rest of the template goes here <span class="pl-c">--&gt;</span></span>
+  &lt;/<span class="pl-ent">template</span>&gt;
+&lt;/<span class="pl-ent">polymer-element</span>&gt;</pre></div>
+<h4>
+<a aria-hidden="true" class="anchor" href="#encapsulation-its-mine-and-you-cant-have-it" id="user-content-encapsulation-its-mine-and-you-cant-have-it"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Encapsulation: It's mine and you can't have it</h4>
+<div class="highlight highlight-text-html-basic"><pre>&lt;<span class="pl-ent">polymer-element</span> <span class="pl-e">name</span>=<span class="pl-s"><span class="pl-pds">"</span>project-list<span class="pl-pds">"</span></span> <span class="pl-e">attributes</span>=<span class="pl-s"><span class="pl-pds">"</span>url<span class="pl-pds">"</span></span>&gt;
+  &lt;<span class="pl-ent">template</span>&gt;
+      &lt;<span class="pl-ent">core-ajax</span> 
+         <span class="pl-e">auto</span> 
+         <span class="pl-e">url</span>=<span class="pl-s"><span class="pl-pds">"</span>{{url}}<span class="pl-pds">"</span></span> 
+         <span class="pl-e">handleAs</span>=<span class="pl-s"><span class="pl-pds">"</span>json<span class="pl-pds">"</span></span>
+         <span class="pl-e">response</span>=<span class="pl-s"><span class="pl-pds">"</span>{{projects}}<span class="pl-pds">"</span></span>&gt;
+      &lt;/<span class="pl-ent">core-ajax</span>&gt;
+    &lt;<span class="pl-ent">style</span>&gt;<span class="pl-s1"></span>
+<span class="pl-s1">    <span class="pl-ent">core-toolbar</span> {</span>
+<span class="pl-s1">      <span class="pl-c1"><span class="pl-c1">margin-bottom</span></span>: <span class="pl-c1">15<span class="pl-k">px</span></span>;</span>
+<span class="pl-s1">      <span class="pl-c1"><span class="pl-c1">background-color</span></span>: <span class="pl-c1">#03A9F4</span>;</span>
+<span class="pl-s1">      <span class="pl-c1"><span class="pl-c1">color</span></span>: <span class="pl-c1">white</span>;</span>
+<span class="pl-s1">    }</span>
+<span class="pl-s1">    <span class="pl-e">.card</span> {</span>
+<span class="pl-s1">      <span class="pl-c1"><span class="pl-c1">font-family</span></span>: <span class="pl-s"><span class="pl-pds">"</span>RobotoDraft<span class="pl-pds">"</span></span>, <span class="pl-c1">sans-serif</span>;</span>
+<span class="pl-s1">      <span class="pl-c1"><span class="pl-c1">border</span></span>: <span class="pl-c1">1<span class="pl-k">px</span></span> <span class="pl-c1">solid</span> <span class="pl-c1">#000</span>; </span>
+<span class="pl-s1">      <span class="pl-c1"><span class="pl-c1">padding</span></span>: <span class="pl-c1">16<span class="pl-k">px</span></span>; </span>
+<span class="pl-s1">      <span class="pl-c1"><span class="pl-c1">margin</span></span>: <span class="pl-c1">16<span class="pl-k">px</span></span>;</span>
+<span class="pl-s1">      <span class="pl-c1"><span class="pl-c1">border-radius</span></span>: <span class="pl-c1">10<span class="pl-k">px</span></span>;</span>
+<span class="pl-s1">    }</span>
+<span class="pl-s1">    <span class="pl-e">.project-notes</span> {</span>
+<span class="pl-s1">      <span class="pl-c1"><span class="pl-c1">margin-bottom</span></span>: <span class="pl-c1">2.5<span class="pl-k">em</span></span>;</span>
+<span class="pl-s1">    }</span>
+<span class="pl-s1">    </span><span class="pl-s1">&lt;</span>/<span class="pl-ent">style</span>&gt;
+    <span class="pl-c"><span class="pl-c">&lt;!--</span> rest of the template goes here <span class="pl-c">--&gt;</span></span>
+  &lt;/<span class="pl-ent">template</span>&gt;
+&lt;/<span class="pl-ent">polymer-element</span>&gt;</pre></div>
+<h3>
+<a aria-hidden="true" class="anchor" href="#template-html-content-where-the-magic-actually-happens" id="user-content-template-html-content-where-the-magic-actually-happens"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Template HTML content: Where the magic actually happens</h3>
+<div class="highlight highlight-text-html-basic"><pre>    <span class="pl-c"><span class="pl-c">&lt;!--</span> Content from prior sections ommited <span class="pl-c">--&gt;</span></span>
+    &lt;<span class="pl-ent">div</span> <span class="pl-e">class</span>=<span class="pl-s"><span class="pl-pds">"</span>card<span class="pl-pds">"</span></span>&gt;
+      &lt;<span class="pl-ent">template</span> <span class="pl-e">repeat</span>=<span class="pl-s"><span class="pl-pds">"</span>{{project in projects}}<span class="pl-pds">"</span></span>&gt;
+        &lt;<span class="pl-ent">core-toolbar</span>&gt;
+          &lt;<span class="pl-ent">h3</span> <span class="pl-e">flex</span>&gt;{{project.name}}&lt;/<span class="pl-ent">h3</span>&gt;
+          &lt;<span class="pl-ent">core-icon</span> 
+            <span class="pl-e">class</span>=<span class="pl-s"><span class="pl-pds">"</span>project-edit<span class="pl-pds">"</span></span>
+            <span class="pl-e">icon</span>=<span class="pl-s"><span class="pl-pds">"</span>editor:mode-edit<span class="pl-pds">"</span></span> 
+            <span class="pl-e">alt</span>=<span class="pl-s"><span class="pl-pds">"</span>Edit Project<span class="pl-pds">"</span></span> <span class="pl-e">on-tap</span>=<span class="pl-s"><span class="pl-pds">"</span>{{handleEdit}}<span class="pl-pds">"</span></span>&gt;
+          &lt;/<span class="pl-ent">core-icon</span>&gt;
+        &lt;/<span class="pl-ent">core-toolbar</span>&gt;
+        &lt;<span class="pl-ent">div</span> <span class="pl-e">class</span>=<span class="pl-s"><span class="pl-pds">"</span>project-description<span class="pl-pds">"</span></span>&gt;
+          {{project.description}}
+        &lt;/<span class="pl-ent">div</span>&gt;
+        
+        &lt;<span class="pl-ent">h3</span>&gt;Project Status&lt;/<span class="pl-ent">h3</span>&gt;
+        
+        &lt;<span class="pl-ent">ul</span>&gt;
+          &lt;<span class="pl-ent">li</span>&gt;Type: {{project.type}}&lt;/<span class="pl-ent">li</span>&gt;
+          &lt;<span class="pl-ent">li</span>&gt;Stage: {{project.stage}}&lt;/<span class="pl-ent">li</span>&gt;
+        &lt;/<span class="pl-ent">ul</span>&gt;
+        
+        &lt;<span class="pl-ent">h3</span>&gt;Relevant Links&lt;/<span class="pl-ent">h3</span>&gt;
+        &lt;<span class="pl-ent">ul</span>&gt;
+          &lt;<span class="pl-ent">li</span>&gt;Writeup: &lt;<span class="pl-ent">a</span> <span class="pl-e">href</span>=<span class="pl-s"><span class="pl-pds">"</span>{{project.url.writeup}}<span class="pl-pds">"</span></span>&gt;{{project.url.writeup}}&lt;/<span class="pl-ent">a</span>&gt;&lt;/<span class="pl-ent">li</span>&gt;
+          &lt;<span class="pl-ent">li</span>&gt;Code: &lt;<span class="pl-ent">a</span> <span class="pl-e">href</span>=<span class="pl-s"><span class="pl-pds">"</span>{{project.url.code}}<span class="pl-pds">"</span></span>&gt;{{project.url.code}}&lt;/<span class="pl-ent">a</span>&gt;&lt;/<span class="pl-ent">li</span>&gt;
+          &lt;<span class="pl-ent">li</span>&gt;Other: &lt;<span class="pl-ent">a</span> <span class="pl-e">href</span>=<span class="pl-s"><span class="pl-pds">"</span>{{project.url.other}}<span class="pl-pds">"</span></span>&gt;{{project.url.other}}&lt;/<span class="pl-ent">a</span>&gt;&lt;/<span class="pl-ent">li</span>&gt;
+        &lt;/<span class="pl-ent">ul</span>&gt;
+        
+        &lt;<span class="pl-ent">h3</span>&gt;Project Notes&lt;/<span class="pl-ent">h3</span>&gt;
+        
+        &lt;<span class="pl-ent">div</span> <span class="pl-e">class</span>=<span class="pl-s"><span class="pl-pds">"</span>project-notes<span class="pl-pds">"</span></span>&gt;
+          {{project.notes}}
+        &lt;/<span class="pl-ent">div</span>&gt;<span class="pl-c"><span class="pl-c">&lt;!--</span> closes project-notes<span class="pl-c">--&gt;</span></span>
+      &lt;/<span class="pl-ent">template</span>&gt;
+    &lt;/<span class="pl-ent">div</span>&gt; <span class="pl-c"><span class="pl-c">&lt;!--</span> closes card div <span class="pl-c">--&gt;</span></span></pre></div>
+<h3>
+<a aria-hidden="true" class="anchor" href="#the-final-touches" id="user-content-the-final-touches"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>The final touches</h3>
+<div class="highlight highlight-text-html-basic"><pre>    <span class="pl-c"><span class="pl-c">&lt;!--</span> Content from prior sections ommited <span class="pl-c">--&gt;</span></span>
+  &lt;<span class="pl-ent">script</span>&gt;<span class="pl-s1"></span>
+<span class="pl-s1">    <span class="pl-en">Polymer</span>({</span>
+<span class="pl-s1">      <span class="pl-en">handleEdit</span><span class="pl-k">:</span> <span class="pl-k">function</span> (<span class="pl-smi">evt</span>) {</span>
+<span class="pl-s1">        <span class="pl-k">var</span> idx <span class="pl-k">=</span> <span class="pl-smi">evt</span>.<span class="pl-c1">target</span>.<span class="pl-smi">templateInstance</span>.<span class="pl-smi">model</span>.<span class="pl-smi">i</span>;</span>
+<span class="pl-s1">        <span class="pl-en">console</span>.<span class="pl-c1">log</span>(idx);</span>
+<span class="pl-s1">        <span class="pl-c1">this</span>.<span class="pl-en">fire</span>(<span class="pl-s"><span class="pl-pds">'</span>edit-project<span class="pl-pds">'</span></span>, {</span>
+<span class="pl-s1">          projectId<span class="pl-k">:</span> idx,</span>
+<span class="pl-s1">          data<span class="pl-k">:</span> payload</span>
+<span class="pl-s1">        });</span>
+<span class="pl-s1">      }</span>
+<span class="pl-s1">    });</span>
+<span class="pl-s1">  </span><span class="pl-s1">&lt;</span>/<span class="pl-ent">script</span>&gt;</pre></div>
+
+        </div>
+
+    </div>]

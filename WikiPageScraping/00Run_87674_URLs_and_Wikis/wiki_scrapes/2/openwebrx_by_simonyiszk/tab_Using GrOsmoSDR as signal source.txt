@@ -1,0 +1,73 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p><a href="http://sdr.osmocom.org/trac/wiki/GrOsmoSDR" rel="nofollow">GrOsmoSDR</a> is a GNU Radio block, which allows you to use variety of SDR hardware with OpenWebRX, including:</p>
+<ul>
+<li>FunCube Dongle</li>
+<li>bladeRF</li>
+<li>​HackRF</li>
+<li>USRP</li>
+<li>​Fairwaves UmTRX</li>
+<li>RFSPACE ​SDR-IQ, ​SDR-IP, ​NetSDR</li>
+<li>RTL-SDR, RTL-TCP</li>
+<li>MSi2500 based DVB-T dongles</li>
+<li>​SDRplay RSP</li>
+<li>​AirSpy</li>
+</ul>
+<p><strong>Step #1:</strong> You will need to install GNU Radio and GrOsmoSDR:</p>
+<pre><code>sudo apt-get install gnuradio gr-osmosdr
+</code></pre>
+<p>Make sure you have at least GNU Radio version 3.7.8.1.</p>
+<blockquote>
+<p><img align="absmiddle" alt=":green_book:" class="emoji" data-canonical-src="https://assets-cdn.github.com/images/icons/emoji/unicode/1f4d7.png" height="20" src="https://camo.githubusercontent.com/9b497d78f8f62033a8ce94985ecfac3097c0abc4/68747470733a2f2f6173736574732d63646e2e6769746875622e636f6d2f696d616765732f69636f6e732f656d6f6a692f756e69636f64652f31663464372e706e67" title=":green_book:" width="20"/> Since writing this article, a tool called <code>osmocat.py</code> has been released, which claims to do the same as steps #2-#6 below: <a href="https://github.com/roseengineering/osmocat">https://github.com/roseengineering/osmocat</a></p>
+</blockquote>
+<p><strong>Step #2:</strong> Download <a href="https://gist.githubusercontent.com/ha7ilm/19d14e1394bd2e7015e6/raw/141720f8b2b6da725fbcfc8959ee4ea4547b53a8/osmocom_source.grc" rel="nofollow">osmocom_source.grc</a> to the OpenWebRX directory.</p>
+<pre><code>cd openwebrx
+wget https://gist.githubusercontent.com/ha7ilm/19d14e1394bd2e7015e6/raw/141720f8b2b6da725fbcfc8959ee4ea4547b53a8/osmocom_source.grc
+</code></pre>
+<p><strong>Step #3:</strong> Execute the following:</p>
+<pre><code>mkfifo /tmp/osmocom_fifo
+</code></pre>
+<p><strong>Step #4:</strong> Open <a href="https://gist.githubusercontent.com/ha7ilm/19d14e1394bd2e7015e6/raw/141720f8b2b6da725fbcfc8959ee4ea4547b53a8/osmocom_source.grc" rel="nofollow">osmocom_source.grc</a> in GNU Radio Companion.</p>
+<p>You can run GNU Radio Companion by:</p>
+<pre><code>gnuradio-companion
+</code></pre>
+<p>...then select <code>File &gt; Open</code> and look for the <code>osmocom_source.grc</code>.</p>
+<p>Double-click the <strong>osmocom Source</strong> block, and configure the receiver.</p>
+<p>Maybe <em>Device Arguments</em> is the most important field, which allows you to select the receiver. The format is like this:</p>
+<pre><code>&lt;receiver type&gt;=&lt;receiver id or path&gt;
+</code></pre>
+<ul>
+<li>If you want to use RTL-SDR #0 (the first RTL-SDR connected), you should enter: <code>rtl=0</code>
+</li>
+<li>If you want to use HackRF #0 (the first HackRF connected), you should enter: <code>hackrf=0</code>
+</li>
+<li>If you have an RFSPACE SDR-IQ on port <code>/dev/ttyUSB0</code>, then you should enter:<br/><code>sdr-iq=/dev/ttyUSB0</code>
+</li>
+</ul>
+<p>There are many other options detailed on the <em>Documentation</em> tab.</p>
+<p><img alt="osmocom_source" src="images/osmocom_source_config.png"/></p>
+<p><strong>Step #5:</strong> Apply the same configuration to <code>config_webrx.py</code>. You will have to set at least the following settings:</p>
+<ul>
+<li><code>center_freq</code></li>
+<li><code>samp_rate</code></li>
+</ul>
+<p>You will also have to uncomment the two relevant lines (and comment out the ones for RTL-SDR):</p>
+<pre><code># &gt;&gt; gr-osmosdr signal source using GNU Radio (...)
+#start_rtl_command="cat /tmp/osmocom_fifo"
+#format_conversion=""
+</code></pre>
+<p>Uncomment like this:</p>
+<pre><code>start_rtl_command="cat /tmp/osmocom_fifo"
+format_conversion=""
+</code></pre>
+<p><strong>Step #6:</strong> Execute the flowgraph in GNU Radio Companion (F6 or <code>Run &gt; Execute</code>). This will supply the I/Q data for OpenWebRX.</p>
+<blockquote>
+<p>Note: next time you can just run <code>python osmocom_source.py</code> from the command-line.</p>
+</blockquote>
+<p><strong>Step #7:</strong> While the flowgraph in GNU Radio Companion is running (in the background), start OpenWebRX:</p>
+<pre><code>python openwebrx.py
+</code></pre>
+
+        </div>
+
+    </div>]

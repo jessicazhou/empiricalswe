@@ -1,0 +1,70 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <h1>
+<a aria-hidden="true" class="anchor" href="#weighable" id="user-content-weighable"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Weighable</h1>
+<p><em>Garp_Model_Db_Weighable</em> ensures a custom sort order for records.</p>
+<p>It's used when the records of a model are fetched associatively (e.g. when it was bound to another model via bindModel()) and sorted in no particular order other than "personal preference". In order to use it, configure the following:</p>
+<p>Your database table should have an INT type column to store the order in.
+Pass this column to the behavior and register the behavior, like this:</p>
+<pre><code>&lt;?php
+$this-&gt;registerObserver(new Garp_Model_Behavior_Weighable(
+ 	array(
+ 		'Model_User' =&gt; array(
+ 			'foreignKeyColumn' =&gt; 'user_id',
+ 			'weightColumn' =&gt; 'weight'
+ 		)
+ 	)
+);
+?&gt;
+</code></pre>
+<p>Note that a foreign key is required since this behavior only acts upon related data.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#features" id="user-content-features"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Features</h2>
+<p>This behavior does the following stuff for you:</p>
+<p>When you fetch related data, the associatively fetched records are automatically sorted by the weight column:</p>
+<pre><code>&lt;?php
+// Weighable behavior is registered on Model_Comment
+ $userModel = new Model_User();
+ $userModel-&gt;bindModel('Model_Comment');
+
+ $users = $userModel-&gt;fetchAll();
+
+ // the associated comments will be sorted by the custom weight column
+?&gt;
+</code></pre>
+<p>When you relate records to one another, the configured weight column is maintained so that administrators can easily drag and drop a custom order in the CMS interface.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#hasmany" id="user-content-hasmany"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>HasMany:</h3>
+<p>In a hasMany or hasOne relationship, the behavior must be registered on the model that contains the weight column.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#hasandbelongstomany" id="user-content-hasandbelongstomany"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>hasAndBelongsToMany:</h3>
+<p>In a hasAndBelongsToMany relationship, the behavior must be registered on the intersection model (for instance: Model_TagUser).</p>
+<p>Take note that when managing a hasAndBelongsToMany relationship, it makes the most sense to maintain the order from one side of the relationship only. Consider the following:</p>
+<p>User David has the following tags, in this order: nerd, moustache, male.</p>
+<p>In this case, the weight column for the David - moustache relationship will contain the integer 2.</p>
+<p>But what if that tag is linked not only to David, but to a couple of other people as well? And an admin wants to sort these people in a custom order as well? Let's say the following:</p>
+<p>Tag moustache is related to the following users, in this order: David, Harmen, Jelmer.</p>
+<p>This clashes with the above mentioned order, because now the weight column associated with David and the moustache tag should contain the integer 3 (note that the weight column is sorted descending).</p>
+<p>This might be a problem, but it can easily be solved by using two separate weight columns, for instance user_tag_weight and tag_user_weight.</p>
+<p>This can be configured like so:</p>
+<pre><code>&lt;?php
+$this-&gt;registerObserver(new Garp_Model_Behavior_Weighable(
+ 	array(
+ 		'Model_Tag' =&gt; array(
+ 			'foreignKeyColumn' =&gt; 'tag_id',
+ 			'weightColumn' =&gt; 'tag_user_weight'
+ 		),
+ 		'Model_User' =&gt; array(
+ 			'foreignKeyColumn' =&gt; 'user_id',
+ 			'weightColumn' =&gt; 'user_tag_weight'
+ 		),
+ 	)
+ ));
+?&gt;
+</code></pre>
+<p>Of course, this might provide some confusion for whoever's looking through the database, but at least it makes the above scenario a possibility.</p>
+<p>If managing the relationship order from one side only is no problem, just define the one foreign key and associated weight column.</p>
+
+        </div>
+
+    </div>]

@@ -1,0 +1,48 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>Contributed by <a href="https://www.drupal.org/u/istryker" rel="nofollow">istryker</a> and <a href="https://www.drupal.org/u/gswsdrupal" rel="nofollow">gswsdrupal</a>:</p>
+<h3 id="user-content-summary-problem-motivation">
+<a aria-hidden="true" class="anchor" href="#problemmotivation" id="user-content-problemmotivation"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Problem/Motivation</h3>
+You have a content type that you want to be display on specific pages.  You want to use the same system as Drupal core block visibility.  
+<h3 id="user-content-summary-proposed-resolution">
+<a aria-hidden="true" class="anchor" href="#proposed-resolution" id="user-content-proposed-resolution"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Proposed resolution</h3>
+Add a textarea field to your content type called visibility, with a machine name of `field_block_visibility`.
+<img alt="Visibility Block Textarea field" data-canonical-src="http://i.imgur.com/B2MHDJd.png" src="https://camo.githubusercontent.com/937f3ad2531824a72059a608e264dbc2b96d733d/687474703a2f2f692e696d6775722e636f6d2f42324d48444a642e706e67"/>
+<p>Create or add to your endpoint the following code:</p>
+<div class="highlight highlight-text-html-php"><pre><span class="pl-s1"></span>
+<span class="pl-s1">  <span class="pl-c"><span class="pl-c">/**</span></span></span>
+<span class="pl-s1"><span class="pl-c">   * Overrides parent viewEntity.</span></span>
+<span class="pl-s1"><span class="pl-c">   <span class="pl-c">*/</span></span></span>
+<span class="pl-s1">  <span class="pl-k">public</span> <span class="pl-k">function</span> <span class="pl-en">viewEntity</span>(<span class="pl-smi">$id</span>) {</span>
+<span class="pl-s1">    <span class="pl-k">global</span> <span class="pl-smi">$base_path</span>;</span>
+<span class="pl-s1">    <span class="pl-smi">$request</span> <span class="pl-k">=</span> <span class="pl-smi">$this</span><span class="pl-k">-&gt;</span>getRequest();</span>
+<span class="pl-s1">    <span class="pl-smi">$entity_id</span> <span class="pl-k">=</span> <span class="pl-smi">$this</span><span class="pl-k">-&gt;</span>getEntityIdByFieldId(<span class="pl-smi">$id</span>);</span>
+<span class="pl-s1">    <span class="pl-k">if</span> (<span class="pl-k">!</span><span class="pl-smi">$this</span><span class="pl-k">-&gt;</span>isValidEntity(<span class="pl-s"><span class="pl-pds">'</span>view<span class="pl-pds">'</span></span>, <span class="pl-smi">$entity_id</span>)) {</span>
+<span class="pl-s1">      <span class="pl-k">return</span>;</span>
+<span class="pl-s1">    }</span>
+<span class="pl-s1">    <span class="pl-smi">$wrapper</span> <span class="pl-k">=</span> entity_metadata_wrapper(<span class="pl-smi">$this</span><span class="pl-k">-&gt;</span><span class="pl-smi">entityType</span>, <span class="pl-smi">$entity_id</span>);</span>
+<span class="pl-s1">    <span class="pl-smi">$wrapper</span><span class="pl-k">-&gt;</span>language(<span class="pl-smi">$this</span><span class="pl-k">-&gt;</span>getLangCode());</span>
+<span class="pl-s1">    <span class="pl-c"><span class="pl-c">//</span> Check if there is a visibility filter.</span></span>
+<span class="pl-s1">    <span class="pl-k">if</span> (<span class="pl-c1">isset</span>(<span class="pl-smi">$request</span>[<span class="pl-s"><span class="pl-pds">'</span>visibility<span class="pl-pds">'</span></span>])) {</span>
+<span class="pl-s1">      <span class="pl-smi">$visibility_path</span> <span class="pl-k">=</span> <span class="pl-smi">$request</span>[<span class="pl-s"><span class="pl-pds">'</span>visibility<span class="pl-pds">'</span></span>];</span>
+<span class="pl-s1">      <span class="pl-c"><span class="pl-c">//</span> if filter path does not match the path, then return.</span></span>
+<span class="pl-s1">      <span class="pl-c"><span class="pl-c">//</span> if visibility pattern is not set, then show everywhere by default.</span></span>
+<span class="pl-s1">      <span class="pl-smi">$visibility_pattern</span> <span class="pl-k">=</span> <span class="pl-smi">$wrapper</span><span class="pl-k">-&gt;</span><span class="pl-smi">field_block_visibility</span><span class="pl-k">-&gt;</span>value();</span>
+<span class="pl-s1">      </span>
+<span class="pl-s1">      <span class="pl-c"><span class="pl-c">//</span> ** If you need to remove the $base_path from the beginning of path uncomment the line below **</span></span>
+<span class="pl-s1">      <span class="pl-c"><span class="pl-c">//</span>$visibility_path = preg_replace('/^' . str_replace('/', '\/', $base_path) . '/', '', $visibility_path);</span></span>
+<span class="pl-s1">      </span>
+<span class="pl-s1">      <span class="pl-k">if</span> (<span class="pl-c1">isset</span>(<span class="pl-smi">$visibility_pattern</span>) <span class="pl-k">&amp;&amp;</span> <span class="pl-k">!</span>drupal_match_path(<span class="pl-smi">$visibility_path</span>, <span class="pl-smi">$visibility_pattern</span>)) {</span>
+<span class="pl-s1">        <span class="pl-k">return</span>;</span>
+<span class="pl-s1">      }</span>
+<span class="pl-s1">    }</span>
+<span class="pl-s1">    <span class="pl-k">return</span> <span class="pl-k">parent</span><span class="pl-k">::</span>viewEntity(<span class="pl-smi">$id</span>);</span></pre></div>
+<p>and to your <code>pubicFieldsInfo()</code> function</p>
+<div class="highlight highlight-text-html-php"><pre><span class="pl-s1">    <span class="pl-smi">$public_fields</span>[<span class="pl-s"><span class="pl-pds">'</span>visibility<span class="pl-pds">'</span></span>] <span class="pl-k">=</span> <span class="pl-c1">array</span>(</span>
+<span class="pl-s1">      <span class="pl-s"><span class="pl-pds">'</span>property<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-s"><span class="pl-pds">'</span>field_block_visibility<span class="pl-pds">'</span></span>,</span>
+<span class="pl-s1">    );</span></pre></div>
+<p>Now if you go to <code>/api/v1.0/[endpoint_name]?visiblity=[specific_path]</code>, only the path that will match will be returned.</p>
+
+        </div>
+
+    </div>]

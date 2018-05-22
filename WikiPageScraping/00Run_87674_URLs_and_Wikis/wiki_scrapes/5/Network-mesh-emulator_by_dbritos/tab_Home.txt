@@ -1,0 +1,217 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <h1>
+<a aria-hidden="true" class="anchor" href="#welcome-to-network-mesh-emulator-wiki" id="user-content-welcome-to-network-mesh-emulator-wiki"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Welcome to Network mesh emulator wiki!</h1>
+<h2>
+<a aria-hidden="true" class="anchor" href="#introduction" id="user-content-introduction"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Introduction</h2>
+<p>The purpose of this network emulator is to test evaluate and debug mesh network protocols how the B.A.T.M.A.N.  ADV protocol.
+This network emulator is a front end for virtualbox openwrt machines connected trough a vde-switch and wirefilter emulating a wireless link. The front end is writed in python with pygtk gui. The python program monitor the openwrt machines with snmp protocol, showing in the main screen transmited packets for each interface, and originators interfaces for batmam-adv protocol. The vde-switches have tap interfaces connected with the host machine, this permit monitor the packet traffic with the Wire-shark program, the eth0 interface of the openwrt machines are connected to the host via the  vboxnet interface  of the host, in this way is possible to access to the openwrt console for management purpose.
+The mesh is integrate with nodes and wireless connection. Each node diagram is show in the folowing figure.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#architecture" id="user-content-architecture"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Architecture</h2>
+<p>The architecture is basically compound of two elements Nodos and Links (Wirefilter) as shown in  the figure 1.</p>
+<p><img alt="Mesh diagram" src="https://github.com/dbritos/Network-mesh-emulator/raw/master/figures/mesh.png"/></p>
+<p>Figure 1</p>
+<p>The nodos are shown in figure 2 this are more complex and have the folowing elements:</p>
+<ul>
+<li>OpenWrt, kamikaze trunk version for x86 with minimal modifications (see below)</li>
+<li>VirtualBox (unmodified) the version must suport vde-switch.</li>
+<li>Vde_switch must run two instance for nodo to support 2.4 GHz and 5.0 GHz networks. The vde-switch have a patch colorfull see below.</li>
+</ul>
+<p><img alt="Vde switch diagram" src="https://raw.githubusercontent.com/dbritos/Network-mesh-emulator/master/figures/vde2c.png"/></p>
+<p>Figure 2</p>
+<p>##OpenWrt
+A standard OpenWrt can be downloaded and configured for<a href="http://downloads.openwrt.org/barrier_breaker/14.07/x86/generic/" rel="nofollow"> X86</a>. Once that virtual machine is runining some packages must be download (ip, snmpd, tcpdump, netcat, kmod-batman-adv, batctl).</p>
+<p>The file /etc/config/network must be set in the following form:</p>
+<pre><code>
+
+config interface 'loopback'
+	option ifname 'lo'
+	option proto 'static'
+	option ipaddr '127.0.0.1'
+	option netmask '255.0.0.0'
+
+config interface 'lan'
+	option ifname 'eth0'
+	option proto 'dhcp'
+
+config interface 'mesh0'
+	option ifname 'eth1'
+	option proto 'batadv'
+	option mesh 'bat0'
+	option mtu '1538'
+
+config interface 'mesh1'
+	option ifname 'eth2'
+	option proto 'batadv'
+	option mesh 'bat0'
+	option mtu '1538'
+
+config globals 'globals'
+	option ula_prefix 'fdd1:e2dc:f954::/48'
+</code></pre>
+<p>For an automatic configuration of the network interfaces devices setup on boot must be use the following script and save it as './files/etc/rc.local' in your local OpenWrt build directory):</p>
+<pre><code>
+#!/bin/sh
+# pass ip config trough ethernet mac address
+RED=$(ifconfig eth1 | sed '1,1!d' | sed 's/.*HWaddr //'| sed 's/.\{11\}://'| sed 's/.\{5\}$//')
+NUM=$(ifconfig eth1 | sed '1,1!d' | sed 's/.*HWaddr //'| sed 's/.*://'| sed 's/[\n\ ].*//')
+#delete bridge
+ifconfig br-lan down
+brctl delbr br-lan
+#delete eth0
+ip link delete eth0
+ip addr add 192.168.100.$NUM/24 dev eth0
+ip link set dev eth1 mtu 1532 up
+ip link set dev eth2 mtu 1532 up
+batctl -m bat0 interface add eth1
+batctl -m bat0 interface add eth2
+ip addr add 192.168.$RED.$NUM/24 dev bat0
+ip link set dev bat0 address 90:$NUM:$NUM:$NUM:$NUM:$NUM
+ip link set dev bat0 up
+batctl -m bat0 originators
+
+</code></pre>
+<p>In virtualBox is difficult to pas the IP address for the interfaces this is accomplished setting the mac address in VirtualBox and int the "rc.local" script read the mac address and  set the ip in the interfaces.</p>
+<p>####SNMPD</p>
+<p>When the snmpd is installed in the openwrt machine is nedded to setup the MIB for batman-adv.
+To add custom records to the batman-adv MIB a series of shell script was conducted  running and returning to stdout what it takes SNMP.
+To request originators table  the next script was made:
+Script name <em>batctl_o.sh</em> (for originator list)</p>
+<pre><code>
+#!/bin/sh
+BAT=$(batctl o | sed -n 's/^\(..:..:..:..:..:..\).*/\1/p')
+echo $BAT
+</code></pre>
+<p>Script name <em>batctl_n.sh</em> (for next hope list)</p>
+<pre><code>
+#!/bin/sh
+BAT=$(batctl o | sed -n 's/^\(..:..:..:..:..:..\).\{19\}* \(..:..:..:..:..:..\).*/\1 \2/p')
+)
+echo $BAT
+
+</code></pre>
+<p>Script name <em>batctl_tg.sh</em> (for the global translation table)</p>
+<pre><code>
+#!/bin/sh
+BAT=$(batctl tg | sed -n 's/.*\(..:..:..:..:..:..\).* \(..:..:..:..:..:..\).*/\1 \2/p')
+echo $BAT
+</code></pre>
+<p>Then add entries in the configuration file SNMPD /etc/snmp/snmpd.conf using the command uci in a terminal.</p>
+<pre><code>
+uci add snmpd exec
+uci set snmpd.@exec[-1].name=.1.3.6.1.4.1.32.1.1 
+uci set snmpd.@exec[-1].prog=batctlo
+uci set snmpd.@exec[-1].args=/batctl_o.sh
+uci commit snmpd
+
+uci add snmpd exec
+uci set snmpd.@exec[-1].name=.1.3.6.1.4.1.32.1.2 
+uci set snmpd.@exec[-1].prog=batctln
+uci set snmpd.@exec[-1].args=/batctl_n.sh
+uci commit snmpd
+
+uci add snmpd exec
+uci set snmpd.@exec[-1].name=.1.3.6.1.4.1.32.1.3 
+uci set snmpd.@exec[-1].prog=batctltg
+uci set snmpd.@exec[-1].args=/batctl_tg.sh
+uci commit snmpd
+
+/etc/init.d/snmpd restart
+
+</code></pre>
+<p>To the files /etc/snmp/snmp.conf  append the following lines.</p>
+<pre><code>
+.......
+exec  .1.3.6.1.4.1.32.1.1 batctl_o /batctl_o.sh
+exec  .1.3.6.1.4.1.32.1.2 batctl_n /batctl_n.sh
+exec  .1.3.6.1.4.1.32.1.5 batctl_tg batctl_tg.sh
+</code></pre>
+<p>From the host the snmp can be tested with the followings commands.</p>
+<pre><code>
+$ snmpget -v 1 -c public 192.168.100.11 iso.3.6.1.4.1.32.1.1.101.1
+
+iso.3.6.1.4.1.32.1.1.101.1 = STRING: "80:03:00:00:07:41 80:03:00:00:07:31 80:02:00:00:07:31 80:02:00:00:07:21 80:03:00:00:07:21"
+
+batctl o nexhop
+$ snmpget -v 1 -c public 192.168.100.11 iso.3.6.1.4.1.32.1.2.101.1
+
+iso.3.6.1.4.1.32.1.2.101.1 = STRING: "80:02:00:00:07:21 80:02:00:00:07:21 80:03:00:00:07:21 80:02:00:00:07:21 80:03:00:00:07:21"
+
+</code></pre>
+<p>In the <a href="https://github.com/dbritos/Network-mesh-emulator/blob/master/openwrt.ova">Git Hub</a> repository there are a fully configurated virtual machine.
+Download openwrt.ova in VirtualBox go to File menu -&gt; Import Appliance</p>
+<p>####Ip assignations in openwrt.</p>
+<p>For assign the ip address to the VM first is assigned the MAC address to the VM. Each VM have three interfaces nic1, nic2 and nic3 this interfaces in the openwrt appear as eth0, eth1 and eth2.</p>
+<ul>
+<li>nic1 (eth0)  mac  80:01:00:00:07 + nodenumber(nn).</li>
+<li>nic2 (eth1)  mac  80:02:00:00:07 + nodenumber(nn). the number 2 for 2.4GHz)</li>
+<li>nic3 (eth2)  mac  80:05:00:00:07 + nodenumber(nn). the number 5 for 5.0GHz)</li>
+</ul>
+<p>For configure the VM with this mac address the following commands are used:</p>
+<pre><code>
+VBoxManage modifyvm openwrtnn --nic1 generic --nicgenericdrv1 VDE --nicproperty1 network=/tmp/c24GHznn[2] --macaddress1 8001000007nn
+VBoxManage modifyvm openwrtnn --nic2 generic --nicgenericdrv2 VDE --nicproperty2 network=/tmp/c24GHznn[2] --macaddress2 8001000007nn
+VBoxManage modifyvm openwrtnn --nic3 generic --nicgenericdrv3 VDE --nicproperty3 network=/tmp/c24GHznn[2] --macaddress3 8001000007nn
+</code></pre>
+<p>Where:</p>
+<ul>
+<li>nn Node number</li>
+</ul>
+<p>The script in the openwrt in /etc/rc.local read the mac address of the interface eth1 and configure the ip of the interfaces:</p>
+<ul>
+<li>eth0  192.168.100.nn</li>
+<li>bat0  192.168.7.nn</li>
+</ul>
+<p>and the mac address of bat0 = 90:nn:nn:nn:nn:nn</p>
+<p>Whit this convention of IP and MAC address is easy to follow the packets trough the nodes.</p>
+<p>With the eth0 interface is possible to access to the nodes via ssh to the ip address 192.168.100.nn.
+The host have the vboxnet0 interface with the ip address 192.168.100.1.</p>
+<p>Each vde-switch have a tap interface through the wireshark can sniff the packets that transverse the vde-switch.</p>
+<p>##VirtualBox</p>
+<p>The VirtualBox version must by 4.3 or higher.
+To verify VDE-Switch support in the network windows select in Attached to: "Generic Driver"  in the Name: box verify that exist VDE.
+The configuration of the virtual machines openwrt is made trough console with the VBoxManage command.</p>
+<p>##vde_switch
+The main advantage of vde_switch over uml_switch is that any clients can be attached to this virtual switch: VirtualBox, UML, tap interfaces, virtual interconnections, and not just UML instances.</p>
+<p>If the vde_switches were just connected with wirefilter "patch cables" without modification, we would end up creating a broadcast domain and switch loops which we don't want: The goal is to allow the packets to travel only from one host to it's neighbor, not farther.</p>
+<p>To accomplish this, the vde_switch needs to be modified to have "coloured" ports. The idea is:</p>
+<ul>
+<li>each port has a "colour" (an integer number)</li>
+<li>packets are only passed from ports to others with DIFFERENT colours.</li>
+<li>packets are dropped on outgoing ports if it has the SAME colour (same number) as the incoming port.</li>
+</ul>
+<p>In this concept, the host port can have colour 1 the TAP port colour 2, while the interconnection ports have colour 0. In this way, packets can only travel from the host to (all of) the interconnection ports, or from one interconnection port to the host port. However packets can not travel between the interconnection ports, thus only allowing "one hop" connections and avoiding switch loops and shared broadcast domains. The concept is illustrated in figure 2.
+The patch against vde2-2.3.2  (current latest stable version) to add this colour patch can be find here:
+<a href="http://www.open-mesh.org/attachments/download/152/vde2-2.3.2_colour.patch" rel="nofollow">vde2-2.3.2_colour.patch</a></p>
+<p>The vde-switch parched can be download from <a href="https://github.com/dbritos/Network-mesh-emulator/blob/master/vde2-2.3.2-patch.tar">here</a>. Attention this version can be old!</p>
+<p>##wirefilter</p>
+<p>The wirefilter program is a tool where its posiblen simulate various link defects and limits:</p>
+<ul>
+<li>packet loss</li>
+<li>burst loss</li>
+<li>delay</li>
+<li>duplicates</li>
+<li>bandwidth</li>
+<li>Interface speed</li>
+<li>Chanel capacity</li>
+<li>noise (damage to packets)</li>
+<li>mtu</li>
+</ul>
+<p>However as the links are only set up bidirectional, interferences can unfortunately not be simulated with this system.</p>
+<p>For advanced testing it might be necessary to apply the aforementioned link defects to some packets only whereas other packets are able to traverse the emulated environment unharmed. Once you applied the 'ethertype' patch you can specify an ethertype which wirefilter will simply forward. To apply a packet loss of 50% to all packets except batman-adv packets, run:</p>
+<pre><code>
+wirefilter --ether 0x4305 -l 50
+</code></pre>
+<p>This patch also allows to filter batman-adv packet types. To apply a packet loss of 50% to all packets except batman-adv ICMP packets, run:</p>
+<pre><code>
+wirefilter --ether 0x4305:02 -l 50
+</code></pre>
+<p>You can specify up to 10 packet types (separated by colon). The patch against vde2-2.3.1 (current latest stable version) can be found here:</p>
+<pre><code>
+vde2-2.3.1-wirefilter-ethertype.patch
+</code></pre>
+
+        </div>
+
+    </div>]

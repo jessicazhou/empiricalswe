@@ -1,0 +1,106 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <h1>
+<a aria-hidden="true" class="anchor" href="#enable-https-in-apache-on-mac-yosemite" id="user-content-enable-https-in-apache-on-mac-yosemite"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Enable HTTPS in Apache on Mac Yosemite</h1>
+<h2>
+<a aria-hidden="true" class="anchor" href="#creating-a-self-signed-ssl-certificate" id="user-content-creating-a-self-signed-ssl-certificate"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Creating a self-signed SSL certificate</h2>
+<p>On your local development environment we are going to create a self-signed certificate. This certificate has no authority, and I will get a warning from my browser indicating this. However, there is no need to purchase a SSL certificate for local development. In a production environment you would submit the certificate request (csr) file to the certificate authority, who would then provide you with the SSL certificate.</p>
+<p>So, let’s go ahead and create the self-signed certificate.</p>
+<p>First off we’ll make a home for the new SSL files. I used /private/etc/apache2/ssl. Go change in to the new directory and run the following command.</p>
+<p><code>sudo openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout localhost.example.com.key -out localhost.example.com.key.crt</code></p>
+<p>You will be prompted to enter information about your organization, as well as the common name, or fully qualified domain name (FQDN). Be sure that this matches the virtual host (or site) that you are setting up.</p>
+<p>Your SSL files are now generated (localhost.example.com.key and localhost.example.com.key.crt) and you will you use them later in your apache config.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#enable-https-in-apache" id="user-content-enable-https-in-apache"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Enable HTTPS in Apache</h2>
+<h3>
+<a aria-hidden="true" class="anchor" href="#load-mod_ssl" id="user-content-load-mod_ssl"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Load mod_ssl</h3>
+<p>Sudo edit your main apache config file (/etc/apache2/httpd.conf) and uncomment the following:</p>
+<p><code>LoadModule ssl_module libexec/apache2/mod_ssl.so</code></p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#include-httpd-sslconf-file" id="user-content-include-httpd-sslconf-file"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Include httpd-ssl.conf File</h3>
+<p>While we still have the httpd.conf file open, we also need to uncomment the line that includes the httpd-ssl.conf file.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#add-virtualhost-to-httpd-sslconf" id="user-content-add-virtualhost-to-httpd-sslconf"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Add VirtualHost to httpd-ssl.conf</h3>
+<p>The last step is to configure a new virtual host that is bound to port 443 (HTTPS). There is already a sample  record in the httpd-ssl.conf file. I suggest you first remove it, or comment it all out, so that you can just paste in the necessary code at the bottom of the file.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#declare-virtualhost" id="user-content-declare-virtualhost"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Declare VirtualHost</h3>
+<p>The first step is to declare a new virtual host using the  directive.</p>
+<p><code>&lt;VirtualHost *:443&gt;</code></p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#general-virtual-host-settings" id="user-content-general-virtual-host-settings"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>General Virtual Host Settings</h3>
+<p>Next, within the  directive, we will declare some basic host settings:</p>
+<p>DocumentRoot: absolute path to the webroot for the site
+ServerName: the fully qualified domain name (FQDN)
+ErrorLog: location of the error log
+CustomLog: location of the access log</p>
+<p>###Enable SSL
+To enable the SSL engine in Apache we simply add set the setting to “on”</p>
+<pre><code>#SSL Engine Switch
+SSLEngine on`
+</code></pre>
+<p>Next, we need to give the location of the SSL files we created.</p>
+<pre><code>#Server Certificate:
+SSLCertificateFile "/private/etc/apache2/ssl/localhost.example.com.key.crt"
+ 
+#Server Private Key:
+SSLCertificateKeyFile "/private/etc/apache2/ssl/localhost.example.com.key"
+</code></pre>
+<h3>
+<a aria-hidden="true" class="anchor" href="#ssl-engine-options" id="user-content-ssl-engine-options"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>SSL Engine Options</h3>
+<p>There are lots of options that you can (and should if you are setting up a production server) configure for the SSL Engine, including the supported ciphers and the ordering of the ciphers used. If you have been following any recent security news, you have probably heard of the PODDLE security flaw that uses a SSL 3.0 fallback vulnerability. To prevent any risk on a production server you must configure your server to use the latest version of TLS (1.3 as of this writing), and remove the support for teh older SSL version 2.0 and 3.0 protocols.</p>
+<p>Protocols and ciphers -- oh my!</p>
+<p>If you are confused about all of the protocols, ciphers, prioritization logic, etc. Then I would recommend that you read the Mozilla article on Server Side security and TLS. They offer some best practice configurations for production environments and various web servers; including: IIS, Apache and Nginx.</p>
+<p>For our local development server, we are not going to worry about the protocols/ciphers and just simply add the following options.</p>
+<pre><code>#SSL Engine Options:
+&lt;FilesMatch "\.(cgi|shtml|phtml|php)$"&gt;
+    SSLOptions +StdEnvVars
+&lt;/FilesMatch&gt;
+</code></pre>
+<h3>
+<a aria-hidden="true" class="anchor" href="#complete-virtual-host" id="user-content-complete-virtual-host"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Complete Virtual Host</h3>
+<p>Last, we need to make sure that the directory of your sites directory is accessible:</p>
+<pre><code>&lt;Directory "/Users/{Username}/Sites"&gt;
+    Options Indexes FollowSymLinks
+    AllowOverride All
+    Order allow,deny
+    Allow from all
+    Require all granted
+&lt;/Directory&gt;`
+</code></pre>
+<p>You can see the complete VirtualHost directive below.</p>
+<pre><code>&lt;VirtualHost *:443&gt;
+DocumentRoot "{/Users/{Username}/Sites/localhost.example}"
+ServerName "localhost.example"
+ErrorLog "/private/var/log/apache2/localhost.example.com-error_log"
+CustomLog "/private/var/log/apache2/localhost.example.com-access_log" common
+
+#SSL Engine Switch:
+SSLEngine on
+
+#Server Certificate:
+SSLCertificateFile "/private/etc/apache2/ssl/localhost.example.com.key.crt"
+
+#Server Private Key:
+SSLCertificateKeyFile "/private/etc/apache2/ssl/localhost.example.com.key"
+
+#SSL Engine Options:
+&lt;FilesMatch "\.(cgi|shtml|phtml|php)$"&gt;
+    SSLOptions +StdEnvVars
+&lt;/FilesMatch&gt;
+&lt;Directory "/Users/Ramiro/Sites"&gt;
+    Options Indexes FollowSymLinks
+    AllowOverride All
+    Order allow,deny
+    Allow from all
+    Require all granted
+&lt;/Directory&gt;
+&lt;/Virtualhost&gt;
+</code></pre>
+<p>##Hosts file
+In case this is a new website, you should also modify your hosts file to direct the domain name to your local Apache web server. If you already had the domain configured in your hosts file, then you can skip this step.</p>
+<p>##Troubleshooting
+This configuration worked for me. If this configuration is not working for you? Please get in touch with me ;)   <a href="https://github.com/HammenWS">Ramiro.</a></p>
+
+        </div>
+
+    </div>]

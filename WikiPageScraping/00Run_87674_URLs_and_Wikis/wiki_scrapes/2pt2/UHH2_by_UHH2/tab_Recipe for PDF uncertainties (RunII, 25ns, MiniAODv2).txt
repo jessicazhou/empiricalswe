@@ -1,0 +1,116 @@
+[<div class="wiki-body gollum-org-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <h2>
+<a aria-hidden="true" class="anchor" href="#applying-pdf-uncertainties" id="user-content-applying-pdf-uncertainties"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Applying PDF uncertainties</h2>
+<p>For applying PDF systematic uncertainies to your analysis, you should follow the recipe below. In general, there are 100 systematic weights adressing this untertainty stored for some, not all, samples in the genInfo tree.
+  Each histogram that is used for your final limit calculation needs to be filled an additional 100 times, once for each systematic weight. This needs to be implemented in your code by yourself since every analysis uses different histograms for limit calculation.</p>
+<p><b>1. Read the systematic weights</b>: The systematic weight itself can be read by <code>event.get-&gt;systweights().at(X)</code>.
+  Please refer to the table below to know which values must be used for X. This might be different for each sample you are using.</p>
+<p><b>2. Apply the right weight</b>: This systematic weight has to be normalized to the central event weight at LHE level. There are two different weights to be used for this normalization, depending on which sample you are using. Please also refer to the table below to know, which weight you should use. In general, the resulting weight should be centered around 1. The two possible factors you need to multiply the weight you typically use for filling with are:  <code>event.genInfo-&gt;systweights().at(X) / event.genInfo-&gt;pdf_scalePDF()</code> or <code>event.genInfo-&gt;systweights().at(X) / event.genInfo-&gt;event.genInfo-&gt;originalXWGTUP()</code>, e.g.</p>
+<p><code>fillweight_PDF = event.weight * event.genInfo-&gt;systweights().at(X) / event.genInfo-&gt;pdf_scalePDF()</code></p>
+<p>or</p>
+<p><code>fillweight_PDF = event.weight * event.genInfo-&gt;systweights().at(X) / event.genInfo-&gt;originalXWGTUP()</code></p>
+<p><b>3. Fill your histograms</b>: As described above, you need to fill each histogram used for limit calculation 100 times, once for each systematic PDF-weight stored in <code>event.get-&gt;systweights()</code>. Please keep in mind that also other weights are stored here, so please use the table below to get the right weights.</p>
+<p><b>4. Calculate the RMS in each bin</b>: To obtain the final uncertainty arising from these PDF variations, you have to calculate the <b>RMS</b> of these 100 histograms <b>for each bin</b> separately. For a conservative estimate, the first idea is to take the nominal PDF set as the mean value for RMS calculation. The variation of the nominal PDF set to be used in the limit calculation then is <i>nominal+RMS</i> and <i>nominal-RMS</i> for each bin, respectively.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#finding-the-systematic-pdf-weights" id="user-content-finding-the-systematic-pdf-weights"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Finding the systematic PDF weights</h2>
+<p>To access the header, in which a list of systematic weights is stored, one has to first uncomment lines <a href="https://github.com/UHH2/UHH2/blob/RunII_25ns_v2/core/plugins/NtupleWriter.cc#L1016-L1030">1016-1030</a> in <a href="https://github.com/UHH2/UHH2/blob/RunII_25ns_v2/core/plugins/NtupleWriter.cc">core/plugins/NtupleWriter.cc</a> and secondly process one event locally. Besides other things, a list of which systematic weights are stored in which entry of <code>event.get-&gt;systweights()</code> for the processed sample is displayed. Keep in mind that not all generators are giving these systweights, so for some samples this vector might even be empty. Please use the table below to find the first and the last entry in the systweights vector corresponding to PDF uncertainties (<b>C++ numbering</b>) and/or enter them for samples that have not yet been checked.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#more-information" id="user-content-more-information"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>More information</h2>
+<p>More info is given in this presentation by Josh Bendavid (Slides 10 to 16): https://indico.cern.ch/event/459797/contribution/2/attachments/1181555/1710844/mcaod-Nov4-2015.pdf</p>
+<table>
+  <tbody><tr>
+<th>Short sample name</th>
+<th>First entry</th>
+<th>Last entry</th>
+<th>Weight for normalization</th>
+</tr>
+  <tr>
+<td>MC_DYJetsToLL inclusive</td>
+<td>9</td>
+<td>109</td>
+<td>event.genInfo-&gt;originalXWGTUP()</td>
+</tr>
+  <tr>
+<td>MC_STpos_tW_inc</td>
+<td>not filled</td>
+<td></td>
+</tr>
+  <tr>
+<td>MC_STneg_tW_inc</td>
+<td>not filled</td>
+<td></td>
+</tr>
+  <tr>
+<td>MC_ST_t-channel_4f_leptonDecays</td>
+<td>9</td>
+<td>109</td>
+<td>event.genInfo-&gt;originalXWGTUP()</td>
+</tr>
+  <tr>
+<td>MC_ST_s-channel_4f_leptonDecays</td>
+<td>9</td>
+<td>109</td>
+<td>event.genInfo-&gt;originalXWGTUP()</td>
+</tr>
+  <tr>
+<td>MC_TTbar</td>
+<td>9</td>
+<td>109</td>
+<td>event.genInfo-&gt;originalXWGTUP()</td>
+</tr>
+  <tr><td>MC_TT_Mtt0700to1000</td></tr>
+  <tr><td>MC_TT_Mtt1000toINFT</td></tr>
+  <tr><td>MC_TTbarScaleUp</td></tr>
+  <tr><td>MC_TTbarScaleDown</td></tr>
+  <tr>
+<td>MC_WJetsToLNu</td>
+<td>9</td>
+<td>109</td>
+<td>event.genInfo-&gt;originalXWGTUP()</td>
+</tr>
+  <tr>
+<td>WW,WZ,ZZ</td>
+<td>not filled</td>
+<td></td>
+<td></td>
+</tr>
+  <tr>
+<td>MC_QCD_MuEnriched</td>
+<td>not filled</td>
+<td></td>
+<td></td>
+</tr>
+  <tr><td>MC_QCD_EMEnriched</td></tr>
+  <tr><td>MC_QCD_bcToE</td></tr>
+  <tr><td>MC_QCD_HT</td></tr>
+  <tr>
+<td>MC_WJets_LNu_HT</td>
+<td>9</td>
+<td>109</td>
+</tr>
+  <tr>
+<td>MC_DYJetsToLL_M50_HT</td>
+<td>9</td>
+<td>109</td>
+</tr>
+  <tr>
+<td>MC_TpB_TH_LH_M1000</td>
+<td>112</td>
+<td>212</td>
+<td>event.genInfo-&gt;pdf_scalePDF()</td>
+</tr>
+</tbody></table>
+<h3>
+<a aria-hidden="true" class="anchor" href="#example-use" id="user-content-example-use"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Example use:</h3>
+<pre>const auto &amp; sys_weights = event.genInfo-&gt;systweights();
+float orig_weight = event.genInfo-&gt;pdf_scalePDF();
+int MY_FIRST_INDEX = 9;
+for (unsigned i=0; i &lt; 100; ++i) {
+    my_hist.Fill(my_value, event.weight * sys_weights[i+MY_FIRST_INDEX]/orig_weight);
+}
+</pre>
+
+        </div>
+
+    </div>]

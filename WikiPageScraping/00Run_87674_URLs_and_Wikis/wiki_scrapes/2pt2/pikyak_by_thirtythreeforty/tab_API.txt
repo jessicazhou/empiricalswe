@@ -1,0 +1,243 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>The following is the HTTP API used by clients to communicate with the server.</p>
+<h1>
+<a aria-hidden="true" class="anchor" href="#registration" id="user-content-registration"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Registration</h1>
+<p>To register, the desired username, email address, and password should be known.</p>
+<pre><code>PUT /users/{username}
+Authorization: Basic {basic_auth}
+</code></pre>
+<p>The data structure below is sent as the message's body.</p>
+<pre><code>    {
+        "email": "{email address}",
+        "gcm_id": "{gcm_registration_id}"
+    }
+</code></pre>
+<p>Returns:</p>
+<ol>
+<li>201 Request succeeded</li>
+<li>417 Already registered</li>
+</ol>
+<p>To unregister, send the following request.  The authorization must match the user being deleted.</p>
+<pre><code>DELETE /users/{username}
+Authorization: Basic {basic_auth}
+</code></pre>
+<p>Returns:</p>
+<ol>
+<li>204 Request succeeded</li>
+<li>404 Not Found</li>
+<li>400 Bad request</li>
+</ol>
+<h1>
+<a aria-hidden="true" class="anchor" href="#users" id="user-content-users"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Users</h1>
+<pre><code>GET /users/{user_id}
+Authorization: Basic {basic_auth}
+</code></pre>
+<p>Returns:</p>
+<ol>
+<li>404 Not found.</li>
+<li>200 Request succeeded. Structure below returned,</li>
+</ol>
+<pre><code>{
+   "user_id" : user_id
+   "is_moderator" : is_moderator
+}
+</code></pre>
+<h1>
+<a aria-hidden="true" class="anchor" href="#reading" id="user-content-reading"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Reading</h1>
+<h2>
+<a aria-hidden="true" class="anchor" href="#conversations" id="user-content-conversations"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Conversations</h2>
+<p>To enumerate conversations, send this request.
+<code>first_conversation</code> is a number specifying the offset from the top of the recent conversation list.
+<code>sort_method</code> is one of <code>hot</code>, <code>new</code>, or <code>top</code>.
+<code>geo</code> is a pair of GPS coordinates of the form <code>lat,long</code>.</p>
+<pre><code>GET /conversations?first={first_conversation}&amp;sort={sort_method}&amp;geo={lat_and_long}
+</code></pre>
+<p>Returns:</p>
+<ol>
+<li>404 Not found.</li>
+<li>400 Bad request.</li>
+<li>200 Request succeeded.  The structure returns the next 20 conversations from the offset <code>first</code>.</li>
+</ol>
+<pre><code>    {
+        conversations: [
+            {
+                "id": "conversation_id",
+                "url": "conversation_url",
+                "image": "thumbnail_url",
+                "score": conversation_score,
+                "user_score": user_score
+            },
+            ...
+        ]
+    }
+</code></pre>
+<p>Here, the thumbnail URL is of the form <code>/thumbs/{image_id}</code>.
+<code>post_score</code> is an integer and <code>user_score</code> is an integer between -1 and 1, inclusive.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#posts" id="user-content-posts"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Posts</h2>
+<p>An actual conversation, composed of a list of posts, will have a URL of the form <code>/conversation/{conversation_id}</code>.
+To get a conversation, send this request.
+Results will be returned in descending order by date.</p>
+<pre><code>GET /conversations/{conversation_id}?first={first_post}
+</code></pre>
+<p>Returns:</p>
+<ol>
+<li>404 Not found.</li>
+<li>400 Bad request.</li>
+<li>200 Request succeeded.  The structure returned is below.</li>
+</ol>
+<pre><code>    {
+        posts: [
+            {
+                "id": "post_id",
+                "image": "image_url",
+                "score": post_score,
+                "user_score": user_score
+            },
+            ...
+        ]
+    }
+</code></pre>
+<p>Here, the <code>image_url</code> is of the form <code>/image/{image_id}</code>.
+<code>post_score</code> is an integer and <code>user_score</code> is an integer between -1 and 1, inclusive.</p>
+<h1>
+<a aria-hidden="true" class="anchor" href="#posting" id="user-content-posting"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Posting</h1>
+<p>A post can be created as either a reply or an original post which will create a new conversation. Requests are sent as a multipart (form-data) POST.  The parameters are as follows:</p>
+<ul>
+<li>
+<code>image</code>: The image payload</li>
+<li>
+<code>geo</code>: The latitude &amp; longitude of the user</li>
+</ul>
+<p>To create a new conversation:</p>
+<pre><code>POST /conversations
+Authorization: Basic {basic_auth}
+</code></pre>
+<p>To reply to a post:</p>
+<pre><code>POST /conversations/{conversation_id}
+Authorization: Basic {basic_auth}
+</code></pre>
+<p>Returns:</p>
+<ol>
+<li>404 Not found.</li>
+<li>400 Bad request.</li>
+<li>201 Request succeeded.  Creating a post will return the structure below:</li>
+</ol>
+<pre><code>{
+    "post_id": post_id
+}
+</code></pre>
+<p>Creating a conversation will return the following structure:</p>
+<pre><code>{
+    "post_id": post_id,
+    "conversation_id": conversation_id
+}
+</code></pre>
+<h1>
+<a aria-hidden="true" class="anchor" href="#voting" id="user-content-voting"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Voting</h1>
+<p>Users will be allowed to add or delete 1 from a post or conversation's score.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#conversations-1" id="user-content-conversations-1"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Conversations</h2>
+<p>To add to a conversation's score:</p>
+<pre><code>PUT /conversations/{conversation_id}/user_score
+Authorization: Basic {basic_auth}
+
+{
+    "value":user_vote
+}
+</code></pre>
+<p>The server will return a redirect to the appropriate Post to vote on instead.</p>
+<p>Returns:</p>
+<ol>
+<li>404 Not found.</li>
+<li>400 Bad request.</li>
+<li>302 Found.</li>
+</ol>
+<h2>
+<a aria-hidden="true" class="anchor" href="#posts-1" id="user-content-posts-1"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Posts</h2>
+<p>To add to a post's score:</p>
+<pre><code>PUT /posts/{post_id}/user_score
+Authorization: Basic {basic_auth}
+
+{
+    "value":user_vote
+}
+</code></pre>
+<p>Returns:</p>
+<ol>
+<li>404 Not found.</li>
+<li>400 Bad request.</li>
+<li>201 Request succeeded.</li>
+</ol>
+<p>In both of the above cases, <code>user_vote</code> must be 1 or -1.</p>
+<p>To remove a vote on a post:</p>
+<pre><code>DELETE /conversations/{conversation_id}/user_score
+Authorization: Basic {basic_auth}
+</code></pre>
+<p>Returns:</p>
+<ol>
+<li>404 Not found.</li>
+<li>400 Bad request.</li>
+<li>302 Found.</li>
+</ol>
+<p>To remove a vote on a post:</p>
+<pre><code>DELETE /posts/{post_id}/user_score
+Authorization: Basic {basic_auth}
+</code></pre>
+<p>Returns:</p>
+<ol>
+<li>404 Not found.</li>
+<li>400 Bad request.</li>
+<li>204 No content.</li>
+</ol>
+<h1>
+<a aria-hidden="true" class="anchor" href="#moderation" id="user-content-moderation"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Moderation</h1>
+<p>When deleting a post, if the post is the first in the conversation, the whole conversation will be deleted.
+Tentative Delete, blocks it, but can be recovered.</p>
+<pre><code>PUT /posts/{post_id}/block
+Authorization: Basic {basic_auth}
+</code></pre>
+<p>Deletes the block, making it visible.</p>
+<pre><code>DELETE /posts/{post_id}/block
+Authorization: Basic {basic_auth}
+</code></pre>
+<p>To delete a whole conversation:</p>
+<pre><code>PUT /conversations/{conversation_id}/block
+Authorization: Basic {basic_auth}
+</code></pre>
+<p>Returns:</p>
+<ol>
+<li>404 Not found.</li>
+<li>400 Bad request.</li>
+<li>201 Successfully created</li>
+</ol>
+<p>Deletes the block on the conversation making it visible.</p>
+<pre><code>DELETE /conversations/{conversation_id}/block
+Authorization: Basic {basic_auth}
+</code></pre>
+<p>Returns:</p>
+<ol>
+<li>404 Not found.</li>
+<li>400 Bad request.</li>
+<li>204 No content.</li>
+</ol>
+<h1>
+<a aria-hidden="true" class="anchor" href="#flagging" id="user-content-flagging"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Flagging</h1>
+<p>Users will able to flag a conversation or a post they deem inappropriate.  A moderator will be able to see these flagged post and either delete them or mark them as "handled" which will prevent that user from reflagging it.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#conversation" id="user-content-conversation"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Conversation</h2>
+<pre><code>PUT /conversations/{conversation_id}/flag
+Authorization: Basic {basic_auth}
+</code></pre>
+<p>The server will redirect the user to vote on the particular post that is contained in the conversation.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#post" id="user-content-post"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Post</h2>
+<pre><code>PUT /posts/{post_id}/flag
+Authorization: Basic {basic_auth}
+</code></pre>
+<p>Note that the user will not be able to unsubmit a flag.</p>
+
+        </div>
+
+    </div>]

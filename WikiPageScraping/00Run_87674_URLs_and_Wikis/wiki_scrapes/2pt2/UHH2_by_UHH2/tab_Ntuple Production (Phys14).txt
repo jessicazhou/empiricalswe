@@ -1,0 +1,72 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <h1>
+<a aria-hidden="true" class="anchor" href="#ntuple-production-with-cmssw" id="user-content-ntuple-production-with-cmssw"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Ntuple Production with CMSSW</h1>
+<h2>
+<a aria-hidden="true" class="anchor" href="#1-setup-cmssw-and-git" id="user-content-1-setup-cmssw-and-git"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>1. Setup CMSSW and git</h2>
+<p>You might not need this if you already have a recent CMSSW version with working git. This section summarizes all steps needed for completeness.</p>
+<p>Basic environment setup:</p>
+<pre><code>source /cvmfs/cms.cern.ch/cmsset_default.sh
+export SCRAM_ARCH=slc6_amd64_gcc491
+export CMSSW_GIT_REFERENCE=&lt;DIRECTORYWITHENOUGHSPACE&gt;/cmssw.git 
+(last line is not needed if you have &lt;80% used of your afs quota at desy)
+</code></pre>
+<p>where the variable "CMSSW_GIT_REFERENCE" points to a directory where you have enough space to hold the git objects for CMSSW.</p>
+<p>Checkout CMSSW and init environment:</p>
+<pre><code>cmsrel CMSSW_7_4_0_pre6
+cd CMSSW_7_4_0_pre6/src
+cmsenv
+git cms-init
+</code></pre>
+<h2>
+<a aria-hidden="true" class="anchor" href="#2-apply-pog-recipes" id="user-content-2-apply-pog-recipes"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>2. Apply POG Recipes</h2>
+<p>Now update CMSSW to implement additional recipes from the object groups. Right now, there is only one recipe to include for the electron ids, see <a href="https://twiki.cern.ch/twiki/bin/view/CMS/CutBasedElectronIdentificationRun2" rel="nofollow">CutBasedElectronIdentificationRun2</a>. Note that the recipe there right now (2015-02-25) boils down to
+"git cms-merge-topic ikrav:egm_id_phys14" (do not type this command!).</p>
+<p>However, it assumes that you have CMSSW72X. To apply the same change to CMSSW740, some more work is needed. Note that the steps will be similar to other recipes, so it is explained here in some detail:</p>
+<pre><code># fetch the release the recipe is based on:
+git fetch official-cmssw CMSSW_7_2_0
+# fetch the change to merge according to the recipe:
+git fetch -n https://github.com/ikrav/cmssw egm_id_phys14:egm_id_phys14
+# now rebase the change between CMSSW720 and egm_id_phys14 on the current version:
+git rebase -i --onto from-CMSSW_7_4_0_pre6 CMSSW_7_2_0 egm_id_phys14
+</code></pre>
+<p>Note that the interactive rebasing will let you pick the commits to use. Only use the two commites for electron id (fc09a2a, 0d9227c), not the ones for photon id (f729f8e, a5841dd, ...), as the photon id changes do not compile in the new release and we do not use it anyway. (To find out which commit to pick, use gitk before the rebase and inspect the changed files).</p>
+<p>The branch "egm_id_phys14" now contains the forward-ported changes by the recipe. Note that of course this only works when the code from the recipe is still compatible with the newer release.</p>
+<p>Now sparse-checkout the affected packages (=the directories which have been created by the above commands) and compile</p>
+<pre><code>echo RecoEgamma/ElectronIdentification &gt;&gt; .git/info/sparse-checkout
+git read-tree -mu HEAD
+scram b -j 8
+</code></pre>
+<h2>
+<a aria-hidden="true" class="anchor" href="#3-get-uhh2" id="user-content-3-get-uhh2"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>3. Get UHH2</h2>
+<pre><code>git clone https://github.com/UHH2/UHH2.git
+</code></pre>
+<p>Get the <code>next-ntuple-format</code> branch and switch to it:</p>
+<pre><code># use 'git branch -a' if unsure about the remote branchname
+git checkout -b next-ntuple-format #remotes/origin/next-ntuple-format
+cd UHH2
+git checkout next-ntuple-format
+cd ..
+</code></pre>
+<p>Compile and test run:</p>
+<pre><code>scram b -j 8
+cmsRun UHH2/core/python/ntuplewriter.py
+</code></pre>
+<p>This should ntupelize some events.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#4-known-issues" id="user-content-4-known-issues"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>4. Known Issues</h2>
+<p>For CMSSW740pre8, fastjet 3.1.0 is shipped which is known to have a bug, which -- in extremely rare cases -- makes cmsRun go in an infinite loop or crash (this will be fixed in fastjet 3.1.2). The currently known affected events are:</p>
+<pre><code>entry 15027 of /store/mc/Phys14DR/TTJets_MSDecaysCKM_central_Tune4C_13TeV-madgraph-tauola/MINIAODSIM/PU20bx25_PHYS14_25_V1-v1/10000/4451D0A5-6F76-E411-86CD-002590DB91C6.root
+entry 44074 of /store/mc/Phys14DR/DYJetsToLL_M-50_HT-200to400_Tune4C_13TeV-madgraph-tauola/MINIAODSIM/PU20bx25_PHYS14_25_V1-v1/00000/D884CBD4-B66F-E411-A47A-20CF305B050D.root
+</code></pre>
+<p>Possible workarounds:</p>
+<ul>
+<li>skip these events</li>
+<li>install fastjet 3.1.2. and make cmsRun use that by adding it early to LD_LIBRARY_PATH. Note that CMSSW required de-inlining some (very few!) methods to link successfully</li>
+<li>checkout <code>RecoJets/JetProducers</code> and edit <code>VirtualJetProducer.cc</code> to use other random seeds for these events.</li>
+<li>(untested:) Change the <code>minSeed</code> for the affected jet producers (<code>ak4CHS</code> and <code>ca8CHS</code>)</li>
+</ul>
+
+        </div>
+
+    </div>]

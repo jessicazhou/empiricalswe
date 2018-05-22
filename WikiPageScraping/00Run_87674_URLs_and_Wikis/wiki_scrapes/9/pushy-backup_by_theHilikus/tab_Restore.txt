@@ -1,0 +1,26 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>Restore is done by giving the user sftp access to their backup user only. This is done by chrooting the user and giving it only sftp commands (instead of a full shell)</p>
+<p>In ubuntu (debian) this is done in sshd by enabling the sftp-server subsystem. Edit sshd_config and add if it's not there already</p>
+<pre><code>Subsystem sftp internal-sftp
+</code></pre>
+<p><em>/usr/lib/openssh/sftp-server (which is the ubuntu default one) required a hand-made chroot and a valid shell for the user. internal-sftp works better for chroots since it creates the jail and needs no shell for the user, which is more secure</em></p>
+<p>Now to limit the restore users to sftp add this to <em>sshd_config</em></p>
+<pre><code>Match Group sftp
+AllowTCPForwarding no
+X11Forwarding no
+ForceCommand internal-sftp
+ChrootDirectory %h
+</code></pre>
+<p>This assumes that all the restore users will be part of a group sftp and that their home directory will be the dir with their snapshots. This means that the restore users are just that, backup restore users. If the users have their own home for other reasons then a Match for every individual user specifying the chroot path to their backups will be needed. Having regular users (as opposed to restore-only ones) would also be problematic since the ForceCommand will not let users run most common shell commands.</p>
+<p>Now, if this is the first restore user, create the sftp group</p>
+<pre><code>$ sudo addgroup sftp
+</code></pre>
+<p>then add the user</p>
+<pre><code>$ sudo adduser --home /Backup/john/ --shell /bin/false --ingroup sftp --no-create-home john_backup
+</code></pre>
+<p>Basically, adding a user to the sftp group will grant it sftp (and sftp only) access to the server. On top of the access, the user has to be able to traverse and read the directories and files in the backup snapshots. If the snapshots are done under a single user/group (e.g. backup) then the restore users will need to be part of that same group</p>
+
+        </div>
+
+    </div>]

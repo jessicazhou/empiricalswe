@@ -1,0 +1,86 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>There are a couple of types of testing you can choose to use with Wilson,
+depending on your preference:</p>
+<ol>
+<li>Controller Testing</li>
+<li>Functional Testing</li>
+</ol>
+<p>The later is recommended and is supported out of the box.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#controller-testing" id="user-content-controller-testing"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Controller Testing</h2>
+<p>In this variation, you create a test which allows you to look only at the
+functionality of the individual Controller. You end up writing code like:</p>
+<div class="highlight highlight-text-html-php"><pre><span class="pl-s1"></span>
+<span class="pl-s1"><span class="pl-k">use</span> <span class="pl-c1">Wilson\Http\Request</span>;</span>
+<span class="pl-s1"><span class="pl-k">use</span> <span class="pl-c1">Wilson\Http\Response</span>;</span>
+<span class="pl-s1"><span class="pl-k">use</span> <span class="pl-c1">Wilson\Services</span>;</span>
+<span class="pl-s1"></span>
+<span class="pl-s1"><span class="pl-k">class</span> <span class="pl-en">UsersTest</span> <span class="pl-k">extends</span> <span class="pl-e">PHPUnit_Framework_TestCase</span></span>
+<span class="pl-s1">{</span>
+<span class="pl-s1">    <span class="pl-k">function</span> <span class="pl-en">testGetUsers</span>()</span>
+<span class="pl-s1">    {</span>
+<span class="pl-s1">        <span class="pl-smi">$request</span>  <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-c1">Request</span>();</span>
+<span class="pl-s1">        <span class="pl-smi">$response</span> <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-c1">Response</span>();</span>
+<span class="pl-s1">        <span class="pl-smi">$services</span> <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-c1">Services</span>();</span>
+<span class="pl-s1">        </span>
+<span class="pl-s1">        <span class="pl-smi">$resource</span> <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-c1">Users</span>();</span>
+<span class="pl-s1">        <span class="pl-smi">$resource</span><span class="pl-k">-&gt;</span>getUsers(<span class="pl-smi">$request</span>, <span class="pl-smi">$response</span>, <span class="pl-smi">$services</span>);</span>
+<span class="pl-s1">        </span>
+<span class="pl-s1">        <span class="pl-smi">$this</span><span class="pl-k">-&gt;</span>assertEquals(<span class="pl-c1">200</span>, <span class="pl-smi">$response</span><span class="pl-k">-&gt;</span>getStatus());</span>
+<span class="pl-s1">    }</span>
+<span class="pl-s1">}</span>
+<span class="pl-s1"></span></pre></div>
+<p>This leads to some quite verbose tests, even more so where spies or mocks are
+involved. Additionally, if you setup state during other Middlewares, then you
+do not get a realistic test. As such, you get a better quality of testing with
+...</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#functional-testing" id="user-content-functional-testing"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Functional Testing</h2>
+<p>A functional test is where you make a request through the framework itself,
+allowing you to ensure that requests get where they should and provide the
+ability to inspect the result. There is a little more in the way of setup
+but this pays off:</p>
+<div class="highlight highlight-text-html-php"><pre><span class="pl-s1"></span>
+<span class="pl-s1"><span class="pl-k">class</span> <span class="pl-en">TestCase</span> <span class="pl-k">extends</span> <span class="pl-c1">Wilson\Utils\</span><span class="pl-e">TestCase</span></span>
+<span class="pl-s1">{</span>
+<span class="pl-s1">    <span class="pl-k">protected</span> <span class="pl-k">function</span> <span class="pl-en">getApi</span>()</span>
+<span class="pl-s1">    {</span>
+<span class="pl-s1">        <span class="pl-smi">$testing</span> <span class="pl-k">=</span> <span class="pl-c1">true</span>;</span>
+<span class="pl-s1">        <span class="pl-k">return</span> <span class="pl-k">require_once</span> <span class="pl-s"><span class="pl-pds">"</span>/path/to/index.php<span class="pl-pds">"</span></span>;</span>
+<span class="pl-s1">    }</span>
+<span class="pl-s1">     </span>
+<span class="pl-s1">}</span>
+<span class="pl-s1"></span></pre></div>
+<div class="highlight highlight-text-html-php"><pre><span class="pl-pse">&lt;?php</span><span class="pl-s1"></span>
+<span class="pl-s1"></span>
+<span class="pl-s1"><span class="pl-k">require_once</span> <span class="pl-s"><span class="pl-pds">"</span>vendor/autoload.php<span class="pl-pds">"</span></span>;</span>
+<span class="pl-s1"></span>
+<span class="pl-s1"><span class="pl-smi">$api</span> <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-c1">Wilson\</span><span class="pl-c1">Api</span>();</span>
+<span class="pl-s1"><span class="pl-smi">$api</span><span class="pl-k">-&gt;</span><span class="pl-smi">resources</span> <span class="pl-k">=</span> <span class="pl-c1">array</span>(<span class="pl-s"><span class="pl-pds">"</span>Users<span class="pl-pds">"</span></span>);</span>
+<span class="pl-s1"><span class="pl-smi">$api</span><span class="pl-k">-&gt;</span><span class="pl-smi">services</span>  <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-c1">Services</span>();</span>
+<span class="pl-s1"></span>
+<span class="pl-s1"><span class="pl-k">if</span> (<span class="pl-c1">isset</span>(<span class="pl-smi">$testing</span>)) {</span>
+<span class="pl-s1">    <span class="pl-k">return</span> <span class="pl-smi">$api</span>;</span>
+<span class="pl-s1">}</span>
+<span class="pl-s1"></span>
+<span class="pl-s1"><span class="pl-smi">$api</span><span class="pl-k">-&gt;</span>dispatch();</span>
+<span class="pl-s1"></span></pre></div>
+<div class="highlight highlight-text-html-php"><pre><span class="pl-s1"></span>
+<span class="pl-s1"><span class="pl-k">class</span> <span class="pl-en">UsersTest</span> <span class="pl-k">extends</span> <span class="pl-e">TestCase</span></span>
+<span class="pl-s1">{</span>
+<span class="pl-s1">    <span class="pl-k">function</span> <span class="pl-en">testGetUsers</span>()</span>
+<span class="pl-s1">    {</span>
+<span class="pl-s1">        <span class="pl-smi">$response</span> <span class="pl-k">=</span> <span class="pl-smi">$this</span><span class="pl-k">-&gt;</span>call(<span class="pl-s"><span class="pl-pds">"</span>GET<span class="pl-pds">"</span></span>, <span class="pl-sr"><span class="pl-pds">"/</span>users<span class="pl-pds">/"</span></span>);</span>
+<span class="pl-s1">        </span>
+<span class="pl-s1">        <span class="pl-smi">$this</span><span class="pl-k">-&gt;</span>assertEquals(<span class="pl-c1">200</span>, <span class="pl-smi">$response</span><span class="pl-k">-&gt;</span>getStatus());</span>
+<span class="pl-s1">    }</span>
+<span class="pl-s1">}</span>
+<span class="pl-s1"></span></pre></div>
+<h2>
+<a aria-hidden="true" class="anchor" href="#next-performance" id="user-content-next-performance"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Next: <a href="Optimizing-Performance">Performance</a>
+</h2>
+
+        </div>
+
+    </div>]

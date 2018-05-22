@@ -1,0 +1,144 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>Next step, we'll build a simple restful api. By simple I mean, covers the 4 verbs (GET, POST, PUT, DELETE) and allows us to Create, Read, Update and Delete todo items.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#todos-table-migration" id="user-content-todos-table-migration"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Todos Table Migration</h2>
+<p>Laravel migrations allow us to easily manage our database schema while maintaining it in our version control.</p>
+<p>For this tutorial, we'll have a list of todo items each with a title, notes, completion date and timestamps. To build this simply run the following command.</p>
+<pre><code>php artisan migrate:make create_todos_table --create=todos
+</code></pre>
+<p>Next open the generated file located in <code>app/database/migrations/</code> folder.</p>
+<p>In the up method replace the content with the following stub</p>
+<div class="highlight highlight-text-html-php"><pre><span class="pl-s1"><span class="pl-c1">Schema</span><span class="pl-k">::</span>create(<span class="pl-s"><span class="pl-pds">'</span>todos<span class="pl-pds">'</span></span>, <span class="pl-k">function</span>(<span class="pl-c1">Blueprint</span> <span class="pl-smi">$table</span>)</span>
+<span class="pl-s1">{</span>
+<span class="pl-s1">	<span class="pl-smi">$table</span><span class="pl-k">-&gt;</span>increments(<span class="pl-s"><span class="pl-pds">'</span>id<span class="pl-pds">'</span></span>);</span>
+<span class="pl-s1">	<span class="pl-smi">$table</span><span class="pl-k">-&gt;</span>string(<span class="pl-s"><span class="pl-pds">'</span>title<span class="pl-pds">'</span></span>);</span>
+<span class="pl-s1">	<span class="pl-smi">$table</span><span class="pl-k">-&gt;</span>text(<span class="pl-s"><span class="pl-pds">'</span>notes<span class="pl-pds">'</span></span>)<span class="pl-k">-&gt;</span>nullable();</span>
+<span class="pl-s1">	<span class="pl-smi">$table</span><span class="pl-k">-&gt;</span>timestamp(<span class="pl-s"><span class="pl-pds">'</span>completed_at<span class="pl-pds">'</span></span>)<span class="pl-k">-&gt;</span>nullable();</span>
+<span class="pl-s1">	<span class="pl-smi">$table</span><span class="pl-k">-&gt;</span>timestamps();</span>
+<span class="pl-s1">});</span></pre></div>
+<p>Save and exit the file. In terminal, run the migrate command</p>
+<pre><code>php artisan migrate
+</code></pre>
+<p><strong>Note:</strong> This tutorial assumes you know the basics of laravel and therefore shall not focus on explaining the basics.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#todo-model" id="user-content-todo-model"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Todo Model</h2>
+<ul>
+<li>In the models folder <code>app/models/</code>, create a new file called <code>Todo.php</code>.</li>
+<li>In this file, create a class called Todo that extends Eloquent.</li>
+<li>Add a protected property called dates and initialize it to <code>array('completed_at');</code>
+</li>
+<li>Add another protected property called guarded and initialize it to an empty array;</li>
+</ul>
+<p>The final file should like as follows:</p>
+<div class="highlight highlight-text-html-php"><pre><span class="pl-pse">&lt;?php</span><span class="pl-s1"></span>
+<span class="pl-s1"></span>
+<span class="pl-s1"><span class="pl-k">class</span> <span class="pl-en">Todo</span> <span class="pl-k">extends</span> <span class="pl-e">Eloquent</span></span>
+<span class="pl-s1">{</span>
+<span class="pl-s1">	<span class="pl-k">protected</span> <span class="pl-smi">$dates</span> <span class="pl-k">=</span> <span class="pl-c1">array</span>(<span class="pl-s"><span class="pl-pds">'</span>completed_at<span class="pl-pds">'</span></span>);</span>
+<span class="pl-s1"></span>
+<span class="pl-s1">	<span class="pl-k">protected</span> <span class="pl-smi">$guarded</span> <span class="pl-k">=</span> <span class="pl-c1">array</span>();</span>
+<span class="pl-s1">}</span>
+<span class="pl-s1"></span></pre></div>
+<h2>
+<a aria-hidden="true" class="anchor" href="#todos-controller" id="user-content-todos-controller"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Todos Controller</h2>
+<p>With the model done, next we create the TodosController. To kickstart this step, we'll use the artisan command provided to create a resourceful controller. Simply run:</p>
+<pre><code>php artisan controller:make TodosController
+</code></pre>
+<p>Open the file TodosController.php located in app/controllers and perform the following steps:</p>
+<ul>
+<li>Delete the create and edit methods. We won't need them when building a restful api.</li>
+<li>Update the index method to get a list of all todo items. To achieve this, add the stub below in the index method</li>
+</ul>
+<div class="highlight highlight-text-html-php"><pre><span class="pl-s1"><span class="pl-k">return</span> <span class="pl-c1">Todo</span><span class="pl-k">::</span>all();</span></pre></div>
+<ul>
+<li>Update the store method to create a new todo item</li>
+</ul>
+<div class="highlight highlight-text-html-php"><pre><span class="pl-s1"><span class="pl-k">return</span> <span class="pl-c1">Todo</span><span class="pl-k">::</span>create(<span class="pl-c1">Input</span><span class="pl-k">::</span>only(<span class="pl-s"><span class="pl-pds">'</span>title<span class="pl-pds">'</span></span>,<span class="pl-s"><span class="pl-pds">'</span>notes<span class="pl-pds">'</span></span>,<span class="pl-s"><span class="pl-pds">'</span>completed_at<span class="pl-pds">'</span></span>));</span></pre></div>
+<ul>
+<li>Update the show method to return a todo item based on the id</li>
+</ul>
+<div class="highlight highlight-text-html-php"><pre><span class="pl-s1"><span class="pl-k">return</span> <span class="pl-c1">Todo</span><span class="pl-k">::</span>findOrFail(<span class="pl-smi">$id</span>);</span></pre></div>
+<ul>
+<li>Update the update method to update the todo item provided</li>
+</ul>
+<div class="highlight highlight-text-html-php"><pre><span class="pl-s1"><span class="pl-smi">$todo</span> <span class="pl-k">=</span> <span class="pl-c1">Todo</span><span class="pl-k">::</span>findOrFail(<span class="pl-smi">$id</span>);</span>
+<span class="pl-s1"><span class="pl-smi">$todo</span><span class="pl-k">-&gt;</span>update(<span class="pl-c1">array_filter</span>(<span class="pl-c1">Input</span><span class="pl-k">::</span>only(<span class="pl-s"><span class="pl-pds">'</span>title<span class="pl-pds">'</span></span>,<span class="pl-s"><span class="pl-pds">'</span>notes<span class="pl-pds">'</span></span>,<span class="pl-s"><span class="pl-pds">'</span>completed_at<span class="pl-pds">'</span></span>)));</span>
+<span class="pl-s1"><span class="pl-k">return</span> <span class="pl-smi">$todo</span>;</span></pre></div>
+<p><em><strong>Note</strong> Array filter cleans up the array removing null and false values. Use it only when you have no value that can be set to false.</em></p>
+<p>Update the destroy method to delete the given todo item</p>
+<div class="highlight highlight-text-html-php"><pre><span class="pl-s1"><span class="pl-c1">Todo</span><span class="pl-k">::</span>destroy(<span class="pl-smi">$id</span>);</span>
+<span class="pl-s1"><span class="pl-k">return</span>;	</span></pre></div>
+<p>The final TodosController class should like as follows</p>
+<div class="highlight highlight-text-html-php"><pre><span class="pl-s1"><span class="pl-k">class</span> <span class="pl-en">TodosController</span> <span class="pl-k">extends</span> <span class="pl-c1">\</span><span class="pl-e">BaseController</span> {</span>
+<span class="pl-s1"></span>
+<span class="pl-s1"><span class="pl-c"><span class="pl-c">/**</span></span></span>
+<span class="pl-s1"><span class="pl-c"> * Display a listing of the resource.</span></span>
+<span class="pl-s1"><span class="pl-c"> *</span></span>
+<span class="pl-s1"><span class="pl-c"> * <span class="pl-k">@return</span> Response</span></span>
+<span class="pl-s1"><span class="pl-c"> <span class="pl-c">*/</span></span></span>
+<span class="pl-s1"><span class="pl-k">public</span> <span class="pl-k">function</span> <span class="pl-en">index</span>()</span>
+<span class="pl-s1">{</span>
+<span class="pl-s1">	<span class="pl-k">return</span> <span class="pl-c1">Todo</span><span class="pl-k">::</span>all();</span>
+<span class="pl-s1">}</span>
+<span class="pl-s1"></span>
+<span class="pl-s1"></span>
+<span class="pl-s1"><span class="pl-c"><span class="pl-c">/**</span></span></span>
+<span class="pl-s1"><span class="pl-c"> * Store a newly created resource in storage.</span></span>
+<span class="pl-s1"><span class="pl-c"> *</span></span>
+<span class="pl-s1"><span class="pl-c"> * <span class="pl-k">@return</span> Response</span></span>
+<span class="pl-s1"><span class="pl-c"> <span class="pl-c">*/</span></span></span>
+<span class="pl-s1"><span class="pl-k">public</span> <span class="pl-k">function</span> <span class="pl-en">store</span>()</span>
+<span class="pl-s1">{</span>
+<span class="pl-s1">	<span class="pl-k">return</span> <span class="pl-c1">Todo</span><span class="pl-k">::</span>create(<span class="pl-c1">Input</span><span class="pl-k">::</span>only(<span class="pl-s"><span class="pl-pds">'</span>title<span class="pl-pds">'</span></span>,<span class="pl-s"><span class="pl-pds">'</span>notes<span class="pl-pds">'</span></span>,<span class="pl-s"><span class="pl-pds">'</span>completed_at<span class="pl-pds">'</span></span>));</span>
+<span class="pl-s1">}</span>
+<span class="pl-s1"></span>
+<span class="pl-s1"></span>
+<span class="pl-s1"><span class="pl-c"><span class="pl-c">/**</span></span></span>
+<span class="pl-s1"><span class="pl-c"> * Display the specified resource.</span></span>
+<span class="pl-s1"><span class="pl-c"> *</span></span>
+<span class="pl-s1"><span class="pl-c"> * <span class="pl-k">@param</span>  int  $id</span></span>
+<span class="pl-s1"><span class="pl-c"> * <span class="pl-k">@return</span> Response</span></span>
+<span class="pl-s1"><span class="pl-c"> <span class="pl-c">*/</span></span></span>
+<span class="pl-s1"><span class="pl-k">public</span> <span class="pl-k">function</span> <span class="pl-en">show</span>(<span class="pl-smi">$id</span>)</span>
+<span class="pl-s1">{</span>
+<span class="pl-s1">	<span class="pl-k">return</span> <span class="pl-c1">Todo</span><span class="pl-k">::</span>findOrFail(<span class="pl-smi">$id</span>);</span>
+<span class="pl-s1">}</span>
+<span class="pl-s1"></span>
+<span class="pl-s1"></span>
+<span class="pl-s1"><span class="pl-c"><span class="pl-c">/**</span></span></span>
+<span class="pl-s1"><span class="pl-c"> * Update the specified resource in storage.</span></span>
+<span class="pl-s1"><span class="pl-c"> *</span></span>
+<span class="pl-s1"><span class="pl-c"> * <span class="pl-k">@param</span>  int  $id</span></span>
+<span class="pl-s1"><span class="pl-c"> * <span class="pl-k">@return</span> Response</span></span>
+<span class="pl-s1"><span class="pl-c"> <span class="pl-c">*/</span></span></span>
+<span class="pl-s1"><span class="pl-k">public</span> <span class="pl-k">function</span> <span class="pl-en">update</span>(<span class="pl-smi">$id</span>)</span>
+<span class="pl-s1">{</span>
+<span class="pl-s1">	<span class="pl-smi">$todo</span> <span class="pl-k">=</span> <span class="pl-c1">Todo</span><span class="pl-k">::</span>findOrFail(<span class="pl-smi">$id</span>);</span>
+<span class="pl-s1">	<span class="pl-smi">$todo</span><span class="pl-k">-&gt;</span>update(<span class="pl-c1">array_filter</span>(<span class="pl-c1">Input</span><span class="pl-k">::</span>only(<span class="pl-s"><span class="pl-pds">'</span>title<span class="pl-pds">'</span></span>,<span class="pl-s"><span class="pl-pds">'</span>notes<span class="pl-pds">'</span></span>,<span class="pl-s"><span class="pl-pds">'</span>completed_at<span class="pl-pds">'</span></span>)));</span>
+<span class="pl-s1">	<span class="pl-k">return</span> <span class="pl-smi">$todo</span>;</span>
+<span class="pl-s1">}</span>
+<span class="pl-s1"></span>
+<span class="pl-s1"></span>
+<span class="pl-s1"><span class="pl-c"><span class="pl-c">/**</span></span></span>
+<span class="pl-s1"><span class="pl-c"> * Remove the specified resource from storage.</span></span>
+<span class="pl-s1"><span class="pl-c"> *</span></span>
+<span class="pl-s1"><span class="pl-c"> * <span class="pl-k">@param</span>  int  $id</span></span>
+<span class="pl-s1"><span class="pl-c"> * <span class="pl-k">@return</span> Response</span></span>
+<span class="pl-s1"><span class="pl-c"> <span class="pl-c">*/</span></span></span>
+<span class="pl-s1"><span class="pl-k">public</span> <span class="pl-k">function</span> <span class="pl-en">destroy</span>(<span class="pl-smi">$id</span>)</span>
+<span class="pl-s1">{</span>
+<span class="pl-s1">	<span class="pl-c1">Todo</span><span class="pl-k">::</span>destroy(<span class="pl-smi">$id</span>);</span>
+<span class="pl-s1">	<span class="pl-k">return</span>;</span>
+<span class="pl-s1">}</span></pre></div>
+<p>This is a very basic controller with no validation, no custom response but it will work.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#routes" id="user-content-routes"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Routes</h2>
+<p>The final step, create a route for our controller. In <code>app/routes.php</code> simply add the line</p>
+<div class="highlight highlight-text-html-php"><pre><span class="pl-s1"><span class="pl-c1">Route</span><span class="pl-k">::</span>resource(<span class="pl-s"><span class="pl-pds">'</span>todos<span class="pl-pds">'</span></span>,<span class="pl-s"><span class="pl-pds">'</span>TodosController<span class="pl-pds">'</span></span>);</span></pre></div>
+<p>In the next step, we'll write basic test to test our api as is. For now, you can use postman to try out the api.</p>
+<p>Next Step: Write automated tests for our api</p>
+
+        </div>
+
+    </div>]

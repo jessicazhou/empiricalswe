@@ -1,0 +1,243 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p><em>starts from <a href="https://github.com/sysown/proxysql/wiki/Frequently-Asked-Questions">https://github.com/sysown/proxysql/wiki/Frequently-Asked-Questions</a></em></p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#question-1--connection-pooling-in-proxysql" id="user-content-question-1--connection-pooling-in-proxysql"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Question 1 : Connection pooling in ProxySQL</h3>
+<p><code>Answer</code>   : Like any other database technology , ProxySQL also maintains a pool of connections.</p>
+<p>A connection pool is a cache of database connections maintained so that the connections can be reused when future requests to the database are required.</p>
+<p>As we can see that each host has max_connection set to 1000.
+So ProxySQL can open total 1000 backend connection for that specific host.</p>
+<pre><code>mysql&gt; select hostgroup_id,hostname,port,status,weight,max_connections from mysql_servers;
++--------------+------------+------+--------+--------+-----------------+
+| hostgroup_id | hostname   | port | status | weight | max_connections |
++--------------+------------+------+--------+--------+-----------------+
+| 0            | 172.17.0.1 | 3306 | ONLINE | 100    | 1000            |
++--------------+------------+------+--------+--------+-----------------+
+3 rows in set (0.00 sec)
+</code></pre>
+<p>Below variable controls the percentage of open idle connections in pool from the total maximal number of connections for a specific server in a hostgroup.</p>
+<pre><code>mysql&gt; select * from global_variables where variable_name like 'mysql-free_connections_pct';
++----------------------------+----------------+
+| variable_name              | variable_value |
++----------------------------+----------------+
+| mysql-free_connections_pct | 20             |
++----------------------------+----------------+
+1 row in set (0.01 sec)
+</code></pre>
+<p>This is the workflow for connection pool :</p>
+<ol>
+<li>A session needs a connection to server , It check into the connection pool.</li>
+<li>If there is a connection in the connection pool for that backend, that connection is used, otherwise a new connection is created.</li>
+<li>When a session frees a connection this is sent back to the Hostgroup Manager. If the Hostgroup Manager determines that the connection is safe to share and the connection pool isn't full, it will place it in the connection pool.</li>
+<li>If the connection is not safe to share (there are session variables, or temporary tables, etc) the Hostgroup Manager destroys that connection.</li>
+<li>For each backend server, the hostgroup manager will keep in the connection pool up to mysql-free_connections_pct * mysql_servers.max_connections / 100 connections . Connections are kept open with periodic pings.</li>
+</ol>
+<p>So with above given example :
+Number of idle connection in pool = (20 * 1000) / 100 = 200 Idle connection.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#question-2--use-dbname" id="user-content-question-2--use-dbname"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Question 2 : USE DBNAME</h3>
+<p><code>Answer</code> : Some users has raised question , why USE database will always succeed in ProxySQL even if database doesn't exist.
+Issue reported on GitHub : <a href="https://github.com/sysown/proxysql/issues/876">https://github.com/sysown/proxysql/issues/876</a></p>
+<p>First thing to note  : ProxySQL will never give error while executing "Use" Command , Error will arise during the execution of the query.(more details later on)</p>
+<p>Let see what happens when MySQL CLI execute USE dbname:</p>
+<ul>
+<li>It sends a <code>COM_INIT_DB</code> command to change the database</li>
+<li>It sends a query <code>show tables</code>
+</li>
+</ul>
+<p>[ The superfluous <code>show tables</code> is not executed by ProxySQL. That request coming from the client (mysql cli) and ProxySQL is trying to forward.
+To suppress the <code>show tables</code> command, mysql cli should be executed using <code>-A</code> to disable auto-refresh ]</p>
+<p>When client execute <code>USE</code> command , ProxySQL does not forward the request to any backend, it only internally track which one is the desired default schema for that specific client [mysql_users.default_schema].</p>
+<p>The reason why “USE DB” doesn't through any error at ProxySQL client , because there are chances that selected DB is not present on default hostgroup for that user , but it is present on other hostgroup added behind same ProxySQL.</p>
+<p>Please see below example:</p>
+<p>Assume we have two servers with one schema each and both host behind same ProxySQL:</p>
+<pre><code>employees DB on `172.17.0.1` [Hostgroup 0] 
+digital DB on `172.17.0.3` [Hostgroup 2] 
+</code></pre>
+<ol>
+<li>User has <code>employees</code> database as default schema and ProxySQL forwarding all queries to <code>172.17.0.1</code>.</li>
+<li>Now user wants to run queries on <code>digital</code> schema but request cannot be executed on <code>172.17.0.1</code> because  <code>digital</code> Schema doesn't exist there.</li>
+<li>In this case, ProxySQL will only reply OK to the client for <code>USE</code> command , and will wait for the client to sends a query. When the client sends a query, ProxySQL will decide what to do with it by checking the query rules, and if query rules match then it will send the request to <code>172.17.0.3</code>.</li>
+</ol>
+<p>Two hosts are present and belonging to different host group.</p>
+<pre><code>mysql&gt; select hostgroup_id,hostname,port,status,weight,max_connections from mysql_servers;
++--------------+------------+------+--------+--------+-----------------+
+| hostgroup_id | hostname   | port | status | weight | max_connections |
++--------------+------------+------+--------+--------+-----------------+
+| 0            | 172.17.0.1 | 3306 | ONLINE | 100    | 1000            |
+| 2            | 172.17.0.3 | 3306 | ONLINE | 100    | 1000            |
++--------------+------------+------+--------+--------+-----------------+
+</code></pre>
+<p>User is used to connect to MySQL Servers through ProxySQL.
+so when every time same user connect to server , it will reach to <code>default_hostgroup 0</code> and <code>default_schema employees</code></p>
+<pre><code>mysql&gt; select username,password,active,default_hostgroup,default_schema,max_connections from mysql_users;
++----------+----------+--------+-------------------+----------------+-----------------+
+| username | password | active | default_hostgroup | default_schema | max_connections |
++----------+----------+--------+-------------------+----------------+-----------------+
+| sysbench | sysbench | 1      | 0                 | employees      | 10000           |
++----------+----------+--------+-------------------+----------------+-----------------+
+</code></pre>
+<p>In below example , we are looking for table <code>dept</code> which is present in <code>digital</code> database and that database is present only on hostname <code>172.17.0.3</code></p>
+<p>Query Rule to forward all queries on hostgroup - 2 which belongs to digital schema.</p>
+<pre><code>mysql&gt; select rule_id,active,destination_hostgroup, apply,schemaname from mysql_query_rules;
++---------+--------+-----------------------+-------+------------+
+| rule_id | active | destination_hostgroup | apply | schemaname |
++---------+--------+-----------------------+-------+------------+
+| 1       | 1      | 0                     | 1     | employees  |
+| 2       | 1      | 2                     | 1     | digital    |
++---------+--------+-----------------------+-------+------------+
+
+</code></pre>
+<ul>
+<li>Without any query rule :
+Query will hit on employees database on default host 172.17.0.1 2 and it fails due to DB not found.</li>
+</ul>
+<pre><code>root@8a9f96bb26f9:/# mysql -usysbench -psysbench -h127.0.0.1 -P6033 -A -e "select @@server_id;use digital; select * from dept; select @@server_id;"
++-------------+
+| @@server_id |
++-------------+
+|           1 |
++-------------+
+ERROR 1049 (42000) at line 1: Unknown database 'digital'
+
+</code></pre>
+<ul>
+<li>With query rule : It work successful</li>
+</ul>
+<ol>
+<li>Below query will hit the default host and default schema , which is employees DB on Host “172.17.0.1”</li>
+<li>Query rule get match because of <code>use digital</code> string found.</li>
+<li>After matching rule , next consecutive query will get reroute to server “172.17.0.3” and execution finished.</li>
+</ol>
+<pre><code>root@8a9f96bb26f9:/# mysql -usysbench -psysbench -h127.0.0.1 -P6033 -A -e "select @@server_id;use digital; select * from dept; select @@server_id;"
++-------------+
+| @@server_id |
++-------------+
+|           1 |
++-------------+
++------+------+
+| id   | name |
++------+------+
+|  101 | ashw |
++------+------+
++-------------+
+| @@server_id |
++-------------+
+|           3 |
++-------------+
+root@8a9f96bb26f9:/#
+</code></pre>
+<p>So the behaviour we are seeing is expected. <code>USE database</code> will always succeed, but the queries will fail until a valid schema is selected.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#question-3--monitoring-in-proxysql" id="user-content-question-3--monitoring-in-proxysql"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Question 3 : Monitoring in ProxySQL</h3>
+<p><code>Answer</code>   : ProxySQL is quite unique when it performs failure detection , It can detect that a server is down not because its Monitoring system fails to check the status of a backend, but because queries are failing.
+That means that even if Monitor is disabled, ProxySQL is able to detect if a node is down when it tries to send queries to it.</p>
+<p>The core of ProxySQL works this way : (that means without Monitor enabled)</p>
+<ol>
+<li>Initially all nodes are online.</li>
+<li>when sending traffic to a node errors are generated, if more than <code>mysql-shun_on_failures</code> errors are generated in 1 second, the node is shunned for <code>mysql-shun_recovery_time_sec</code> seconds.</li>
+<li>After <code>mysql-shun_recovery_time_sec</code>, ProxySQL will bring the node back online and will try to send traffic to it</li>
+<li>If the condition described in point 2 happens again, the node is shunned again.</li>
+</ol>
+<p>One important thing to note about point 3 is that ProxySQL doesn't have a timer to bring the node back online after <code>mysql-shun_recovery_time_sec</code> seconds. The node is brought back online after <code>mysql-shun_recovery_time_sec</code> seconds only if there is activity in the connections pool for that specific hostgroup.</p>
+<p>All the above works without Monitor enabled!</p>
+<blockquote>
+<p>Monitor module extends the functionality of the core of ProxySQL.</p>
+</blockquote>
+<p>For example, if there is a network issue, ProxySQL's core won't be able to understand if a database server is not replying because it is still running the query or because there is a network problem. Monitor will be able to detect this and inform ProxySQL's core that the backend seems unreachable.</p>
+<p>As said, this is not completely true.
+The core of ProxySQL can still detect that there is a problem if you send more traffic to ProxySQL and ProxySQL tries to open new connection to that backend. <code>connect()</code> will fail, and ProxySQL will shun that node. Although, the current connection won't be affected.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#question-5--proxysql-ha" id="user-content-question-5--proxysql-ha"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Question 5 : ProxySQL HA</h3>
+<p><code>Answer</code> : No matter how highly available ProxySQL is, a crash is always possible due to unknown bugs.
+For this reason, ProxySQL has the ability to auto-restart by angel process in less than a second in case of failure .</p>
+<p>Below are some examples for how to integrate ProxySQL in our architectures.</p>
+<ul>
+<li>One single ProxySQL instance</li>
+<li>Multiple ProxySQL hosts</li>
+<li>Multiple ProxySQL hosts + LB</li>
+<li>One ProxySQL instance per application server</li>
+<li>Silos approach</li>
+<li>Keepalived + VIP + ProxySQL</li>
+<li>Keepalived + VIP + LB</li>
+<li>Keepalived + VIP + LVS</li>
+<li>Multi-layer + Keepalived + VIP + LVS</li>
+<li>Multi-layers</li>
+<li>Silos + Multi-layers</li>
+</ul>
+<p>For reference : <a href="https://www.slideshare.net/Severalnines/webinar-slides-high-availability-in-proxysql?from_action=save" rel="nofollow">slideshare</a>
+<a href="https://www.youtube.com/watch?v=kzvazKEv4iY" rel="nofollow">webinar</a></p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#question-6--mirroring-in-proxysql" id="user-content-question-6--mirroring-in-proxysql"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Question 6 : Mirroring in ProxySQL</h3>
+<p><code>Answer</code>   :
+When we need a tool , To test our production queries on different or new platform we can make use of mirroning.</p>
+<p>This feature works similar to blackhole engine , It always execute query on server configured in <code>mirror_hostgroup</code> and log into its own binlogs.</p>
+<p>How to configure Mirroring : <a href="https://github.com/sysown/proxysql/blob/v1.4.3/doc/mirroring.md">In Detail</a></p>
+<p>Below are some use cases where you can actually take advantage of this feature without installing new plugin.</p>
+<ol>
+<li>To test SQL queries performance on different MySQL forks (MySQL , Percona , MariaDB) :</li>
+<li>Try production queries on newer MySQL version [Validate SQL syntax]:</li>
+<li>Test <code>mysql_query_rules</code> configured in ProxySQL before making it live.</li>
+</ol>
+<p>How to validate MySQL queries : <a href="https://blog.pythian.com/using-proxysql-validate-mysql-updates/" rel="nofollow">Example</a></p>
+<p>Important to note : ProxySQL mirroring should be only used for benchmarking ,testing, upgrade validation and any other activity that doesn't require correctness.
+The whole process is not free for a server , it increased CPU utilization on box. so if we have more number of ProxySQL configured, we can just configure mirroring on one-two proxy's to avoid extra cpu usage on every box.</p>
+<p>Note : ProxySQL Mirroring doesn't support prepared statements. If you are running sysbench test don't forget to add <code>--db-ps-mode=disable</code></p>
+<p>Benchmark test result : <a href="https://www.percona.com/blog/2017/05/25/proxysql-and-mirroring-what-about-it/" rel="nofollow">https://www.percona.com/blog/2017/05/25/proxysql-and-mirroring-what-about-it/</a></p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#question-10--stopshutdown-proxysql" id="user-content-question-10--stopshutdown-proxysql"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Question 10 : Stop/Shutdown ProxySQL</h3>
+<p><code>Answer</code>   :</p>
+<p>Once the process receives <code>SIGTERM</code> signal , a few different things can happen:</p>
+<ul>
+<li>the process may stop immediately</li>
+<li>the process may stop after a short delay after cleaning up resources</li>
+<li>the process may keep running indefinitely</li>
+</ul>
+<p>The application can determine what it wants to do once a SIGTERM is received. While most applications will clean up their resources and stop, some may not.</p>
+<p>See what ProxySQL does with <a href="https://github.com/sysown/proxysql/blob/v1.4.4/etc/init.d/proxysql#L109">Kill</a></p>
+<p><code>killall</code> - <em>kill processes by name</em></p>
+<p>killall sends a signal to all processes running any of the specified commands . If no signal name is specified, SIGTERM is sent. To terminate all ProxySQL process (child and parent), enter : killall proxysql</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#question-11--configure-default-hostgroup" id="user-content-question-11--configure-default-hostgroup"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Question 11 : Configure Default Hostgroup.</h3>
+<p><code>Answer</code>   : : In below example user doesn't have any host configured for <code>hostgroup 0</code></p>
+<pre><code>mysql&gt; select hostgroup_id,hostname,port,status,weight from mysql_servers;
++--------------+------------+------+--------+--------+
+| hostgroup_id | hostname   | port | status | weight |
++--------------+------------+------+--------+--------+
+| 2            | 172.17.0.2 | 3306 | ONLINE | 100    |
+| 3            | 172.17.0.3 | 3306 | ONLINE | 100    |
+| 1            | 172.17.0.1 | 3306 | ONLINE | 100    |
++--------------+------------+------+--------+--------+
+
+ mysql&gt; select * from mysql_replication_hostgroups;
++------------------+------------------+---------+
+| writer_hostgroup | reader_hostgroup | comment |
++------------------+------------------+---------+
+| 1                | 2                | stag1   |
++------------------+------------------+---------+
+
+mysql&gt; select rule_id, match_digest,destination_hostgroup,apply from mysql_query_rules;
++---------+---------------------+-----------------------+-------+
+| rule_id | match_digest        | destination_hostgroup | apply |
++---------+---------------------+-----------------------+-------+
+| 11      | ^SELECT.*           | 2                     | 0     |
+| 12      | ^SELECT.*FOR UPDATE | 1                     | 1     |
++---------+---------------------+-----------------------+-------+
+</code></pre>
+<p>But still user facing error :</p>
+<blockquote>
+<p>Max connect timeout reached while reaching hostgroup 0 after 10000ms</p>
+</blockquote>
+<p>This is because user forgot to change default_hostgroup in mysql_users.</p>
+<pre><code>mysql&gt; select username,password,active,default_hostgroup,default_schema,max_connections, max_connections from mysql_users;
++----------+----------+--------+-------------------+----------------+-----------------+-----------------+
+| username | password | active | default_hostgroup | default_schema | max_connections | max_connections |
++----------+----------+--------+-------------------+----------------+-----------------+-----------------+
+| sysbench | sysbench | 1      | 0                 | NULL           | 10000           | 10000           |
++----------+----------+--------+-------------------+----------------+-----------------+-----------------+
+1 row in set (0.00 sec)
+</code></pre>
+
+        </div>
+
+    </div>]

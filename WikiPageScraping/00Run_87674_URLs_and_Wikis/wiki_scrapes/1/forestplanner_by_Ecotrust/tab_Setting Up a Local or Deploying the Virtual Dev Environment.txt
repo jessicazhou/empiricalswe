@@ -1,0 +1,89 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>Install vagrant, virtualbox and pip. On Linux:</p>
+<pre><code> sudo apt-get update
+ sudo apt-get install vagrant python-pip 
+ sudo pip install fabric
+</code></pre>
+<p>Get the land_owner_tools repo, and fire up the virtual dev environment. All of the following repos should be added under a parent directory (ie. forestplanner). A sample directory structure can be seen below.</p>
+<pre><code>-- forestplanner
+  -- madrona
+  -- cost_model
+  -- harvest-scheduler
+  -- land_owner_tools
+</code></pre>
+<p>Clone the following repos using the commands below and run vagrant up within your land_owner_tools directory:</p>
+<pre><code> git clone https://github.com/Ecotrust/madrona.git
+ git clone https://github.com/Ecotrust/cost_model.git
+ git clone https://github.com/Ecotrust/harvest-scheduler.git
+ git clone https://github.com/Ecotrust/land_owner_tools.git
+ cd land_owner_tools/
+ vagrant up
+</code></pre>
+<p>Make sure you have the correct dependencies for the project. Of note, some of the python modules that are used for Forest Planner require older versions (potentially due to incompatibilities in recent upgrades). You can view the <em>requirements_frozen.txt</em> file to see what one user has used as his/her own sytem. Make the necessary changes to versioning within your local requirements.txt. It is not necessary to add all that is listed in <em>requirements_frozen.txt</em> - as they will be added as dependencies of other modules.</p>
+<p>One module that you may need that is missing from both <em>requirements.txt</em> and <em>requirements_frozen.txt</em> is <em>django-redis-cache</em>. If so, you'll need to modify your <em>settings.py</em> and your <em>requirements.txt</em> file.</p>
+<pre><code>"BACKEND": "redis_cache.RedisCache",
+"LOCATION": "127.0.0.1:6379",
+</code></pre>
+<p>When running Forest Planner locally, comment out madrona in <em>requirements.txt</em>. Furthermore, add <em>Django==1.4.5</em> to madrona's <em>requirements.txt</em>. It currently will install the latest version of Django, which won't work. You'll then need to run <em>setup.py</em> within your VM.</p>
+<pre><code>vagrant ssh
+source /usr/local/venv/lot/bin/activate
+cd /usr/local/src/madrona
+sudo python setup.py develop
+</code></pre>
+<p>While still in your VM, you'll need to run your <em>requirements.txt</em> file using pip prior to addressing the first bug below.</p>
+<pre><code>cd /usr/local/apps/land_owner_tools
+pip install -r requirements.txt
+</code></pre>
+<p>Then address these quick fixes:</p>
+<pre><code> # weird bug no. 1
+ # comment out the `from __future__ import unicode_literals` line in 
+ vi /usr/local/venv/lot/lib/python2.7/site-packages/allauth/socialaccount/south_migrations/0012_auto__chg_field_socialtoken_token_secret.py
+
+ # weird bug no. 2
+ # an ubuntu error that redirects /usr/local/venv to /usr/venv. Try this:
+ sudo ln -s /usr/local/venv /usr/venv
+ 
+ exit
+</code></pre>
+<p>Back in the local project shell. If you receive an ssh authentication error - see the step below this one.</p>
+<pre><code> fab dev init
+ fab dev create_superuser
+ fab dev restart_services
+</code></pre>
+<p>For an ssh authentication error, add the following to your <em>fabfile.py</em> on line 10 and rerun the commands above. Your password will be <code>vagrant</code></p>
+<pre><code>env.disable_known_hosts = True
+</code></pre>
+<p>Only two things are missing now:</p>
+<ul>
+<li>the raster data (2+GB). Though the app might function marginally without it, it is basically required for any real testing or use; install with <code>fab dev import_data</code> and wait...</li>
+<li>the social auth keys. Not really required for local dev unless you want to test facebook/google logins; Get the fixture at <code>gis/projects/projects2011/LandOwnerTools/data/Fixtures</code> and <code>python manage.py loaddata secret_socialapps.json</code>
+</li>
+</ul>
+<p>If you're having problems with supervisord:</p>
+<pre><code>vagrant ssh
+sudo rm /var/run/supervisor.sock 
+sudo service supervisor start
+</code></pre>
+<p>You then must modify <code>server_name</code> to <code>localhost</code> and comment out the section creating a permanent rewrite to 'forestplanner.ecotrust.org'.</p>
+<pre><code>sudo vi /etc/nginx/sites-enabled/forestplanner
+</code></pre>
+<p>After that <code>fab dev restart_services</code>.</p>
+<p>Install cost model (note: same process for harvest scheduler but that is not currently used)</p>
+<pre><code>cd /usr/local/apps/cost_model
+sudo python setup.py develop 
+</code></pre>
+<p>You should be able to access the following urls:</p>
+<ul>
+<li>
+<a href="http://localhost:8080" rel="nofollow">http://localhost:8080</a> (app served by uwsgi/nginx)</li>
+<li>
+<a href="http://localhost:5555" rel="nofollow">http://localhost:5555</a> (celery task monitoring)</li>
+<li>
+<a href="http://localhost:8000" rel="nofollow">http://localhost:8000</a> (nothing... but it's recommended to use this for django's runserver while developing)</li>
+</ul>
+<p>You can get by with editing your local checkout of the code, running <code>fab dev runserver</code> and other fabric commands. But sometimes it's necessary to get to the guest box's shell. Use <code>vagrant ssh</code> or <code>ssh -P 2222 vagrant@localhost</code></p>
+
+        </div>
+
+    </div>]

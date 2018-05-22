@@ -1,0 +1,254 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>In this section we're going to see the Web Apps Architecture in Apio and how to write a new one. An "App" is a software that runs on every smartphone, tablet and PC, engineered to control the pins status (in/out) of an Apio hardware. On pins you can connect sensors (temp, pressure etc), buttons, switches, potentiometers or any other electronic device as well as relays, engines, etc. The interfaces of Apio's apps are built using directives, let's take a look into it to learn how to write an Apio App.</p>
+<p>#Apio apps architecture</p>
+<p>A directive is a feature of AngularJS. The creation of a directive consists in customised HTML tags, HTML attribute and/or a CSS class.</p>
+<p>For more information you can refer to the official AngularJS documentation.</p>
+<p>Every apioProperty is an AngularJS directive two-way bound with a pin of the micro controller, the binding is a user definition (as shown in the pictures).</p>
+<p><img alt="" data-canonical-src="http://www.apio.cc/images/github_wiki/brightness2.png" src="https://camo.githubusercontent.com/66cea14b2c90db1627f6bfaee53ac27bf1ba8e0e/687474703a2f2f7777772e6170696f2e63632f696d616765732f6769746875625f77696b692f6272696768746e657373322e706e67"/></p>
+<p>In Apio, to create a directive is like to establish a kind of channel between the graphical interface and the microcrontroller pin which the apioProperty refers. In other words thanks to apioProperties you can control a pin of a microcontroller directly from graphical interface.</p>
+<p>Let’s start with the typical skeleton of an apioProperty:</p>
+<p><img alt="" data-canonical-src="http://www.apio.cc/images/github_wiki/code_app1.png" src="https://camo.githubusercontent.com/43827a08e67b323d536377390caceaf22651c2e0/687474703a2f2f7777772e6170696f2e63632f696d616765732f6769746875625f77696b692f636f64655f617070312e706e67"/></p>
+<ul>
+<li>Now we examine what is the meaning of these rows:</li>
+</ul>
+<p>###varapioProperty= angular.module("apioProperty");</p>
+<p>The module apioProperties already defined, so this just tells to AngularJS to call this module(without overwriting or overriding it), because we need to create the directive inside this module.</p>
+<p>###apioProperty.directive("name",
+###["currentObject", "socket",”$http”, function(currentObject, socket,$http){ return{ //Body }; }]);</p>
+<p>This is the definition of the directive: "name" is the name you want to give to the directive and in the square brackets you can insert the dependencies (some factories containing some features you have to use when you’re creating the directive, to understand what a factory is you can refer to the officialAngularJS documentation).</p>
+<p>As you can see the syntax it’s quite strange because you have to repeat the same information (currentObject compare twice in the function signature and that’s the same for socket); if you’re asking why, the answer is this: the first time you write currentObject(in the quotes) you’re “importing” this factory, the second time instead it’s to bind the factory currentObject to a variable called currentObject too; this way the variable currentObject will allow you to use the features the factory currentObject  offers.</p>
+<p>###restrict: "E",</p>
+<p>Restrict is the parameter allow us to define what type of directive we’re creating, the values this parameter accepts are:</p>
+<p><img alt="" data-canonical-src="http://www.apio.cc/images/github_wiki/table_app1.png" src="https://camo.githubusercontent.com/9fd25bf72951dc2020092e32e350f7eb175a9a25/687474703a2f2f7777772e6170696f2e63632f696d616765732f6769746875625f77696b692f7461626c655f617070312e706e67"/></p>
+<p>###replace: true,</p>
+<p>This instruction tells to AngularJS to replace the directive with its template every time the directive appears in the DOM. In AngularJS a template is a collection of nested HTML tag and AngularJS expressions (that have to write in the curly brackets or in specific AngularJS attributes).</p>
+<p>Code example:</p>
+<p><img alt="" data-canonical-src="http://www.apio.cc/images/github_wiki/code_app2.png" src="https://camo.githubusercontent.com/979dd094e880fc2c407e8ea76cd3a1731ba4c2d9/687474703a2f2f7777772e6170696f2e63632f696d616765732f6769746875625f77696b692f636f64655f617070322e706e67"/></p>
+<p>This is the template of the apioProperty Trigger.</p>
+<p>This is what AngularJS engine substitutes to Trigger every time it finds one in the DOM. In the double curly brackets there are variables (initialized to some values) that the directive pass to its template, to understand how to do that see below the paragraph that talks about the link parameter.</p>
+<p>###scope: { //some data },</p>
+<p>Every directive has got its own inner scope, if you need to map the directive’s inner scope with the outer scope you can do it by using the scope parameter.</p>
+<p>Example:</p>
+<p><img alt="" data-canonical-src="http://www.apio.cc/images/github_wiki/code_app3.png" src="https://camo.githubusercontent.com/f619cdabc17d5c4b0679fbfcab0d58aab0c8c66c/687474703a2f2f7777772e6170696f2e63632f696d616765732f6769746875625f77696b692f636f64655f617070332e706e67"/></p>
+<p>This means that the variable "foo" is in the directive scope assumes the value assigned to the variable bar in the outer scope. For more information about the usage of the scope parameter see the official AngularJS documentation in the section “Isolating the Scope of a Directive”.</p>
+<p>###templateUrl: "path/to/template.html",</p>
+<p>This instruction tells to AngularJS where to find the associated template for the directive.
+If you don’t want to put the template in a separate file you can use the template parameter instead of templateUrl.</p>
+<p>Example:</p>
+<p><img alt="" data-canonical-src="http://www.apio.cc/images/github_wiki/code_app4.png" src="https://camo.githubusercontent.com/e3ea2a7402f21b1f23ae0738fe1f87624ad923a0/687474703a2f2f7777772e6170696f2e63632f696d616765732f6769746875625f77696b692f636f64655f617070342e706e67"/></p>
+<p><strong>link: function(scope, elem, attrs){ socket.on("apio_server_update", function(data){ //Do some stuff}); elem.on("event", function(){ //Do some stuff}); }</strong></p>
+<p>"link" is a parameter we have to specify because we have to manipulate the DOM, this parameter always take a function with the signature shown above.</p>
+<p>scope is an object with which you can interact with the directive scope, this can be used for send some variable to the template; elem is a sort of pointer to the template, this can be used to let the directive do something when a specified event(s) triggers; attrs instead is an associate array containing the attributes used in the tag, the attribute name is the index of the array and its corresponding value is the corresponding value in the array.</p>
+<p><em>Some examples</em></p>
+<p><strong>1) How to send a variable value to the template and how to use it in the template:</strong></p>
+<p>In the link parameter (inside the function)</p>
+<p><img alt="" data-canonical-src="http://www.apio.cc/images/github_wiki/code_app5.png" src="https://camo.githubusercontent.com/541098fb3e27f3975c5f4d2b1c5f32aa921874dd/687474703a2f2f7777772e6170696f2e63632f696d616765732f6769746875625f77696b692f636f64655f617070352e706e67"/></p>
+<p>In the template:</p>
+<p><img alt="" data-canonical-src="http://www.apio.cc/images/github_wiki/code_app6.png" src="https://camo.githubusercontent.com/f53223dea0b26311366a57dac46b701bed7821af/687474703a2f2f7777772e6170696f2e63632f696d616765732f6769746875625f77696b692f636f64655f617070362e706e67"/></p>
+<p>Every time you instantiate the directive into the div with id bar, will be written 1</p>
+<p><strong>2) How to let the directive do something when an event triggers:</strong></p>
+<p><img alt="" data-canonical-src="http://www.apio.cc/images/github_wiki/code_app7.png" src="https://camo.githubusercontent.com/c405f03f75559bd780628b028c676c6e4d869f8c/687474703a2f2f7777772e6170696f2e63632f696d616765732f6769746875625f77696b692f636f64655f617070372e706e67"/></p>
+<p>In this example every time you click on the directive you’ll receive an alert that say “Hello there!”. If you want to do the same thing on more than one event, put all events you need inside the quotes and separate them with the space character.</p>
+<p>We support bothJavaScript event sand Hammer.js events. Here there is a list of JavaScript events and here a list of Hammer.js events.</p>
+<p><strong>3) How to know what value an attribute assumes:</strong></p>
+<p>In the app of the object:</p>
+<p><img alt="" data-canonical-src="http://www.apio.cc/images/github_wiki/code_app8.png" src="https://camo.githubusercontent.com/350ba03a0a239c4243f34da7bc1c7cfb2bc5362a/687474703a2f2f7777772e6170696f2e63632f696d616765732f6769746875625f77696b692f636f64655f617070382e706e67"/></p>
+<p>In the link parameter (inside the function) of the directive my customer directive:</p>
+<p><img alt="" data-canonical-src="http://www.apio.cc/images/github_wiki/code_app9.png" src="https://camo.githubusercontent.com/6c4f4f23822c4bd61ad47eeefdbab4ff431be8b9/687474703a2f2f7777772e6170696f2e63632f696d616765732f6769746875625f77696b692f636f64655f617070392e706e67"/></p>
+<p>In this example above you will receive an alert that say “foo” because this is the value assigned to the attribute my customer attribute.</p>
+<p>##Socket On</p>
+<p>In general this instruction puts something on listen when server emits an event, in this specific case it puts the directive in listen when server emits the event apio_server_update.
+Server emits this event when the data of the directive has change, so you have to insert the instructions that say to directive how to modify the graphical interface when the data change, here.</p>
+<p>The typical procedure we have done in the apio Properties is this (Trigger will taken for the example, but for the other properties the procedure is similar):</p>
+<p><img alt="" data-canonical-src="http://www.apio.cc/images/github_wiki/code_app10.png" src="https://camo.githubusercontent.com/2beb2cb9d1f8e058eeaa118560de810b0e8ff02c/687474703a2f2f7777772e6170696f2e63632f696d616765732f6769746875625f77696b692f636f64655f61707031302e706e67"/></p>
+<p>##Property</p>
+<p>So, essentially an Apio Property is a custom HTML tag on which are defined custom attributes. As you will see during this guide, some attributes are common to every property and some others are property specific.</p>
+<p><em>/ApioOS/public/apioProperties</em></p>
+<p>The properties we have developed are:</p>
+<p>1)ApioButton</p>
+<p>2)ApioLink</p>
+<p>3)AsyncDisplay</p>
+<p>4)Battery</p>
+<p>5)Collapse</p>
+<p>6)DynamicView</p>
+<p>7)Graph</p>
+<p>8)List</p>
+<p>9)ListNew</p>
+<p>10)Log</p>
+<p>11)Note</p>
+<p>12)Number</p>
+<p>13)Property</p>
+<p>14)Ranking</p>
+<p>15)Sensor</p>
+<p>16)Slider</p>
+<p>17)Text</p>
+<p>18)TextBox</p>
+<p>19)Trigger</p>
+<p>20)Unclickable</p>
+<p>21)UnlimitedSensor</p>
+<p>22)UploadImage</p>
+<p>###ApioButton</p>
+<p>It represents a button which updates the value of the property when pressed. It has a text and a label.</p>
+<p><em>Attributes</em></p>
+<p><img alt="" data-canonical-src="http://www.apio.cc/images/github_wiki/property_button1.png" src="https://camo.githubusercontent.com/c1422162549eede400d3f2600b02f41f85333146/687474703a2f2f7777772e6170696f2e63632f696d616765732f6769746875625f77696b692f70726f70657274795f627574746f6e312e706e67"/></p>
+<p><em>Example</em></p>
+<p><img alt="" data-canonical-src="http://www.apio.cc/images/github_wiki/property_button2.png" src="https://camo.githubusercontent.com/ec7b40043507b3ca10f029b463adb30552d8732e/687474703a2f2f7777772e6170696f2e63632f696d616765732f6769746875625f77696b692f70726f70657274795f627574746f6e322e706e67"/></p>
+<p><img alt="" data-canonical-src="http://www.apio.cc/images/github_wiki/Apio_Button.png" src="https://camo.githubusercontent.com/b5e3d36eb3a1e82f2a7196ba495270134ffc2dff/687474703a2f2f7777772e6170696f2e63632f696d616765732f6769746875625f77696b692f4170696f5f427574746f6e2e706e67"/></p>
+<p>###ApioLink</p>
+<p>It represents a button which updates the value of the property when pressed. It has a text and a label.</p>
+<p><em>Attributes</em></p>
+<p><img alt="" data-canonical-src="http://www.apio.cc/images/github_wiki/property_link1.png" src="https://camo.githubusercontent.com/1b56738bf7573500fcd04aabaa04c0a2529aeb54/687474703a2f2f7777772e6170696f2e63632f696d616765732f6769746875625f77696b692f70726f70657274795f6c696e6b312e706e67"/></p>
+<p><em>Example</em></p>
+<p><img alt="" data-canonical-src="http://www.apio.cc/images/github_wiki/property_link2.png" src="https://camo.githubusercontent.com/a4e9cefe87195be11ca0e835b78424354ffba732/687474703a2f2f7777772e6170696f2e63632f696d616765732f6769746875625f77696b692f70726f70657274795f6c696e6b322e706e67"/></p>
+<p><img alt="" data-canonical-src="http://www.apio.cc/images/github_wiki/Apio_Link.png" src="https://camo.githubusercontent.com/425e250178c60e2f6272c9859f125fc9b8479ae7/687474703a2f2f7777772e6170696f2e63632f696d616765732f6769746875625f77696b692f4170696f5f4c696e6b2e706e67"/></p>
+<p>###AsyncDisplay</p>
+<p>It represents a link, if clicked opens the url in a new page.</p>
+<p><em>Attributes</em></p>
+<p><img alt="" data-canonical-src="http://www.apio.cc/images/github_wiki/property_async1.png" src="https://camo.githubusercontent.com/aaa28d747138f452f50598da4756c8bf2607ffdb/687474703a2f2f7777772e6170696f2e63632f696d616765732f6769746875625f77696b692f70726f70657274795f6173796e63312e706e67"/></p>
+<p><em>Example</em></p>
+<p><img alt="" data-canonical-src="http://www.apio.cc/images/github_wiki/property_async2.png" src="https://camo.githubusercontent.com/4f06bcc16b00c2d941f0475f87b3b311e8c62e62/687474703a2f2f7777772e6170696f2e63632f696d616765732f6769746875625f77696b692f70726f70657274795f6173796e63322e706e67"/>
+<img alt="" data-canonical-src="http://www.apio.cc/images/github_wiki/Async_Display.png" src="https://camo.githubusercontent.com/92d27b1c30ae35d7f79610eafdbc6e6be39df5f9/687474703a2f2f7777772e6170696f2e63632f696d616765732f6769746875625f77696b692f4173796e635f446973706c61792e706e67"/></p>
+<p>###Battery</p>
+<p>It represents a battery icon, with a bar which can be set to a value to represent an object remaining charge</p>
+<p><em>Attributes</em></p>
+<p><img alt="" data-canonical-src="http://www.apio.cc/images/github_wiki/property_battery1.png" src="https://camo.githubusercontent.com/a0bcd489bb053b06888ad709057953d817f2461e/687474703a2f2f7777772e6170696f2e63632f696d616765732f6769746875625f77696b692f70726f70657274795f62617474657279312e706e67"/></p>
+<p><em>Example</em></p>
+<p><img alt="" data-canonical-src="http://www.apio.cc/images/github_wiki/property_battery2.png" src="https://camo.githubusercontent.com/41f294b95541e7f33bb9c20bc4998ac3ebfa1445/687474703a2f2f7777772e6170696f2e63632f696d616765732f6769746875625f77696b692f70726f70657274795f62617474657279322e706e67"/>
+<img alt="" data-canonical-src="http://www.apio.cc/images/github_wiki/Battery.png" src="https://camo.githubusercontent.com/4e270c53da2f5e411b94a343a8e3cfb7a279c675/687474703a2f2f7777772e6170696f2e63632f696d616765732f6769746875625f77696b692f426174746572792e706e67"/></p>
+<p>###Collapse</p>
+<p>It collapses the html objects in the tag: it may show or hide them</p>
+<p><em>Attributes</em></p>
+<p><img alt="" data-canonical-src="http://www.apio.cc/images/github_wiki/property_collapse1.png" src="https://camo.githubusercontent.com/ceef7761d57783370c4343c3f911773b757a1877/687474703a2f2f7777772e6170696f2e63632f696d616765732f6769746875625f77696b692f70726f70657274795f636f6c6c61707365312e706e67"/></p>
+<p><em>Example</em></p>
+<p><img alt="" data-canonical-src="http://www.apio.cc/images/github_wiki/property_collapse2.png" src="https://camo.githubusercontent.com/500d5f59ddb6dbcea9b55c33bea8e98c449559be/687474703a2f2f7777772e6170696f2e63632f696d616765732f6769746875625f77696b692f70726f70657274795f636f6c6c61707365322e706e67"/></p>
+<p><em>before</em></p>
+<p><img alt="" data-canonical-src="http://www.apio.cc/images/github_wiki/Collapse1.png" src="https://camo.githubusercontent.com/0df64d9dde7c3d741d2bf7d1e72eed377ad1f52a/687474703a2f2f7777772e6170696f2e63632f696d616765732f6769746875625f77696b692f436f6c6c61707365312e706e67"/></p>
+<p><em>after</em></p>
+<p><img alt="" data-canonical-src="http://www.apio.cc/images/github_wiki/Collapse.png" src="https://camo.githubusercontent.com/3d303a440d1f81d490b96ca407d288c6d898abd9/687474703a2f2f7777772e6170696f2e63632f696d616765732f6769746875625f77696b692f436f6c6c617073652e706e67"/></p>
+<p>###Dynamicview</p>
+<p>It allows to open a subapp inside the main app</p>
+<p><em>Attributes</em></p>
+<p><img alt="" data-canonical-src="http://www.apio.cc/images/github_wiki/property_dynamic1.png" src="https://camo.githubusercontent.com/0e245ad26be012e28b03ae87f67d12f67dcc927b/687474703a2f2f7777772e6170696f2e63632f696d616765732f6769746875625f77696b692f70726f70657274795f64796e616d6963312e706e67"/></p>
+<p><em>Example</em></p>
+<p><img alt="" data-canonical-src="http://www.apio.cc/images/github_wiki/property_dynamic2.png" src="https://camo.githubusercontent.com/7b2831014090aa487c8cf0d8b467e1a90fe6c9b9/687474703a2f2f7777772e6170696f2e63632f696d616765732f6769746875625f77696b692f70726f70657274795f64796e616d6963322e706e67"/></p>
+<p><img alt="" data-canonical-src="http://www.apio.cc/images/github_wiki/Dynamic_View.png" src="https://camo.githubusercontent.com/149101db3ac4ee9db32dcedc77e5e4dc339f1647/687474703a2f2f7777772e6170696f2e63632f696d616765732f6769746875625f77696b692f44796e616d69635f566965772e706e67"/></p>
+<p>###Graph</p>
+<p>It plots logged data related to the app</p>
+<p><em>Attributes</em></p>
+<p><img alt="" data-canonical-src="http://www.apio.cc/images/github_wiki/property_graph1.png" src="https://camo.githubusercontent.com/f56506711fe40150cd1b485e4fa14c5cab0b85c1/687474703a2f2f7777772e6170696f2e63632f696d616765732f6769746875625f77696b692f70726f70657274795f6772617068312e706e67"/></p>
+<p><em>Example</em></p>
+<p><img alt="" data-canonical-src="http://www.apio.cc/images/github_wiki/property_graph2.png" src="https://camo.githubusercontent.com/d3ba0d0651ecb8faf2989b0cec39354d1f54e261/687474703a2f2f7777772e6170696f2e63632f696d616765732f6769746875625f77696b692f70726f70657274795f6772617068322e706e67"/></p>
+<p><img alt="" data-canonical-src="http://www.apio.cc/images/github_wiki/temp_est.png" src="https://camo.githubusercontent.com/13b8599986e293170e9770c421ddaf933e8823e6/687474703a2f2f7777772e6170696f2e63632f696d616765732f6769746875625f77696b692f74656d705f6573742e706e67"/></p>
+<p>###List</p>
+<p>It represents a list of elements which are stored in the db of the object (currentObject.db[]) as a JSON
+(example: {1:'Genuary' ,2:'February' ,3:'March' ,4:'April'})</p>
+<p><em>Attributes</em></p>
+<p><img alt="" data-canonical-src="http://www.apio.cc/images/github_wiki/property_list1.png" src="https://camo.githubusercontent.com/9adcfada89d06e5a7bcddd49b4f92d5addfab87a/687474703a2f2f7777772e6170696f2e63632f696d616765732f6769746875625f77696b692f70726f70657274795f6c697374312e706e67"/></p>
+<p><em>Example</em></p>
+<p><img alt="" data-canonical-src="http://www.apio.cc/images/github_wiki/property_list2.png" src="https://camo.githubusercontent.com/bbdb8c10d6b1405a49ee9f50953b0c5d356fb7c0/687474703a2f2f7777772e6170696f2e63632f696d616765732f6769746875625f77696b692f70726f70657274795f6c697374322e706e67"/></p>
+<p><img alt="" data-canonical-src="http://www.apio.cc/images/github_wiki/List.png" src="https://camo.githubusercontent.com/1eded3c025259a0a83e5484a4f684e16934dccce/687474703a2f2f7777772e6170696f2e63632f696d616765732f6769746875625f77696b692f4c6973742e706e67"/></p>
+<p>###ListNew</p>
+<p>It represents a list of elements which are defined inside the tag, and retrieved and stored in DB as a JSON</p>
+<p><em>Attributes</em></p>
+<p><img alt="" data-canonical-src="http://www.apio.cc/images/github_wiki/property_listNew1.png" src="https://camo.githubusercontent.com/92c3cc2841b8900ce08c50d4002e6ce3c0390f52/687474703a2f2f7777772e6170696f2e63632f696d616765732f6769746875625f77696b692f70726f70657274795f6c6973744e6577312e706e67"/></p>
+<p><em>Example</em></p>
+<p><img alt="" data-canonical-src="http://www.apio.cc/images/github_wiki/property_listNew2.png" src="https://camo.githubusercontent.com/537bdf61d3da8cf0ff9ed86e105299a004ab99c8/687474703a2f2f7777772e6170696f2e63632f696d616765732f6769746875625f77696b692f70726f70657274795f6c6973744e6577322e706e67"/>
+<img alt="" data-canonical-src="http://www.apio.cc/images/github_wiki/New_List.png" src="https://camo.githubusercontent.com/056862b366153f5aa1be4ba0d566c8cc69b9197e/687474703a2f2f7777772e6170696f2e63632f696d616765732f6769746875625f77696b692f4e65775f4c6973742e706e67"/></p>
+<p>###Log</p>
+<p>It represents a list of elements which are defined inside the tag</p>
+<p><em>Attributes</em></p>
+<p><img alt="" data-canonical-src="http://www.apio.cc/images/github_wiki/property_log1.png" src="https://camo.githubusercontent.com/37c629a8d85554e8011160fb58e6646046984445/687474703a2f2f7777772e6170696f2e63632f696d616765732f6769746875625f77696b692f70726f70657274795f6c6f67312e706e67"/></p>
+<p><em>Example</em></p>
+<p><img alt="" data-canonical-src="http://www.apio.cc/images/github_wiki/property_log2.png" src="https://camo.githubusercontent.com/ca64926c6f3b5af66683d15449c5e99f25647ddd/687474703a2f2f7777772e6170696f2e63632f696d616765732f6769746875625f77696b692f70726f70657274795f6c6f67322e706e67"/></p>
+<p><img alt="" data-canonical-src="http://www.apio.cc/images/github_wiki/Log.png" src="https://camo.githubusercontent.com/a64581fc37487bd0c4d50c370e40f0a7722bd406/687474703a2f2f7777772e6170696f2e63632f696d616765732f6769746875625f77696b692f4c6f672e706e67"/></p>
+<p>###Note</p>
+<p>It represents a blank note text which can be written by the user or the app.</p>
+<p><em>Attributes</em></p>
+<p><img alt="" data-canonical-src="http://www.apio.cc/images/github_wiki/property_note1.png" src="https://camo.githubusercontent.com/66e44b585444540aa663f3e927cb8ce8f4c474c0/687474703a2f2f7777772e6170696f2e63632f696d616765732f6769746875625f77696b692f70726f70657274795f6e6f7465312e706e67"/></p>
+<p><em>Example</em></p>
+<p><img alt="" data-canonical-src="http://www.apio.cc/images/github_wiki/property_note2.png" src="https://camo.githubusercontent.com/9d14ebece12f7385a7376c60d5f7577639b3e48d/687474703a2f2f7777772e6170696f2e63632f696d616765732f6769746875625f77696b692f70726f70657274795f6e6f7465322e706e67"/></p>
+<p><img alt="" data-canonical-src="http://www.apio.cc/images/github_wiki/Note.png" src="https://camo.githubusercontent.com/d3d3bb94d88145cfebb9d6789289bac2e8aefeb8/687474703a2f2f7777772e6170696f2e63632f696d616765732f6769746875625f77696b692f4e6f74652e706e67"/></p>
+<p>###Number</p>
+<p>It represents a number which can be edited by the user and the app</p>
+<p><em>Attributes</em></p>
+<p><img alt="" data-canonical-src="http://www.apio.cc/images/github_wiki/property_number1.png" src="https://camo.githubusercontent.com/bd39989f53572f1c743ec7e5bf22847345cc70af/687474703a2f2f7777772e6170696f2e63632f696d616765732f6769746875625f77696b692f70726f70657274795f6e756d626572312e706e67"/></p>
+<p><em>Example</em></p>
+<p><img alt="" data-canonical-src="http://www.apio.cc/images/github_wiki/property_number2.png" src="https://camo.githubusercontent.com/84cac073f53fbae1933ef1b0698d4f545af3c1df/687474703a2f2f7777772e6170696f2e63632f696d616765732f6769746875625f77696b692f70726f70657274795f6e756d626572322e706e67"/></p>
+<p><img alt="" data-canonical-src="http://www.apio.cc/images/github_wiki/Number.png" src="https://camo.githubusercontent.com/4bcf9c814d1d6ba9a687299dbb338abf932329c1/687474703a2f2f7777772e6170696f2e63632f696d616765732f6769746875625f77696b692f4e756d6265722e706e67"/></p>
+<p>###Property</p>
+<p>It is a generic property, with simple template</p>
+<p><em>Attributes</em></p>
+<p><img alt="" data-canonical-src="http://www.apio.cc/images/github_wiki/property_property1.png" src="https://camo.githubusercontent.com/00dd7a504235e2273c706221868b3d45b5fb3847/687474703a2f2f7777772e6170696f2e63632f696d616765732f6769746875625f77696b692f70726f70657274795f70726f7065727479312e706e67"/></p>
+<p><em>Example</em></p>
+<p><img alt="" data-canonical-src="http://www.apio.cc/images/github_wiki/property_property2.png" src="https://camo.githubusercontent.com/9d3f1d5772743d45cf12292a354aa0476d2d6a8a/687474703a2f2f7777772e6170696f2e63632f696d616765732f6769746875625f77696b692f70726f70657274795f70726f7065727479322e706e67"/></p>
+<p><img alt="" data-canonical-src="http://www.apio.cc/images/github_wiki/Property.png" src="https://camo.githubusercontent.com/10468839dff294365a200a954a1e3f7875cd501a/687474703a2f2f7777772e6170696f2e63632f696d616765732f6769746875625f77696b692f50726f70657274792e706e67"/></p>
+<p>###Ranking</p>
+<p>It allows to rank using a star system a determined value.</p>
+<p><em>Attributes</em></p>
+<p><img alt="" data-canonical-src="http://www.apio.cc/images/github_wiki/property_ranking1.png" src="https://camo.githubusercontent.com/cf60509c836245475bdccaa5d2fd06fe851b45b1/687474703a2f2f7777772e6170696f2e63632f696d616765732f6769746875625f77696b692f70726f70657274795f72616e6b696e67312e706e67"/></p>
+<p><img alt="" data-canonical-src="http://www.apio.cc/images/github_wiki/property_ranking2.png" src="https://camo.githubusercontent.com/23c757d0d8db738b8b4544958ce239362a976c8d/687474703a2f2f7777772e6170696f2e63632f696d616765732f6769746875625f77696b692f70726f70657274795f72616e6b696e67322e706e67"/></p>
+<p><em>Example</em></p>
+<p><img alt="" data-canonical-src="http://www.apio.cc/images/github_wiki/property_ranking3.png" src="https://camo.githubusercontent.com/88bee421e46929a0c5438a4ff45fa19a2075c2a9/687474703a2f2f7777772e6170696f2e63632f696d616765732f6769746875625f77696b692f70726f70657274795f72616e6b696e67332e706e67"/></p>
+<p><img alt="" data-canonical-src="http://www.apio.cc/images/github_wiki/Ranking.png" src="https://camo.githubusercontent.com/f97eecf3d1f6b34c4b5f6ca69a490a35d3254b3d/687474703a2f2f7777772e6170696f2e63632f696d616765732f6769746875625f77696b692f52616e6b696e672e706e67"/></p>
+<p>###Sensor</p>
+<p>It represents a sensor data (can't be changed), it can display a value which changes with a logic (acquired by a real sensor or api). It is bounded.</p>
+<p><em>Attributes</em></p>
+<p><img alt="" data-canonical-src="http://www.apio.cc/images/github_wiki/property_sensor1.png" src="https://camo.githubusercontent.com/622202b7291b1a7e1e6f6d8116b4a88a552e0468/687474703a2f2f7777772e6170696f2e63632f696d616765732f6769746875625f77696b692f70726f70657274795f73656e736f72312e706e67"/></p>
+<p><em>Example</em></p>
+<p><img alt="" data-canonical-src="http://www.apio.cc/images/github_wiki/property_sensor2.png" src="https://camo.githubusercontent.com/86136dddabb60c2324b9841c5e51636c48e7113e/687474703a2f2f7777772e6170696f2e63632f696d616765732f6769746875625f77696b692f70726f70657274795f73656e736f72322e706e67"/></p>
+<p><img alt="" data-canonical-src="http://www.apio.cc/images/github_wiki/Sensor.png" src="https://camo.githubusercontent.com/be138b0b77ecde58b8f36ea9492874f39b22e98b/687474703a2f2f7777772e6170696f2e63632f696d616765732f6769746875625f77696b692f53656e736f722e706e67"/></p>
+<p>###Slider</p>
+<p>It represents a slider, can be used to set a value for a logic.</p>
+<p><em>Attributes</em></p>
+<p><img alt="" data-canonical-src="http://www.apio.cc/images/github_wiki/property_slider1.png" src="https://camo.githubusercontent.com/46ef8ca40427d3cc020580f9bd210082946531f6/687474703a2f2f7777772e6170696f2e63632f696d616765732f6769746875625f77696b692f70726f70657274795f736c69646572312e706e67"/></p>
+<p><em>Example</em></p>
+<p><img alt="" data-canonical-src="http://www.apio.cc/images/github_wiki/property_slider2.png" src="https://camo.githubusercontent.com/b4ba7f76e537facb174f1e09b0aedfe985c24297/687474703a2f2f7777772e6170696f2e63632f696d616765732f6769746875625f77696b692f70726f70657274795f736c69646572322e706e67"/></p>
+<p><img alt="" data-canonical-src="http://www.apio.cc/images/github_wiki/Slider.png" src="https://camo.githubusercontent.com/70df45cbc77b36f8798f1109af40f6b7b8b0fc29/687474703a2f2f7777772e6170696f2e63632f696d616765732f6769746875625f77696b692f536c696465722e706e67"/></p>
+<p>###Text</p>
+<p>It represents a box in which is written some text, it can be used to edit or display. It is used as input</p>
+<p><em>Attributes</em></p>
+<p><img alt="" data-canonical-src="http://www.apio.cc/images/github_wiki/property_text1.png" src="https://camo.githubusercontent.com/2032f2d49ca1da1b4fbc54333df188b5f24cad79/687474703a2f2f7777772e6170696f2e63632f696d616765732f6769746875625f77696b692f70726f70657274795f74657874312e706e67"/></p>
+<p><em>Example</em></p>
+<p><img alt="" data-canonical-src="http://www.apio.cc/images/github_wiki/property_text2.png" src="https://camo.githubusercontent.com/3274003081a2aa4fd2153cf54b649423bef8c218/687474703a2f2f7777772e6170696f2e63632f696d616765732f6769746875625f77696b692f70726f70657274795f74657874322e706e67"/></p>
+<p><img alt="" data-canonical-src="http://www.apio.cc/images/github_wiki/Text.png" src="https://camo.githubusercontent.com/91a79bc8fbb33d5829449cf806b9c55d604debf6/687474703a2f2f7777772e6170696f2e63632f696d616765732f6769746875625f77696b692f546578742e706e67"/></p>
+<p>###TextBox</p>
+<p>It represents a box in which is written some text, it can be modified by user and app.</p>
+<p><em>Attributes</em></p>
+<p><img alt="" data-canonical-src="http://www.apio.cc/images/github_wiki/property_textBox1.png" src="https://camo.githubusercontent.com/34d7d05fa8c1e29d29297d847ca638255e03cceb/687474703a2f2f7777772e6170696f2e63632f696d616765732f6769746875625f77696b692f70726f70657274795f74657874426f78312e706e67"/></p>
+<p><img alt="" data-canonical-src="http://www.apio.cc/images/github_wiki/property_textBox2.png" src="https://camo.githubusercontent.com/4860eaf6a138e4d6442d05a07b5ad4b8c65133eb/687474703a2f2f7777772e6170696f2e63632f696d616765732f6769746875625f77696b692f70726f70657274795f74657874426f78322e706e67"/></p>
+<p><em>Example</em></p>
+<p><img alt="" data-canonical-src="http://www.apio.cc/images/github_wiki/Text_Box.png" src="https://camo.githubusercontent.com/260aebb9faffaeb197b45262b79cefed687ec191/687474703a2f2f7777772e6170696f2e63632f696d616765732f6769746875625f77696b692f546578745f426f782e706e67"/></p>
+<p>###Trigger</p>
+<p>It represents a trigger, it can assume two logic states represented by ON-OFF, each of them has associated a value and a label</p>
+<p><em>Attributes</em></p>
+<p><img alt="" data-canonical-src="http://www.apio.cc/images/github_wiki/property_trigger1.png" src="https://camo.githubusercontent.com/e20ba7c1a1abff5038adeac15b48cccc6a67404b/687474703a2f2f7777772e6170696f2e63632f696d616765732f6769746875625f77696b692f70726f70657274795f74726967676572312e706e67"/></p>
+<p><em>Example</em></p>
+<p><img alt="" data-canonical-src="http://www.apio.cc/images/github_wiki/property_trigger2.png" src="https://camo.githubusercontent.com/b7bf589e9de21a0c2d6c4e44abfb00ea4d3cda28/687474703a2f2f7777772e6170696f2e63632f696d616765732f6769746875625f77696b692f70726f70657274795f74726967676572322e706e67"/></p>
+<p><img alt="" data-canonical-src="http://www.apio.cc/images/github_wiki/Trigger.png" src="https://camo.githubusercontent.com/98b185865d9f871c677f09e576a6b21105bcc0ea/687474703a2f2f7777772e6170696f2e63632f696d616765732f6769746875625f77696b692f547269676765722e706e67"/></p>
+<p>###UnclickableTrigger</p>
+<p>It represents a trigger, it can assume two logic states represented by ON-OFF, each of them has associated a value and a label. It can't be clicked to modify it's value</p>
+<p><em>Attributes</em>
+<img alt="" data-canonical-src="http://www.apio.cc/images/github_wiki/property_unclickable1.png" src="https://camo.githubusercontent.com/1ec26c4825cbd74f1dde302d18d293fa898e0d73/687474703a2f2f7777772e6170696f2e63632f696d616765732f6769746875625f77696b692f70726f70657274795f756e636c69636b61626c65312e706e67"/></p>
+<p><em>Example</em></p>
+<p><img alt="" data-canonical-src="http://www.apio.cc/images/github_wiki/property_unclickable2.png" src="https://camo.githubusercontent.com/9cdbb55c3516fd1adb4ea5201ba160eeea3c54b9/687474703a2f2f7777772e6170696f2e63632f696d616765732f6769746875625f77696b692f70726f70657274795f756e636c69636b61626c65322e706e67"/></p>
+<p><img alt="" data-canonical-src="http://www.apio.cc/images/github_wiki/Unclickable_Trigger.png" src="https://camo.githubusercontent.com/d471f396a41872d68325c054ba5802186d908843/687474703a2f2f7777772e6170696f2e63632f696d616765732f6769746875625f77696b692f556e636c69636b61626c655f547269676765722e706e67"/></p>
+<p>###UnlimitedSensor</p>
+<p>It represents a sensor data (cannot be changed), it can display a value which changes with a logic (acquired by a real sensor or api).</p>
+<p><em>Attributes</em></p>
+<p><img alt="" data-canonical-src="http://www.apio.cc/images/github_wiki/property_unlimitedSensor1.png" src="https://camo.githubusercontent.com/2601c1980bba48c8df94ecc420f0d3f4a2555add/687474703a2f2f7777772e6170696f2e63632f696d616765732f6769746875625f77696b692f70726f70657274795f756e6c696d6974656453656e736f72312e706e67"/></p>
+<p><em>Example</em></p>
+<p><img alt="" data-canonical-src="http://www.apio.cc/images/github_wiki/property_unlimitedSensor2.png" src="https://camo.githubusercontent.com/88364cc5bb627724881a47aa373d66d2df7bbda7/687474703a2f2f7777772e6170696f2e63632f696d616765732f6769746875625f77696b692f70726f70657274795f756e6c696d6974656453656e736f72322e706e67"/></p>
+<p><img alt="" data-canonical-src="http://www.apio.cc/images/github_wiki/Unlimited_Sensor.png" src="https://camo.githubusercontent.com/6f20e9b034e087d6a624fe840676a07c3d63f178/687474703a2f2f7777772e6170696f2e63632f696d616765732f6769746875625f77696b692f556e6c696d697465645f53656e736f722e706e67"/></p>
+<p>###UploadImage</p>
+<p>It allows to update an image in the specified path</p>
+<p><em>Attributes</em></p>
+<p><img alt="" data-canonical-src="http://www.apio.cc/images/github_wiki/property_upload1.png" src="https://camo.githubusercontent.com/661d269c07b29ca339f98477622f04bb1ee98a9b/687474703a2f2f7777772e6170696f2e63632f696d616765732f6769746875625f77696b692f70726f70657274795f75706c6f6164312e706e67"/></p>
+<p><em>Example</em></p>
+<p><img alt="" data-canonical-src="http://www.apio.cc/images/github_wiki/property_upload2.png" src="https://camo.githubusercontent.com/8911bbe69c32f04b6b775703d5088f48b08587ee/687474703a2f2f7777772e6170696f2e63632f696d616765732f6769746875625f77696b692f70726f70657274795f75706c6f6164322e706e67"/></p>
+<p><img alt="" data-canonical-src="http://www.apio.cc/images/github_wiki/Upload_Image.png" src="https://camo.githubusercontent.com/1af2a0c3225ad70c70b1ca57be0704777d698b84/687474703a2f2f7777772e6170696f2e63632f696d616765732f6769746875625f77696b692f55706c6f61645f496d6167652e706e67"/></p>
+<p><img alt="" data-canonical-src="http://www.apio.cc/images/github_wiki/Upload_Image1.png" src="https://camo.githubusercontent.com/2a584ab7a4146e959b2278cdd56a32ecf23d20b8/687474703a2f2f7777772e6170696f2e63632f696d616765732f6769746875625f77696b692f55706c6f61645f496d616765312e706e67"/></p>
+
+        </div>
+
+    </div>]

@@ -1,0 +1,201 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>Query routing is one of the core features of ProxySQL.</p>
+<p>Read/write split is perhaps one of the most common query routing used, while the other most commonly used query routing implementation is for sharding.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#readwrite-split-using-different-ports" id="user-content-readwrite-split-using-different-ports"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Read/write split using different ports</h2>
+<p>If you are using a proxy like HAProxy you can configure it to listen onto two ports: one as an endpoint for writes, while the second port as an endpoint for reads.<br/>
+People has often asked how to configure ProxySQL using the same approach, and routing queries based on incoming port.</p>
+<p>Here is an example on how to implement query routing based on incoming port, running the follow on ProxySQL's Admin. I will assume you already have master and slaves configured in the right hostgroups: MySQL writer in hostgroup 10, and MySQL readers in hostgroup 20. A similar approach will apply if you are using Galera or Group Replication. The steps are the follow:</p>
+<ul>
+<li>
+<p>Configure ProxySQL to listen on two ports and restart it : <code>mysql-interfaces</code> is one of the few variables that cannot be changed at runtime and requires a restart</p>
+<pre><code>SET mysql-interfaces='0.0.0.0:6401;0.0.0.0:6402';
+## save it on disk and restart proxysql
+SAVE MYSQL VARIABLES TO DISK;
+PROXYSQL RESTART;
+</code></pre>
+</li>
+<li>
+<p>add routing based on incoming port:</p>
+<pre><code>INSERT INTO mysql_query_rules (rule_id,active,proxy_port,destination_hostgroup,apply)
+VALUES (1,1,6401,10,1), (2,1,6402,20,1);
+LOAD MYSQL QUERY RULES TO RUNTIME;
+SAVE MYSQL QUERY RULES TO DISK; # if you want this change to be permanent
+</code></pre>
+</li>
+</ul>
+<p>Done! Now all the queries coming to port 6401 will be sent to the MySQL server in hostgroup 10, while all the queries coming to port 6402 will be sent to one of the MySQL servers in hostgroup 20.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#limitation-of-readwrite-split-based-on-incoming-port" id="user-content-limitation-of-readwrite-split-based-on-incoming-port"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Limitation of read/write split based on incoming port</h2>
+<p>In the previous paragraph I wrote that people have often asked how to configure ProxySQL to use routing based on incoming port.<br/>
+Although this is sometime a valid approach, in my opinion it has a big drawback: the application needs to have built-in read/write split capabilities in order to distinguish between reads and writes.<br/>
+Often this is not the case. Often application uses only a connection endpoint, that of course it turns to be the MySQL master. If ProxySQL is used, this can accept all the traffic in a single port and can analyze the traffic to perform read/write split based on the query type.<br/>
+This is very convenient because it doesn't requires any application changes.<br/>
+Nonetheless, the main advantage is not the ability to route traffic without application changes. The main advantage is that the DBA has now the tool to control the traffic sent to the database. The DBA is the one that get paged in the middle of the night because the DB server is overloaded, when there are no developers around, and making changes in the application is not an option: he now has the option to control the traffic.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#basic-readwrite-split-using-regex" id="user-content-basic-readwrite-split-using-regex"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>basic read/write split using regex</h2>
+<p>In this paragraph I will show an example on how to perform read/write split using regular expression.<br/>
+First of all, we should remove query rules created previously:</p>
+<pre><code>DELETE FROM mysql_query_rules;
+</code></pre>
+<p>Afterward, we create <em>basic</em> rules for read/write :</p>
+<pre><code>UPDATE mysql_users SET default_hostgroup=10; # by default, all goes to HG10
+LOAD MYSQL USERS TO RUNTIME;
+SAVE MYSQL USERS TO DISK; # if you want this change to be permanent
+INSERT INTO mysql_query_rules (rule_id,active,match_digest,destination_hostgroup,apply)
+VALUES
+(1,1,'^SELECT.*FOR UPDATE$',10,1),
+(2,1,'^SELECT',20,1);
+LOAD MYSQL QUERY RULES TO RUNTIME;
+SAVE MYSQL QUERY RULES TO DISK; # if you want this change to be permanent
+</code></pre>
+<p>Now routing will work as follow:</p>
+<ul>
+<li>all <code>SELECT FOR UPDATE</code> will be sent to HG10</li>
+<li>all other <code>SELECT</code> will be sent to HG20</li>
+<li>everything else will be sent to HG10 (the default)</li>
+</ul>
+<p>Note that I believe the above is not a good approach to read/write split.<br/>
+I often used this example to describe how to configure rules, and it was often misinterpreted as the way to configure read/write split.<br/>
+In the next paragraph I will show a better approach.</p>
+<p>For now, let's remove all rules:</p>
+<pre><code>DELETE FROM mysql_query_rules;
+LOAD MYSQL QUERY RULES TO RUNTIME;
+SAVE MYSQL QUERY RULES TO DISK; # if you want this change to be permanent
+</code></pre>
+<h2>
+<a aria-hidden="true" class="anchor" href="#readwrite-split-using-regex-and-digest" id="user-content-readwrite-split-using-regex-and-digest"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>read/write split using regex and digest</h2>
+<p>A configuration procedure to efficiently setup read/write split is the following:</p>
+<ul>
+<li>configure ProxySQL to send all the traffic to only one MySQL node, the master (both writes and reads)</li>
+<li>check in <code>stats_mysql_query_digest</code> which are the most expensive <code>SELECT</code> statements</li>
+<li>determine which expensive statements should be moved to reader nodes;</li>
+<li>configure <code>mysql_query_rules</code> (create rules) to send only expensive <code>SELECT</code> to the readers</li>
+</ul>
+<p>The idea is therefore quite simple: send to slaves/readers only what you want to send to slaves/readers, not just any <code>SELECT</code>.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#find-expensive-queries-using-stats_mysql_query_digest" id="user-content-find-expensive-queries-using-stats_mysql_query_digest"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Find expensive queries using <code>stats_mysql_query_digest</code>
+</h3>
+<p>Here is a list of examples of how you can identify potential queries that can be sent to readers. Because ProxySQL exports all metrics in tables, you can create complex queries to gather information.</p>
+<p>These results are based on a very busy proxysql instance running for several months that has processed around hundred billions queries so far.</p>
+<ul>
+<li>
+<p>Find the top 5 queries based on total execution time:</p>
+<pre><code>Admin&gt; SELECT digest,SUBSTR(digest_text,0,25),count_star,sum_time FROM stats_mysql_query_digest WHERE digest_text LIKE 'SELECT%' ORDER BY sum_time DESC LIMIT 5;
++--------------------+--------------------------+------------+---------------+
+| digest             | SUBSTR(digest_text,0,25) | count_star | sum_time      |
++--------------------+--------------------------+------------+---------------+
+| 0x037C3E6D996DAFE2 | SELECT a.ip_id as ip_id, | 2030026798 | 1479082636017 |
+| 0xB081A85245DEA5B7 | SELECT a.ip_id as ip_id, | 2025902778 | 1206116187539 |
+| 0x38BE36BDFFDBE638 | SELECT instance.name as  | 59343662   | 1096236803754 |
+| 0xB4233552504E43B8 | SELECT ir.type as type,  | 1362897166 | 488971769571  |
+| 0x4A131A16DCFFD6C6 | SELECT i.id as id, i.sta | 934402293  | 475253770301  |
++--------------------+--------------------------+------------+---------------+
+5 rows in set (0.01 sec)
+</code></pre>
+</li>
+<li>
+<p>Find the top 5 queries based on count:</p>
+<pre><code>Admin&gt; SELECT digest,SUBSTR(digest_text,0,25),count_star,sum_time FROM stats_mysql_query_digest WHERE digest_text LIKE 'SELECT%' ORDER BY count_star DESC LIMIT 5;
++--------------------+--------------------------+------------+---------------+
+| digest             | SUBSTR(digest_text,0,25) | count_star | sum_time      |
++--------------------+--------------------------+------------+---------------+
+| 0x037C3E6D996DAFE2 | SELECT a.ip_id as ip_id, | 2030040688 | 1479092529369 |
+| 0xB081A85245DEA5B7 | SELECT a.ip_id as ip_id, | 2025916528 | 1206123010791 |
+| 0x22E0A5C585C53EAD | SELECT id as instanceid, | 1551361254 | 426419508609  |
+| 0x3DB4B9FA4B2CB36F | SELECT i.id as instancei | 1465274289 | 415565419867  |
+| 0xB4233552504E43B8 | SELECT ir.type as type,  | 1362906755 | 488974931108  |
++--------------------+--------------------------+------------+---------------+
+5 rows in set (0.00 sec)
+</code></pre>
+<p>Hmm, can some of these queries can be cached? Maybe ProxySQL query cache can help!</p>
+</li>
+<li>
+<p>Find the top 5 queries based on maximum execution time:</p>
+<pre><code>Admin&gt; SELECT digest,SUBSTR(digest_text,0,25),count_star,sum_time,sum_time/count_star avg_time, min_time, max_time FROM stats_mysql_query_digest WHERE digest_text LIKE 'SELECT%' ORDER BY max_time DESC LIMIT 5;
++--------------------+--------------------------+------------+--------------+----------+----------+-----------+
+| digest             | SUBSTR(digest_text,0,25) | count_star | sum_time     | avg_time | min_time | max_time  |
++--------------------+--------------------------+------------+--------------+----------+----------+-----------+
+| 0x36CE5295726DB5B4 | SELECT COUNT(*) as total | 146390     | 185951894994 | 1270249  | 445      | 237344243 |
+| 0xDA8C56B5644C0822 | SELECT COUNT(*) as total | 44130      | 24842335265  | 562935   | 494      | 231395575 |
+| 0x8C1B0405E1AAB9DB | SELECT COUNT(*) as total | 1194       | 1356742749   | 1136300  | 624      | 216677507 |
+| 0x6C03197B4A2C34BE | Select *, DateDiff(Date_ | 4796       | 748804483    | 156131   | 607      | 197881845 |
+| 0x1DEFCE9DEF3BDF87 | SELECT DISTINCT i.extid  | 592196     | 40209254260  | 67898    | 416      | 118055372 |
++--------------------+--------------------------+------------+--------------+----------+----------+-----------+
+5 rows in set (0.01 sec)
+</code></pre>
+<p>This specific result shows that some query have a very high maximum execution time, while minimum execution time is very small, and average is reasonable slow as well.<br/>
+For example, query with digest <code>0x36CE5295726DB5B4</code> has an average execution time of 1.27 seconds, a minimum execution time of 0.4ms , and a maximum execution time of 237.34 seconds. Maybe it is worth to investigate why this uneven execution time.</p>
+</li>
+<li>
+<p>Find the top 5 queries ordered by total execution time, and with a minimum execution time of at least 1 millisecond:</p>
+<pre><code>Admin&gt; SELECT digest,SUBSTR(digest_text,0,20),count_star,sum_time,sum_time/count_star avg_time, min_time, max_time FROM stats_mysql_query_digest WHERE digest_text LIKE 'SELECT%' AND min_time &gt; 1000 ORDER BY sum_time DESC LIMIT 5;
++--------------------+--------------------------+------------+-------------+----------+----------+----------+
+| digest             | SUBSTR(digest_text,0,20) | count_star | sum_time    | avg_time | min_time | max_time |
++--------------------+--------------------------+------------+-------------+----------+----------+----------+
+| 0x9EED412C6E63E477 | SELECT a.id as acco      | 961733     | 24115349801 | 25074    | 10994    | 7046628  |
+| 0x8DDD43A9EA37750D | Select ( Coalesce((      | 107069     | 3156179256  | 29477    | 1069     | 24600674 |
+| 0x9EED412C6E63E477 | SELECT a.id as acco      | 91996      | 1883354396  | 20472    | 10095    | 497877   |
+| 0x08B23A268C35C08E | SELECT id as reward      | 49401      | 244088592   | 4940     | 1237     | 1483791  |
+| 0x437C846F935344F8 | SELECT Distinct i.e      | 164        | 163873101   | 999226   | 1383     | 7905811  |
++--------------------+--------------------------+------------+-------------+----------+----------+----------+
+5 rows in set (0.01 sec)
+</code></pre>
+</li>
+<li>
+<p>Find the top 5 queries ordered by total execution time, with an average execution time of at least 1 second. Also show the percentage of the total execution time:</p>
+<pre><code>Admin&gt; SELECT digest,SUBSTR(digest_text,0,25),count_star,sum_time,sum_time/count_star avg_time, ROUND(sum_time*100.00/(SELECT SUM(sum_time) FROM stats_mysql_query_digest),3) pct FROM stats_mysql_query_digest WHERE digest_text LIKE 'SELECT%' AND sum_time/count_star &gt; 1000000 ORDER BY sum_time DESC LIMIT 5;
++--------------------+--------------------------+------------+--------------+----------+-------+
+| digest             | SUBSTR(digest_text,0,25) | count_star | sum_time     | avg_time | pct   |
++--------------------+--------------------------+------------+--------------+----------+-------+
+| 0x36CE5295726DB5B4 | SELECT COUNT(*) as total | 146390     | 185951894994 | 1270249  | 2.11  |
+| 0xD38895B4F4D2A4B3 | SELECT instance.name as  | 9783       | 12409642528  | 1268490  | 0.141 |
+| 0x8C1B0405E1AAB9DB | SELECT COUNT(*) as total | 1194       | 1356742749   | 1136300  | 0.015 |
++--------------------+--------------------------+------------+--------------+----------+-------+
+3 rows in set (0.00 sec)
+</code></pre>
+</li>
+<li>
+<p>Find the top 5 queries ordered by total execution time, with an average execution time of at least 15 milliseconds. Also show the percentage of the total execution time:</p>
+<pre><code>Admin&gt; SELECT digest,SUBSTR(digest_text,0,25),count_star,sum_time,sum_time/count_star avg_time, ROUND(sum_time*100.00/(SELECT SUM(sum_time) FROM stats_mysql_query_digest WHERE digest_text LIKE 'SELECT%'),3) pct FROM stats_mysql_query_digest WHERE digest_text LIKE 'SELECT%' AND sum_time/count_star &gt; 15000 ORDER BY sum_time DESC LIMIT 5;
++--------------------+--------------------------+------------+---------------+----------+--------+
+| digest             | SUBSTR(digest_text,0,25) | count_star | sum_time      | avg_time | pct    |
++--------------------+--------------------------+------------+---------------+----------+--------+
+| 0x38BE36BDFFDBE638 | SELECT instance.name as  | 59360371   | 1096562204931 | 18472    | 13.006 |
+| 0x36CE5295726DB5B4 | SELECT COUNT(*) as total | 146390     | 185951894994  | 1270249  | 2.205  |
+| 0x1DEFCE9DEF3BDF87 | SELECT DISTINCT i.extid  | 592281     | 40215136635   | 67898    | 0.477  |
+| 0xDA8C56B5644C0822 | SELECT COUNT(*) as total | 44130      | 24842335265   | 562935   | 0.295  |
+| 0x9EED412C6E63E477 | SELECT a.id as accountid | 961768     | 24116011513   | 25074    | 0.286  |
++--------------------+--------------------------+------------+---------------+----------+--------+
+5 rows in set (0.00 sec)
+</code></pre>
+</li>
+</ul>
+<p>All these queries need to be executed on master? If the average execution time of one query is above 1 second, probably the answer is no.<br/>
+For some application, even a query running with an average execution time of 15ms perhaps can go to slave.</p>
+<p>After checking with application owner, we can for example decide that query with digest <code>0x38BE36BDFFDBE638</code> can go to slaves:</p>
+<pre><code>INSERT INTO mysql_query_rules (rule_id,active,digest,destination_hostgroup,apply)
+VALUES
+(1,1,'0x38BE36BDFFDBE638',20,1);
+</code></pre>
+<p>Similarly, after checking the output of this:</p>
+<pre><code>SELECT digest,digest_text,count_star,sum_time,sum_time/count_star avg_time, ROUND(sum_time*100.00/(SELECT SUM(sum_time) FROM stats_mysql_query_digest WHERE digest_text LIKE 'SELECT%'),3) pct FROM stats_mysql_query_digest WHERE digest_text LIKE 'SELECT COUNT%' ORDER BY sum_time DESC;
+</code></pre>
+<p>we agreed that all the queries starting with <code>SELECT COUNT(*)</code> can go to slaves:</p>
+<pre><code>INSERT INTO mysql_query_rules (rule_id,active,match_digest,destination_hostgroup,apply)
+VALUES
+(1,1,'^SELECT COUNT\(\*\)',20,1);
+</code></pre>
+<p>Finally, load every rule to runtime:</p>
+<pre><code>LOAD MYSQL QUERY RULES TO RUNTIME;
+SAVE MYSQL QUERY RULES TO DISK; # if you want this change to be permanent
+</code></pre>
+<h2>
+<a aria-hidden="true" class="anchor" href="#conclusion" id="user-content-conclusion"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Conclusion</h2>
+<p>ProxySQL can be efficiently used to be very selective with query routing.<br/>
+While for some applications it is acceptable to send all the SELECTs to readers/slaves while everything else to writer/master, for many other applications/workloads is not as simple. A DBA should be able to configure ProxySQL iwith complex rules to send only the queries that do not need to be executed on master to the slaves, without any application changes.</p>
+
+        </div>
+
+    </div>]

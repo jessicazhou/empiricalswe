@@ -1,0 +1,111 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <h3>
+<a aria-hidden="true" class="anchor" href="#key-value-publisher" id="user-content-key-value-publisher"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Key-Value Publisher</h3>
+<pre><code>[[69]] (caller)
+(when (= (caller) @@69)
+  (for () (&lt; @i (calldatasize)) [i](+ @i 64)
+    [[ (calldataload @i) ]] (calldataload (+ @i 32))
+  )
+)
+</code></pre>
+<h3>
+<a aria-hidden="true" class="anchor" href="#name-registrar" id="user-content-name-registrar"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Name Registrar</h3>
+<p>A simple name registeration service. Names (represented as 32-byte values whose left-most bytes store an ASCII string) are stored in the address space of the contract leading to the (160-bit ethereum) address of the name's owner.
+The owner addresses are similarly stored in the contract's address space with a value leading back to the  name.</p>
+<pre><code>;; Initialiser...
+{
+  [[(address)]] "NameReg"
+  [["NameReg"]] (address)
+  [[69]] (caller)
+}
+;; If there's at least one argument
+(if (calldatasize)
+  {
+    ;; Stop if the first arg (name) has already been registered.
+    (when @@(calldataload 0) (stop))
+
+    ;; Store sender at name, and name at sender.
+    (when @@(caller) [[@@(caller)]] 0)
+    [[(calldataload 0)]] (caller)
+    [[(caller)]] (calldataload 0)
+    (stop)
+  }
+
+  ;; No arguments - either deregister or suicide (if it's from owner's address).
+  {
+    ;; Suicide if it's from owner's address.
+    (when (= (caller) @@69) (suicide (caller)))
+
+    ;; Otherwise, just deregister any name sender has, if they are registered.
+    (when @@(caller) {
+      [[@@(caller)]] 0
+      [[(caller)]] 0
+    })
+    (stop)
+  }
+)
+</code></pre>
+<h3>
+<a aria-hidden="true" class="anchor" href="#bank" id="user-content-bank"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Bank</h3>
+<p>A very simple bank. You can send ether in a transaction to load your account with funds. Withdraw your ether by specifying a 32-byte data argument of the amount to withdraw. Withdraw to a different account by specifying a second data argument with the account.</p>
+<pre><code>{
+  [0] "Bank"
+  (call 0x929b11b8eeea00966e873a241d4b67f7540d1f38 0 0 0 4 0 0)
+}
+(if (&gt;= @@(caller) (calldataload 0))
+  ;; Withdrawal:
+  {
+    ;; Subtract the value from the balance of the account
+    [[ (caller) ]] (- @@(caller) (calldataload 0))
+    ;; Transfer the funds either to...
+    (if (&lt;= (calldatasize) 32)
+      (call (caller) (calldataload 0) 0 0 0 0 0)  ; ...the sender...
+      (call (calldataload 32) (calldataload 0) 0 0 0 0 0)  ; ...or the supplied account.
+    )
+  }
+  ;; Deposit; just increase the account balance by that amount.
+  [[(caller)]] (+ @@(caller) (callvalue))
+)
+</code></pre>
+<h3>
+<a aria-hidden="true" class="anchor" href="#splitter" id="user-content-splitter"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Splitter</h3>
+<p>Simple cash splitter; splits the value sent amongst each of the addresses given as data items.</p>
+<pre><code>{
+  [0] "Splitter"
+  (call 0x929b11b8eeea00966e873a241d4b67f7540d1f38 0 0 0 8 0 0)
+}
+{
+  [count] (/ (calldatasize) 20)
+  [pay] (/ (callvalue) @count)
+
+  ;; Cycle through each address
+  (for () (&lt; @i @count) [i](+ @i 1)
+    ;; Send to 'i'th argument (assuming it's an address).
+    (call (calldataload (* @i 20)) @pay 0 0 0 0 0)
+  )
+}
+</code></pre>
+<h3>
+<a aria-hidden="true" class="anchor" href="#currency" id="user-content-currency"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Currency</h3>
+<pre><code>{
+  ;; Give caller a whole bunch of cash.
+  [[ (caller) ]]: 0x1000000000000000000000000
+  ;; Register with the NameReg contract.
+  [0] "GavCoin"
+  (call 0x929b11b8eeea00966e873a241d4b67f7540d1f38 0 0 0 7 0 0)
+}
+{
+  (when (!= (calldatasize) 64) (stop))      ; stop if there's not enough data passed.
+  [fromBal] @@(caller)
+  [toBal]: @@(calldataload 0)
+  [value]: (calldataload 32)
+  (when (&lt; @fromBal @value) (stop))         ; stop if there's not enough for the transfer.
+  [[ (caller) ]]: (- @fromBal @value)       ; subtract amount from caller's account.
+  [[ (calldataload 0) ]]: (+ @toBal @value) ; add amount on to recipient's account.
+}
+</code></pre>
+
+        </div>
+
+    </div>]

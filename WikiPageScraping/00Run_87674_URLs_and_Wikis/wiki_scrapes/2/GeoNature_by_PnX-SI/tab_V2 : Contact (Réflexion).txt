@@ -1,0 +1,82 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>Observations occasionnelles = contacts aléatoires</p>
+<p>Tout ce qui n’est pas facultatif est obligatoire...</p>
+<p>Le contact faune flore est un processus d’observation de la faune ou de la flore.</p>
+<p>Il est caractérisé par l’absence de protocole conduisant à l’observation. L’observation se fait de manière aléatoire dans le temps et dans l’espace : pas de méthode de prospection ou recherche, pas de constante (heure, durée, surface, date, température,…).</p>
+<p>Dans GeoNature V2, nous allons nous appuyer sur le catalogue de méthodes et protocoles du MNHN : <a href="http://campanule.mnhn.fr/" rel="nofollow">http://campanule.mnhn.fr/</a></p>
+<p>Dans le Contact, il n'y aura ni méthode ni protocole, mais on va utiliser la liste des techniques de CAMPANULE pour associer une technique d'observation à chaque observation.</p>
+<p>On part sur l'idée de faire 3 contacts avec leur schéma de BDD et leur propre formulaire (Faune vertébré, Faune invertébré, Flore/Fonge) et de faire un outil Bibliographie à part, un pour les collections, un pour les pelotes...</p>
+<p>La thématique des HABITATS sera elle aussi traitée à part.</p>
+<p>A voir aussi si on fait un outil avec son schéma/formulaire pour les contacts spécifiques à un groupe ou une espèce (voir addObs) ou si on privilégie la logique de pseudo-champs.</p>
+<p>La liste des taxons saisissables est liée à <code>taxonomie.bib_noms</code> et les rangs/groupes de TaxRef et non plus sur les listes de TaxHub. Hormis la liste "Saisie possible" qui permet d'avoir des taxons sur le territoire que l'on ne peut pas saisir dans le Contact.</p>
+<p>Présentation du protocole : <a href="http://geonature.fr/protocoles.html#contact-faune" rel="nofollow">http://geonature.fr/protocoles.html#contact-faune</a></p>
+<p>On gardera le découpage du territoire en unités géographiques (polygones ou mailles) qui permet d'orienter la saisie en fonction de l'unité géographique et de la dernière saisie de chaque taxon (dans la synthèse).</p>
+<p>Éventuellement, revoir le fonctionnement en BDD de ce calcul, passer les durées (1 an si patrimonial, 3 ans si non patrimonial) en paramètres et recalculer la couleur chaque nuit plutôt que chaque 1° janvier.</p>
+<p><strong>Contexte de l’observation</strong></p>
+<pre><code>- Temporalité = Quand?
+	- date (not null). 
+	- heure (facultatif). Nombre entier, masquable dans le formulaire de saisie avec un paramètre.
+	- Pas date début, date fin ni de Précision date (cela ira dans l'outil Bibliographie)
+- Localisation = Où ?
+	- coordonnées x, y (not null) : on en reste au ponctuel
+	- communes (not null), calculé
+	- altitude (not null) : calculées par le service IGN, peut-être fourni ou corrigée par l'utilisateur,
+	- précision (not null) : = point par défaut, voir si autre option possible. Liste (0 à 10m, 10 à 100m, 100 à 1000m)
+- Observateurs = Qui ?
+	- observateurs (n-n)
+</code></pre>
+<p><strong>Occurrence de taxon</strong> (information pour chacun des taxons de l’observation)</p>
+<pre><code>- Taxon (cd_nom, nom_saisi (français ou latin), version taxref) (not null)
+- identifiant prélèvement pour faire référence à un herbier, prélèvement.... (facultatif)
+- Commentaire (facultatif)
+</code></pre>
+<p><strong>Qualification de la donnée</strong> (qualification possible au niveau du lot ou de l’enregistrement)</p>
+<pre><code>- Technique d'observation : au niveau de chaque occurrence de taxon
+	Basé sur la liste des techniques de CAMPAnule (http://campanule.mnhn.fr/). Avec nom, id_campanule, actif (oui/non) et groupes associés à une technique (N-N)
+- Stade phénologique dépendant des rangs ou groupe INPN. classe:12;17 OU groupe1inpn:5 OU ordre:19;23. 1 stade par occurrence. Pas de N-N. 
+- Effectifs mâle, femelle, indéterminé pour chaque occurrence dans la Faune. Abondances (classes de dénombrement) pour la flore. 
+- Critère de détermination (chant, examen macroscopique...) selon groupes INPN ou RANGS (N-N)
+- Déterminateur (facultatif): Liste basé sur une liste UsersHub (id de la liste en paramètre). 1-N. Rempli par défaut avec l'utilisateur logué ou le premier utilisateur saisi dans les observateurs. 
+- Contexte d’acquisition
+	- lot/jeu de données/étude (même chose)
+		- id, nom, description
+		- financeurs (facultatif)
+		- propriétaire (not null) lié à bib_organisme
+		- producteur (not null) lié à bib_organisme
+		- donnée publique : oui/non 
+		- transmission (n-n) : à qui, date, remarques, etc... Niveau lot ou occurrence de taxon ?
+		- programme : Contact aléatoire, ATBI, Etude d’impact, Inventaire, etc. 
+			Le programme est déduit du jeu de données. L'accès aux différents jeux de données est liés aux droits de l'utilisateur. Un agent interne va saisir uniquement dans le jeu de données Contact aléatoire. Un expert externe va saisir uniquement dans un jeu de données comme ATBI Lauvitel. Un expert interne va pouvoir saisir dans l'un ou l'autre des jeux de données. 
+	- protocole (= contact)
+- Validation / Relecture (Désactivable)
+- Validateur, renseigné automatiquement lors de la validation. Basé sur une liste de UsersHub (1-N)
+- Sensible (not null) (oui/non ou alors liste SINP ?). La notion de diffusion est déduite de la sensibilité. A voir si c'est saisi observation ou une liste de cd_ref et de criteres.La notion de sensibilité amène aussi à une justification. Y a associer un champs texte ou une liste de justification ?
+- Export : sujet complexe qui va dépendre de nombreux paramètres (utilisateur connecté et ses droits, son organisme, s’il est observateur oui/non de la donnée, si la donnée est publique oui/non, si la donnée est sensible oui/non, du statut de validation/relecture. Chaque gestionnaire de l’instance GeoNature aura des besoins/choix différents). Cela est plus une fonctionnalité en fonction des droits et des choix qu'une info relative à la donnée ? A gérer au niveau de la donnée, des lots, des programmes ou autre ?
+- Suppression (not null) : oui/non non par défaut 
+- Date d'insertion et de mise à jour (not null) : trigger
+- Numérisateur (not null) : automatique = utilisateur logué pour avoir les droits de modification
+- Media (n-n) (facultatif) : Photos. voir si avec légendage possible et auteur ? Plus complexe en mobile
+</code></pre>
+<p>Intégrer un mécanisme de pseudo-champs sur un fonctionnement similaire à celui des attributs de TaxHub lié aux groupes ou rangs de TaxRef ?</p>
+<p>Comment gère t-on l'organisme d'une donnée. Finalement, cela serait déduit du jeu de données ?</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#remarques-amandine-sahl" id="user-content-remarques-amandine-sahl"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>REMARQUES AMANDINE SAHL</h2>
+<ul>
+<li>
+<p>Pourquoi mode d’acquisition (1-n). Ce n'est pas plutôt du 1..1 ??? &gt;&gt; C'est viré depuis.</p>
+</li>
+<li>
+<p>Pour ce qui est du mécanisme des pseudo champs je suis assez favorable même si c'est dangereux. Par contre il faudrait qu'il soit dépendant du groupe taxonomique (comportement pour l'ornitho) comme Stade/phénologie/age.</p>
+</li>
+<li>
+<p>Je ne comprends pas pourquoi Stade/phénologie/age et age sont en  (1-n) et décorrélés du dénombrement.</p>
+</li>
+<li>
+<p>Critère(s) de détermination : je ne suis pas du tout favorable à un champ libre. &gt;&gt; Oui on part sur une liste.</p>
+</li>
+</ul>
+
+        </div>
+
+    </div>]

@@ -1,0 +1,30 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>Every engine has warts, we're not exception.  Some of these are bad things that should be fixed, others are necessary design constraints.  If you're making stuff for frogatto, you really need to be aware of these, though.</p>
+<ul>
+<li>
+<p>To ensure collisions don't get messed up when objects change animations, objects should always maintain the same width/height of their solid area between animations.</p>
+</li>
+<li>
+<p>Dynamic removal or addition of feet can sometimes cause an object to erroneously think it has illegally overlapped the ground it's standing on.  I suspect that due to the shape of the underlying solidity box (an inverted "house" silhouette, done to allowing walking up slopes), that 1 pixel's worth of height might be getting rounded off by the algorithm to determine the diagonals, making the object a pixel taller or shorter in one state.</p>
+</li>
+<li>
+<p>Objects can't move in the X direction, via acceleration, unless they have traction.  This does not apply to Y.  There is also <code>traction_in_air</code> and <code>traction_in_water</code>. These are normalized to a scale of 0-1000.</p>
+</li>
+<li>
+<p>Our memory management is mostly bulletproof except for one caveat: <strong>don't create circular references, or you'll leak memory</strong>.  A circular reference is when object A has a var, storing object B - and object B has one storing object A.  Our memory management works by reference counting (a tradeoff we made versus actual garbage-collection because reference counting is fast, and doesn't have intermittent pauses; it's predictable and can be relied on not to cause hiccups in the game).  This means each object in memory only exists as long as something else has a "reference" to it - if the number of other things referring to something ever reaches zero, it's deleted.  Metaphorically, they're like strings tied to a helium balloon - as long as <em>someone</em> has a string, you're cool, but as soon as no one does - off it goes.  When an object is created on a level and is active in gameplay, the level itself has a reference to it, and thus it sticks around nicely until the level ends.  Many objects need to acquire references to other objects to do things with them, and sometimes even these things in turn need to refer to something else.  As long as there's no loop in the chain of dependency, when the level ends, the whole set will collapse like dominoes, being correctly deleted one after another (because at one end of the chain, there will be one object with nothing referring to it, and once it's deleted, then whatever <em>it</em> referred to now has nothing referring to it, etc, until they're all gone.  If there are loops, though, there's no "weak point" for them to start dissolving, and they will persist in memory until the game quits.  Every time something like them (say, perhaps, this occurs on a certain monster type) is created, it'll guzzle up a little bit more memory, until finally the app will run out and crash.</p>
+</li>
+<li>
+<p>An object will become inactive when it is half a screen width off the screen.  What this means is that the object is essentially 'paused';  it will not change its position, and will not process any formulas in its events.  This is done for speed reasons.  If you absolutely need an object to never do this, you can set "always_active".   Another very useful setting is dies_on_inactive, which will delete an object instead of pausing it.  This is very useful for shots passing offscreen, or for effect particles.</p>
+</li>
+</ul>
+
+        </div>
+
+        <div class="wiki-footer gollum-markdown-content boxed-group" id="wiki-footer">
+          <div class="boxed-group-inner wiki-auxiliary-content markdown-body">
+            <p>More help can be found via IRC, <a href="irc://irc.freenode.net/#frogatto" rel="nofollow">#Frogatto</a> on freenode.net. This wiki is not a complete reference.</p>
+
+          </div>
+        </div>
+    </div>]

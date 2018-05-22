@@ -1,0 +1,47 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>Functionality added by Gabriel Ferraz</p>
+<p>Added auto_html 'redcarpet' filter (<a href="https://github.com/dejan/auto_html/tree/master/lib/auto_html/filters">https://github.com/dejan/auto_html/tree/master/lib/auto_html/filters</a>) to implement markdown. Most of the markdown options work but for some reason not all options described on the official gem redcarpet repo (<a href="https://github.com/vmg/redcarpet">https://github.com/vmg/redcarpet</a>), such as highlight and underline.</p>
+<p>I also implemented the code for redcarpet itself on the helper file "application_helper.rb" (it is inactive for this deployment--commented out) and all the markdown options work fine. However, when combined with auto_html it doesn't work at all.
+This is the code for markdown:</p>
+<pre><code>def markdown(text)
+	options = {
+		hard_wrap: true,
+		autolink: true, 
+		quote: true, 
+		fenced_code_blocks: true, 
+		strikethrough: true, 
+		underline: true, 
+		highlight: true, 
+		quote: true
+		}
+	markdown = Redcarpet::Markdown.new(Redcarpet::Render::HTML, options)
+	return markdown.render(text).html_safe
+end
+</code></pre>
+<p>i.e.  If I uncomment the redcarpet code and have the line below on the view "channels/show.html.erb", the markup doesn't work.</p>
+<p><code>&lt;%= markdown(msg.content_html) %&gt;</code></p>
+<p>The code below, however, works, but we need to get rid of extension '_html'</p>
+<p><code>&lt;%= markdown(msg.content) %&gt;</code></p>
+<p>Additionally, I added the auto_html code for redcarped as a filter in the initializer file application.rb:</p>
+<pre><code>require 'redcarpet'
+AutoHtml.add_filter(:redcarpet).with(:renderer =&gt; Redcarpet::Render::HTML, :markdown_options =&gt; {
+  hard_wrap: true,
+  autolink: true, 
+  quote: true, 
+  fenced_code_blocks: true, 
+  strikethrough: true, 
+  underline: true, 
+  highlight: true, 
+  quote: true
+  }) do |text, options|
+  Redcarpet::Markdown.new(options[:renderer], options[:markdown_options]).render(text)
+end
+</code></pre>
+<p>This didn't help to add the markdown options that were not working previously though but may be a way to solve the problem.</p>
+<p>CONCLUSION:
+auto_html and markdown are working but not all options of markdown are available.</p>
+
+        </div>
+
+    </div>]

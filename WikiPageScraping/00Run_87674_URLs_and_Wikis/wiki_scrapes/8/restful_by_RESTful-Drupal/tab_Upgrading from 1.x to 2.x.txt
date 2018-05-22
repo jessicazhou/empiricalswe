@@ -1,0 +1,156 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>Upgrading from 1.x to 2.x will involve the following steps:</p>
+<ol>
+<li>Upgrade the Drupal module, and install v2's dependencies (plug, registry_autoload)</li>
+<li>Upgrade the 'entity_validator' module, if using it.</li>
+<li>Move the CTools plugin definition to an annotation.</li>
+<li>Place your new class in the PSR-4 route.</li>
+<li>Adapt your resource class to the new API.</li>
+<li>API changes.</li>
+<li>JSON API (not really a change).</li>
+</ol>
+<p>Most of the effort spent in the upgrade will happen in step five, but hopefully that will be easy to take.</p>
+<p>At any time during your upgrade use the example plugins to see how they were upgraded. You can open two different browser tabs, one with the <code>7.x-1.x</code> code in GitHub an the other with <code>7.x-2.x</code>. That will help you to make sense of the explanations in this docs. I went through the upgrade process in the <em>RESTful Search API</em> module. I left <a href="https://github.com/RESTful-Drupal/restful_search_api/tree/2.x-port">the branch</a> up there so you can follow this with that example. This upgrade is a good example of a complex upgrade (one with a custom data provider). In general you should have enough with the examples in the RESTful module.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#1-upgrade-the-drupal-module-and-install-new-dependencies" id="user-content-1-upgrade-the-drupal-module-and-install-new-dependencies"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>1. Upgrade the Drupal module and install new dependencies</h2>
+<p>Upgrading to RESTful v2 is as per standard Drupal practice. Note that v2 depends on a couple of other modules which you will also need to install.</p>
+<p>If you get database errors after upgrading to v2 (e.g. <code>DatabaseSchemaObjectExistsException: Table field_revision_refresh_token_reference already exists</code>) you may need to do the following:</p>
+<ul>
+<li>disable and then <strong>uninstall</strong> the RESTful module(s).</li>
+<li>directly in your database, delete the <code>field_data_refresh_token_reference</code> and <code>field_revision_refresh_token_reference</code> tables entirely (using, for example, phpMyAdmin, or Sequel Pro etc)</li>
+<li>enable the RESTful module(s)</li>
+</ul>
+<h2>
+<a aria-hidden="true" class="anchor" href="#2-upgrade-entity_validator-module" id="user-content-2-upgrade-entity_validator-module"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>2. Upgrade entity_validator module</h2>
+<p>RESTful optionally integrates with the <a href="https://www.drupal.org/project/entity_validator" rel="nofollow">entity_validator</a> module. If you're using this module, you will need to upgrade it to 2.x (like RESTful, Entity Validator also migrated from Ctools to Plug).</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#3-from-ctools-to-annotations" id="user-content-3-from-ctools-to-annotations"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>3. From CTools to annotations</h2>
+<p>RESTful 1.x and 2.x both use plugins to define the different resources. Plugins are just classes, that Drupal can discover, and that can be instantiated for you using a plugin manager. This principle has not changed from 1.x to 2.x, that means that you will still have a single plugin for every resource.</p>
+<p>Your plugin definition now will live along with your class implementation, instead of in a separate file, in what is called an <a href="http://doctrine-common.readthedocs.org/en/latest/reference/annotations.html" rel="nofollow">annotation</a>.</p>
+<p>Imagine the following CTools plugin:</p>
+<div class="highlight highlight-text-html-php"><pre><span class="pl-s1"><span class="pl-smi">$plugin</span> <span class="pl-k">=</span> <span class="pl-c1">array</span>(</span>
+<span class="pl-s1">  <span class="pl-s"><span class="pl-pds">'</span>label<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> t(<span class="pl-s"><span class="pl-pds">'</span>Articles<span class="pl-pds">'</span></span>),</span>
+<span class="pl-s1">  <span class="pl-s"><span class="pl-pds">'</span>resource<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-s"><span class="pl-pds">'</span>articles<span class="pl-pds">'</span></span>,</span>
+<span class="pl-s1">  <span class="pl-s"><span class="pl-pds">'</span>name<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-s"><span class="pl-pds">'</span>articles__1_6<span class="pl-pds">'</span></span>,</span>
+<span class="pl-s1">  <span class="pl-s"><span class="pl-pds">'</span>entity_type<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-s"><span class="pl-pds">'</span>node<span class="pl-pds">'</span></span>,</span>
+<span class="pl-s1">  <span class="pl-s"><span class="pl-pds">'</span>bundle<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-s"><span class="pl-pds">'</span>article<span class="pl-pds">'</span></span>,</span>
+<span class="pl-s1">  <span class="pl-s"><span class="pl-pds">'</span>description<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> t(<span class="pl-s"><span class="pl-pds">'</span>Export the article content type in XML format.<span class="pl-pds">'</span></span>),</span>
+<span class="pl-s1">  <span class="pl-s"><span class="pl-pds">'</span>class<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-s"><span class="pl-pds">'</span>RestfulExampleArticlesResource__1_6<span class="pl-pds">'</span></span>,</span>
+<span class="pl-s1">  <span class="pl-s"><span class="pl-pds">'</span>authentication_types<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-c1">TRUE</span>,</span>
+<span class="pl-s1">  <span class="pl-s"><span class="pl-pds">'</span>authentication_optional<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-c1">TRUE</span>,</span>
+<span class="pl-s1">  <span class="pl-s"><span class="pl-pds">'</span>minor_version<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-c1">6</span>,</span>
+<span class="pl-s1">  <span class="pl-c"><span class="pl-c">//</span> Output the data in XML following the common HAL conventions.</span></span>
+<span class="pl-s1">  <span class="pl-s"><span class="pl-pds">'</span>formatter<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-s"><span class="pl-pds">'</span>hal_xml<span class="pl-pds">'</span></span>,</span>
+<span class="pl-s1">);</span></pre></div>
+<p>In a hypothetical upgrade, it would become the following annotation:</p>
+<div class="highlight highlight-text-html-php"><pre><span class="pl-s1"><span class="pl-c"><span class="pl-c">/**</span></span></span>
+<span class="pl-s1"><span class="pl-c"> * Class Articles__1_6</span></span>
+<span class="pl-s1"><span class="pl-c"> * <span class="pl-k">@package</span> Drupal\restful\Plugin\resource</span></span>
+<span class="pl-s1"><span class="pl-c"> *</span></span>
+<span class="pl-s1"><span class="pl-c"> * @Resource(</span></span>
+<span class="pl-s1"><span class="pl-c"> *   name = "articles:1.6",</span></span>
+<span class="pl-s1"><span class="pl-c"> *   resource = "articles",</span></span>
+<span class="pl-s1"><span class="pl-c"> *   label = "Articles",</span></span>
+<span class="pl-s1"><span class="pl-c"> *   description = "Export the articles with all authentication providers.",</span></span>
+<span class="pl-s1"><span class="pl-c"> *   authenticationTypes = TRUE,</span></span>
+<span class="pl-s1"><span class="pl-c"> *   authenticationOptional = TRUE,</span></span>
+<span class="pl-s1"><span class="pl-c"> *   dataProvider = {</span></span>
+<span class="pl-s1"><span class="pl-c"> *     "entityType": "node",</span></span>
+<span class="pl-s1"><span class="pl-c"> *     "bundles": {</span></span>
+<span class="pl-s1"><span class="pl-c"> *       "article"</span></span>
+<span class="pl-s1"><span class="pl-c"> *     },</span></span>
+<span class="pl-s1"><span class="pl-c"> *   },</span></span>
+<span class="pl-s1"><span class="pl-c"> *   formatter = "hal_xml",</span></span>
+<span class="pl-s1"><span class="pl-c"> *   majorVersion = 1,</span></span>
+<span class="pl-s1"><span class="pl-c"> *   minorVersion = 6</span></span>
+<span class="pl-s1"><span class="pl-c"> * )</span></span>
+<span class="pl-s1"><span class="pl-c"> <span class="pl-c">*/</span></span></span>
+<span class="pl-s1"><span class="pl-k">class</span> <span class="pl-en">Articles__1_6</span> <span class="pl-k">extends</span> <span class="pl-e">ResourceNode</span> <span class="pl-k">implements</span> <span class="pl-e">ResourceInterface</span> {</span></pre></div>
+<p>The first glaring difference is that the previous underscore separated variables, are now in snake case. We go from <code>authentication_types</code> to <code>authenticationTypes</code>.</p>
+<p>Another important difference is that we don't have to specify the class this plugin definition is for, since the annotation only applies to the class it precedes.</p>
+<p>In RESTful 2.x there is no default values for your versions. The motivation for this is to emphasize the versioning by making the implementors more aware of it. That means that you will need to add your major and minor versions to your plugin definition.</p>
+<p>This version introduces the concept of the data provider in the plugin definition. That means that all the options that control how to get the data from your backend, will probably live under the <code>dataProvider</code> key in your annotation. That includes the <code>entityType</code>, <code>bundles</code>, <code>range</code>, <code>idKey</code>, …</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#4-place-your-class-in-a-psr-4-route" id="user-content-4-place-your-class-in-a-psr-4-route"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>4. Place your class in a PSR-4 route</h2>
+<p>RESTful 2.x no longer uses CTools for class discovery, it will use Registry Autoload (via the Plug dependency). You will need to do the following for Drupal to be able to find your classes:</p>
+<ol>
+<li>Add <code>registry_autoload[] = PSR-4</code> to your <code>my_module.info</code> file. This instructs Drupal to use Registry Autoload to find classes following a <a href="http://www.php-fig.org/psr/psr-4/" rel="nofollow">PSR-4 structure</a>.</li>
+<li>Move your resource class to <code>my_module/src/resource/the/path/you/want</code>, and add the following <a href="http://php.net/manual/en/language.namespaces.php" rel="nofollow"><code>namespace</code></a> to your class <code>Drupal\my_module\resource\the\path\you\want</code>.</li>
+<li>As the name of the file, use the name of your class with the <code>.php</code> extension. Do not add the <code>.class.php</code>, just <code>.php</code>.</li>
+</ol>
+<p>If your resource class is called <code>Articles</code> and it was moved to <code>my_module/src/resource/node/articles/v1/6</code> (and the corresponding namespace added) then the full name of your class is now <code>Drupal\my_module\resource\node\articles\v1\6\Articles</code>. Note how even if you have different <code>Article</code> classes, there is no risk of collision because the namespaces will be different.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#5-adapt-your-resource-to-the-new-api" id="user-content-5-adapt-your-resource-to-the-new-api"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>5. Adapt your resource to the new API</h2>
+<p>In RESTful 1.x all the logic was jammed in the resource class. That made it very easy for an implementor to override any piece of functionality for a given resource. In RESTful 2.x different classes are in charge of different functionality.</p>
+<p>There are 3 important layers of functionality (although most probably you don't need to worry about them)</p>
+<ul>
+<li>The resource plugin. This is where you define the shape of the resource and how you interact with it.</li>
+<li>The data provider object. A new Data Provider is created for your resource plugin automatically. That means that unless you need to override any method in the data provider, you can forget about this. This object is in charge of interacting with the backend to read and write data.</li>
+<li>The resource field classes. The resource field class is in charge of getting and formatting the data during read operations. During write operations it is in charge of processing the data and sending it to the data provider to save it to the database. You can define which resource class to use in your field definition by using the <code>class</code> key, although one will be automatically guessed for you.</li>
+</ul>
+<h3>
+<a aria-hidden="true" class="anchor" href="#resource-bases" id="user-content-resource-bases"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Resource bases</h3>
+<p>Right after moving the the class to its new location you will discover that your resource is extending from a base class that no longer exists. <code>\RestfulBase</code>, <code>\RestfulEntityBase</code>, <code>\RestfulNodeBase</code>, etc are no longer available. Instead you will need to use <code>Resource</code>, <code>ResourceEntity</code>, <code>ResourceNode</code>, etc. Look for an example that is similar to your resource and choose the base class that makes sense to you.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#the-field-definitions" id="user-content-the-field-definitions"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>The field definitions</h3>
+<p>First you will need to change the method signature from <code>public function publicFieldsInfo()</code> to <code>protected function publicFields()</code>. 95% of the time this is all you will need to do.</p>
+<p>The other change is that now every public field is associated with an object implementing <code>ResourceFieldInterface</code>. All public field logic has been delegated to the resource field objects, with the help of the data provider. For instance to get the contents of the textfield for the formatter to render, or to preprocess the sub-request JSON payload to turn it into an entity ID when writing an <em>entityreference</em> field.</p>
+<p>Most of the time RESTful will detect the best resource field class based on the field definition (e.g. <code>ResourceFieldEntityReference</code> for an <em>entityreference</em> field). Some times there is not enough information in Drupal, or you want to provide a custom class for a custom field type. In those situations you will need to use the new key <code>class</code> to specify the class to be used. See the example in <code>Main__1_7</code> where instead of treating the <code>file_single</code> as a file array we treat it as an entity reference:</p>
+<div class="highlight highlight-text-html-php"><pre><span class="pl-s1">    <span class="pl-smi">$public_fields</span>[<span class="pl-s"><span class="pl-pds">'</span>file_single<span class="pl-pds">'</span></span>] <span class="pl-k">=</span> <span class="pl-c1">array</span>(</span>
+<span class="pl-s1">      <span class="pl-s"><span class="pl-pds">'</span>property<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-s"><span class="pl-pds">'</span>file_single<span class="pl-pds">'</span></span>,</span>
+<span class="pl-s1">      <span class="pl-s"><span class="pl-pds">'</span>class<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-s"><span class="pl-pds">'</span>\Drupal\restful\Plugin\resource\Field\ResourceFieldFileEntityReference<span class="pl-pds">'</span></span>,</span>
+<span class="pl-s1">      <span class="pl-s"><span class="pl-pds">'</span>referencedIdProperty<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-s"><span class="pl-pds">'</span>uuid<span class="pl-pds">'</span></span>,</span>
+<span class="pl-s1">    );</span></pre></div>
+<p>It's also worth noting, that if you need to do any kind of post processing to the field definitions, you can now use the method <code>processPublicFields</code> as also seen in <code>Main__1_7</code>.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#callback-arguments" id="user-content-callback-arguments"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Callback arguments</h3>
+<p>In an effort to have a better, and more consistent, developer experience, all callbacks now interact with the backend receiving the same parameters. Independently of the type of resource (entity based, DB query, …) all callbacks will receive an <em>interpreter</em> object instead of the <code>EntityMetadataWrapper</code>. To get the wrapper from the interpreter just do <code>$interpreter-&gt;getWrapper()</code>.</p>
+<p>For instance, <code>getEntitySelf</code> transforms from:</p>
+<div class="highlight highlight-text-html-php"><pre><span class="pl-s1">  <span class="pl-c"><span class="pl-c">/**</span></span></span>
+<span class="pl-s1"><span class="pl-c">   * Get the "self" url.</span></span>
+<span class="pl-s1"><span class="pl-c">   *</span></span>
+<span class="pl-s1"><span class="pl-c">   * <span class="pl-k">@param</span> \EntityMetadataWrapper $wrapper</span></span>
+<span class="pl-s1"><span class="pl-c">   *   The wrapped entity.</span></span>
+<span class="pl-s1"><span class="pl-c">   *</span></span>
+<span class="pl-s1"><span class="pl-c">   * <span class="pl-k">@return</span> string</span></span>
+<span class="pl-s1"><span class="pl-c">   *   The self URL.</span></span>
+<span class="pl-s1"><span class="pl-c">   <span class="pl-c">*/</span></span></span>
+<span class="pl-s1">  <span class="pl-k">protected</span> <span class="pl-k">function</span> <span class="pl-en">getEntitySelf</span>(<span class="pl-c1">\</span><span class="pl-c1">EntityMetadataWrapper</span> <span class="pl-smi">$wrapper</span>) {</span>
+<span class="pl-s1">    <span class="pl-k">return</span> <span class="pl-smi">$this</span><span class="pl-k">-&gt;</span>versionedUrl(<span class="pl-smi">$wrapper</span><span class="pl-k">-&gt;</span>getIdentifier());</span>
+<span class="pl-s1">  }</span></pre></div>
+<p>Into:</p>
+<div class="highlight highlight-text-html-php"><pre><span class="pl-s1">  <span class="pl-c"><span class="pl-c">/**</span></span></span>
+<span class="pl-s1"><span class="pl-c">   * Get the "self" url.</span></span>
+<span class="pl-s1"><span class="pl-c">   *</span></span>
+<span class="pl-s1"><span class="pl-c">   * <span class="pl-k">@param</span> DataInterpreterInterface $interpreter</span></span>
+<span class="pl-s1"><span class="pl-c">   *   The wrapped entity.</span></span>
+<span class="pl-s1"><span class="pl-c">   *</span></span>
+<span class="pl-s1"><span class="pl-c">   * <span class="pl-k">@return</span> string</span></span>
+<span class="pl-s1"><span class="pl-c">   *   The self URL.</span></span>
+<span class="pl-s1"><span class="pl-c">   <span class="pl-c">*/</span></span></span>
+<span class="pl-s1">  <span class="pl-k">public</span> <span class="pl-k">function</span> <span class="pl-en">getEntitySelf</span>(<span class="pl-c1">DataInterpreterInterface</span> <span class="pl-smi">$interpreter</span>) {</span>
+<span class="pl-s1">    <span class="pl-k">return</span> <span class="pl-smi">$this</span><span class="pl-k">-&gt;</span>versionedUrl(<span class="pl-smi">$interpreter</span><span class="pl-k">-&gt;</span>getWrapper()<span class="pl-k">-&gt;</span>getIdentifier());</span>
+<span class="pl-s1">  }</span></pre></div>
+<p>The <code>process_callbacks</code> should remain unchanged.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#create_or_update_passthrough" id="user-content-create_or_update_passthrough"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>create_or_update_passthrough</h3>
+<p>If you used <code>create_or_update_passthrough</code> in 1.x, check out the <a href="https://github.com/RESTful-Drupal/restful/wiki/Specifying%20available%20HTTP%20methods%20for%20each%20field">documentation</a> on the new <code>methods</code> field descriptor.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#6-api-changes" id="user-content-6-api-changes"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>6. API changes</h2>
+<p>There lots of internal methods that have been changed, renamed or deleted. Chances that your resource is using any of those are very slim, but still exist. If after making these changes you get PHP errors or error exceptions, check the examples to find the correct method in this new version.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#7-json-api" id="user-content-7-json-api"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>7. JSON API</h2>
+<p>This is not a real change but a slight shift in direction. The new version of RESTful comes with an implementation of <a href="http://jsonapi.org" rel="nofollow">JSON API</a>. This is the recommended formatter for your output, and the one used in the video tutorial series.</p>
+<p>RESTful 2.x is focused to deliver the best experience when using the JSON API formatter, although it still supports the good old Simple JSON and offers the possibility to use your own formatter if needed.</p>
+<p>Several extensions have been applied to the official specification to make it more flexible (and offer even more possibilities):</p>
+<ul>
+<li>
+<strong>Sparse fieldsets per relationship</strong>. The official specification suggests that sparse fieldsets are to be specified per resource. Check <a href="http://discuss.jsonapi.org/t/sparse-fieldsets-per-relationship/177" rel="nofollow">this link</a> to know more about this issue. The extension specification can be found here (LINK NEEDED).</li>
+<li>
+<strong>Nested filters</strong>. <a href="https://gist.github.com/e0ipso/cc95bfce66a5d489bb8a">This extension specification</a> explains how you can filter lists of items based not on their properties, but in the properties of their relationships.</li>
+</ul>
+
+        </div>
+
+    </div>]

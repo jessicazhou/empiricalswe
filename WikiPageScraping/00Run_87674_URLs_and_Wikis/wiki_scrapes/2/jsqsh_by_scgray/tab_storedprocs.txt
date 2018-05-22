@@ -1,0 +1,87 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <h1>
+<a aria-hidden="true" class="anchor" href="#calling-stored-procedures" id="user-content-calling-stored-procedures"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Calling stored procedures</h1>
+<p>JSqsh provides special support for calling stored procedures that require
+output (OUT) or input/output (INOUT) parameters.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#jdbc-escape-syntax" id="user-content-jdbc-escape-syntax"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>JDBC escape syntax</h2>
+<p>The JDBC standard defines a canonical way of executing stored procedures
+in a manner that abstracts away the specifics of how procedures are invoked
+for a given platform.  The following example executes a procedure passing one
+input argument and retrieving one output argument using this syntax:</p>
+<pre><code>1&gt; { call my_test_proc(10, ?) };
++-------------+
+| Param #1    |
++-------------+
+| Fred        |
++-------------+
+</code></pre>
+<p>here, a question mark (<code>?</code>) is used to denote an output parameter. After
+execution, the contents of that output parameter is displayed as shown.</p>
+<p>In addition, many platforms allow you to also get a return value from the
+stored procedure.  To do this in JDBC escape syntax do:</p>
+<pre><code>1&gt; { ?= call my_test_proc(10, ?) };
++-------------+-------------+
+| Return Code | Param #2    |
++-------------+-------------+
+|           0 | Fred        |
++-------------+-------------+
+</code></pre>
+<p>In the case of input/output parameters, jsqsh slightly extends the JDBC
+standard with <code>?=&lt;value&gt;</code> which indicates that the parameter is an INOUT
+parameter, and that the initial input value should be <code>&lt;value&gt;</code>, like so:</p>
+<pre><code>1&gt; { ?= call double_my_inout_param_value(10, ?=321) };
++-------------+-------------+
+| Return Code | Param #2    |
++-------------+-------------+
+|           0 | 642         |
++-------------+-------------+
+</code></pre>
+<h2>
+<a aria-hidden="true" class="anchor" href="#automatic-call-handling" id="user-content-automatic-call-handling"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Automatic "CALL" handling</h2>
+<p>The JDBC escape syntax above is awkward to work with, so jsqsh will attempt
+to automatically recognize when you are trying to call a procedure.  It does
+so according to the following rules:</p>
+<ol>
+<li>The first keyword in your statement is <code>CALL</code>
+</li>
+<li>There are one or more parameter markers (<code>?</code>) following the CALL keyword
+(<code>?</code> characters contained in comments or string constants are ignored)</li>
+</ol>
+<p>If both of these are true, then jsqsh automatically takes your statement
+and attempts to make it a JDBC escape syntax statement.  For example,
+executing the following:</p>
+<pre><code>1&gt; call my_proc(10, ?);
+</code></pre>
+<p>will cause jsqsh to turn it into:</p>
+<pre><code>{ ?= call my_proc(10, ?) }
+</code></pre>
+<p>and execute the statement.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#output-cursors" id="user-content-output-cursors"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Output cursors</h2>
+<p>Unfortunately, there is no standard in JDBC for the handling of CURSOR
+output parameter types, so each JDBC driver deals with them differently.
+As a result, jsqsh currently only has an understanding of how to handle
+CURSOR output parameters for IBM DB2 and Informix, and Oracle.</p>
+<p>When faced with an OUTPUT parameter of type cursor, jsqsh will display
+the results like so:</p>
+<pre><code>1&gt; call my_cursor_output(?);
+  
+Parameter #2 CURSOR:
++---+
+| 1 |
++---+
+| 5 |
++---+
+
++-------------+
+| Return Code |
++-------------+
+|           0 |
++-------------+
+</code></pre>
+
+        </div>
+
+    </div>]

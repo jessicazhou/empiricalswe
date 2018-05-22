@@ -1,0 +1,62 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>Google Drive now downloads Google Docs <code>.gdoc</code> files as Microsoft Word <code>.docx</code>. This is useless as the conversion doesn't work very well, but at present there's not an option to turn the conversion off as for uploads.</p>
+<ul>
+<li>Docs can be retained in the original format and opened in the browser, as on Chrome OS, <a href="https://github.com/lmmx/devnotes/wiki/Custom-application-to-open-.gdoc-extensions">by making a <code>.desktop</code> application and customising Nautilus</a> (but adding new MimeTypes <a href="Another_way_to_add_a_MIME_Type">is inconsistent on Ubuntu</a>)</li>
+<li>Not possible to <a href="https://github.com/lmmx/devnotes/wiki/Google-drive-gdoc-download-conversion-workaround">download Docs via Drive cli</a>, so have to resort to browser scripting</li>
+</ul>
+<p><code>.gdoc</code> files are converted to Word but the format is very simple</p>
+<pre><code>{"url": "URL", "resource_id": "document: ID" }
+</code></pre>
+<p>in which the URL contains the ID:</p>
+<pre><code>https://docs.google.com/document/d/ID/edit?usp=docslist_api
+</code></pre>
+<p>thus the files can be written knowing just the ID (<code>$ID</code>):</p>
+<blockquote>{"url": "https://docs.google.com/document/d/<code>$ID</code>/edit?usp=docslist_api", "resource_id": "document: <code>$ID</code>" }</blockquote>
+<p>The files in a folder can be Javascript-parsed with:</p>
+<pre>icons = document.querySelectorAll('div[aria-label*="Google Docs"][class="k-u-P-m"]');
+var TitleRegEx = new RegExp("Google\ Docs$","g")
+var thesedocs = [];
+for (i=0;i&lt;icons.length;i++) {
+    if (icons[i].parentNode.parentNode.parentNode.parentNode.parentNode.getAttribute('aria-label') == "Folder list view") {
+    	var thisdoc =['',''];
+    	thisdoc[0] = icons[i].getAttribute('aria-label').replace(TitleRegEx, "").trim();
+    	thisdoc[1] = icons[i].getAttribute('data-id');
+    	thesedocs.push(thisdoc.join('\t'));
+    }
+}
+console.log(thesedocs.join('\n'));
+// copy(thesedocs.join('\n'));
+</pre>
+<p>The output can be pasted into tab-separated files for each folder, <code>gdoc-list.tsv</code>.</p>
+<pre>for gdoclist in ./*/gdoc-list.tsv; do
+gdocdir=$(dirname "$gdoclist")
+while read gdocline; do
+  gdocTitle=$(echo "$gdocline" | cut -d $'\t' -f 1)
+  gdocID=$(echo "$gdocline" | cut -d $'\t' -f 2)
+  echo '{"url": "https://docs.google.com/document/d/'"$gdocID"'/edit?usp=docslist_api", "resource_id": "document: "'"$gdocID"'" }' &gt; "$gdocdir/$gdocTitle".gdoc;
+done &lt;"$gdoclist"
+done
+</pre>
+<p>All files are now back where they should be.</p>
+<h4>
+<a aria-hidden="true" class="anchor" href="#summary" id="user-content-summary"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Summary</h4>
+<ul>
+<li>download whole folders as zip,</li>
+<li>delete the .docx converted documents</li>
+<li>run the above Javascript/shell scripts</li>
+<li>
+<code>gdoc</code> files now back in folders as normal and open as expected with <a href="https://github.com/lmmx/devnotes/wiki/Custom-application-to-open-.gdoc-extensions">a custom application</a>
+<img alt="" data-canonical-src="http://i.imgur.com/CfXNbWI.jpg" src="https://camo.githubusercontent.com/d40af44bd5d19ffb9b2178e28dbfa0b9716f4254/687474703a2f2f692e696d6775722e636f6d2f4366584e6257492e6a7067"/>
+</li>
+</ul>
+
+        </div>
+
+        <div class="wiki-footer gollum-markdown-content boxed-group" id="wiki-footer">
+          <div class="boxed-group-inner wiki-auxiliary-content markdown-body">
+            <p><a href="https://github.com/lmmx/devnotes/wiki">Main page</a></p>
+
+          </div>
+        </div>
+    </div>]

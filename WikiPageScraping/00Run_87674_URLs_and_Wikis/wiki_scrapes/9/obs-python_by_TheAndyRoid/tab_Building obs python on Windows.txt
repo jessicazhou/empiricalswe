@@ -1,0 +1,56 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>I use the below script in Jenkins, putting it into a .bat and setting the required variables should get it working.</p>
+<p>This script builds using <strong>Visual Studio Expres 2013</strong><br/>
+You must have <strong>swig</strong> installed on windows and python 3 both these paths need to be set.<br/>
+This script also relies on the location of the previous script building obs-studio in the set directory</p>
+<p>set Arch to be x86 or x64<br/>
+set BuildTarget to be Release or RelWithDebInfo<br/>
+set WORKSPACE to be a location of checked out obs-python<br/>
+Change paths to installation of python and to windows swig binary</p>
+<pre><code>Setlocal EnableDelayedExpansion
+
+echo %Label%
+echo %Arch%
+echo %BuildTarget%
+
+set TARGETBUILD=%BuildTarget%
+set OBSSTUDIOBUILD=R:\rundir\%TARGETBUILD%\obs-studio
+mkdir "%OBSSTUDIOBUILD%"
+set OBSSTUDIOBUILD32=R:\Projects\obs-studio\build32\%TARGETBUILD%
+set OBSSTUDIOBUILD64=R:\Projects\obs-studio\build64\%TARGETBUILD%
+
+
+set OBSPYTHONBUILD32=R:\Projects\obs-python\build32\%TARGETBUILD%
+set OBSPYTHONBUILD64=R:\Projects\obs-python\build64\%TARGETBUILD%
+set OBSPYTHONBUILD=R:\rundir\%BuildTarget%\obs-python\
+
+mkdir "%OBSPYTHONBUILD%"
+
+if "%Arch%" == "x86" (
+    rmdir "!OBSPYTHONBUILD32!" /s /q
+    mkdir "!OBSPYTHONBUILD32!"
+    set PATH=C:\Python34\;C:\Python34\Scripts;!PATH!
+    "C:\Program Files (x86)\CMake\bin\cmake.exe" -B"!OBSPYTHONBUILD32!" -H"!WORKSPACE!" -G "Visual Studio 12 2013" -DLibObs_DIR:PATH="!OBSSTUDIOBUILD32!/libobs" -DSWIG_EXECUTABLE:FILEPATH="C:/Projects/swigwin-3.0.8/swig.exe"
+    call "C:\Program Files (x86)\Microsoft Visual Studio 11.0\Common7\Tools\VsDevCmd.bat"
+    msbuild "!OBSPYTHONBUILD32!\obs-python.sln" /p:VisualStudioVersion=12.0;Configuration=!TARGETBUILD!
+    xcopy "!OBSPYTHONBUILD32!\rundir\!TARGETBUILD!" "!OBSPYTHONBUILD!" /e /d /y /h /r /c
+)
+
+
+if "%Arch%" == "x64" (
+    rmdir "!OBSPYTHONBUILD64!" /s /q
+    mkdir "!OBSPYTHONBUILD64!"
+
+    set PATH=C:\Python34_x64\;C:\Python34_x64\Scripts;!PATH!
+    "C:\Program Files (x86)\CMake\bin\cmake.exe" -B"!OBSPYTHONBUILD64!" -H"!WORKSPACE!" -G "Visual Studio 12 2013 Win64" -DLibObs_DIR:PATH="!OBSSTUDIOBUILD64!/libobs" -DSWIG_EXECUTABLE:FILEPATH="C:/Projects/swigwin-3.0.8/swig.exe"
+    call "C:\Program Files (x86)\Microsoft Visual Studio 11.0\Common7\Tools\VsDevCmd.bat"
+    msbuild "!OBSPYTHONBUILD64!\obs-python.sln" /p:VisualStudioVersion=12.0;Configuration=!TARGETBUILD!
+    xcopy "!OBSPYTHONBUILD64!\rundir\!TARGETBUILD!" "!OBSPYTHONBUILD!" /e /d /y /h /r /c
+
+)
+</code></pre>
+
+        </div>
+
+    </div>]

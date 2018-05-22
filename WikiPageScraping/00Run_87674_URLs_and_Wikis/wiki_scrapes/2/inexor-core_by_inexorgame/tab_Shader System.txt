@@ -1,0 +1,169 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <table>
+<thead>
+<tr>
+<th>Branches</th>
+<th>Issues</th>
+<th>Main Developers</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>none</td>
+<td>-</td>
+<td>
+<em>Blueprint author:</em> <a href="/a-teammate">@a-teammate</a>
+</td>
+</tr>
+</tbody>
+</table>
+<p>This is a blueprint for a new shader system which got the following goals:</p>
+<ul>
+<li>
+<strong>simplicity</strong> for shader artists</li>
+<li>
+<strong>flexibility</strong>
+<ul>
+<li>depending on the targets PCs settings</li>
+</ul>
+</li>
+<li>
+<strong>performance</strong>
+<ul>
+<li>FPS wise</li>
+<li>startup-time wise (optional)</li>
+</ul>
+</li>
+<li>
+<strong>modularity</strong>
+<ul>
+<li>aka sharing shader-slices</li>
+</ul>
+</li>
+</ul>
+<h2>
+<a aria-hidden="true" class="anchor" href="#introduction" id="user-content-introduction"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Introduction</h2>
+<p>Let's start quickly with a summary what shaders are and how they are used in our engine:</p>
+<p>Shaders are programmable stages of your rendering process (rendering = your 3D world gets mapped onto your 2D screen).</p>
+<p>In most cases each shader gets applied only on parts of the 3D-world.
+However in total anything you see when you startup Inexor has gone through such shader stages before.</p>
+<p>The problem which occurs pretty soon when dealing with shaders is that you need a lot of them.<br/>
+That has two reasons:</p>
+<ul>
+<li>You need to deal with a lot of different assets
+<ul>
+<li>with each additional possible input you have alot more possible combinations</li>
+<li>e.g. for textures you got <code>glowspecworld, glowworld, specworld</code> -&gt; <code>bumpglowspecworld, bumpglowworld, bumpspecworld, ..</code>
+</li>
+<li>Sauerbraten deals with this by letting scripts generate the shaders
+<ul>
+<li>not really readable</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>You need to take performance into account, dealing with different target-PCs
+<ul>
+<li>therefore in the Cube2-engine you got different variants of shaders "fastshader", "detailshader", ..
+<ul>
+<li>depending on the artist-written scripts again</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<p><em>(Sidenote: There are other parts of the shader system ofc without those influences e.g. PostFX shaders, the HUD-shader, animation shader)</em></p>
+<p>Furthermore in Sauerbraten the simplification was made (out of historical reasons actually) that we restrict ourselves to the 2 most common (and oldest) shader stages:  The vertex shader and the fragment shader.<br/>
+If we drop this restriction we will even have one additional source of complexity in our shader system (while they might bring us both better performance and better looks).</p>
+<p>So let's try to simplify this stuff for the artists:</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#basic-design" id="user-content-basic-design"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Basic Design</h2>
+<p>Keep it simple.<br/>
+If you touch the code you'll pretty soon come to the conclusion to seperate the cubescripts from the shaders.<br/>
+This is basicly the idea to separate the artistic part from the generating shaders part.<br/>
+However doing this, you'll end up with a lot of duplicated shaders which vary just in pretty little aspects.</p>
+<p>So how can we deal with this?</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#different-assets" id="user-content-different-assets"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Different assets</h3>
+<p>There are actually 2 possible solutions we can choose, however of course both are UI based:</p>
+<h5>
+<a aria-hidden="true" class="anchor" href="#node-based-approach-flowgraph" id="user-content-node-based-approach-flowgraph"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Node based approach (flowgraph)</h5>
+<p>This is the most commonly used one in the big engines.<br/>
+You actually got a lot of abstraction and just draw lines from one part to the other one.
+An example of unitys shader editor you can see <a href="https://d2ujflorbtfzji.cloudfront.net/package-screenshot/EC59CDDA-5417-11E0-9CB0-67250A232548.png" rel="nofollow">here</a>.</p>
+<p>Dealing with different related asset-shaders would mainly mean having different node-chains (e.g. in the same window but with the lines get different colores depending on the target).<br/>
+That is however not the main advantage of this approach, but the modularity you base your abstraction on: you have different functions for different tasks e.g. color modification, advanced filters..<br/>
+You need to write these modules ofc, so we need to provide a template for such modules, but otherwise artists could write them themselves on demand.</p>
+<p><em>(An example of such a graph-based scripting is Hanni's <a href="https://github.com/inexorgame/code/wiki/3-Dimensional-Visual-Scripting-Environment-(3DVS)">3D flowgraph system</a>).</em></p>
+<p>However this is pretty advanced and we probably need to start with something simpler.</p>
+<h5>
+<a aria-hidden="true" class="anchor" href="#text-based-solution" id="user-content-text-based-solution"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Text based solution</h5>
+<p>This approach is less abstracted but tries to retain a similar level of simplicity.<br/>
+The main advantage of it is that we can pretty easily vary one and the same shader (e.g. for <code>bumpspecglowparallaxworld</code>) and just cut features (e.g. cutting it to <code>bumpspecworld</code>).
+We do that by seperating the shader writing from the variant abstraction: You firstly write your most advanced (raw) shader in our 'special' text editor and afterwards just mark parts you for the variants in different colors.
+(+ a filter for seeing that new shader)<br/>
+So the advantage is that you replace the scripts "if-else" statements with an UI.
+I don't know yet whether another engine uses such a system.</p>
+<p>The downside to the node-approach is that you need to get the modularity somehow else again:
+I'd go for a simple preprocessor "#include" system (or "require" or whatever) to obtain predefined functions in other files.</p>
+<p>I don't know whether this approach is done in other engines.</p>
+<p><strong>Conclusion:</strong> The both approaches are not conflicting, but could live in peace together.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#next-step" id="user-content-next-step"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Next step:</h3>
+<p>So what we want to do is establish a user-driven ecosystem similar to the map-system for our modular shaderslices.
+Since that's a performance critical part of the engine and we're speaking about user created content you might rightly become sceptical at this point.</p>
+<p>Our users are probably no experienced shader artists. They do not know how to write fast shaders and probably do not know how to write it to not kill performance on some platforms.<br/>
+So this is where we come to the second part of the shadersystem's complexity: Having different shader versions based on the targets performance needs.</p>
+<p>Previously in Sauerbraten it was solved with little stuff like <code>fastshaders</code>.<br/>
+However this might not be sufficient anymore as soon as more less advanced people start writing shaders.
+Luckily we can cut the need for it completely:</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#automatic-shader-simplification" id="user-content-automatic-shader-simplification"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Automatic shader simplification</h2>
+<p>This part actually only deals with the issue of performance.</p>
+<p>We can devide our optimisation routine in two stages:</p>
+<ul>
+<li>simple optimization</li>
+<li>error based simplification</li>
+</ul>
+<h4>
+<a aria-hidden="true" class="anchor" href="#optimization" id="user-content-optimization"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Optimization</h4>
+<p>The optimization stage is pretty much what some advanced modern GPU-drivers might actually do, but since you have to deal with 3 totally different vendors + a lot of different drivers for each you can't be sure.<br/>
+Additionally our optimisations are possibly more aggressive.</p>
+<p>The aim of this stage is pretty much to sustain the actual shader and just rewrite the code somehow else, so that it will be executed faster (e.g. by using MAD instructions, or e.g. replacing parts with a lot of addition with dot-products.. everything advanced shader programmers do when they optimize their code by hand with the aim for using as less gpu cycles as possible for the instructions).<br/>
+This is pretty much straight forward and we might even find a library for that.</p>
+<p>The important part of our automatic optimisation routine however is more complex:</p>
+<h4>
+<a aria-hidden="true" class="anchor" href="#error-based-simplification" id="user-content-error-based-simplification"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Error Based Simplification</h4>
+<p>Since we want too support a wide range of target PCs we need to give as much control as possible to the client.<br/>
+We can achieve that by the methods presented in the following papers (in most basic to most advanced ordering):</p>
+<ul>
+<li><a href="http://pellacini.di.uniroma1.it/publications/lod05/lod05-paper.pdf" rel="nofollow">User-Configurable Automatic Shader Simplification</a></li>
+<li><a href="https://www.cs.virginia.edu/%7Eweimer/p/sitthiamorn_siga11.pdf" rel="nofollow">Genetic Programming for Shader Simplification
+</a></li>
+<li>[Automatic Shader Simplification using Surface Signal Approximation] (<a href="http://www.cad.zju.edu.cn/home/rwang/projects/shaderopt/14shaderopt.pdf" rel="nofollow">http://www.cad.zju.edu.cn/home/rwang/projects/shaderopt/14shaderopt.pdf</a>)</li>
+</ul>
+<p>Basicly it summarizes to modifying some input shader and measuring the error compared to the original shader. Then the user/client can decide how much error he tolerates.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#implementation" id="user-content-implementation"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Implementation</h2>
+<ul>
+<li>
+</li>
+<li>
+</li>
+<li>
+</li>
+<li>
+</li>
+</ul>
+<p>Later..</p>
+
+        </div>
+
+        <div class="wiki-footer gollum-markdown-content boxed-group" id="wiki-footer">
+          <div class="boxed-group-inner wiki-auxiliary-content markdown-body">
+            <p>Need help? <a class="internal present" href="/inexorgame/inexor-core/wiki/Contact">Contact</a> us.</p>
+
+          </div>
+        </div>
+    </div>]

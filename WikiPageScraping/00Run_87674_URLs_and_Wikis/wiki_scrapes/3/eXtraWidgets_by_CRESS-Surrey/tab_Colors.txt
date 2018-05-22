@@ -1,0 +1,67 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>Just like colors in NetLogo, colors used in the extension can be represented by either a number in the 0 to 140 range, an RGB list or an RGBA list. You can usually ignore this when working with the extension (or NetLogo, for that matter), but it can sometimes be useful to have a deeper understanding. If you haven't already done so, please read the <a href="http://ccl.northwestern.edu/netlogo/docs/programming.html#colors" rel="nofollow"><strong>Colors</strong> section of the NetLogo programming guide</a>.</p>
+<p>One crucial thing to understand is that the set of colors expressible by numbers in NetLogo's 0 to 140 color range is a <em>subset</em> of all possible colors expressible by RGB lists. Some colors are expressible by both a number and a list, but others are only expressible by a list.</p>
+<p>Having two ways to represent colors is not ideal, but it is an acceptable trade-off. Colors-as-lists are more flexible, but colors-as-numbers are much easier to use. In most cases, this cohabitation is unproblematic. Problems arise, however, if you start trying to compare the two...</p>
+<p>Let's say we create three red turtles:</p>
+<pre><code>observer&gt; ca
+observer&gt; crt 3 [ set color red ]
+observer&gt; show [ color ] of turtles
+observer: [15 15 15]
+</code></pre>
+<p><code>red</code> in NetLogo is just a constant for the number 15, so we get colors-as-numbers for our turtles.</p>
+<p>Now let's find out what the RGB list is for the color <code>red</code> using NetLogo's <a href="http://ccl.northwestern.edu/netlogo/docs/dictionary.html#extract-rgb" rel="nofollow"><code>extract-rgb</code></a> reporter:</p>
+<pre><code>observer&gt; show extract-rgb red
+observer: [215 50 41]
+</code></pre>
+<p>OK. Let's use that as the color of one of our turtles:</p>
+<pre><code>observer&gt; ask one-of turtles [ set color [215 50 41] ]
+observer&gt; show [ color ] of turtles
+observer: [15 15 [215 50 41]]
+</code></pre>
+<p>All are still exactly the same color, and they are shown as such in the view, but one of them is now different from the others: its color is stored as a list. And if you ask NetLogo for the <code>red</code> turtles, it won't be included:</p>
+<pre><code>observer&gt; show turtles with [ color = red ]
+observer: (agentset, 2 turtles)
+</code></pre>
+<p>The above command shows the turtles for which the color red is stored as the number <code>15</code> and excludes the turtle for which the color red is stored as the <code>[215 50 41]</code> list.</p>
+<p>To get around this problem, the eXtraWidgets extension treats colors <em>slightly</em> differently: when trying to store a color as a list, it will use the equivalent number instead <em>if there is one</em>.</p>
+<p>To see how this works, let's create three red sliders:</p>
+<pre><code>observer&gt; xw:create-tab "t1"
+observer&gt; foreach ["s1" "s2" "s3"] [ xw:create-slider ? [ xw:set-color red ] ]
+observer&gt; show [ xw:color ] xw:of xw:sliders
+observer: [15 15 15]
+</code></pre>
+<p>Now let's try to set the color of one of those to the list representation of the color red, <code>[215 50 41]</code>:</p>
+<pre><code>observer&gt; xw:ask one-of xw:sliders [ xw:set-color [215 50 41] ]
+observer&gt; show [ xw:color ] xw:of xw:sliders
+observer: [15 15 15]
+</code></pre>
+<p>Hey! Still all numbers! Which means we can do:</p>
+<pre><code>observer&gt; show xw:sliders xw:with [ xw:color = red ]
+observer: ["s1" "s2" "s3"]
+</code></pre>
+<p>Now let's try with a slightly different shade of red, <code>[215 50 40]</code> instead of <code>[215 50 41]</code>:</p>
+<pre><code>observer&gt; xw:ask one-of xw:sliders [ xw:set-color [215 50 40] ]
+observer&gt; show [ xw:color ] xw:of xw:sliders
+observer: [15 [215 50 40 255] 15]
+</code></pre>
+<p>NetLogo cannot represent this particular shade of red in its colors-as-numbers space, so we store it as a list instead. But what's this <code>255</code> number tacked on at the end? It's the "alpha" value: the opacity of the color. <code>255</code> means that the color is fully opaque and <code>0</code> would mean it's completely transparent. The extension always uses RGBA lists (red/green/blue/alpha), even if the color is fully opaque. Again, this helps with comparisons: the RGB list <code>[215 50 40]</code> and the RGBA list <code>[215 50 40 255]</code> represent the same color, and always storing colors-as-lists as RGBA lists makes that obvious.</p>
+<p>One possible downside of our approach is that you cannot be sure that colors that you put in as lists will still be lists when you get them back. To get around this, you can use the following reporter:</p>
+<pre><code>to-report extract-rbga [ c ]
+  if is-number? c [ report lput 255 extract-rgb c ]
+  if is-list? c [
+    if length c = 3 [ report lput 255 c ]
+    if length c = 4 [ report c ]
+    error (word "Expected a list of size 3 or 4 but got " c " instead.")
+  ]
+  error (word "Expected a number or a list but got " c " instead.")
+end
+</code></pre>
+<p>We can use it to extract all colors from our previous example as RGBA lists:</p>
+<pre><code>observer&gt; show [ extract-rbga xw:color ] xw:of xw:sliders
+observer: [[215 50 41 255] [215 50 40 255] [215 50 41 255]]
+</code></pre>
+
+        </div>
+
+    </div>]

@@ -1,0 +1,58 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <h2>
+<a aria-hidden="true" class="anchor" href="#finer-control-via-service-modes" id="user-content-finer-control-via-service-modes"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Finer control via "service modes"</h2>
+<p>Since all cryptocurrencies are open source, many of them have multiple instances
+of block explorers running for public consumption. These multiple services can
+be utilized in various ways to gain various advantages.</p>
+<p>Each blockchain function's high level API function call accepts additional mode arguments.</p>
+<ul>
+<li>
+<p><strong>random</strong> - This method will randomize all sources so it doesn't always call the best service.</p>
+</li>
+<li>
+<p><strong>paranoid</strong> - Integer 2 or greater - Paranoid mode means multiple services will be checked
+and a result will only be returned if all services agree. The number passed in
+is the number of services contacted. Default is 1.</p>
+</li>
+<li>
+<p><strong>average</strong> - Integer 2 or greater. This mode will call the external service multiple
+times and then return the average of returned results. Only applicable for functions that
+return a single numerical value, such as <code>current_price</code>, and <code>get_optimal_fee</code>. For instance,
+if you all <code>get_current_price</code> with <code>average=4</code>, 4 different services will be called to get current price,
+the results will be averaged, and returned.</p>
+</li>
+<li>
+<p><strong>verbose</strong> - True or False - If set to true, there will be extra debugging output</p>
+</li>
+<li>
+<p><strong>private</strong> - Integer greater than 0. This mode is only applicable to endpoints that take multiple
+addresses, (or a single extended public key). This will use a single service for each address. The
+number passed in corresponds to the amount of seconds each of the external calls will be spread
+out over. For instance, if you have 10 addresses you want the balance for, you use mode <code>private=4</code>
+it will make those 10 different calls to 10 different services (chosen at random), and will spread them out
+over a 4 second period. Currently this mode can not be used in tandem with <code>average</code> an <code>paranoid</code>
+modes.</p>
+</li>
+</ul>
+<div class="highlight highlight-source-python"><pre><span class="pl-k">&gt;&gt;</span><span class="pl-k">&gt;</span> <span class="pl-k">from</span> moneywagon <span class="pl-k">import</span> get_address_balance
+<span class="pl-k">&gt;&gt;</span><span class="pl-k">&gt;</span> get_address_balance(<span class="pl-s"><span class="pl-pds">'</span>btc<span class="pl-pds">'</span></span>, <span class="pl-s"><span class="pl-pds">'</span>1HWpyFJ7N6rvFkq3ZCMiFnqM6hviNFmG5X<span class="pl-pds">'</span></span>, <span class="pl-v">paranoid</span><span class="pl-k">=</span><span class="pl-c1">2</span>, <span class="pl-v">random</span><span class="pl-k">=</span><span class="pl-c1">True</span>)
+<span class="pl-c1">0.0002</span></pre></div>
+<p>In the above example, two calls will be made to two different services. One goes to the
+first address balance service defined for BTC, and then another call will be made to the
+second defined address balance service. In the case of the BTC currency, the first and second
+services are BlockCypher and Blockr. To see which services are programmed to which
+currencies, refer to the <code>crypto_data</code> module.</p>
+<p>You can also pass in an explicit set of services:</p>
+<div class="highlight highlight-source-python"><pre><span class="pl-k">&gt;&gt;</span><span class="pl-k">&gt;</span> <span class="pl-k">from</span> moneywagon <span class="pl-k">import</span> get_address_balance
+<span class="pl-k">&gt;&gt;</span><span class="pl-k">&gt;</span> <span class="pl-k">from</span> moneywagon.services <span class="pl-k">import</span> Toshi, BlockchainInfo
+<span class="pl-k">&gt;&gt;</span><span class="pl-k">&gt;</span> s <span class="pl-k">=</span> [Toshi, BlockchainInfo]
+<span class="pl-k">&gt;&gt;</span><span class="pl-k">&gt;</span> get_address_balance(<span class="pl-s"><span class="pl-pds">'</span>btc<span class="pl-pds">'</span></span>, <span class="pl-s"><span class="pl-pds">'</span>1HWpyFJ7N6rvFkq3ZCMiFnqM6hviNFmG5X<span class="pl-pds">'</span></span>, <span class="pl-v">services</span><span class="pl-k">=</span>s, <span class="pl-v">random</span><span class="pl-k">=</span><span class="pl-c1">True</span>)
+<span class="pl-c1">0.0002</span></pre></div>
+<p>In this example, one single call will be made to either Blockchain.info or Toshi (chosen at random).
+If one of those services happens to be down at the moment, then the other one will be called and its
+value returned.</p>
+
+        </div>
+
+    </div>]

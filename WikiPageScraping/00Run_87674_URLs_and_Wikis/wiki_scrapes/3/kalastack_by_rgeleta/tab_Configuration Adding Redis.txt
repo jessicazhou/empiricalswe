@@ -1,0 +1,50 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <h1>
+<a aria-hidden="true" class="anchor" href="#not-tested" id="user-content-not-tested"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>NOT TESTED</h1>
+<p>Sharing my notes on how to install Redis as a caching backend for local environments. May not</p>
+<ol>
+<li>Install Redis Server <br/><code>$ sudo apt-get install redis-server</code>
+</li>
+<li>Install the <a href="https://github.com/nicolasff/phpredis">phpredis</a> library.</li>
+<li>To target your local environment variables, create a unique environment variable:</li>
+</ol>
+<div class="highlight highlight-source-shell"><pre>$ sudo nano /etc/nginx/fastcgi_params
+...
+<span class="pl-c"><span class="pl-c">#</span> Set redis on</span>
+fastcgi_param REDIS on<span class="pl-k">;</span></pre></div>
+<ol start="4">
+<li>Within the site's settings.php you can now configure settings without effecting another environment. Please make sure to read the <a href="http://cgit.drupalcode.org/redis/tree/README.txt" rel="nofollow">README.txt</a> in the redis module and make sure the redis module is enabled <em>after</em> you restart kalastack.</li>
+</ol>
+<div class="highlight highlight-text-html-php"><pre><span class="pl-s1"><span class="pl-c"><span class="pl-c">/**</span></span></span>
+<span class="pl-s1"><span class="pl-c"> * Settings for local environments with redis enabled.</span></span>
+<span class="pl-s1"><span class="pl-c"> <span class="pl-c">*/</span></span></span>
+<span class="pl-s1"><span class="pl-k">if</span> (<span class="pl-c1">isset</span>(<span class="pl-smi">$_SERVER</span>[<span class="pl-s"><span class="pl-pds">'</span>REDIS<span class="pl-pds">'</span></span>]) <span class="pl-k">&amp;&amp;</span>  <span class="pl-smi">$_SERVER</span>[<span class="pl-s"><span class="pl-pds">'</span>REDIS<span class="pl-pds">'</span></span>] <span class="pl-k">===</span> <span class="pl-s"><span class="pl-pds">'</span>on<span class="pl-pds">'</span></span>) {</span>
+<span class="pl-s1">  <span class="pl-smi">$conf</span>[<span class="pl-s"><span class="pl-pds">'</span>site_name<span class="pl-pds">'</span></span>] <span class="pl-k">=</span> <span class="pl-s"><span class="pl-pds">'</span>Greenbiz Local Redis Enabled<span class="pl-pds">'</span></span>;</span>
+<span class="pl-s1">  <span class="pl-smi">$conf</span>[<span class="pl-s"><span class="pl-pds">'</span>redis_client_interface<span class="pl-pds">'</span></span>] <span class="pl-k">=</span> <span class="pl-s"><span class="pl-pds">'</span>PhpRedis<span class="pl-pds">'</span></span>;</span>
+<span class="pl-s1">  <span class="pl-smi">$conf</span>[<span class="pl-s"><span class="pl-pds">'</span>cache_backends<span class="pl-pds">'</span></span>][] <span class="pl-k">=</span> <span class="pl-s"><span class="pl-pds">'</span>sites/all/modules/contrib/redis/redis.autoload.inc<span class="pl-pds">'</span></span>;</span>
+<span class="pl-s1">  <span class="pl-smi">$conf</span>[<span class="pl-s"><span class="pl-pds">'</span>cache_default_class<span class="pl-pds">'</span></span>] <span class="pl-k">=</span> <span class="pl-s"><span class="pl-pds">'</span>Redis_Cache<span class="pl-pds">'</span></span>;</span>
+<span class="pl-s1">  <span class="pl-c"><span class="pl-c">//</span> Make sure that we don't have collisions here</span></span>
+<span class="pl-s1">  <span class="pl-smi">$conf</span>[<span class="pl-s"><span class="pl-pds">'</span>cache_prefix<span class="pl-pds">'</span></span>] <span class="pl-k">=</span> <span class="pl-c1">array</span>(<span class="pl-s"><span class="pl-pds">'</span>default<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-s"><span class="pl-pds">'</span>kalabox<span class="pl-pds">'</span></span>);</span>
+<span class="pl-s1">  <span class="pl-c"><span class="pl-c">//</span> Do not use Redis for cache_form (no performance difference).</span></span>
+<span class="pl-s1">  <span class="pl-smi">$conf</span>[<span class="pl-s"><span class="pl-pds">'</span>cache_class_cache_form<span class="pl-pds">'</span></span>] <span class="pl-k">=</span> <span class="pl-s"><span class="pl-pds">'</span>DrupalDatabaseCache<span class="pl-pds">'</span></span>;</span>
+<span class="pl-s1">  <span class="pl-c"><span class="pl-c">//</span> Don't use Redis for Views cache, has caused some display issues.</span></span>
+<span class="pl-s1">  <span class="pl-smi">$conf</span>[<span class="pl-s"><span class="pl-pds">'</span>cache_class_cache_views<span class="pl-pds">'</span></span>] <span class="pl-k">=</span> <span class="pl-s"><span class="pl-pds">'</span>DrupalDatabaseCache<span class="pl-pds">'</span></span>;</span>
+<span class="pl-s1">  <span class="pl-smi">$conf</span>[<span class="pl-s"><span class="pl-pds">'</span>cache_class_cache_views_data<span class="pl-pds">'</span></span>] <span class="pl-k">=</span> <span class="pl-s"><span class="pl-pds">'</span>DrupalDatabaseCache<span class="pl-pds">'</span></span>;</span>
+<span class="pl-s1">  <span class="pl-c"><span class="pl-c">//</span> Use Redis for Drupal locks (semaphore).</span></span>
+<span class="pl-s1">  <span class="pl-smi">$conf</span>[<span class="pl-s"><span class="pl-pds">'</span>lock_inc<span class="pl-pds">'</span></span>] <span class="pl-k">=</span> <span class="pl-s"><span class="pl-pds">'</span>sites/all/modules/contrib/redis/redis.lock.inc<span class="pl-pds">'</span></span>;</span>
+<span class="pl-s1">}</span>
+<span class="pl-s1"></span></pre></div>
+<ol start="5">
+<li>Restart and notice the speed increase, hopefully.</li>
+</ol>
+
+        </div>
+
+        <div class="wiki-footer gollum-markdown-content boxed-group" id="wiki-footer">
+          <div class="boxed-group-inner wiki-auxiliary-content markdown-body">
+            <p>Copyright © 2014 Kalamuna, LLC</p>
+
+          </div>
+        </div>
+    </div>]

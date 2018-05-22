@@ -1,0 +1,101 @@
+[<div class="wiki-body gollum-textile-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>[22:47:59]  	Sirp:  I’m trying to make sense of /frogatto/data/object_prototypes/foliage.cfg  since that’s what I imagine I’d be imitating to do this custom_object replacement<br/>
+[22:48:33]  	Jetrel: what tech is it that we’re replacing it with exactly?<br/>
+[22:49:10]  	Sirp:  I expect you know better than me:  https://github.com/frogatto/frogatto/blob/master/data/object_prototypes/foliage.cfg<br/>
+[22:49:59]  	Sirp:  there are some nice utility functions I wrote in this object:  https://github.com/frogatto/frogatto/blob/master/data/objects/props-interactive/obstacles/fungus_bracket_springy.cfg<br/>
+[22:50:36]  	Sirp:  essentially I can use them to convert any and all current custom_draw commands into a [-1, 1] normalized cartesian space<br/>
+[22:51:25]  	Basically the resulting data structure is:  <a class="internal absent" href="/Autofire/frogatto/wiki/%5Bdecimal%2C-decimal%5D%2C-%5Bdecimal%2Cdecimal">[decimal, decimal], [decimal,decimal</a>]<br/>
+[22:51:44]  	Where these are:  <a class="internal absent" href="/Autofire/frogatto/wiki/x%2C-y%5D%2C-%5Bu%2Cv">x, y], [u,v</a> pairs<br/>
+[22:52:02]  	That’s what I’d like to have a shader command that can work with.<br/>
+[22:52:40]  	Jetrel: okay just checking<br/>
+[22:53:07]  	I’d like to write something nice and generic that can take a list of arbitrary length like that, and just do a plain old uv mapping of our un-warped sprite, to a final warped blit.<br/>
+[22:53:27]  	I thought we already replaced the foliage with my new approach? We didn’t do that?<br/>
+[22:53:56]  	We did, and I don’t know how to get from there to here.<br/>
+[22:54:25]  	There’s a lot of stuff inside the shader: {} block I don’t understand.<br/>
+[22:56:26]  	Jetrel: so sorry, to be clear here what we want to do is take the stuff in foliage.cfg and replicate it into other objects that use custom_draw ?<br/>
+[22:56:30]  	so we can eliminate custom_draw ?<br/>
+[22:56:40]  	Sirp:  yes, more or less.<br/>
+[22:57:18]  	Sirp:  but we need to ease me into understanding this, because all I ‘grok’ is what I did in fungus_bracket_springy.cfg<br/>
+[22:57:44]  	I had great difficulty understanding this in the edge-based coordinates. :/<br/>
+[22:57:47]  	sure.<br/>
+[22:59:45]  	so for example, the first big item I don’t understand is what the significance of the different variables declared at the top are.<br/>
+[23:00:03]  	besides perhaps “u_anura_cycle”<br/>
+[23:03:10]  	Jetrel: okay so firstly let’s have an overview<br/>
+[23:03:16]  	in vertex: " … " we have a <strong>vertex shader</strong><br/>
+[23:04:54]  	a vertex shader’s job is to determine the xy and uv points.<br/>
+[23:05:14]  	so it wants to output to gl_Position the xy point at which drawing will take place<br/>
+[23:05:33]  	and it wants to output to v_texcoord the uv point on the texture at which drawing will take place<br/>
+[23:05:46]  	so those are its outputs — gl_Position is the xy output and v_texcoord is the uv output<br/>
+[23:06:08]  	okay<br/>
+[23:06:32] <span>DDR</span>	takes notes<br/>
+[23:06:33]  	u_anura_mvp_matrix is just the OpenGL transformation matrix that is currently applied. It should be multiplied through at the end if we want to honor OpenGL transforms (which we do)<br/>
+[23:07:00]  	a_anura_vertex is the <strong>input</strong> xy position<br/>
+[23:07:14]  	a_anura_texcoord is the <strong>input</strong> uv position<br/>
+[23:08:05]  	so a “trivial” shader would just do a straightthrough gl_Position = a_anura_vertex*u_anura_mvp_matrix; v_texcoord = a_anura_texcoord;<br/>
+[23:08:08]  	and be done<br/>
+[23:08:39]  	in this shader you’ll see we DO do a ‘straightthrough’ of the uv co-ordinates. We don’t touch them. We play with the xy co-ordinates though<br/>
+[23:09:06]  	Okay, that makes sense.<br/>
+[23:09:52]  	Jetrel: so the last two inputs are u_anura_sprite_area and u_anura_draw_area<br/>
+[23:10:01]  	these are each rectangles (NB: vec4)<br/>
+[23:10:23]  	What’s up with the “vec” there?<br/>
+[23:10:26]  	Jetrel: they give you the <strong>context</strong> of where your xy and uv co-ordinates are.<br/>
+[23:10:38]  	Jetrel: vec4 just means a [float,float,float,float]<br/>
+[23:11:10]  	okay…  xywh?  xyx2y2?<br/>
+[23:11:20]  	xyx2y2<br/>
+[23:11:29]  	so you’ll notice some parameters are uniforms<br/>
+[23:11:32]  	some are attributes<br/>
+[23:11:46]  	remember this vertex shader is being run in parallel on all the vertices at once<br/>
+[23:11:58]  	a <strong>uniform</strong> is a value that is the same for every vertex in an object<br/>
+[23:12:08]  	an <strong>attribute</strong> is a value that is different for every vertex<br/>
+[23:12:35]  	hmmm<br/>
+[23:12:37]  	uh<br/>
+[23:12:54]  	Sirp:  we’re placing these types on values that are already, inherently, of that nature?<br/>
+[23:12:58]  	i.e.<br/>
+[23:13:27]  	so when drawing a foliage object, all of the vertices get told the same u_anura_draw_area — this is the rectangle encompassing all the vertexes being drawn<br/>
+[23:13:39]  	“attribute vec4 a_anura_vertex is the <strong>input</strong> xy position” →  this varies because just by definition, if we have several different vertices at different positions, those are different numbers?<br/>
+[23:13:52]  	So that’s “why” we make it an attribute, yes?<br/>
+[23:15:07]  	Right. Basically these are inputs that Anura allows you to declare in your shader. Anura looks for a uniform called u_anura_sprite_area and populates it if it exists in the shader.<br/>
+[23:15:29]  	likewise, it looks for an attribute, a_anura_vertex and populates it if it exists in the shader.<br/>
+[23:15:34]  	uhm<br/>
+[23:15:44]  	Yeah, the predicate of those last two sentences has me lost<br/>
+[23:15:57]  	what do you mean?<br/>
+[23:16:31]  	hmmm<br/>
+[23:17:15]  	basically this shader is a nice little reference on the input values Anura recognizes in a shader. You can copy them for other shaders.<br/>
+[23:17:22]  	Anura looks for a uniform called u_anura_sprite_area and populates it if it exists in the shader. →  "so, by declaring attribute vec4 a_anura_vertex; on line 14, this means that when Anura tries to parse the shader declared between lines 18 and 56, it will use this as the declaration for that value.<br/>
+[23:17:28]  	you can also declare inputs with different names, and pass them in using <span>FFL</span><br/>
+[23:17:58]  	Jetrel: no not quite.<br/>
+[23:18:08]  	Jetrel: what I mean is this…<br/>
+[23:18:19]  	everything inside vertex: " … " is nothing Anura parses directly<br/>
+[23:18:25]  	…  however, I can’t figure out where it originally gets those values from – are all of these declarations things that match up with engine builtin values provided to every shader when it runs?<br/>
+[23:18:31]  	it takes the entire string and gives it to the OpenGL <span>GLSL</span> implementation<br/>
+[23:18:43]  	Jetrel: right, exactly<br/>
+[23:19:11]  	Jetrel: so what happens is it takes this entire string and tells OpenGL to build a shader out of it<br/>
+[23:19:48]  	Sirp:  right, so within our <span>GLSL</span> implementation, we have “special meanings” for those strings?<br/>
+[23:19:51]  	then it queries the shader object OpenGL has. It says “Do you by chance have a uniform u_anura_sprite_area? It should be a vec4. It is? Okay great I’m going to populate it with the sprite area value I have.”<br/>
+[23:19:55]  	Jetrel: exactly<br/>
+[23:20:06]  	anything with <em>anura</em> in the name is an “Anura builtin”<br/>
+[23:20:14]  	Okay, wonderful.  That makes sense. :)<br/>
+[23:20:29]  	then if you want you can make your own shader parameters and use <span>FFL</span> to pass<br/>
+[23:20:46]  	Sirp:  so other than those builtins (and the business you’re about to describe) we have no access to our surrounding object.<br/>
+[23:20:46]  	we have examples in Argentum Age which do this.<br/>
+[23:20:56]  	Jetrel: correct.<br/>
+[23:21:02]  	Great.<br/>
+[23:21:10]  	anything you want the shader to know about you have to pass in either the Anura builtins or by using <span>FFL</span> to do it.<br/>
+[23:21:43]  	Jetrel: also note that to set all this up, you set an object’s uv_segments using <span>FFL</span> to give it the desired number of vertices.<br/>
+[23:22:11]  	So really on those variable declarations – you’re <strong>not</strong> making up new variables, you’re instead providing a list of existing builtins you want to opt into.<br/>
+[23:22:29]  	Jetrel: right, exactly.<br/>
+[23:22:35]  	Okay, good, that makes sense.<br/>
+[23:34:27]  	so besides the foliage, we’ve got 15 objects which use custom_draw.  Of these, some 10 or so are just cheap “perspective tricks”.<br/>
+[23:34:48]  	(done to give a 2d object an illusion of being a slightly 3d object)<br/>
+[23:36:03]  	Those ought to be reasonably easy to convert – after that, though, there’s a much more complex set of 5-6 objects that do some fairly involved things.<br/>
+[23:36:17]  	Jetrel: note that if you are just doing it <strong>once</strong> you can use xy_array and uv_array. I would caution against editing this from <span>FFL</span> every frame though.</p>
+        </div>
+
+        <div class="wiki-footer gollum-markdown-content boxed-group" id="wiki-footer">
+          <div class="boxed-group-inner wiki-auxiliary-content markdown-body">
+            <p>More help can be found via IRC, <a href="irc://irc.freenode.net/#frogatto" rel="nofollow">#Frogatto</a> on freenode.net. This wiki is not a complete reference.</p>
+
+          </div>
+        </div>
+    </div>]

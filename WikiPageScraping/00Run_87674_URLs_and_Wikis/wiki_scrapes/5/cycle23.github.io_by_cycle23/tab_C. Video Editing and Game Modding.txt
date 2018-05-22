@@ -1,0 +1,113 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p><a href="https://github.com/cycle23/cycle23.github.io/wiki/C.3.--Cities-Skylines-Object-not-Found-Asset-error">https://github.com/cycle23/cycle23.github.io/wiki/C.3.--Cities-Skylines-Object-not-Found-Asset-error</a></p>
+<h1>
+<a aria-hidden="true" class="anchor" href="#sims4-and-adobe-premiere-editing" id="user-content-sims4-and-adobe-premiere-editing"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Sims4 and Adobe Premiere Editing</h1>
+<p>A side project involves use of Sims4 and Adobe Premiere.</p>
+<p>More info here if I want to then inject videos back into the game:
+<a href="http://www.modthesims.info/showthread.php?t=533897" rel="nofollow">Replace TV Programs in Sims4</a></p>
+<p>More <a href="http://www.reddit.com/r/sims4Cheats/wiki/index" rel="nofollow">info here for Sims 4 cheats</a> that also help get desired effects.</p>
+<p>Saving the videos Uncompressed seems to fail badly at high quality. The next level down is a good 30fps and 1024x576. However, trying to import that seems to fail during export to H.264 and also has artifacts seen during preview. The medium level outputs at 15fps. Doesn't help to change resolution.</p>
+<h1>
+<a aria-hidden="true" class="anchor" href="#vlc" id="user-content-vlc"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>VLC</h1>
+<p>I installed the <a href="http://www.vlccodec.com/" rel="nofollow">VLC codec extension package</a> as well as a <a href="http://en.wikipedia.org/wiki/VP6" rel="nofollow">VP6/VP62</a> <a href="http://marc.simon999.free.fr/vp6_vfw_codec.exe" rel="nofollow">codec package</a>.</p>
+<p>Didn't seem to help Premiere altogether as the feed there is glitchy. Maybe it uses some other decoder for VP6.</p>
+<p>What did help was using VLC to re-encode as <a href="http://en.wikipedia.org/wiki/VP8" rel="nofollow">VP8</a>, which now allows clean video editing and previews. It was a costly jump at first, but worth it.</p>
+<p>From bat file:</p>
+<pre><code>for %%a in (*.avi) do "C:\Program Files\VideoLAN\VLC\vlc" --encoder=VP80 \
+    --extraintf=http:logger --verbose=2 --file-logging --logfile=convert.txt -I dummy "%%a" \
+   --sout=#transcode{vcodec=VP80,acodec=mp3}:standard{access=file,mux=avi,dst="%%~na"_vp8.avi} \
+   vlc://quit
+</code></pre>
+<p>Important to note you must specify the codec in uppercase, at least on Windows. I chased that one for a while before it finally clicked.</p>
+<p>After a bit of editing I am trying to do further conversions with 4096 video bitrate and audio-sync options in transcode:</p>
+<pre><code>#transcode{vcodec=VP80,acodec=mp3,vb=4096,ab=192,channels=2,audio-sync}
+</code></pre>
+<p>Tried 10Mbps and 350kbps for audio/video and had similar results.</p>
+<p>The glitches in video seem to come from the original source in some instances. The audio sync issue is introduced during transcoding. Looking into constant bit rate vs. variable. May need to extract the audio separately and patch the wav back in after the fact.</p>
+<p>Tried the vlc "threads=" option but I think that is probably requiring a special build. It seemed to divide the job, but only run one thread.</p>
+<h1>
+<a aria-hidden="true" class="anchor" href="#handbrake" id="user-content-handbrake"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>HandBrake</h1>
+<p><a href="https://handbrake.fr/" rel="nofollow">HandBrake</a> is a nifty free tool that is allowing me to get more fine grained control on transcoding. I believe I can get to most of these options via vlc, but for now, the main thing is being able to set a constant framerate. Perhaps forcing "fps=30" is the way to go on VLC.  (note: that did not help)</p>
+<p>I'm using H.264 at "Fast" level, constant 30fps, etc.</p>
+<p>Using "Very Fast" had no noticeable quality drop and was 3x faster during encoding.</p>
+<p>File sizes are 3x bigger than before, but that should not be an issue.</p>
+<h1>
+<a aria-hidden="true" class="anchor" href="#sims-4-video-recording-options" id="user-content-sims-4-video-recording-options"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Sims 4 Video Recording Options</h1>
+<p>It turns out I can change to 10000 bitrate on the initial dump, although I tried to just use "vp8", but it did not change the artifact issue in Premiere, so sticking to the vp6 and HandBrake conversion.</p>
+<p><a href="http://kotaku.com/small-ways-to-make-your-sims-4-experience-way-better-1630713426" rel="nofollow">Sims 4 Tips</a></p>
+<p>And also saving at 1920x1080.</p>
+<pre><code>[VideoRecording]
+LowQuality = video:vp6, audio:adpcm, fps:10.0, bitrate:1000
+MediumQuality = video:vp6, audio:adpcm, fps:30.0, bitrate:4000
+HighQuality = video:vp6, audio:adpcm, fps:30.0, bitrate:10000
+MaxQuality = video:rgb24, audio:adpcm, fps:30.0, bitrate:10000
+Small = 320, 0
+Medium = 640, 0
+Large = 1920, 1080
+</code></pre>
+<p>Using TAB camera mode and other settings allow even more fine grained camera control as well as field of view.</p>
+<p><a href="https://www.youtube.com/watch?v=KNVB0_OWKCw" rel="nofollow">Video Hints for Sims4 Camera</a></p>
+<h1>
+<a aria-hidden="true" class="anchor" href="#blu-ray" id="user-content-blu-ray"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Blu Ray</h1>
+<p>I also had a little fun today with blu ray. In the end, the way to get that solved was to install mkvtoolnix and UI to rip the content that I owned because there was otherwise no way to play it on the system direct from blu ray.</p>
+
+        </div>
+
+        <div class="wiki-footer gollum-markdown-content boxed-group" id="wiki-footer">
+          <div class="boxed-group-inner wiki-auxiliary-content markdown-body">
+            <ul>
+<li>
+<p><a class="internal present" href="/cycle23/cycle23.github.io/wiki/0.-History-leadup">History, Lead Up</a></p>
+</li>
+<li>
+<p><a class="internal present" href="/cycle23/cycle23.github.io/wiki/1.-First-steps%2C-purescript-is-magic">Purescript is Magic</a></p>
+</li>
+<li>
+<p><a class="internal present" href="/cycle23/cycle23.github.io/wiki/Z.1.-ReactiveJS-Sections">ReactiveJS</a>
+&lt;- Click here for breakdown of sections within these parts.</p>
+<ul>
+<li><a class="internal present" href="/cycle23/cycle23.github.io/wiki/2.-Initial-ReactiveJS-Port">ReactiveJS Part 1: Reactive Donkey</a></li>
+<li><a class="internal present" href="/cycle23/cycle23.github.io/wiki/B.-ReactiveJS-Part-2%3A-Completed-LearnRX">ReactiveJS Part 2: Learn RX</a></li>
+<li><a class="internal present" href="/cycle23/cycle23.github.io/wiki/F.-RXJs-Design-Principles">ReactiveJs Part 3: Design Guidelines and Examples</a></li>
+<li><a class="internal present" href="/cycle23/cycle23.github.io/wiki/G.-RxJS-Donkey-Refactor">ReactiveJs Part 4: Refactor Donkey</a></li>
+</ul>
+</li>
+<li>
+<p><a class="internal present" href="/cycle23/cycle23.github.io/wiki/A.-Audio-Break">Audio Break</a></p>
+<ul>
+<li><a class="internal present" href="/cycle23/cycle23.github.io/wiki/A.1.-WebAudioX">WebAudioX</a></li>
+<li><a class="internal present" href="/cycle23/cycle23.github.io/wiki/A.2.-iOS-Audio-Combined-with-RXJs-Issues">iOS Issues</a></li>
+<li><a class="internal present" href="/cycle23/cycle23.github.io/wiki/A.3.-Debugging-jquery.mb.audio">Debugging jquery.mb.audio</a></li>
+<li><a class="internal present" href="/cycle23/cycle23.github.io/wiki/A.4.-HowlerJS---WebAudio-with-HTML5-Audio-fallback">HowlerJS for WebAudio</a></li>
+</ul>
+</li>
+<li>
+<p><a class="internal present" href="/cycle23/cycle23.github.io/wiki/C.-Video-Editing-and-Game-Modding">Video Editing and Game Modding</a></p>
+<ul>
+<li><a class="internal present" href="/cycle23/cycle23.github.io/wiki/C.1.-Sims4-Modding">Sims 4 Python</a></li>
+</ul>
+</li>
+<li>
+<p><a class="internal present" href="/cycle23/cycle23.github.io/wiki/D.-Ramda">Ramda Functional Javascript</a></p>
+</li>
+<li>
+<p><a class="internal present" href="/cycle23/cycle23.github.io/wiki/E.-Javascript-Testing">Javascript Testing</a></p>
+<ul>
+<li><a class="internal present" href="/cycle23/cycle23.github.io/wiki/E.1.-Testing-with-QUnit">Testing with QUnit</a></li>
+</ul>
+</li>
+<li>
+<p><a class="internal present" href="/cycle23/cycle23.github.io/wiki/H.-Angular-Donkey">AngularJs Part 1: Angular Donkey</a></p>
+</li>
+<li>
+<p><a class="internal present" href="/cycle23/cycle23.github.io/wiki/I.-Android-Development">Android Development</a></p>
+</li>
+<li>
+<p><a class="internal present" href="/cycle23/cycle23.github.io/wiki/Z.-Appendix">Appendix, references</a></p>
+</li>
+</ul>
+
+          </div>
+        </div>
+    </div>]

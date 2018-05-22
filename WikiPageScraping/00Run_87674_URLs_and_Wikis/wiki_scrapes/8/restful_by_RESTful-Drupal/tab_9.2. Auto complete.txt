@@ -1,0 +1,104 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>This is a sample implementation of auto-complete, using RESTful on the back end, and Angular on the client side, shared by <a href="https://github.com/adam-s">@adam-s</a>.</p>
+<p>The complete server code is at <a href="https://github.com/adam-s/954live/tree/master/livesource/src/Plugin/resource/livesearch">https://github.com/adam-s/954live/tree/master/livesource/src/Plugin/resource/livesearch</a> and the complete client side code is at <a href="https://github.com/adam-s/954live/tree/master/livesearch">https://github.com/adam-s/954live/tree/master/livesearch</a>.</p>
+<hr/>
+<p>My solution was to use a filter on the 'name' public field with an operator 'CONTAINS' and to make sure things didn't get crazy, added a 'range' of 10.</p>
+<div class="highlight highlight-source-js"><pre><span class="pl-k">var</span> url <span class="pl-k">=</span> <span class="pl-s"><span class="pl-pds">'</span>/api/v1.6/artists?filter[name][value]=<span class="pl-pds">'</span></span>
+  <span class="pl-k">+</span> <span class="pl-c1">encodeURIComponent</span>(queryString)
+  <span class="pl-k">+</span> <span class="pl-s"><span class="pl-pds">'</span>&amp;filter[name][operator]=CONTAINS&amp;range=10<span class="pl-pds">'</span></span>
+  <span class="pl-k">+</span> <span class="pl-s"><span class="pl-pds">'</span>&amp;filter[bundle]=<span class="pl-pds">'</span></span>
+  <span class="pl-k">+</span> <span class="pl-c1">encodeURIComponent</span>(bundle);</pre></div>
+<p>Where things get fun is there are two different bundles that a user can search for, in this case, artists or venues. So a bundle property is defined on public fields. Using the ability to define a wrapper_method, getBundle is used to return a bundle name to filter on.</p>
+<div class="highlight highlight-text-html-php"><pre><span class="pl-pse">&lt;?php</span><span class="pl-s1"></span>
+<span class="pl-s1"><span class="pl-c"><span class="pl-c">/**</span></span></span>
+<span class="pl-s1"><span class="pl-c"> * Maps to ArtistStyle</span></span>
+<span class="pl-s1"><span class="pl-c"> <span class="pl-c">*/</span></span></span>
+<span class="pl-s1"></span>
+<span class="pl-s1"><span class="pl-k">namespace</span> <span class="pl-en">Drupal\livesource\Plugin\resource\entity\node\artists</span>;</span>
+<span class="pl-s1"></span>
+<span class="pl-s1"><span class="pl-k">use</span> <span class="pl-c1">Drupal\restful\Plugin\resource\ResourceNode</span>;</span>
+<span class="pl-s1"></span>
+<span class="pl-s1"><span class="pl-c"><span class="pl-c">/**</span></span></span>
+<span class="pl-s1"><span class="pl-c"> * Class Artist__1_6</span></span>
+<span class="pl-s1"><span class="pl-c"> * <span class="pl-k">@package</span> Drupal\livesource\Plugin\resource\entity\node\artists</span></span>
+<span class="pl-s1"><span class="pl-c"> *</span></span>
+<span class="pl-s1"><span class="pl-c"> * @Resource(</span></span>
+<span class="pl-s1"><span class="pl-c"> *   name = "artists:1.6",</span></span>
+<span class="pl-s1"><span class="pl-c"> *   resource = "artists",</span></span>
+<span class="pl-s1"><span class="pl-c"> *   label = "Artists",</span></span>
+<span class="pl-s1"><span class="pl-c"> *   description = "Export the artists with all authentication providers.",</span></span>
+<span class="pl-s1"><span class="pl-c"> *   authenticationTypes = TRUE,</span></span>
+<span class="pl-s1"><span class="pl-c"> *   authenticationOptional = TRUE,</span></span>
+<span class="pl-s1"><span class="pl-c"> *   dataProvider = {</span></span>
+<span class="pl-s1"><span class="pl-c"> *     "entityType": "node",</span></span>
+<span class="pl-s1"><span class="pl-c"> *     "bundles": {</span></span>
+<span class="pl-s1"><span class="pl-c"> *       "artists",</span></span>
+<span class="pl-s1"><span class="pl-c"> *       "venues"</span></span>
+<span class="pl-s1"><span class="pl-c"> *     },</span></span>
+<span class="pl-s1"><span class="pl-c"> *   },</span></span>
+<span class="pl-s1"><span class="pl-c"> *   majorVersion = 1,</span></span>
+<span class="pl-s1"><span class="pl-c"> *   minorVersion = 6</span></span>
+<span class="pl-s1"><span class="pl-c"> * )</span></span>
+<span class="pl-s1"><span class="pl-c"> <span class="pl-c">*/</span></span></span>
+<span class="pl-s1"></span>
+<span class="pl-s1"><span class="pl-k">class</span> <span class="pl-en">Artists__1_6</span> <span class="pl-k">extends</span> <span class="pl-e">ResourceNode</span> {</span>
+<span class="pl-s1"></span>
+<span class="pl-s1">    <span class="pl-c"><span class="pl-c">/**</span></span></span>
+<span class="pl-s1"><span class="pl-c">     * {@inheritdoc</span></span>
+<span class="pl-s1"><span class="pl-c">     <span class="pl-c">*/</span></span></span>
+<span class="pl-s1">    <span class="pl-k">protected</span> <span class="pl-k">function</span> <span class="pl-en">publicFields</span>() {</span>
+<span class="pl-s1"></span>
+<span class="pl-s1">        <span class="pl-smi">$public_fields</span> <span class="pl-k">=</span> <span class="pl-k">parent</span><span class="pl-k">::</span>publicFields();</span>
+<span class="pl-s1">        <span class="pl-smi">$public_fields</span>[<span class="pl-s"><span class="pl-pds">'</span>name<span class="pl-pds">'</span></span>] <span class="pl-k">=</span> <span class="pl-smi">$public_fields</span>[<span class="pl-s"><span class="pl-pds">'</span>label<span class="pl-pds">'</span></span>];</span>
+<span class="pl-s1">        <span class="pl-c1">unset</span>(<span class="pl-smi">$public_fields</span>[<span class="pl-s"><span class="pl-pds">'</span>label<span class="pl-pds">'</span></span>]);</span>
+<span class="pl-s1"></span>
+<span class="pl-s1">        <span class="pl-smi">$public_fields</span>[<span class="pl-s"><span class="pl-pds">'</span>bundle<span class="pl-pds">'</span></span>] <span class="pl-k">=</span> <span class="pl-c1">array</span>(</span>
+<span class="pl-s1">            <span class="pl-s"><span class="pl-pds">'</span>wrapper_method<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-s"><span class="pl-pds">'</span>getBundle<span class="pl-pds">'</span></span>,</span>
+<span class="pl-s1">            <span class="pl-s"><span class="pl-pds">'</span>wrapper_method_on_entity<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-c1">TRUE</span>,</span>
+<span class="pl-s1">        );</span>
+<span class="pl-s1"></span>
+<span class="pl-s1">        <span class="pl-k">return</span> <span class="pl-smi">$public_fields</span>;</span>
+<span class="pl-s1">    }</span>
+<span class="pl-s1">}</span></pre></div>
+<p>Here is what it looks like on the client side. I'm surprised how easy this is.</p>
+<div class="highlight highlight-source-js"><pre>(<span class="pl-k">function</span>() {
+    <span class="pl-smi">angular</span>.<span class="pl-en">module</span>(<span class="pl-s"><span class="pl-pds">'</span>livesearch<span class="pl-pds">'</span></span>)
+        .<span class="pl-en">factory</span>(<span class="pl-s"><span class="pl-pds">'</span>LivesearchApi<span class="pl-pds">'</span></span>, LivesearchApi);
+
+    <span class="pl-smi">LivesearchApi</span>.<span class="pl-smi">$inject</span> <span class="pl-k">=</span> [<span class="pl-s"><span class="pl-pds">'</span>$http<span class="pl-pds">'</span></span>, <span class="pl-s"><span class="pl-pds">'</span>$q<span class="pl-pds">'</span></span>];
+
+    <span class="pl-k">function</span> <span class="pl-en">LivesearchApi</span>(<span class="pl-smi">$http</span>, <span class="pl-smi">$q</span>) {
+        <span class="pl-k">var</span> service <span class="pl-k">=</span> {
+            list<span class="pl-k">:</span> list,
+            getItem<span class="pl-k">:</span> getItem
+        };
+
+        <span class="pl-k">return</span> service;
+
+        <span class="pl-k">function</span> <span class="pl-en">list</span>(<span class="pl-smi">queryString</span>, <span class="pl-smi">timeoutPromise</span>, <span class="pl-smi">bundle</span>) {
+            <span class="pl-k">var</span> deferred <span class="pl-k">=</span> <span class="pl-smi">$q</span>.<span class="pl-c1">defer</span>();
+
+            <span class="pl-k">var</span> url <span class="pl-k">=</span> <span class="pl-s"><span class="pl-pds">'</span>/api/v1.6/artists?filter[name][value]=<span class="pl-pds">'</span></span>
+                <span class="pl-k">+</span> <span class="pl-c1">encodeURIComponent</span>(queryString)
+                <span class="pl-k">+</span> <span class="pl-s"><span class="pl-pds">'</span>&amp;filter[name][operator]=CONTAINS&amp;range=10<span class="pl-pds">'</span></span>
+                <span class="pl-k">+</span> <span class="pl-s"><span class="pl-pds">'</span>&amp;filter[bundle]=<span class="pl-pds">'</span></span>
+                <span class="pl-k">+</span> <span class="pl-c1">encodeURIComponent</span>(bundle);
+
+           <span class="pl-en">$http</span>({
+                <span class="pl-s"><span class="pl-pds">'</span>method<span class="pl-pds">'</span></span><span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">'</span>GET<span class="pl-pds">'</span></span>,
+                <span class="pl-s"><span class="pl-pds">'</span>url<span class="pl-pds">'</span></span><span class="pl-k">:</span> url,
+                <span class="pl-s"><span class="pl-pds">'</span>timeout<span class="pl-pds">'</span></span><span class="pl-k">:</span> timeoutPromise
+            }).<span class="pl-c1">then</span>(<span class="pl-k">function</span>(<span class="pl-smi">results</span>) {
+                <span class="pl-en">console</span>.<span class="pl-c1">log</span>(results);
+                <span class="pl-smi">deferred</span>.<span class="pl-en">resolve</span>(<span class="pl-smi">results</span>.<span class="pl-c1">data</span>);
+            });
+
+            <span class="pl-k">return</span> <span class="pl-smi">deferred</span>.<span class="pl-smi">promise</span>;
+        }
+    }
+})();</pre></div>
+
+        </div>
+
+    </div>]

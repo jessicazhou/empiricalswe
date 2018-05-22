@@ -1,0 +1,34 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <h2>
+<a aria-hidden="true" class="anchor" href="#draftable" id="user-content-draftable"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Draftable</h2>
+<p>Use this if you want to be able to publish records in the future, or mark records as draft. This behaviors works with two database columns:</p>
+<p><strong>published</strong>: a datetime column. Records with a published date before NOW() will not be shown on the site (they do show up in the CMS)
+<strong>online_status</strong>: a boolean column. If 1, the record shows up, if 0, it's considered a draft and won't show up.</p>
+<p>Simple! There are some things to keep in mind though.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#cache" id="user-content-cache"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Cache</h3>
+<p>If you're using caching in your project, as you should, the published column is going to be a problem. If the cache contains the query SELECT * FROM stuff WHERE published &gt;= NOW(), how is it going to know when NOW() and published line up?
+We use UNIX' at command for this. When a record is saved with a published date, we automatically add a cache clear command to at. That way the cache is cleared at the exact moment the record should show on the site.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#displaying-dates" id="user-content-displaying-dates"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Displaying dates</h3>
+<p>This one's easy: don't forget to use published instead of created when showing the date to your users. Do something like:</p>
+<pre><code>&lt;?php
+$theDate = $this-&gt;blogpost-&gt;published ?: $this-&gt;blogpost-&gt;created;
+?&gt;
+</code></pre>
+<p>This is especially important when Draftable is added later on in the project. Often the records show up with unexpected dates because this gets forgotten.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#sorting" id="user-content-sorting"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Sorting</h3>
+<p>How do you sort on the published column when it might be absent? Easy:</p>
+<pre><code>&lt;?php
+$blogPostModel-&gt;select()-&gt;order(new Zend_Db_Expr(
+'IF(blogpost.published IS NOT NULL, blogpost.published, blogpost.created) DESC'
+));
+?&gt;
+</code></pre>
+<p>As you can see, the sorting falls back to the created column when published is null. Again, this change often gets forgotten when Draftable is added halfway through a project, leading to unexpected sorting.</p>
+
+        </div>
+
+    </div>]

@@ -1,0 +1,84 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>An API is provided for interfacing with the module server. This is designed to allow creation of interfaces to install, remove, review, and rate modules that are created.</p>
+<p>The module_client object is the core part of the API:</p>
+<ul>
+<li>
+<strong>module_client()</strong> : creates a module client object. The object will immediately start retrieving basic module info from the server. module_pump() should be called on it every frame. Has the following fields:
+is_complete: true iff the current operation is complete and a new operation can be started. When the module_client is first created it automatically starts an operation to get the summary of modules.
+downloaded_modules: a list of downloaded modules that are currently installed.
+module_info: info about the modules available on the server.
+error: contains an error string if the operation resulted in an error, null otherwise.
+kbytes_transferred: number of kbytes transferred in the current operation
+kbytes_total: total number of kbytes to transfer to complete the operation.</li>
+<li>
+<strong>module_pump(module_client)</strong>: pumps module client events. Should be called every cycle.</li>
+</ul>
+<p>To start interacting with the module server you should create and store a module_client object. When the module_client object is created it connects to the module server and gets a summary of available modules. You should call module_pump() every frame on the module_client object.</p>
+<p>When module_client.is_complete is true, it means the client has retrieved a summary of available modules. You can query module_client.module_info to access an FSON document which has information about the modules available.</p>
+<p>You can also query downloaded_modules to see the modules that have already been downloaded.</p>
+<p>During a transfer you can also query kbytes_transferred and kbytes_total to get an idea of how far along the current operation is.</p>
+<ul>
+<li>
+<strong>module_install(module_client, string module_id)</strong> : begins downloading the given module and installing it. This should only be called when module_client.is_complete = true (i.e. there is no operation currently underway)</li>
+</ul>
+<p>This is used to begin the client downloading and installing the given module. This begins a new operation and so is_complete will now be false until the module is successfully installed.</p>
+<ul>
+<li>
+<p><strong>module_uninstall(string module_id)</strong> : uninstalls the given module</p>
+</li>
+<li>
+<p><strong>module_rate(module_client, string module_id, int num_stars (1-5), (optional) string review)</strong> : begins a request to rate the given module with the given number of stars, optionally with a review.</p>
+</li>
+</ul>
+<p>This is used to begin an operation to rate the given module. A review may also be given. This begins a new operation and so is_complete will be false until the rating has been sent.</p>
+<ul>
+<li>
+<strong>module_launch(string module_id)</strong> : launch the game using the given module.</li>
+</ul>
+<p>This will relaunch the game using the given module.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#example" id="user-content-example"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Example</h2>
+<p>Suppose you want to try this all out using the debug console. Fire up the game and ctrl+d, then:</p>
+<pre><code>--&gt; set(vars.client, module_client())  // create my module client
+--&gt; vars.client.is_complete
+0
+--&gt; module_pump(vars.client)
+--&gt; module_pump(vars.client)
+--&gt; module_pump(vars.client)
+--&gt; module_pump(vars.client)
+--&gt; module_pump(vars.client) // pump several times to give time to connect to the server
+--&gt; vars.client.is_complete
+1
+--&gt; vars.client.module_info
+{
+	"duxduo": {
+		"description": "Scrolling 2D shooter meets RTS.",
+		"name": "Dux Duo",
+		"previous_versions": [],
+		"version": [0,2]
+	}
+}
+--&gt; module_install(vars.client, 'duxduo')  // install duxduo
+--&gt; vars.client.is_complete
+0
+--&gt; module_pump(vars.client)
+--&gt; module_pump(vars.client)
+--&gt; module_pump(vars.client)
+--&gt; module_pump(vars.client) //number of pumps needed will vary
+--&gt; vars.client.is_complete
+1
+--&gt; vars.client.error //will be null if all was okay
+null
+--&gt; module_launch('duxduo') //let's play duxduo!
+</code></pre>
+
+        </div>
+
+        <div class="wiki-footer gollum-markdown-content boxed-group" id="wiki-footer">
+          <div class="boxed-group-inner wiki-auxiliary-content markdown-body">
+            <p>More help can be found via IRC, <a href="irc://irc.freenode.net/#frogatto" rel="nofollow">#Frogatto</a> on freenode.net. This wiki is not a complete reference.</p>
+
+          </div>
+        </div>
+    </div>]

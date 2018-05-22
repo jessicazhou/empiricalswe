@@ -1,0 +1,331 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <h1>
+<a aria-hidden="true" class="anchor" href="#client-application-authentication" id="user-content-client-application-authentication"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Client Application Authentication</h1>
+<ul>
+<li>
+<p>Ohmage-OMH authenticate a client application using OAuth protocol. Before you proceed, make sure you have acquired the OAuth client id and secret for your app.</p>
+</li>
+<li>
+<p>Redirect users to the following url (relative to the root URL of the DSU):</p>
+</li>
+</ul>
+<div class="highlight highlight-source-httpspec"><pre>/oauth/authorize?client_id={<span class="pl-ii">YOUR_CLIENT_ID</span>}&amp;response_type=code</pre></div>
+<p>For example: <code>https://lifestreams.smalldata.io/dsu/oauth/authorize?client_id=webApp1&amp;response_type=code</code></p>
+<ul>
+<li>The page will take the user through Google Sign-In process. If the sign-in <strong>succeeded</strong>, the user will be redirected to the location:</li>
+</ul>
+<div class="highlight highlight-source-httpspec"><pre>https://{<span class="pl-ii">YOUR_REDIRECT_URL</span>}?code={<span class="pl-ii">OAUTH_CODE</span>}</pre></div>
+<p>, or if the sign-in <strong>failed</strong>, to the location:</p>
+<div class="highlight highlight-source-httpspec"><pre>https://{<span class="pl-ii">YOUR_REDIRECT_URL</span>}?error={<span class="pl-ii">ERROR_MSG</span>}</pre></div>
+<ul>
+<li>When the sign-in succeeded, the app can exchange the code for an <strong>access token</strong> by sending a <strong>POST</strong> request to <code>/oauth/token</code> with the following parameters:
+<ul>
+<li>
+<p>Headers</p>
+<ul>
+<li>
+<strong>Authorization</strong>: "Basic {Base64-Encoded CLIENT_ID:CLIENT_SECRET}". For example, a client whose ID = "android-app" and Secret = "secret" should set the header as:
+<ul>
+<li>
+<code>"Basic " + base64Encode("android-app" + ":" + "secret")</code>, which is <code>"Basic YW5kcm9pZC1hcHA6c2VjcmV0"</code>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+<p>POST Parameters</p>
+<ul>
+<li>
+<strong>code</strong>: the returned OAuth code.</li>
+<li>
+<strong>grant_type</strong>: should always be <em>"authorization_code"</em>.</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>The DSU will return the access token in JSON as follows:</li>
+</ul>
+<div class="highlight highlight-source-json"><pre>{
+    <span class="pl-s"><span class="pl-pds">"</span>access_token<span class="pl-pds">"</span></span>: <span class="pl-s"><span class="pl-pds">"</span>ceb1c6de-ab22-473e-8e3f-65879fa5053b<span class="pl-pds">"</span></span>,
+    <span class="pl-s"><span class="pl-pds">"</span>token_type<span class="pl-pds">"</span></span>: <span class="pl-s"><span class="pl-pds">"</span>bearer<span class="pl-pds">"</span></span>,
+    <span class="pl-s"><span class="pl-pds">"</span>refresh_token<span class="pl-pds">"</span></span>: <span class="pl-s"><span class="pl-pds">"</span>72ef37d2-0220-4579-b675-539b8fd90297<span class="pl-pds">"</span></span>,
+    <span class="pl-s"><span class="pl-pds">"</span>expires_in<span class="pl-pds">"</span></span>: <span class="pl-c1">43199</span>,
+    <span class="pl-s"><span class="pl-pds">"</span>scope<span class="pl-pds">"</span></span>: <span class="pl-s"><span class="pl-pds">"</span>write_data_points<span class="pl-pds">"</span></span>
+}</pre></div>
+<ul>
+<li>Store the access token and refresh token at somewhere as it is needed in query/uploading data to DSU.</li>
+</ul>
+<h1>
+<a aria-hidden="true" class="anchor" href="#refresh-access-token-and-check-token" id="user-content-refresh-access-token-and-check-token"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Refresh Access Token and Check Token</h1>
+<ul>
+<li>
+<p>If the token expired, the app can <strong>refresh</strong> the token by sending a POST request to <code>/oauth/token</code> with the following parameters:</p>
+<ul>
+<li>Headers
+<ul>
+<li>
+<strong>Authorization</strong>: "Basic {Base64-Encoded CLIENT_ID:CLIENT_SECRET}"</li>
+</ul>
+</li>
+<li>POST Parameters
+<ul>
+<li>
+<strong>refresh_token</strong>: the refresh token return in the last step.</li>
+<li>
+<strong>grant_type</strong>: should always be <em>"refresh_token"</em>.</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+<p>You can also check the validity of an access token by send a GET request to <code>/oauth/check_token?token={ACCESS_TOKEN}</code></p>
+</li>
+</ul>
+<h1>
+<a aria-hidden="true" class="anchor" href="#upload-data-to-dsu" id="user-content-upload-data-to-dsu"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Upload Data to DSU</h1>
+<ul>
+<li>The access token granted in the last section should contain the "write_data_points" scope that allows the app to write data to DSU. The data write endpoint is at <code>/dsu/dataPoints</code> (e.g. <code>https://lifestreams.smalldata.io/dsu/dataPoints</code>). An app can send a POST request to the endpoint with the following parameters:
+<ul>
+<li>
+<p>Headers</p>
+<ul>
+<li>
+<strong>Authorization</strong>: "Bearer {ACCESS_TOKEN}".</li>
+<li>
+<strong>Content-Type</strong>: "application/json".</li>
+</ul>
+</li>
+<li>
+<p>Request Body should contain a data point conforming to the <a href="http://www.openmhealth.org/documentation/#/schema-docs/overview" rel="nofollow">OMH data point format</a>. e.g.:</p>
+<div class="highlight highlight-source-json"><pre>{
+<span class="pl-s"><span class="pl-pds">"</span>header<span class="pl-pds">"</span></span>: {
+    <span class="pl-s"><span class="pl-pds">"</span>id<span class="pl-pds">"</span></span>: <span class="pl-s"><span class="pl-pds">"</span>foo1<span class="pl-pds">"</span></span>,
+    <span class="pl-s"><span class="pl-pds">"</span>creation_date_time<span class="pl-pds">"</span></span>: <span class="pl-s"><span class="pl-pds">"</span>2013-02-05T07:25:00Z<span class="pl-pds">"</span></span>,
+    <span class="pl-s"><span class="pl-pds">"</span>schema_id<span class="pl-pds">"</span></span>: {
+        <span class="pl-s"><span class="pl-pds">"</span>namespace<span class="pl-pds">"</span></span>: <span class="pl-s"><span class="pl-pds">"</span>omh<span class="pl-pds">"</span></span>,
+        <span class="pl-s"><span class="pl-pds">"</span>name<span class="pl-pds">"</span></span>: <span class="pl-s"><span class="pl-pds">"</span>physical-activity<span class="pl-pds">"</span></span>,
+        <span class="pl-s"><span class="pl-pds">"</span>version<span class="pl-pds">"</span></span>: <span class="pl-s"><span class="pl-pds">"</span>1.0<span class="pl-pds">"</span></span>
+    },
+    <span class="pl-s"><span class="pl-pds">"</span>acquisition_provenance<span class="pl-pds">"</span></span>: {
+        <span class="pl-s"><span class="pl-pds">"</span>source_name<span class="pl-pds">"</span></span>: <span class="pl-s"><span class="pl-pds">"</span>RunKeeper<span class="pl-pds">"</span></span>,
+        <span class="pl-s"><span class="pl-pds">"</span>modality<span class="pl-pds">"</span></span>: <span class="pl-s"><span class="pl-pds">"</span>sensed<span class="pl-pds">"</span></span>
+    }
+},
+<span class="pl-s"><span class="pl-pds">"</span>body<span class="pl-pds">"</span></span>: {
+    <span class="pl-s"><span class="pl-pds">"</span>activity_name<span class="pl-pds">"</span></span>: <span class="pl-s"><span class="pl-pds">"</span>walking<span class="pl-pds">"</span></span>,
+    <span class="pl-s"><span class="pl-pds">"</span>distance<span class="pl-pds">"</span></span>: {
+        <span class="pl-s"><span class="pl-pds">"</span>value<span class="pl-pds">"</span></span>: <span class="pl-c1">1.5</span>,
+        <span class="pl-s"><span class="pl-pds">"</span>unit<span class="pl-pds">"</span></span>: <span class="pl-s"><span class="pl-pds">"</span>mi<span class="pl-pds">"</span></span>
+    },
+    <span class="pl-s"><span class="pl-pds">"</span>reported_activity_intensity<span class="pl-pds">"</span></span>: <span class="pl-s"><span class="pl-pds">"</span>moderate<span class="pl-pds">"</span></span>,
+    <span class="pl-s"><span class="pl-pds">"</span>effective_time_frame<span class="pl-pds">"</span></span>: {
+        <span class="pl-s"><span class="pl-pds">"</span>time_interval<span class="pl-pds">"</span></span>: {
+            <span class="pl-s"><span class="pl-pds">"</span>date<span class="pl-pds">"</span></span>: <span class="pl-s"><span class="pl-pds">"</span>2013-02-05<span class="pl-pds">"</span></span>,
+            <span class="pl-s"><span class="pl-pds">"</span>part_of_day<span class="pl-pds">"</span></span>: <span class="pl-s"><span class="pl-pds">"</span>morning<span class="pl-pds">"</span></span>
+        }
+    }
+}
+}</pre></div>
+</li>
+</ul>
+</li>
+<li>Sample code for jquery:</li>
+</ul>
+<div class="highlight highlight-source-js"><pre><span class="pl-smi">$</span>.<span class="pl-en">ajax</span>({
+    type<span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">'</span>POST<span class="pl-pds">'</span></span>,
+    url<span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">"</span>https://ohmage-omh.smalldata.io/dsu/dataPoints<span class="pl-pds">"</span></span>,
+    headers<span class="pl-k">:</span> {
+      <span class="pl-s"><span class="pl-pds">"</span>Authorization<span class="pl-pds">"</span></span><span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">"</span>Bearer [OAUTH_ACCESS_TOKEN]<span class="pl-pds">"</span></span>,
+    },
+    data<span class="pl-k">:</span> <span class="pl-c1">JSON</span>.<span class="pl-c1">stringify</span>({
+      <span class="pl-s"><span class="pl-pds">"</span>header<span class="pl-pds">"</span></span><span class="pl-k">:</span> {
+ 	  <span class="pl-s"><span class="pl-pds">"</span>id<span class="pl-pds">"</span></span><span class="pl-k">:</span><span class="pl-s"><span class="pl-pds">"</span>[UNIQUE ID FOR THE DATAPOINT]<span class="pl-pds">"</span></span>,
+          <span class="pl-s"><span class="pl-pds">"</span>creation_date_time<span class="pl-pds">"</span></span><span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">"</span>2015-09-25T12:20:19-04:00<span class="pl-pds">"</span></span>,
+          <span class="pl-s"><span class="pl-pds">"</span>schema_id<span class="pl-pds">"</span></span><span class="pl-k">:</span> {
+              <span class="pl-s"><span class="pl-pds">"</span>namespace<span class="pl-pds">"</span></span><span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">"</span>omh<span class="pl-pds">"</span></span>,
+              <span class="pl-s"><span class="pl-pds">"</span>name<span class="pl-pds">"</span></span><span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">"</span>yadl-monthly-survey<span class="pl-pds">"</span></span>,
+              <span class="pl-s"><span class="pl-pds">"</span>version<span class="pl-pds">"</span></span><span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">"</span>1.0<span class="pl-pds">"</span></span>
+          },
+          <span class="pl-s"><span class="pl-pds">"</span>acquisition_provenance<span class="pl-pds">"</span></span><span class="pl-k">:</span> {
+              <span class="pl-s"><span class="pl-pds">"</span>source_name<span class="pl-pds">"</span></span><span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">"</span>YADL<span class="pl-pds">"</span></span>,
+              <span class="pl-s"><span class="pl-pds">"</span>modality<span class="pl-pds">"</span></span><span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">"</span>self-reported<span class="pl-pds">"</span></span>
+          }
+      },
+      <span class="pl-s"><span class="pl-pds">"</span>body<span class="pl-pds">"</span></span><span class="pl-k">:</span> {
+          <span class="pl-s"><span class="pl-pds">"</span>activity_name<span class="pl-pds">"</span></span><span class="pl-k">:</span> [<span class="pl-s"><span class="pl-pds">"</span>walking<span class="pl-pds">"</span></span>,<span class="pl-s"><span class="pl-pds">"</span>jumping<span class="pl-pds">"</span></span>],
+          <span class="pl-s"><span class="pl-pds">"</span>activity_image<span class="pl-pds">"</span></span><span class="pl-k">:</span> [<span class="pl-s"><span class="pl-pds">"</span>sleeping<span class="pl-pds">"</span></span>, <span class="pl-s"><span class="pl-pds">"</span>commuting<span class="pl-pds">"</span></span>]
+      }
+    }),
+    contentType<span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">"</span>application/json<span class="pl-pds">"</span></span>,
+    <span class="pl-en">success</span><span class="pl-k">:</span> <span class="pl-k">function</span>() {
+    <span class="pl-en">console</span>.<span class="pl-c1">log</span>(<span class="pl-s"><span class="pl-pds">'</span>Good<span class="pl-pds">'</span></span>);
+  },
+  <span class="pl-en">error</span><span class="pl-k">:</span> <span class="pl-k">function</span>(<span class="pl-smi">e</span>, <span class="pl-smi">status</span>, <span class="pl-smi">error</span>) {
+    <span class="pl-en">console</span>.<span class="pl-c1">log</span>(e);
+  }
+})</pre></div>
+<ul>
+<li>If the write succeeded, the dsu will respond with Status Code 201 (Created)</li>
+<li>If there is a conflict in data point id. Status Code 409 (Conflict) will be responded.</li>
+</ul>
+<h1>
+<a aria-hidden="true" class="anchor" href="#query-data-points" id="user-content-query-data-points"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Query Data Points</h1>
+<ul>
+<li>The data read endpoint is at <code>/dsu/dataPoints</code> (e.g. <code>https://lifestreams.smalldata.io/dsu/dataPoints</code>). An app can send a GET request to query the data points of a specific schema with the following parameters. Note that the results are always ordered by the <em>createion_date_time</em>:
+<ul>
+<li>Headers
+<ul>
+<li>
+<strong>Authorization</strong>: "Bearer {ACCESS_TOKEN}".</li>
+</ul>
+</li>
+<li>GET Parameters
+<ul>
+<li>
+<strong>schema_namespace</strong>: the namespace of the schema (e.g. "omh")</li>
+<li>
+<strong>schema_name</strong>: the name of the schema (e.g. "physical-activity")</li>
+<li>
+<strong>schema_version</strong>: the schema version (e.g. "1.0")</li>
+<li>
+<strong>created_on_or_after</strong> (optional): an ISO8601 datetime</li>
+<li>
+<strong>created_before</strong> (optional): an ISO8601 datetime</li>
+<li>
+<strong>chronological</strong> (optional): the sorting order in time (<strong>asc</strong> or desc)</li>
+<li>
+<strong>skip</strong> (optional): Number of records to skip</li>
+<li>
+<strong>limit</strong> (optional, default=100): Maximun number of records to return</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>Sample query results</li>
+</ul>
+<div class="highlight highlight-source-json"><pre>[
+  {
+    <span class="pl-s"><span class="pl-pds">"</span>header<span class="pl-pds">"</span></span>: {
+      <span class="pl-s"><span class="pl-pds">"</span>id<span class="pl-pds">"</span></span>: <span class="pl-s"><span class="pl-pds">"</span>foo1<span class="pl-pds">"</span></span>,
+      <span class="pl-s"><span class="pl-pds">"</span>schema_id<span class="pl-pds">"</span></span>: {
+        <span class="pl-s"><span class="pl-pds">"</span>namespace<span class="pl-pds">"</span></span>: <span class="pl-s"><span class="pl-pds">"</span>omh<span class="pl-pds">"</span></span>,
+        <span class="pl-s"><span class="pl-pds">"</span>name<span class="pl-pds">"</span></span>: <span class="pl-s"><span class="pl-pds">"</span>physical-activity<span class="pl-pds">"</span></span>,
+        <span class="pl-s"><span class="pl-pds">"</span>version<span class="pl-pds">"</span></span>: {
+          <span class="pl-s"><span class="pl-pds">"</span>major<span class="pl-pds">"</span></span>: <span class="pl-c1">1</span>,
+          <span class="pl-s"><span class="pl-pds">"</span>minor<span class="pl-pds">"</span></span>: <span class="pl-c1">0</span>,
+          <span class="pl-s"><span class="pl-pds">"</span>qualifier<span class="pl-pds">"</span></span>: {
+            <span class="pl-s"><span class="pl-pds">"</span>present<span class="pl-pds">"</span></span>: <span class="pl-c1">false</span>
+          }
+        }
+      },
+      <span class="pl-s"><span class="pl-pds">"</span>creation_date_time<span class="pl-pds">"</span></span>: <span class="pl-s"><span class="pl-pds">"</span>2013-02-05T07:25Z<span class="pl-pds">"</span></span>,
+      <span class="pl-s"><span class="pl-pds">"</span>acquisition_provenance<span class="pl-pds">"</span></span>: {
+        <span class="pl-s"><span class="pl-pds">"</span>present<span class="pl-pds">"</span></span>: <span class="pl-c1">true</span>
+      }
+    },
+    <span class="pl-s"><span class="pl-pds">"</span>body<span class="pl-pds">"</span></span>: {
+      <span class="pl-s"><span class="pl-pds">"</span>activity_name<span class="pl-pds">"</span></span>: <span class="pl-s"><span class="pl-pds">"</span>walking<span class="pl-pds">"</span></span>,
+      <span class="pl-s"><span class="pl-pds">"</span>distance<span class="pl-pds">"</span></span>: {
+        <span class="pl-s"><span class="pl-pds">"</span>value<span class="pl-pds">"</span></span>: <span class="pl-c1">1.5</span>,
+        <span class="pl-s"><span class="pl-pds">"</span>unit<span class="pl-pds">"</span></span>: <span class="pl-s"><span class="pl-pds">"</span>mi<span class="pl-pds">"</span></span>
+      },
+      <span class="pl-s"><span class="pl-pds">"</span>reported_activity_intensity<span class="pl-pds">"</span></span>: <span class="pl-s"><span class="pl-pds">"</span>moderate<span class="pl-pds">"</span></span>,
+      <span class="pl-s"><span class="pl-pds">"</span>effective_time_frame<span class="pl-pds">"</span></span>: {
+        <span class="pl-s"><span class="pl-pds">"</span>time_interval<span class="pl-pds">"</span></span>: {
+          <span class="pl-s"><span class="pl-pds">"</span>date<span class="pl-pds">"</span></span>: <span class="pl-s"><span class="pl-pds">"</span>2013-02-05<span class="pl-pds">"</span></span>,
+          <span class="pl-s"><span class="pl-pds">"</span>part_of_day<span class="pl-pds">"</span></span>: <span class="pl-s"><span class="pl-pds">"</span>morning<span class="pl-pds">"</span></span>
+        }
+      }
+    }
+  },
+  {
+    <span class="pl-s"><span class="pl-pds">"</span>header<span class="pl-pds">"</span></span>: {
+      <span class="pl-s"><span class="pl-pds">"</span>id<span class="pl-pds">"</span></span>: <span class="pl-s"><span class="pl-pds">"</span>foo12<span class="pl-pds">"</span></span>,
+      <span class="pl-s"><span class="pl-pds">"</span>schema_id<span class="pl-pds">"</span></span>: {
+        <span class="pl-s"><span class="pl-pds">"</span>namespace<span class="pl-pds">"</span></span>: <span class="pl-s"><span class="pl-pds">"</span>omh<span class="pl-pds">"</span></span>,
+        <span class="pl-s"><span class="pl-pds">"</span>name<span class="pl-pds">"</span></span>: <span class="pl-s"><span class="pl-pds">"</span>physical-activity<span class="pl-pds">"</span></span>,
+        <span class="pl-s"><span class="pl-pds">"</span>version<span class="pl-pds">"</span></span>: {
+          <span class="pl-s"><span class="pl-pds">"</span>major<span class="pl-pds">"</span></span>: <span class="pl-c1">1</span>,
+          <span class="pl-s"><span class="pl-pds">"</span>minor<span class="pl-pds">"</span></span>: <span class="pl-c1">0</span>,
+          <span class="pl-s"><span class="pl-pds">"</span>qualifier<span class="pl-pds">"</span></span>: {
+            <span class="pl-s"><span class="pl-pds">"</span>present<span class="pl-pds">"</span></span>: <span class="pl-c1">false</span>
+          }
+        }
+      },
+      <span class="pl-s"><span class="pl-pds">"</span>creation_date_time<span class="pl-pds">"</span></span>: <span class="pl-s"><span class="pl-pds">"</span>2013-02-04T23:25Z<span class="pl-pds">"</span></span>,
+      <span class="pl-s"><span class="pl-pds">"</span>acquisition_provenance<span class="pl-pds">"</span></span>: {
+        <span class="pl-s"><span class="pl-pds">"</span>present<span class="pl-pds">"</span></span>: <span class="pl-c1">true</span>
+      }
+    },
+    <span class="pl-s"><span class="pl-pds">"</span>body<span class="pl-pds">"</span></span>: {
+      <span class="pl-s"><span class="pl-pds">"</span>activity_name<span class="pl-pds">"</span></span>: <span class="pl-s"><span class="pl-pds">"</span>walking<span class="pl-pds">"</span></span>,
+      <span class="pl-s"><span class="pl-pds">"</span>distance<span class="pl-pds">"</span></span>: {
+        <span class="pl-s"><span class="pl-pds">"</span>value<span class="pl-pds">"</span></span>: <span class="pl-c1">1.5</span>,
+        <span class="pl-s"><span class="pl-pds">"</span>unit<span class="pl-pds">"</span></span>: <span class="pl-s"><span class="pl-pds">"</span>mi<span class="pl-pds">"</span></span>
+      },
+      <span class="pl-s"><span class="pl-pds">"</span>reported_activity_intensity<span class="pl-pds">"</span></span>: <span class="pl-s"><span class="pl-pds">"</span>moderate<span class="pl-pds">"</span></span>,
+      <span class="pl-s"><span class="pl-pds">"</span>effective_time_frame<span class="pl-pds">"</span></span>: {
+        <span class="pl-s"><span class="pl-pds">"</span>time_interval<span class="pl-pds">"</span></span>: {
+          <span class="pl-s"><span class="pl-pds">"</span>date<span class="pl-pds">"</span></span>: <span class="pl-s"><span class="pl-pds">"</span>2013-02-05<span class="pl-pds">"</span></span>,
+          <span class="pl-s"><span class="pl-pds">"</span>part_of_day<span class="pl-pds">"</span></span>: <span class="pl-s"><span class="pl-pds">"</span>morning<span class="pl-pds">"</span></span>
+        }
+      }
+    }
+  }
+]</pre></div>
+<ul>
+<li>Sample Jquery</li>
+</ul>
+<div class="highlight highlight-source-js"><pre>    <span class="pl-smi">$</span>.<span class="pl-en">ajax</span>({
+        method<span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">"</span>GET<span class="pl-pds">"</span></span>,
+        headers<span class="pl-k">:</span> {
+            <span class="pl-s"><span class="pl-pds">"</span>Authorization<span class="pl-pds">"</span></span><span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">"</span>Bearer [OAUTH_ACCESS_TOKEN]<span class="pl-pds">"</span></span>
+        },
+        url<span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">"</span>https://ohmage-omh.smalldata.io/dsu/dataPoints<span class="pl-pds">"</span></span>,
+        data<span class="pl-k">:</span> { schema_namespace<span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">"</span>omh<span class="pl-pds">"</span></span>, schema_name<span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">"</span>physical-activity<span class="pl-pds">"</span></span>, schema_version<span class="pl-k">:</span><span class="pl-s"><span class="pl-pds">"</span>1.0<span class="pl-pds">"</span></span>},
+        <span class="pl-en">success</span><span class="pl-k">:</span> <span class="pl-k">function</span>(<span class="pl-smi">result</span>) {
+            <span class="pl-en">console</span>.<span class="pl-c1">log</span>(result);
+        },
+        <span class="pl-en">error</span><span class="pl-k">:</span> <span class="pl-k">function</span>(<span class="pl-smi">e</span>, <span class="pl-smi">status</span>, <span class="pl-smi">error</span>) {
+            <span class="pl-en">console</span>.<span class="pl-c1">log</span>(e);
+        }
+
+    })</pre></div>
+<h1>
+<a aria-hidden="true" class="anchor" href="#common-data-streams" id="user-content-common-data-streams"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Common Data Streams:</h1>
+<ul>
+<li>The following are the schema IDs of data streams currently available in the DSU in <em>namespace</em>:<em>name</em>:<em>version</em> format
+<ul>
+<li>Mobility (Processed Data)
+<ul>
+<li>
+<strong>Mobility Daily Summary</strong> cornell:mobility-daily-summary:1.0</li>
+<li>
+<strong>Mobility Daily Segments</strong> cornell:mobility-daily-segments:1.0</li>
+</ul>
+</li>
+<li>Mobility (Raw Sensor Data)
+<ul>
+<li>
+<strong>Android Mobility Sensor Data</strong> omh:mobility:1.0</li>
+<li>
+<strong>Android Location Sensor Data</strong> omh:location:1.0</li>
+<li>
+<strong>iOS Sensor Data</strong> cornell:mobility-stream-iOS:1.0</li>
+</ul>
+</li>
+<li>PAM
+<ul>
+<li>
+<strong>iOS/Android PAM</strong> cornell:photographic-affect-meter-scores:1.0</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+        </div>
+
+    </div>]

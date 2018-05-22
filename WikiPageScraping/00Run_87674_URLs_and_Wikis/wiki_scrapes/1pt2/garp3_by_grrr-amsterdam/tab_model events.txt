@@ -1,0 +1,103 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <h1>
+<a aria-hidden="true" class="anchor" href="#listening-to-events" id="user-content-listening-to-events"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Listening to events</h1>
+<p>Various events are broadcasted by all models. You can listen to these events and act upon them from behaviors and validators but also from the model itself.
+A callback method need not return a value. If a callback method wishes to alter any of its parameters, it should edit them in place, by reference.
+Remember to grab the reference as follows:</p>
+<pre><code>&lt;?php
+public function beforeInsert(&amp;$args) {
+	$data = &amp;$args[1];
+	$data['foo'] = 'bar';
+}
+?&gt;
+</code></pre>
+<p>Note that callback methods do not need to return values. If fact; if they were to return values, those values would not be used by the model. An exception to this rule, in a way, is the <strong>beforeFetch()</strong> method. This method receives a third parameter by reference, much like the $matches parameter to preg_match(). After broadcasting the event, the model will check to see if $results is populated. If so, no live results are fetched, but $results is used.</p>
+<p>This is done so that behaviors may decide to take an alternative route in fetching results. For instance the core behavior Garp_Model_Behavior_Cachable fetches data from the cache instead of the database when valid cached data is available.</p>
+<p>The following is a list of all events and the parameters that are sent with them. Note that every callback method receives one argument: an array containing the parameters as listed below.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#beforefetch" id="user-content-beforefetch"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>beforeFetch</h3>
+<ul>
+<li>0: the model object</li>
+<li>1: the Zend_Db_Select object</li>
+<li>2: &amp;$results</li>
+</ul>
+<p>That third parameter is a special one: you may populate it with anything other than the int -1 and this will automatically be used as the result of the fetch call. The most notable use for this is in the Cachable behavior, which intercepts the fetch call and populates <em>$results</em> with cached results.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#afterfetch" id="user-content-afterfetch"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>afterFetch</h3>
+<ul>
+<li>0: the model object</li>
+<li>1: result of the query</li>
+</ul>
+<h3>
+<a aria-hidden="true" class="anchor" href="#beforeinsert" id="user-content-beforeinsert"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>beforeInsert</h3>
+<ul>
+<li>0: the model object</li>
+<li>1: the new record's data (array)</li>
+</ul>
+<h3>
+<a aria-hidden="true" class="anchor" href="#afterinsert" id="user-content-afterinsert"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>afterInsert</h3>
+<ul>
+<li>0: the model object</li>
+<li>1: the new record's data (array)</li>
+<li>2: the primary key associated with the new record (last_insert_id)</li>
+</ul>
+<h3>
+<a aria-hidden="true" class="anchor" href="#beforeupdate" id="user-content-beforeupdate"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>beforeUpdate</h3>
+<ul>
+<li>0: the model object</li>
+<li>1: the new data (array)</li>
+<li>2: he WHERE clause (string)</li>
+</ul>
+<h3>
+<a aria-hidden="true" class="anchor" href="#afterupdate" id="user-content-afterupdate"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>afterUpdate</h3>
+<ul>
+<li>0: the model object</li>
+<li>1: result of the update call</li>
+<li>2: the new data (array)</li>
+<li>3: the WHERE clause (string)</li>
+</ul>
+<h3>
+<a aria-hidden="true" class="anchor" href="#beforedelete" id="user-content-beforedelete"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>beforeDelete</h3>
+<ul>
+<li>0: the model object</li>
+<li>1: the WHERE clause (string)</li>
+</ul>
+<h3>
+<a aria-hidden="true" class="anchor" href="#afterdelete" id="user-content-afterdelete"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>afterDelete</h3>
+<ul>
+<li>0: the model object</li>
+<li>1: result of the delete call</li>
+<li>2: the WHERE clause</li>
+</ul>
+<h3>
+<a aria-hidden="true" class="anchor" href="#beforebindmodel" id="user-content-beforebindmodel"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>beforeBindModel</h3>
+<ul>
+<li>0: the model object</li>
+<li>1: relationship alias</li>
+<li>2: bind options</li>
+</ul>
+<h3>
+<a aria-hidden="true" class="anchor" href="#beforeunbindmodel" id="user-content-beforeunbindmodel"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>beforeUnbindModel</h3>
+<ul>
+<li>0: the model object</li>
+<li>1: relationship alias</li>
+</ul>
+<h2>
+<a aria-hidden="true" class="anchor" href="#registering-observer" id="user-content-registering-observer"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Registering observer</h2>
+<p>Want to listen to the above events? Register your observer with the model.
+A good place to do so is in the init method of the model:</p>
+<pre><code>&lt;?php
+public function init() {
+    $this-&gt;registerObserver(
+        new App_My_Observer()
+    );
+    parent::init();
+}
+?&gt;
+</code></pre>
+<p>Simply implement a method with a name matching the event that receives one argument (an array) and you're good to go.</p>
+
+        </div>
+
+    </div>]

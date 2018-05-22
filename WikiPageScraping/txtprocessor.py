@@ -35,7 +35,7 @@ with open('names.csv', 'w', newline='') as csvfile:
 
 with open(param_1, 'r') as input:
     #output = open('output.csv', 'wb')
-     with open('outputcsv.csv', 'w', newline='') as csvfile:
+    with open('outputcsv.csv', 'w', newline='') as csvfile:
         fieldnames = ['author', 'project name', 'url', '(1) no project', '(2) no wiki/no content', '(3) wiki and content']
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
         writer.writeheader()

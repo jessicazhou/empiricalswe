@@ -1,0 +1,285 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <h1>
+<a aria-hidden="true" class="anchor" href="#%D0%92%D0%B2%D0%B5%D0%B4%D0%B5%D0%BD%D0%B8%D0%B5" id="user-content-Введение"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Введение</h1>
+<p>С операциями в javascript, требующими длительных вычислений и тормозящими компьютер, программисту приходится сталкиваться нечасто. Современные браузеры умеют максимально изолировать проявления эгоизма со стороны программы. Но когда дело все же доходит до того, что скрипт выполняется дольше, чем нужно, это видно сразу: страница перестает реагировать на прокрутку и наведение мышью, перемещение указателя мыши начинает запаздывать, а в крайних случаях, сам браузер сообщает вам, что выполнение скрипта занимает больше времени, чем предполагалось, и предлагает нам прервать его выполнение. В nodejs, кстати, все хуже: код выбивается в лидеры среди потребителей CPU и начинает безнаказанно тормозить компьютер. Такое поведение программы крайне нежелательно и каждый, программист или пользователь, безусловно страдал от этой проблемы.</p>
+<p>Эта статья предназначена для программистов и посвящена описанию библиотеки, которая, по моему мнению, поможет элегантно обойти «тормоза» скрипта, а её использование – будет интуитивным и не потребует запоминания большого количества информации.</p>
+<h1>
+<a aria-hidden="true" class="anchor" href="#%D0%A7%D0%B0%D1%81%D1%82%D1%8C-1-%D0%98%D0%B7%D0%BE%D0%B1%D1%80%D0%B5%D1%82%D0%B5%D0%BD%D0%B8%D0%B5-%D0%B2%D0%B5%D0%BB%D0%BE%D1%81%D0%B8%D0%BF%D0%B5%D0%B4%D0%B0" id="user-content-Часть-1-Изобретение-велосипеда"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Часть 1. Изобретение велосипеда.</h1>
+<p>Сразу скажу, что если Вам неинтересно читать про предпосылки написания модуля, которому посвящена эта статья, то  я приглашу Вас сразу <a href="#%D0%A7%D0%B0%D1%81%D1%82%D1%8C-2-%D0%A1-%D0%B3%D0%BE%D0%BB%D0%BE%D0%B2%D1%8B-%D0%BD%D0%B0-%D0%BD%D0%BE%D0%B3%D0%B8-crunchtask">ко второй части</a>.</p>
+<p>Итак, есть у нас проблема. Проблема «задумчивого скрипта». Как правило, она связана с обработкой длинного списка с большим количеством элементов, например, большим 10 000. Бывают и другие примеры. Я столкнулся с ней лет десять назад. Наш код должен был расставлять теги мягких переносов на странице в довольно длинном тексте. Текст был слов эдак на пять тысяч, переносов – раза в два-три больше. Мы были еще зелены: не знали про оптимизации при работе с DOM, вставку переносов производили шаг за шагом. В общем, страница «залипала» секунд на пять-десять при каждой загрузке. Сейчас мы стали старше и умнее, браузеры – быстрее, да и DOM мы умеем обновлять, как надо, грамотно. Но задачи, «вешающие» страницу, не исчезли. Например, два вложенных цикла для пробегания значений <em>x</em> и <em>y</em> от -10 до +10 с шагом в 0.1 – и вот вам кандидат в слоупоки. А если в теле цикла запланирован расчет функции для этих переменных, то подвисание практически гарантировано.</p>
+<p>Решение данной проблемы, как многие согласятся со мной, у каждого сводилось к изобретению велосипеда. Вот и Незадачливый Программист Андрей совершает примерно следующие шаги при написании неподвисающего кода для обработки цикла из <strong>40000</strong>, или (10 - (-10)) / 0.1) ^ 2, шагов ..</p>
+<div class="highlight highlight-source-js"><pre><span class="pl-k">for</span> (<span class="pl-k">var</span> y <span class="pl-k">=</span> <span class="pl-k">-</span><span class="pl-c1">10</span>; y <span class="pl-k">&lt;</span> <span class="pl-c1">10</span>; y <span class="pl-k">+=</span> <span class="pl-c1">.1</span>) {
+	<span class="pl-k">for</span> (<span class="pl-k">var</span> x <span class="pl-k">=</span> <span class="pl-k">-</span><span class="pl-c1">10</span>; x <span class="pl-k">&lt;</span> <span class="pl-c1">10</span>; x <span class="pl-k">+=</span> <span class="pl-c1">.1</span>) {
+		<span class="pl-k">var</span> t <span class="pl-k">=</span> x <span class="pl-k">*</span> x <span class="pl-k">-</span> y <span class="pl-k">*</span> y;
+		y <span class="pl-k">=</span> <span class="pl-c1">2</span> <span class="pl-k">*</span> x <span class="pl-k">*</span> y;
+		x <span class="pl-k">=</span> t;
+		<span class="pl-en">plot</span>(x, y);
+	}
+}</pre></div>
+<p>Вначале он выносит тело цикла в отдельную функцию (например, <code>doOperationFor(x, y)</code>) и вызывает ее из тела <code>setInterval</code>, изменяя затем переменные цикла, и прерывая интервал, когда они достигнут граничных значений. Вот, например, так.</p>
+<div class="highlight highlight-source-js"><pre><span class="pl-k">var</span> x <span class="pl-k">=</span> <span class="pl-k">-</span><span class="pl-c1">10</span>, y <span class="pl-k">=</span> <span class="pl-k">-</span><span class="pl-c1">10</span>, 
+	interval <span class="pl-k">=</span> <span class="pl-en">setInternal</span>(<span class="pl-k">function</span>(){
+		<span class="pl-en">doOperationFor</span>(x, y);
+		x <span class="pl-k">+=</span> <span class="pl-c1">.1</span>;
+		<span class="pl-k">if</span> (x <span class="pl-k">&gt;</span> <span class="pl-c1">10</span>) {
+			x <span class="pl-k">=</span> <span class="pl-k">-</span><span class="pl-c1">10</span>;
+			y <span class="pl-k">+=</span> <span class="pl-c1">.1</span>;
+			<span class="pl-k">if</span> (y <span class="pl-k">&gt;</span> <span class="pl-c1">10</span>) {
+				<span class="pl-c1">clearInterval</span>(interval);
+			}
+		}
+	}, <span class="pl-c1">0</span>);</pre></div>
+<p>Либо заворачивает тело цикла в именованную функцию и перезапускает ее через <code>setTimeout</code> до тех пор, пока переменные цикла не достигли граничных значений:</p>
+<div class="highlight highlight-source-js"><pre><span class="pl-k">var</span> x <span class="pl-k">=</span> <span class="pl-k">-</span><span class="pl-c1">10</span>, y <span class="pl-k">=</span> <span class="pl-k">-</span><span class="pl-c1">10</span>,
+	<span class="pl-en">worker</span> <span class="pl-k">=</span> <span class="pl-k">function</span>(){
+		<span class="pl-en">doOperationFor</span>(x, y);
+		x <span class="pl-k">+=</span> <span class="pl-c1">.1</span>;
+		<span class="pl-k">if</span> (x <span class="pl-k">&gt;</span> <span class="pl-c1">10</span>) {
+			x <span class="pl-k">=</span> <span class="pl-k">-</span><span class="pl-c1">10</span>;
+			y <span class="pl-k">+=</span> <span class="pl-c1">.1</span>;
+			<span class="pl-k">if</span> (y <span class="pl-k">&gt;</span> <span class="pl-c1">10</span>) {
+				<span class="pl-k">return</span>;
+			}
+		}
+		<span class="pl-c1">setTimeout</span>(worker, <span class="pl-c1">0</span>);
+	};
+<span class="pl-c1">setTimeout</span>(worker, <span class="pl-c1">0</span>);</pre></div>
+<p>Функция-параметр <code>setInterval</code>/<code>setTimeout</code> вызывается только тогда, когда браузер освободился от прочих процессов. Тем самым, исполнение долгих циклов не подвешивает программу.</p>
+<p>Казалось бы, наш Незадачливый Программист Андрей справился с задачей, страница перестала подвисать. Однако общее время обработки цикла заметно выросло.</p>
+<p>Накладные расходы на постановку задачи на исполнение через <code>setTimeout</code>/<code>setInterval</code> намного выше простого вызова функции.</p>
+<p>Тогда Незадачливый Программист Андрей делает второй шаг в «изобретении велосипеда». Шаги, содержащиеся в функции, можно исполнить заново несколько раз, прежде чем поставить её в очередь на повторное исполнение.</p>
+<p>Сколько раз это «несколько», конкретно? Тут программист решает либо навскидку: скажем, цикл из <em>150 шагов</em>, а потом – перепостановка в очередь. Либо он подходит творчески. Тогда он дописывает три строчки кода, которые следили бы за тем, чтобы общее время выполнения функции по циклу не превышало установленного времени. Скажем, <em>100 миллисекунд</em>. Подвисание браузера на <em>100 мс</em> едва ли будет замечено пользователем. Страница не замрет. Между тем, за это время может быть выполнено 50-200 шагов цикла (!).</p>
+<div class="highlight highlight-source-js"><pre><span class="pl-k">var</span> x <span class="pl-k">=</span> <span class="pl-k">-</span><span class="pl-c1">10</span>, y <span class="pl-k">=</span> <span class="pl-k">-</span><span class="pl-c1">10</span>, 
+	interval <span class="pl-k">=</span> <span class="pl-en">setInternal</span>(<span class="pl-k">function</span>(){
+		<span class="pl-k">var</span> timestamp <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-en">Date</span>();               <span class="pl-c"><span class="pl-c">//</span> *** NEW</span>
+		<span class="pl-k">do</span> {                                      <span class="pl-c"><span class="pl-c">//</span> *** NEW</span>
+			<span class="pl-en">doOperationFor</span>(x, y);
+			x <span class="pl-k">+=</span> <span class="pl-c1">.1</span>;
+			<span class="pl-k">if</span> (x <span class="pl-k">&gt;</span> <span class="pl-c1">10</span>) {
+				x <span class="pl-k">=</span> <span class="pl-k">-</span><span class="pl-c1">10</span>;
+				y <span class="pl-k">+=</span> <span class="pl-c1">.1</span>;
+				<span class="pl-k">if</span> (y <span class="pl-k">&gt;</span> <span class="pl-c1">10</span>) {
+					<span class="pl-c1">clearInterval</span>(interval);
+					<span class="pl-k">return</span>;
+				}
+			}
+		} <span class="pl-k">while</span> ((<span class="pl-k">new</span> <span class="pl-en">Date</span>() <span class="pl-k">-</span> timestamp) <span class="pl-k">&lt;</span> <span class="pl-c1">100</span>); <span class="pl-c"><span class="pl-c">//</span> *** NEW</span>
+		
+	}, <span class="pl-c1">0</span>);</pre></div>
+<p>Итак, еще одна проблема решена. Скорость обработки возросла, лагов по-прежнему нет.
+Программист доволен собой и хочет, чтобы его решением воспользовались коллеги для выполнения собственных задач. Обобщение в первом приближении выглядит так:</p>
+<div class="highlight highlight-source-js"><pre><span class="pl-c"><span class="pl-c">//</span> *** вынесли в именованную функцию</span>
+<span class="pl-k">function</span> <span class="pl-en">nestedFor</span>(<span class="pl-smi">xMin</span>, <span class="pl-smi">xMax</span>, <span class="pl-smi">xStep</span>, <span class="pl-c"><span class="pl-c">//</span> *** значения можно передавать,</span>
+                   <span class="pl-smi">yMin</span>, <span class="pl-smi">yMax</span>, <span class="pl-smi">yStep</span>, <span class="pl-c"><span class="pl-c">//</span> *** они больше не в хардкоде</span>
+                   <span class="pl-smi">operation</span>,         <span class="pl-c"><span class="pl-c">//</span> *** сама операция также передается в виде ссылки на функцию</span>
+                   <span class="pl-smi">doneCallback</span>,      <span class="pl-c"><span class="pl-c">//</span> *** окончание операции "зовет" колбэк, что важно для</span>
+                   <span class="pl-smi">batchMs</span>){          <span class="pl-c"><span class="pl-c">//</span>     асинхронных задач</span>
+
+	<span class="pl-k">var</span> x <span class="pl-k">=</span> xMin, y <span class="pl-k">=</span> yMin, 
+	interval <span class="pl-k">=</span> <span class="pl-en">setInternal</span>(<span class="pl-k">function</span>(){
+		<span class="pl-k">var</span> timestamp <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-en">Date</span>();
+		<span class="pl-k">do</span> {
+			<span class="pl-en">operation</span>(x, y);
+			x <span class="pl-k">+=</span> xStep;
+			<span class="pl-k">if</span> (x <span class="pl-k">&gt;</span> xMax) {
+				x <span class="pl-k">=</span> xMin;
+				y <span class="pl-k">+=</span> yStep;
+				<span class="pl-k">if</span> (y <span class="pl-k">&gt;</span> yMax) {
+					<span class="pl-c1">clearInterval</span>(interval);
+					<span class="pl-en">doneCallback</span>();
+					<span class="pl-k">return</span>;
+				}
+			}
+		} <span class="pl-k">while</span> ((<span class="pl-k">new</span> <span class="pl-en">Date</span>() <span class="pl-k">-</span> timestamp) <span class="pl-k">&lt;</span> (batchMs <span class="pl-k">||</span> <span class="pl-c1">100</span>));
+	}, <span class="pl-c1">0</span>);	
+}</pre></div>
+<p>Но как ни крути, такое решение пока не назовешь общим. Часть логики цикла осталась прочно привязанной к внутренностям <code>nestedFor()</code>.</p>
+<p>Незадачливый Программист Андрей понимает, что все переменные, используемые в действительно общей задаче, надо сгруппировать вместе, да так, чтобы к ним имели доступ и тело цикла, и логика проверки условий цикла и логика изменения переменных цикла, ко всем вместе. Его мысль цепляется за группировку всех переменных в объекте состояния, <code>state</code>. Операциям, которые изменяют переменные цикла, он повелевает быть в функции с именем <code>updateFn</code>. Логике проверки условий цикла – в функции <code>conditionFn</code>. А телу цикла – в функции <code>bodyFn</code>. Тогда получается такая картина:</p>
+<div class="highlight highlight-source-js"><pre><span class="pl-c"><span class="pl-c">//</span> *** функция splitTask принимает..</span>
+<span class="pl-k">function</span> <span class="pl-en">splitTask</span>(<span class="pl-smi">state</span>,       <span class="pl-c"><span class="pl-c">//</span> *** объект-состояние цикла, со всеми нужными данными</span>
+                   <span class="pl-smi">conditionFn</span>, <span class="pl-c"><span class="pl-c">//</span> *** функция с логикой проверки условий цикла</span>
+                   <span class="pl-smi">updateFn</span>,    <span class="pl-c"><span class="pl-c">//</span> *** ф-ция с логикой изменения переменыых цикла</span>
+                   <span class="pl-smi">bodyFn</span>,      <span class="pl-c"><span class="pl-c">//</span> *** ф-ция с логикой тела цикла</span>
+                   <span class="pl-smi">doneCallback</span>, <span class="pl-smi">batchMs</span>) {
+	<span class="pl-k">var</span> interval <span class="pl-k">=</span> <span class="pl-en">setInternal</span>(<span class="pl-k">function</span>(){
+		<span class="pl-k">var</span> timestamp <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-en">Date</span>();
+		<span class="pl-k">do</span> {
+			<span class="pl-k">if</span> (<span class="pl-en">conditionFn</span>(state)) { <span class="pl-c"><span class="pl-c">//</span> после проверки условий..</span>
+				<span class="pl-en">bodyFn</span>(state);    <span class="pl-c"><span class="pl-c">//</span> мы либо выполняем тело цикла и</span>
+				<span class="pl-en">updateFn</span>(state);  <span class="pl-c"><span class="pl-c">//</span> изменяем переменные цикла</span>
+			} <span class="pl-k">else</span> {                  <span class="pl-c"><span class="pl-c">//</span> либо прерываем исполнение</span>
+				<span class="pl-c1">clearInterval</span>(interval);
+				<span class="pl-k">if</span> (doneCallback) <span class="pl-en">doneCallback</span>(state);
+				<span class="pl-k">return</span>;
+			}
+		} <span class="pl-k">while</span> ((<span class="pl-k">new</span> <span class="pl-en">Date</span>() <span class="pl-k">-</span> timestamp) <span class="pl-k">&lt;</span> (batchMs <span class="pl-k">||</span> <span class="pl-c1">100</span>));
+	}, <span class="pl-c1">0</span>);
+}</pre></div>
+<p>Отделение конкретной задачи от логики обеспечения независающего процесса, похоже, закончено. Вот как будет выглядеть код первоначальной задачи, но сейчас уже использующий <code>splitTask()</code>:</p>
+<div class="highlight highlight-source-js"><pre><span class="pl-en">splitTask</span>({
+		x<span class="pl-k">:</span> <span class="pl-k">-</span><span class="pl-c1">10</span>, xMin<span class="pl-k">:</span> <span class="pl-k">-</span><span class="pl-c1">10</span>, xMax<span class="pl-k">:</span> <span class="pl-c1">10</span>, xStep<span class="pl-k">:</span> <span class="pl-c1">.1</span>, 
+		y<span class="pl-k">:</span> <span class="pl-k">-</span><span class="pl-c1">10</span>, yMin<span class="pl-k">:</span> <span class="pl-k">-</span><span class="pl-c1">10</span>, yMax<span class="pl-k">:</span> <span class="pl-c1">10</span>, yStep<span class="pl-k">:</span> <span class="pl-c1">.1</span>
+	},
+	<span class="pl-k">function</span>(<span class="pl-smi">state</span>) {
+		<span class="pl-smi">state</span>.<span class="pl-c1">x</span> <span class="pl-k">+=</span> <span class="pl-smi">state</span>.<span class="pl-smi">xStep</span>;
+		<span class="pl-k">if</span> (<span class="pl-smi">state</span>.<span class="pl-c1">x</span> <span class="pl-k">&gt;</span> <span class="pl-smi">state</span>.<span class="pl-smi">xMax</span>) {
+			<span class="pl-smi">state</span>.<span class="pl-c1">x</span> <span class="pl-k">=</span> <span class="pl-smi">state</span>.<span class="pl-smi">xMin</span>;
+			<span class="pl-smi">state</span>.<span class="pl-c1">y</span> <span class="pl-k">+=</span> <span class="pl-smi">state</span>.<span class="pl-smi">yStep</span>;
+		}
+	},
+	<span class="pl-k">function</span>(<span class="pl-smi">state</span>) {
+		<span class="pl-k">return</span> (<span class="pl-smi">state</span>.<span class="pl-c1">y</span> <span class="pl-k">&lt;=</span> <span class="pl-smi">state</span>.<span class="pl-smi">yMax</span>);
+	},
+	<span class="pl-k">function</span>(<span class="pl-smi">state</span>) {
+		<span class="pl-en">operation</span>(<span class="pl-smi">state</span>.<span class="pl-c1">x</span>, <span class="pl-smi">state</span>.<span class="pl-c1">y</span>);
+	}
+);</pre></div>
+<p>Казалось бы, обобщенная реализация «неподвешивающего алгоритма» завершена. Но и сейчас можно найти ряд недостатков у этого кода:</p>
+<ul>
+<li>объект <code>state</code> в примере использования встречается <strong>15(!) раз</strong>. Так и логики не разглядеть.</li>
+<li>объявление этого <code>state</code> уж что-то сильно громоздко. Да еще и приходится переменным <em>x</em> и <em>y</em> присваивать те же значения, что и <em>xMin</em> и <em>yMin</em> соответственно.</li>
+<li>при вызове <code>splitTask(..)</code>надо запоминать порядок следования функций-параметров. Что идет раньше, проверка на условие или изменение переменных цикла? Хм. Уже не помню.</li>
+<li>то, что у нас получилось, совсем не похоже на простой и понятный код:</li>
+</ul>
+<div class="highlight highlight-source-js"><pre><span class="pl-c"><span class="pl-c">//</span> yMin, yMax, yStep, xMin, xMax, xStep, operation	</span>
+<span class="pl-k">for</span> (<span class="pl-k">var</span> y <span class="pl-k">=</span> yMin; y <span class="pl-k">&lt;</span> yMax; y <span class="pl-k">+=</span> yStep) {
+	<span class="pl-k">for</span> (<span class="pl-k">var</span> x <span class="pl-k">=</span> xMin; x <span class="pl-k">&lt;</span> xMax; x <span class="pl-k">+=</span> xStep) {
+		<span class="pl-en">operation</span>(x, y);
+	}
+}</pre></div>
+<p>В самом деле, здесь прозрачно все - объявление переменных, их инициализация, условия цикла, изменения переменных цикла, да и само тело; и главное, каждому, кто посмотрит, понятно, что за чем следует.</p>
+<p>Как же спроектировать такой удобный и понятный в использовании модуль? Чтобы было удобно передавать данные.. Чтобы задавать функцию-тело цикла.. Да так, чтобы она видела переданные данные, могла их менять и не требовала доступа к ним через объект (ни <code>state</code>, ни <code>this</code>).. Чтобы логика, определяющая, что достигнут конец цикла, не требовала много места и справлялась со своей задачей?</p>
+<p>Каждый раз, будучи этим Незадачливым Программистом Андреем, я по-разному отвечал на эти вопросы и делал реализации, которыми так никогда и не оставался доволен. До тех пор, пока мне не пришла в голову мысль поставить все с головы на ноги.
+Так родилась библиотека <strong>crunchtask</strong>.</p>
+<h1>
+<a aria-hidden="true" class="anchor" href="#%D0%A7%D0%B0%D1%81%D1%82%D1%8C-2-%D0%A1-%D0%B3%D0%BE%D0%BB%D0%BE%D0%B2%D1%8B-%D0%BD%D0%B0-%D0%BD%D0%BE%D0%B3%D0%B8-crunchtask" id="user-content-Часть-2-С-головы-на-ноги-crunchtask"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Часть 2. С головы на ноги. CrunchTask.</h1>
+<p>Библиотека <code>CrunchTask</code> для описания нетормозящей задачи-цикла опирается на основные части простого цикла <code>for</code>:</p>
+<div class="highlight highlight-source-js"><pre><span class="pl-c"><span class="pl-c">//</span> на входе - очень длинный массив arr.</span>
+<span class="pl-k">for</span> (<span class="pl-k">var</span> i <span class="pl-k">=</span> <span class="pl-c1">0</span>, iMax <span class="pl-k">=</span> <span class="pl-smi">arr</span>.<span class="pl-c1">length</span>; i <span class="pl-k">&lt;</span> iMax; i<span class="pl-k">++</span>) {
+  <span class="pl-c"><span class="pl-c">//</span> инструкции; </span>
+}</pre></div>
+<p>Итак, <code>var i</code> и <code>var iMax</code> – это <strong><em>объявление переменной(-ных) цикла</em></strong> (декларация переменных),</p>
+<p><code>i = 0</code>, <code>iMax = arr.length</code> – это <strong><em>инициализация</em></strong> (или первичное присвоение),</p>
+<p><code>i &lt; iMax</code> – <strong><em>условие цикла</em></strong>,</p>
+<p><code>i++</code> – <strong><em>изменение переменной цикла</em></strong>,</p>
+<p>a <code>// инструкции;</code> – это <strong><em>тело цикла</em></strong>.</p>
+<p><strong><em>Объявление переменных цикла</em></strong> считается самой первой операцией. В javascript она производится даже раньше, чем начинается исполнение цикла, на этапе анализа всего исполняемого блока.</p>
+<p>Затем, когда интерпретатор приступает к исполнению цикла, однократно исполняется логика <strong><em>инициализации переменных цикла</em></strong>.</p>
+<p>Перед каждой итерацией выполняется вычисление <strong><em>условия цикла</em></strong>. Если результат вычисления является <em>истинным</em>, инструкции тела цикла <em>выполняются</em>. В противном случае выполнение цикла <em>завершается</em>.</p>
+<p>После каждой итерации вычисляется <strong><em>выражение изменения переменной цикла</em></strong>.</p>
+<p>Более того, как мы знаем из теории программирования, переменные цикла <em>определены</em> только в теле цикла и не существуют вне его.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#%D0%98%D0%BD%D0%B2%D0%B5%D1%80%D1%81%D0%B8%D1%8F-%D1%83%D0%BF%D1%80%D0%B0%D0%B2%D0%BB%D0%B5%D0%BD%D0%B8%D1%8F-inversion-of-control" id="user-content-Инверсия-управления-inversion-of-control"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Инверсия управления (Inversion of control).</h2>
+<p>Я вдохновился этими знаниями о составных частях цикла, чтобы описать цикл по-другому. Сравнивая эту реализацию с тем, к чему мы пришли в первой части, можно даже сказать не «по другому», а «шиворот-навыворот», или лучше - «с головы на ноги». Смотрите сами:</p>
+<div class="highlight highlight-source-js"><pre><span class="pl-c"><span class="pl-c">//</span> описание задачи</span>
+<span class="pl-k">var</span> forTask <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-en">CrunchTask</span>(<span class="pl-k">function</span>(<span class="pl-smi">init</span>, <span class="pl-smi">body</span>){
+
+  <span class="pl-c"><span class="pl-c">//</span> декларация:</span>
+  <span class="pl-k">var</span> i, iMax;
+
+  <span class="pl-en">init</span>(<span class="pl-k">function</span>(<span class="pl-smi">arr</span>){
+    <span class="pl-c"><span class="pl-c">//</span> инициализация:</span>
+    i <span class="pl-k">=</span> <span class="pl-c1">0</span>;
+    iMax <span class="pl-k">=</span> <span class="pl-smi">arr</span>.<span class="pl-c1">length</span>;
+  });
+
+  <span class="pl-en">body</span>(<span class="pl-k">function</span>(<span class="pl-smi">resolve</span>){
+
+    <span class="pl-c"><span class="pl-c">//</span> условие цикла:</span>
+    <span class="pl-k">if</span> (i <span class="pl-k">&lt;</span> iMax) <span class="pl-k">return</span> <span class="pl-en">resolve</span>();
+
+    <span class="pl-c"><span class="pl-c">//</span> тело цикла:</span>
+    <span class="pl-c"><span class="pl-c">//</span> инструкции; </span>
+
+    <span class="pl-c"><span class="pl-c">//</span> изменение переменной цикла:</span>
+    i<span class="pl-k">++</span>;
+  });
+
+});</pre></div>
+<p>Эту задачу-цикл можно выполнить с <code>arr</code> в качестве входных данных:</p>
+<div class="highlight highlight-source-js"><pre><span class="pl-smi">forTask</span>.<span class="pl-en">run</span>(arr);</pre></div>
+<p>а можно и с другими данными, например с <code>arr2</code>:</p>
+<div class="highlight highlight-source-js"><pre><span class="pl-smi">forTask</span>.<span class="pl-en">run</span>(arr2);</pre></div>
+<p>Их выполнение может совпасть по времени - как это бывает с асинхронными задачами. Ближайшая аналогия работы - это параллельные вычисления в тех языках, кторые поддерживают параллельное исполнение. Javascript его лишь эмулирует.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#crunchtask-%D0%9D%D0%B0%D0%B7%D0%B2%D0%B0%D0%BD%D0%B8%D0%B5" id="user-content-crunchtask-Название"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>CrunchTask. Название.</h2>
+<p>Название для библиотеки дали два слова - Crunch и Task. Первое слово, <em>crunch</em>, означает "дробить", - это как раз то, что делает эта библиотека: большой цикл дробится на элементарные части и исполняется пакетами по мере возможности. <em>Crunch</em>, также ассоциируется у меня с тем, что делал главный герой фильма <a href="http://en.wikipedia.org/wiki/The_Zero_Theorem" rel="nofollow">"Теорема Зеро"</a>, - он "дробил сущности" ("crunch entities"). Второе слово, <em>task</em>, задача, ассоциативно отсылает к названию класса, представляющего собой асинхронную операцию в .Net Framework, - <code>Task</code> из пространства имен <code>System.Threading.Tasks</code>.
+Собственно, разбивая выполнение цикла на части, мы переводим его в класс асинхронных задач. Таким образом, экземпляр класса <code>CrunchTask</code> - это <em>описанная асинхронная задача, выполнение которой будет раздроблено на части</em>.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#crunchtask-%D0%9F%D1%80%D0%B8%D0%BC%D0%B5%D0%BD%D0%B5%D0%BD%D0%B8%D0%B5" id="user-content-crunchtask-Применение"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>CrunchTask. Применение.</h2>
+<p>Описывать задачу совсем несложно.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#%D0%9F%D0%B5%D1%80%D0%B2%D0%BE%D0%B5-%D0%BF%D1%80%D0%B8%D0%B1%D0%BB%D0%B8%D0%B6%D0%B5%D0%BD%D0%B8%D0%B5" id="user-content-Первое-приближение"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Первое приближение.</h3>
+<p>Асинхронная задача описывается так:</p>
+<div class="highlight highlight-source-js"><pre><span class="pl-k">var</span> task <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-en">CrunchTask</span>(<span class="pl-c"><span class="pl-c">/*</span> descriptionFn <span class="pl-c">*/</span></span>);</pre></div>
+<p>А вызывается так:</p>
+<div class="highlight highlight-source-js"><pre><span class="pl-smi">task</span>.<span class="pl-en">run</span>(args);</pre></div>
+<h3>
+<a aria-hidden="true" class="anchor" href="#%D0%92%D1%82%D0%BE%D1%80%D0%BE%D0%B5-%D0%BF%D1%80%D0%B8%D0%B1%D0%BB%D0%B8%D0%B6%D0%B5%D0%BD%D0%B8%D0%B5" id="user-content-Второе-приближение"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Второе приближение.</h3>
+<p>Функция <code>descriptionFn</code> - ее лучше вписывать (inline) в виде аргумента к конструктору для наглядности (а не определять отдельно) - служит для предоставления общей области видимости для кода инициализации, кода описания тела, и кода завершения. И, конечно же, она предоставляет возможность определения этих трех важнейших шагов цикла: <strong>инициализации</strong>, <strong>тела цикла</strong> вместе с <strong>условиями цикла</strong> и <strong>изменением переменных цикла</strong>, а также <strong>финализации</strong> при помощи трех функций: <code>initSetup</code>, <code>bodySetup</code> и <code>finallySetup</code>, - передаваемых в <code>descriptionFn</code> в виде трех параметров: <code>init</code>, <code>body</code>, <code>fin</code> соответственно:</p>
+<div class="highlight highlight-source-js"><pre><span class="pl-k">var</span> task <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-en">CrunchTask</span>(<span class="pl-k">function</span>(<span class="pl-smi">init</span>, <span class="pl-smi">body</span>, <span class="pl-smi">fin</span>){
+  <span class="pl-c"><span class="pl-c">//</span> декларация переменных цикла</span>
+  <span class="pl-k">var</span> x, y, xMin, xMax, yMin, yMax;
+
+  <span class="pl-c"><span class="pl-c">//</span> описание инициализации: init(...);</span>
+  <span class="pl-c"><span class="pl-c">//</span> описание тела цикла:    body(...);</span>
+  <span class="pl-c"><span class="pl-c">//</span> описание финализации:   fin(...);</span>
+});</pre></div>
+<p><strong>Инициализация переменных</strong> цикла описывается так:</p>
+<div class="highlight highlight-source-js"><pre><span class="pl-k">var</span> task <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-en">CrunchTask</span>(<span class="pl-k">function</span>(<span class="pl-smi">init</span>, <span class="pl-smi">body</span>, <span class="pl-smi">fin</span>){
+  <span class="pl-k">var</span> x, y, xMin, xMax, yMin, yMax;
+
+  <span class="pl-c"><span class="pl-c">//</span> описание инициализации. initSetup принимает один параметр - initFn:</span>
+  <span class="pl-en">init</span>(<span class="pl-k">function</span>(<span class="pl-smi">_xMin</span>, <span class="pl-smi">_xMax</span>, <span class="pl-smi">_yMin</span>, <span class="pl-smi">_yMax</span>){
+    xMin <span class="pl-k">=</span> _xMin; xMax <span class="pl-k">=</span> _xMax; yMin <span class="pl-k">=</span> _yMin; yMax <span class="pl-k">=</span> _yMax;
+    x <span class="pl-k">=</span> xMin;
+    y <span class="pl-k">=</span> yMin;
+  });
+
+  <span class="pl-c"><span class="pl-c">//</span> описание тела цикла</span>
+  <span class="pl-c"><span class="pl-c">//</span> описание финализации</span>
+});</pre></div>
+<p>Пользуясь тем, что из функции <code>initFn</code>, описанной inline, видны переменные из <code>descriptionFn</code>, фактические значения переменных цикла, переданные задаче в момент ее исполнения - <code>task.run(-10, 10, -10, 10)</code> - , могут быть присвоены уже объявленным переменным цикла.</p>
+<p>Описание <strong>тела цикла</strong> ничуть не сложнее (как и описание <strong>финализации</strong>):</p>
+<div class="highlight highlight-source-js"><pre><span class="pl-k">var</span> task <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-en">CrunchTask</span>(<span class="pl-k">function</span>(<span class="pl-smi">init</span>, <span class="pl-smi">body</span>, <span class="pl-smi">fin</span>){
+  <span class="pl-k">var</span> x, y, xMin, xMax, yMin, yMax;
+
+  <span class="pl-en">init</span>(<span class="pl-k">function</span>(<span class="pl-smi">_xMin</span>, <span class="pl-smi">_xMax</span>, <span class="pl-smi">_yMin</span>, <span class="pl-smi">_yMax</span>){
+    xMin <span class="pl-k">=</span> _xMin; xMax <span class="pl-k">=</span> _xMax; yMin <span class="pl-k">=</span> _yMin; yMax <span class="pl-k">=</span> _yMax;
+    x <span class="pl-k">=</span> xMin;
+    y <span class="pl-k">=</span> yMin;
+  });
+
+  <span class="pl-c"><span class="pl-c">//</span> описание тела цикла. </span>
+  <span class="pl-c"><span class="pl-c">//</span> bodySetup принимает первым параметром bodyFn(resolve, reject, notify):</span>
+  <span class="pl-en">body</span>(<span class="pl-k">function</span>(<span class="pl-smi">resolve</span> <span class="pl-c"><span class="pl-c">/*</span>, reject, notify<span class="pl-c">*/</span></span>){
+    <span class="pl-c"><span class="pl-c">//</span> условие цикла</span>
+    <span class="pl-k">if</span> ((x <span class="pl-k">&gt;</span> xMax) <span class="pl-k">&amp;&amp;</span> (y <span class="pl-k">&gt;</span> yMax)) {
+      <span class="pl-en">resolve</span>();
+      <span class="pl-k">return</span>;
+    }
+    <span class="pl-c"><span class="pl-c">//</span> operation</span>
+    <span class="pl-en">plot</span>(x, y);
+
+    <span class="pl-c"><span class="pl-c">//</span> измениение переменных цикла</span>
+    x <span class="pl-k">+=</span> <span class="pl-c1">.1</span>;
+    <span class="pl-k">if</span> (x <span class="pl-k">&gt;</span> xMax) {
+      x <span class="pl-k">=</span> xMin;
+      y <span class="pl-k">+=</span> <span class="pl-c1">.1</span>;
+    }
+    
+  });
+
+  <span class="pl-c"><span class="pl-c">//</span> описание финализации</span>
+  <span class="pl-en">fin</span>(<span class="pl-k">function</span>(<span class="pl-smi">isSuccess</span>){
+    <span class="pl-c"><span class="pl-c">//</span> эта чать может пригодиться в диагностических целях или для "уборки"</span>
+  });
+});</pre></div>
+<h3>
+<a aria-hidden="true" class="anchor" href="#%D0%A2%D1%80%D0%B5%D1%82%D1%8C%D0%B5-%D0%BF%D1%80%D0%B8%D0%B1%D0%BB%D0%B8%D0%B6%D0%B5%D0%BD%D0%B8%D0%B5" id="user-content-Третье-приближение"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Третье приближение.</h3>
+<p>Все целиком:</p>
+
+        </div>
+
+    </div>]

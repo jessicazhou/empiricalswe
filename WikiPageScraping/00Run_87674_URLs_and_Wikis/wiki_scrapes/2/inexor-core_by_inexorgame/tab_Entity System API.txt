@@ -1,0 +1,552 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>The Entity System API is available on <a class="internal absent" href="/inexorgame/inexor-core/wiki/Inexor-Core">Inexor Core</a> and <a class="internal present" href="/inexorgame/inexor-core/wiki/Inexor-Flex">Inexor Flex</a>. The design of the API shall be similar (but not identical) on <code>Inexor Core</code> and <code>Inexor Flex</code> and easy to use (especially flex).</p>
+<p><code>UUID</code>s are used for the identification of entity types and entity instances even across client or server boundaries.</p>
+<p>The entity system is a <code>directed property graph</code> mapped on the <code>Inexor Tree</code>. Synchronization between Inexor Core and Inexor Flex happens automatically and can be defined on entity type level.</p>
+<pre>TODO: The Inexor Tree has to be extended by a graph system.</pre>
+<h2>
+<a aria-hidden="true" class="anchor" href="#data-types" id="user-content-data-types"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Data types</h2>
+<h3>
+<a aria-hidden="true" class="anchor" href="#inexor-tree-node" id="user-content-inexor-tree-node"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Inexor Tree Node</h3>
+<p>Currently the Inexor Tree is only an hierarchical tree. By extending the tree with a directed property graph the synchronization happens automatically. The tree structure have to be extended with relationships between two nodes in the tree.</p>
+<p>The architectural changes are:</p>
+<p>Every tree node can have multiple parent nodes, too. But there is still only on primary parent node. Using the primary parent node the hierarchical tree structure stays intact. Therefore addressing a node using a path is still working even if a node has multiple parents.</p>
+<p>Furthermore the relationship between two nodes is a object itself (we call it a <code>relationship</code>). A relationship consists of a parent node and a child node and can have attributes itself (equal to a tree node).</p>
+<p>This enables us to store information about the relationship between to nodes! An example for using this feature is that a teleport entity and have multiple destinations (teledest). If a player enters the teleporter he will be teleported to a random teledest. But if you define an attribute <code>propability</code> for each relationship from the teleporter to a teledest, you can define which teledest is used more than the others.</p>
+<p>For the Inexor Tree the change is that every Tree Node has to be extended using a list for the relationship to the parent nodes and a list for the relationships to the child nodes.</p>
+<ul>
+<li>
+<strong>Attributes</strong>
+<ul>
+<li>List&lt;<code>Relationship</code>&gt; <code>parents</code>
+<ul>
+<li>Multiple parents allowed</li>
+<li>Currently
+<ul>
+<li>Only one parent node</li>
+</ul>
+</li>
+<li>Future
+<ul>
+<li>One primary parent node</li>
+<li>A list of relationships to the parent nodes</li>
+<li>The relationship contains the parent node and <code>this</code> as child node</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>List&lt;<code>Relationship</code>&gt; <code>childs</code>
+<ul>
+<li>Multiple childs allowed</li>
+<li>Currently
+<ul>
+<li>A list of relationships to the child nodes</li>
+</ul>
+</li>
+<li>Future
+<ul>
+<li>A list of relationships to the child nodes</li>
+<li>The relationship contains <code>this</code> as parent node and the child node</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+<strong>Methods</strong>
+<ul>
+<li>
+<code>Node</code> <code>getParent</code>()
+<ul>
+<li>Returns the primary parent <code>Node</code>
+</li>
+</ul>
+</li>
+<li>List&lt;<code>Node</code>&gt; <code>getChilds</code>()
+<ul>
+<li>Returns all child <code>Node</code>s (Nodes, not the relationships!)</li>
+</ul>
+</li>
+<li>List&lt;<code>Node</code>&gt; <code>getParents</code>()
+<ul>
+<li>Returns all parent <code>Node</code>s (Nodes, not the relationships!)</li>
+</ul>
+</li>
+<li>List&lt;<code>Node</code>&gt; <code>getChildRelationships</code>()
+<ul>
+<li>Returns the <code>Relationship</code>s from the current Node to child Nodes</li>
+</ul>
+</li>
+<li>List&lt;<code>Node</code>&gt; <code>getParentRelationships</code>()
+<ul>
+<li>Returns the <code>Relationship</code>s from the current Node to parent Nodes</li>
+</ul>
+</li>
+<li>
+<code>Node</code> <code>addChild</code>(name, datatype, ...)
+<ul>
+<li>Creates a child node</li>
+<li>Also creates the relationship between the parent node and the child node (bi-directional)</li>
+</ul>
+</li>
+<li>
+<code>Node</code> <code>addChildRelationship</code>(<code>Node</code>, attributes)
+<ul>
+<li>Adds an existing <code>Node</code> to the list of child nodes</li>
+<li>Also creates the relationship between both <code>Node</code>s</li>
+<li>Adds the relationship to the list of child relationships (of this node)</li>
+<li>Adds the relationship to the list of parent relationships (of the other node)</li>
+</ul>
+</li>
+<li>
+<code>Node</code> <code>addParent</code>(<code>Node</code>, attributes)
+<ul>
+<li>Adds an existing <code>Node</code> to the list of parent nodes</li>
+<li>Also creates the relationship between both <code>Node</code>s</li>
+<li>Adds the relationship to the list of parent relationships (of this node)</li>
+<li>Adds the relationship to the list of child relationships (of the other node)</li>
+</ul>
+</li>
+<li>List&lt;<code>Relationship</code>&gt; <code>getParentRelationships</code>()
+<ul>
+<li>Returns the list of relationship to the parent nodes</li>
+</ul>
+</li>
+<li>List&lt;<code>Relationship</code>&gt; <code>getChildRelationships</code>()
+<ul>
+<li>Returns the list of relationship to the child nodes</li>
+</ul>
+</li>
+<li>
+<code>Relationship</code> <code>moveTo</code>(<code>Node</code>)
+<ul>
+<li>Moves a node to another location in the tree</li>
+<li>The primary parent is changed, the current relationship is removed and a new relationship is created</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h3>
+<a aria-hidden="true" class="anchor" href="#inexor-tree-relationship" id="user-content-inexor-tree-relationship"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Inexor Tree Relationship</h3>
+<p>Represents the relationship from a parent Node to a child Node.</p>
+<ul>
+<li>
+<strong>Attributes</strong>
+<ul>
+<li>String <code>uuid</code>
+<ul>
+<li>The UUID of the <code>Relationship</code>
+</li>
+</ul>
+</li>
+<li>
+<code>Node</code> <code>parent</code>
+<ul>
+<li>The parent <code>Node</code>
+</li>
+</ul>
+</li>
+<li>
+<code>Node</code> <code>child</code>
+<ul>
+<li>The child <code>Node</code>
+</li>
+</ul>
+</li>
+<li>Map&lt;String, <code>EntityAttribute</code>/<code>Node</code>&gt; <code>attributes</code>
+<ul>
+<li>The attributes of the relationship (It's a <code>Property</code>-Graph!)</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+<strong>Methods</strong>
+<ul>
+<li>String <code>getUuid</code>()
+<ul>
+<li>Returns the UUID of the <code>Relationship</code>
+</li>
+</ul>
+</li>
+<li>
+<code>Node</code> <code>getParent</code>()
+<ul>
+<li>Returns the parent Node</li>
+</ul>
+</li>
+<li>
+<code>Node</code> <code>getChild</code>()
+<ul>
+<li>Returns the child Node</li>
+</ul>
+</li>
+<li>Map&lt;String, <code>EntityAttribute</code>/<code>Node</code>&gt; <code>getAttributes</code>()
+<ul>
+<li>Returns the relationship attributes</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h3>
+<a aria-hidden="true" class="anchor" href="#entity" id="user-content-entity"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Entity</h3>
+<p>An <code>Entity</code> is a configurable object of a certain type (Entity Type). For example the entity type is <code>light</code> and the instances are <code>light 1</code> and <code>light 2</code>.</p>
+<ul>
+<li>
+<strong>Attributes</strong>
+<ul>
+<li>String <code>uuid</code>
+<ul>
+<li>The UUID of the <code>Entity</code>
+</li>
+</ul>
+</li>
+<li>String <code>type_uuid</code>
+<ul>
+<li>The UUID of the <code>EntityType</code>
+</li>
+</ul>
+</li>
+<li>[Nur C++] EntityType <code>type</code>
+<ul>
+<li>The <code>EntityType</code> object</li>
+</ul>
+</li>
+<li>String <code>name</code>
+<ul>
+<li>The name of the <code>Entity</code> for use in the UI or rendering the entity in the 3D world</li>
+<li>Optional</li>
+</ul>
+</li>
+<li>Map&lt;String, <code>EntityAttribute</code>&gt;/<code>Node</code> <code>attributes</code>
+<ul>
+<li>The attributes of the <code>Entity</code>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+<strong>Methods (Nur C++)</strong>
+<ul>
+<li>String <code>getUuid()</code>
+<ul>
+<li>Returns the UUID of the <code>Entity</code>
+</li>
+</ul>
+</li>
+<li>Map&lt;String, <code>EntityAttribute</code>&gt;/<code>Node</code> <code>getAttributes()</code>
+<ul>
+<li>Returns the attributes of the <code>Entity</code>
+</li>
+</ul>
+</li>
+<li>EntityType <code>getType()</code>
+<ul>
+<li>Returns the <code>EntityType</code>
+</li>
+</ul>
+</li>
+<li>String <code>getTypeUuid()</code>
+<ul>
+<li>Returns the UUID of the <code>EntityType</code>
+</li>
+</ul>
+</li>
+<li>Map&lt;String, <code>EntityAttribute</code>&gt;/<code>Node</code> <code>getTypeAttributes()</code>
+<ul>
+<li>Returns the Attributes of the <code>EntityType</code>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+<strong>Inexor Tree</strong>
+<ul>
+<li>Path to a Entity Node
+<ul>
+<li>/instances/<code>instance_id</code>/entity/types/<code>entity_type_name</code>/entities/<code>entity_uuid</code>
+</li>
+<li>Example
+<ul>
+<li>/instances/31415/entity/types/light/entities/ab39-39c9</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>Name of an Entity
+<ul>
+<li>/instances/<code>instance_id</code>/entity/types/<code>entity_type_name</code>/entities/<code>entity_uuid</code>/name</li>
+<li>Example
+<ul>
+<li>/instances/31415/entity/types/light/entities/ab39-39c9/name</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>Attributes of an Entity
+<ul>
+<li>/instances/<code>instance_id</code>/entity/types/<code>entity_type_name</code>/entities/<code>entity_uuid</code>/attributes/<code>attribute_name</code>
+</li>
+<li>Example
+<ul>
+<li>/instances/31415/entity/types/light/entities/ab39-39c9/attributes/x</li>
+<li>/instances/31415/entity/types/light/entities/ab39-39c9/attributes/y</li>
+<li>/instances/31415/entity/types/light/entities/ab39-39c9/attributes/z</li>
+<li>/instances/31415/entity/types/light/entities/ab39-39c9/attributes/r</li>
+<li>/instances/31415/entity/types/light/entities/ab39-39c9/attributes/g</li>
+<li>/instances/31415/entity/types/light/entities/ab39-39c9/attributes/b</li>
+<li>/instances/31415/entity/types/light/entities/ab39-39c9/attributes/yaw</li>
+<li>/instances/31415/entity/types/light/entities/ab39-39c9/attributes/pitch</li>
+<li>/instances/31415/entity/types/light/entities/ab39-39c9/attributes/intensity</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h3>
+<a aria-hidden="true" class="anchor" href="#entitytype" id="user-content-entitytype"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>EntityType</h3>
+<p>The type of an entity defines the properties all instances have in common. Therefore you can define attributes on entity type level. Also specialized renderers are responsible for rendering entities of an certain entity type. Also there may be specialized entity emitters or entity modifiers, which spawns new or modifies existing entities of an certain entity type.</p>
+<ul>
+<li>
+<strong>Attributes</strong>
+<ul>
+<li>String <code>uuid</code>
+<ul>
+<li>The UUID of the <code>EntityType</code>
+</li>
+</ul>
+</li>
+<li>String <code>name</code>
+<ul>
+<li>The name of the <code>EntityType</code>
+</li>
+</ul>
+</li>
+<li>Map&lt;String, <code>EntityAttribute</code>&gt;/<code>Node</code> <code>attributes</code>
+<ul>
+<li>The attributes of the <code>EntityType</code>
+</li>
+</ul>
+</li>
+<li>(Nur C++) List&lt;<code>Entity</code>&gt; <code>entities</code>
+<ul>
+<li>The instances (all <code>Entities</code> of this type)</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+<strong>Methods (C++)</strong>
+<ul>
+<li>List&lt;<code>Entity</code>&gt; <code>getEntities</code>()
+<ul>
+<li>Returns all entities of this type</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+<strong>Inexor Tree</strong>
+<ul>
+<li>Path to an entity type
+<ul>
+<li>/instances/<code>instance_id</code>/entity/types/<code>entity_type_name</code>
+</li>
+<li>Example
+<ul>
+<li>/instances/31415/entity/types/light</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>Name of an EntityType
+<ul>
+<li>/instances/<code>instance_id</code>/entity/types/<code>entity_type_name</code>/name</li>
+<li>Example
+<ul>
+<li>/instances/31415/entity/types/light/name</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>Attributes of an EntityType
+<ul>
+<li>/instances/<code>instance_id</code>/entity/types/<code>entity_type_name</code>/name</li>
+<li>Example
+<ul>
+<li>/instances/31415/entity/types/light/attributes/x</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>Entities of type EntityType
+<ul>
+<li>/instances/<code>instance_id</code>/entity/types/<code>entity_type_name</code>/entities/<code>entity_uuid</code>
+</li>
+<li>Example
+<ul>
+<li>/instances/31415/entity/types/light/entities/ab39-39c9</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h3>
+<a aria-hidden="true" class="anchor" href="#entityattribute" id="user-content-entityattribute"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>EntityAttribute</h3>
+<ul>
+<li>Each Entity contains 0..n named attributes
+<ul>
+<li>It's possible to get the value of an attribute by the name of attribute</li>
+<li>Each attribute has a data type</li>
+<li>The data type is variable</li>
+</ul>
+</li>
+<li>NodeJS:
+<ul>
+<li>Ein Entity-<code>Node</code> enthält einen Kind-<code>Node</code> namens <code>attributes</code>
+</li>
+<li>Die Kind-<code>Node</code>s von <code>attributes</code> sind die eigentlichen Attribute</li>
+<li>
+<code>Node</code> Objekte stellen bereits transparente getter und setter bereit</li>
+<li>
+<code>Node</code> Objekte besitzen bereits eine Datentypbehandlung</li>
+</ul>
+</li>
+<li>C++:
+<ul>
+<li>In C++ müssen die Attribute in einer Map mit dem Namen als Key und einem Objekt vom Typ <code>EntityAttribute</code> als Wert gesammelt werden</li>
+<li>
+<code>EntityAttribute</code> ist eine eigene Klasse, die den Datentyp und den typisierten Wert beinhaltet (boost::any)</li>
+<li>getter und setter sollen transparent sein</li>
+</ul>
+</li>
+</ul>
+<h2>
+<a aria-hidden="true" class="anchor" href="#api--service-layer" id="user-content-api--service-layer"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>API / Service Layer</h2>
+<p>In order to access entities in <code>Inexor Flex</code> we just use the <code>Inexor Tree</code> API. The API below simplifies and unitizes the usage and though. In theory everything can be done with the Inexor Tree API but is more complicated.</p>
+<p>In contrast to <code>Inexor Flex</code> you have to use the Entity System API in <code>Inexor Core</code>! <code>Entity</code> and <code>EntityType</code> are fully implemented C++-Classes. Whereas <code>Inexor Flex</code> uses <code>Inexor Tree Nodes</code> in <code>Inexor Core</code> you have to use instances of <code>Entity</code> and <code>EntityType</code>.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#entity-manager" id="user-content-entity-manager"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Entity Manager</h3>
+<p>All management of entities is done by the EntityManager (CRUD + Inexor Tree). The entity manager simplifies the access to entities.</p>
+<ul>
+<li>
+<code>Entity</code>/<code>Node</code> get(uuid)
+<ul>
+<li>Liefert das Objekt zurück</li>
+</ul>
+</li>
+<li>List&lt;<code>Entity</code>/<code>Node</code>&gt; getAll(type_uuid)
+<ul>
+<li>Gibt alle Entities vom angegebenen Typ zurück</li>
+</ul>
+</li>
+<li>List&lt;<code>Entity</code>/<code>Node</code>&gt; getAll(<code>EntityType</code>/<code>Node</code>)
+<ul>
+<li>Gibt alle Entities vom angegebenen Typ zurück</li>
+</ul>
+</li>
+<li>
+<code>EntityType</code>/<code>Node</code> getType(uuid)
+<ul>
+<li>Gibt den EntityType für das angegebene Entity zurück</li>
+</ul>
+</li>
+<li>
+<code>EntityType</code>/<code>Node</code> getType(<code>Entity</code>/<code>Node</code>)
+<ul>
+<li>Gibt den EntityType für das angegebene Entity zurück</li>
+</ul>
+</li>
+<li>void remove(uuid)
+<ul>
+<li>Löscht das Entity mit der angegebenen uuid</li>
+</ul>
+</li>
+<li>void remove(<code>Entity</code>/<code>Node</code>)
+<ul>
+<li>Löscht das Entity</li>
+</ul>
+</li>
+<li>void removeAll(type_uuid)
+<ul>
+<li>Löscht alle Entities vom angegebenen Typ</li>
+</ul>
+</li>
+<li>void removeAll(<code>EntityType</code>/<code>Node</code>)
+<ul>
+<li>Löscht alle Entities vom angegebenen Typ</li>
+</ul>
+</li>
+<li>
+<code>Entity</code>/<code>Node</code> create(type_uuid)
+<ul>
+<li>Erzeugt ein neues Entity mit dem angegebenen EntityType und gibt das Objekt zurück</li>
+</ul>
+</li>
+<li>
+<code>Entity</code>/<code>Node</code> create(type_uuid, publish)
+<ul>
+<li>Erzeugt ein neues Entity mit dem angegebenen EntityType und gibt das Objekt zurück. Macht das Entity über den InexorTree verfügbar, wenn publish = true</li>
+</ul>
+</li>
+<li>
+<code>Entity</code>/<code>Node</code> create(<code>EntityType</code>/<code>Node</code>)
+<ul>
+<li>Erzeugt ein neues Entity mit dem angegebenen EntityType und gibt das Objekt zurück</li>
+</ul>
+</li>
+<li>
+<code>Entity</code>/<code>Node</code> create(<code>EntityType</code>/<code>Node</code>, publish)
+<ul>
+<li>Erzeugt ein neues Entity mit dem angegebenen EntityType und gibt das Objekt zurück. Macht das Entity über den InexorTree verfügbar, wenn publish = true</li>
+</ul>
+</li>
+<li>void publish(uuid)
+<ul>
+<li>Macht das Entity und seine Attribute über den InexorTree verfügbar</li>
+</ul>
+</li>
+<li>void publish(<code>Entity</code>/<code>Node</code>)
+<ul>
+<li>Macht das Entity und seine Attribute über den InexorTree verfügbar</li>
+</ul>
+</li>
+<li>void unpublish(uuid)
+<ul>
+<li>Removes an Entity from InexorTree</li>
+</ul>
+</li>
+<li>void unpublish(<code>Entity</code>/<code>Node</code>)
+<ul>
+<li>Removes an Entity from InexorTree</li>
+</ul>
+</li>
+</ul>
+<h3>
+<a aria-hidden="true" class="anchor" href="#entitytypemanager" id="user-content-entitytypemanager"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>EntityTypeManager</h3>
+<p>All management of entity types is done by the <code>EntityTypeManager</code>.</p>
+<ul>
+<li>EntityType/Node get(uuid)</li>
+<li>EntityType/Node create(name, attributes)</li>
+<li>void remove(uuid)</li>
+<li>void remove (EntityType/Node)</li>
+</ul>
+
+        </div>
+
+        <div class="wiki-footer gollum-markdown-content boxed-group" id="wiki-footer">
+          <div class="boxed-group-inner wiki-auxiliary-content markdown-body">
+            <p>Need help? <a class="internal present" href="/inexorgame/inexor-core/wiki/Contact">Contact</a> us.</p>
+
+          </div>
+        </div>
+    </div>]

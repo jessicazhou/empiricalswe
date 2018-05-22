@@ -1,0 +1,86 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>OpenLayers 3 should provide an API that makes it easy to accomplish common use cases. People who do not need to leverage the full functionality should be provided fast lanes for a leaner and easy to use configuration. Defaults should be set in the right places to avoid duplicated code.</p>
+<p>This document is work in progress. At the time of writing, it reflects @ahocevar's thoughts on a few aspects of the library that come to mind when thinking about API and defaults.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#map-with-wms-layer-tiled-in-default-projection-epsg3857" id="user-content-map-with-wms-layer-tiled-in-default-projection-epsg3857"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Map with WMS layer (tiled) in default projection (EPSG:3857)</h2>
+<pre><code>new ol.Map({
+    layers: [
+        // suitable layer type can be chosen based on the source
+        new ol.source.TiledWMS({
+            url: '/geoserver/wms',
+            params: {
+               'LAYERS': 'usa:states' // would be nice without quotes for the key
+            }
+        })
+    ],
+    // would be even nicer to provide center and zoom as direct map config options
+    view: {
+        center: [47, 15],
+        zoom: 9
+    }
+});
+</code></pre>
+<h2>
+<a aria-hidden="true" class="anchor" href="#map-with-custom-projection-and-a-wms-layer" id="user-content-map-with-custom-projection-and-a-wms-layer"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Map with custom projection and a WMS layer</h2>
+<pre><code>new ol.Map({
+    layers: [
+        new ol.source.TiledWMS({
+            url: '/geoserver/wms',
+            params: {
+               'LAYERS': 'usa:states' // would be nice without quotes for the key
+            }
+        })
+    ],
+    view: {
+        projection: {
+            code: 'EPSG:31256',
+            units: 'meters',
+            // validity extent from http://spatialreference.org/
+            extent: [-115317.3972, 151511.8020, 64307.1064, 432456.2246]
+        },
+        center: [47, 15],
+        zoom: 3
+    }
+});
+</code></pre>
+<p>The layer source should not need a projection configuration - it should get it from the view. With the projection's extent, the layer source should be able to create a default tile grid. The map's zoom levels will be derived from the projection's extent as well.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#map-with-custom-projection-and-single-image-wms-layer" id="user-content-map-with-custom-projection-and-single-image-wms-layer"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Map with custom projection and single image WMS layer</h2>
+<p>Exactly the same as above, only with <code>ol.source.SingleImageWMS</code> instead of <code>ol.Source.TiledWMS</code>. It should not be necessary to configure the layer source with a resolutions array, and a single image source should be able to serve any resolution that the map uses.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#map-with-custom-projection-wms-layer-with-custom-tile-grid" id="user-content-map-with-custom-projection-wms-layer-with-custom-tile-grid"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Map with custom projection, WMS layer with custom tile grid</h2>
+<pre><code>new ol.Map({
+    layers: [
+        new ol.source.TiledWMS({
+            url: '/geoserver/wms',
+            params: {
+               'LAYERS': 'usa:states' // would be nice without quotes for the key
+            },
+            tileGrid: {
+                maxExtent: [-100000, 160000, 60000, 430000],
+                resolutions: [1000, 500, 200, 100, 50, 20, 10, 5, 2, 1]
+            }
+        })
+    ],
+    view: {
+        projection: {
+            code: 'EPSG:31256',
+            units: 'meters',
+            // validity extent from http://spatialreference.org/
+            extent: [-115317.3972, 151511.8020, 64307.1064, 432456.2246]
+        },
+        center: [47, 15],
+        zoom: 3
+    }
+});
+</code></pre>
+<p>Since the TileGrid is a very complex thing, and most use cases except ArcGISCache and WMTS use the same grid extent for each resolution, it makes sense to provide a convenience configuration with a common maxExtent and a set of resolutions.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#thoughts-on-defaults" id="user-content-thoughts-on-defaults"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Thoughts on defaults</h2>
+<p>Looking at the current code, there are still more than one places with Web Mercator related defaults. The central place for projection related defaults should be the <code>ol.projection</code> package. If layer sources can lazily create a TileGrid upon rendering, it will be possible to use map defaults for layer sources.</p>
+<p>The concept of user projections works best in the context of a map. Classes like Coordinate or Extent do not necessarily need to know about the user projection if the map (or the view) provides extent and center related getters.</p>
+
+        </div>
+
+    </div>]

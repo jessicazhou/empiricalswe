@@ -1,0 +1,53 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>The v3.15.0 release of <code>@slack/client</code> has deprecated use of the <code>SlackDataStore</code> interface and its implementations (including <code>SlackMemoryDataStore</code>). In v4.0.0 (<a href="https://github.com/slackapi/node-slack-sdk/milestone/2">release milestone</a>), these types and APIs using these types will be removed.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#why-remove-this-useful-feature" id="user-content-why-remove-this-useful-feature"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Why remove this useful feature?</h2>
+<p>The data store APIs have helped apps keep track of team state since this feature was released. But as the Slack platform has evolved, the model has become out of date in tricky and unexpected ways. The data store was designed to behave like the Slack web and desktop applications, managing the type of state that a logged in human user would typically need. But bots and Slack apps have a whole new (and more powerful in many ways) perspective of the world!</p>
+<p>At a high level, here are the design issues that could not be addressed in a backwards compatible way:</p>
+<ul>
+<li>
+<p><strong>Synchronous calling convention</strong> - In order to plug in storage destinations other than memory (<code>SlackMemoryDataStore</code>) the code to reach that destination would need to be asynchronous. This is important if you want to share state across many processes while horizontally scaling an app. As a result, the maintainers have never seen an implementation of the <code>SlackDataStore</code> interface other than the memory-based one provided.</p>
+</li>
+<li>
+<p><strong>Names versus IDs</strong> - While we always thought it was a good idea to use IDs anywhere possible in programmatic use, the Slack platform wasn't overly strict about it. With the introduction of Shared Channels, we cannot preserve any guarantees of uniqueness for usernames, as we mentioned in this <a href="https://api.slack.com/changelog/2017-09-the-one-about-usernames" rel="nofollow">changelog entry</a>. In fact, channel names also lose these types of guarantees. The APIs in the <code>SlackDataStore</code> that operate on names instead of IDs start to break since the fundamental assumptions are not true anymore.</p>
+</li>
+<li>
+<p><strong>Missing Users</strong> - We want the SDK to be clear and easy to use across many use cases, including applications developed for Enterprise Grid and Shared Channels. In this context, an application is likely to receive events from users it does not recognize and for whom it cannot get more information. <code>SlackDataStore</code> cannot deal with these scenarios. If your application has more than one RTM client connected to different workspaces, and those workspaces are joined by a shared channel, there is no general purpose way to deduplicate the messages and arrive at a consistent deterministic state. The Slack platform has solved for this issue using the Events API (which deduplicates events on your app's behalf).</p>
+</li>
+</ul>
+<p>For the full discussion, see <a href="https://github.com/slackapi/node-slack-sdk/issues/330">#330</a>.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#what-should-i-change-in-my-app-to-prepare-for-v4" id="user-content-what-should-i-change-in-my-app-to-prepare-for-v4"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>What should I change in my app to prepare for v4?</h2>
+<p>This is the right question to ask! We <strong>highly</strong> recommend updating to v4 as soon as it is available (the maintainers have been trying to keep v3.x compatible with deprecated versions of Node for over a year, but as some packages that v3.x depends on are missing patches for known security vulnerabilities, we must prepare for a major version).</p>
+<p>You can start preparing for this transition today. When you initialize an <code>RtmClient</code> object, turn on the <code>useRtmConnect</code> option and turn off the <code>dataStore</code> option as below:</p>
+<div class="highlight highlight-source-js"><pre><span class="pl-k">const</span> { <span class="pl-c1">RtmClient</span> } <span class="pl-k">=</span> <span class="pl-c1">require</span>(<span class="pl-s"><span class="pl-pds">'</span>@slack/client<span class="pl-pds">'</span></span>);
+
+<span class="pl-k">const</span> <span class="pl-c1">rtm</span> <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-en">RtmClient</span>(<span class="pl-s"><span class="pl-pds">'</span>your-token-here<span class="pl-pds">'</span></span>, {
+  useRtmConnect<span class="pl-k">:</span> <span class="pl-c1">true</span>,
+  dataStore<span class="pl-k">:</span> <span class="pl-c1">false</span>,
+});</pre></div>
+<p>Next look through your code for any places you might reference the <code>.dataStore</code> property of the <code>RtmClient</code>. In most cases, you'll be able to replace finding data in the dataStore with finding that data using a <code>WebClient</code>.</p>
+<div class="highlight highlight-source-js"><pre><span class="pl-k">const</span> { <span class="pl-c1">RtmClient</span>, <span class="pl-c1">WebClient</span> } <span class="pl-k">=</span> <span class="pl-c1">require</span>(<span class="pl-s"><span class="pl-pds">'</span>@slack/client<span class="pl-pds">'</span></span>);
+<span class="pl-k">const</span> <span class="pl-c1">web</span> <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-en">WebClient</span>(<span class="pl-s"><span class="pl-pds">'</span>your-token-here<span class="pl-pds">'</span></span>);
+
+<span class="pl-c"><span class="pl-c">//</span> Before:</span>
+<span class="pl-c"><span class="pl-c">//</span> const channel = rtm.dataStore.getChannelById(channelId);</span>
+<span class="pl-c"><span class="pl-c">//</span> console.log(`channel info: ${JSON.stringify(channel)}`);</span>
+
+<span class="pl-c"><span class="pl-c">//</span> After:</span>
+<span class="pl-smi">web</span>.<span class="pl-smi">conversations</span>.<span class="pl-en">info</span>(channelId)
+  .<span class="pl-c1">then</span>(<span class="pl-smi">resp</span> <span class="pl-k">=&gt;</span> <span class="pl-en">console</span>.<span class="pl-c1">log</span>(<span class="pl-s"><span class="pl-pds">`</span>channel info: <span class="pl-s1"><span class="pl-pse">${</span><span class="pl-c1">JSON</span>.<span class="pl-c1">stringify</span>(<span class="pl-smi">resp</span>.<span class="pl-smi">channel</span>)<span class="pl-pse">}</span></span><span class="pl-pds">`</span></span>)
+  .<span class="pl-c1">catch</span>(<span class="pl-smi">error</span> <span class="pl-k">=&gt;</span> <span class="pl-c"><span class="pl-c">/*</span> TODO: handle error <span class="pl-c">*/</span></span>);</pre></div>
+<p>If you aren't sure how to translate a specific data store method into a Web API call, file a new <code>question</code> issue and we will help you figure it out.</p>
+<p>You'll notice that this code has become asynchronous. This will likely be the largest challenge in migrating away from the data store, but for most developers it will be worth it.</p>
+<p>For the majority of apps, you will be ready for v4 at this point. If your app is having performance related issues, there's room to make improvements by caching the data that is relevant to your app. This should only be taken on if you believe its necessary, since cache invalidation is one of the <a href="https://martinfowler.com/bliki/TwoHardThings.html" rel="nofollow">only two hard things in computer science</a>.</p>
+<p>The approach for caching data that we recommend is to pick out the data your app needs, store it at connection time, and update it according to a determined policy. You may want to disable the <code>useRtmConnect</code> option in order
+to get more data at connection time.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#can-we-make-this-easier" id="user-content-can-we-make-this-easier"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Can we make this easier?</h2>
+<p>We've started to build requirements for a replacement of the deprecated data store APIs. This work has not yet resulted in a timeline or commitment to build it, but we are open to your thoughts, concerns, and contributions. That discussion is taking place in <a href="https://github.com/slackapi/node-slack-sdk/issues/410">this issue</a>.</p>
+
+        </div>
+
+    </div>]

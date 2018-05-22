@@ -1,0 +1,136 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>CoreStore provides type-safe wrappers for observing managed objects:</p>
+<ul>
+<li>
+<code>ObjectMonitor</code>: use to monitor changes to a single <code>NSManagedObject</code> instance (instead of Key-Value Observing)</li>
+<li>
+<code>ListMonitor</code>: use to monitor changes to a list of <code>NSManagedObject</code> instances (instead of <code>NSFetchedResultsController</code>)</li>
+</ul>
+<h3>
+<a aria-hidden="true" class="anchor" href="#observe-a-single-object" id="user-content-observe-a-single-object"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Observe a single object</h3>
+<p>To observe an object, implement the <code>ObjectObserver</code> protocol and specify the <code>EntityType</code>:</p>
+<div class="highlight highlight-source-swift"><pre><span class="pl-k">class</span> <span class="pl-en">MyViewController</span>: <span class="pl-e">UIViewController</span>, <span class="pl-e">ObjectObserver </span>{
+    <span class="pl-k">func</span> <span class="pl-en">objectMonitor</span>(<span class="pl-smi"><span class="pl-en">monitor</span></span>: ObjectMonitor&lt;MyPersonEntity&gt;, <span class="pl-en">willUpdateObject</span> <span class="pl-smi">object</span>: MyPersonEntity) {
+        <span class="pl-c"><span class="pl-c">//</span> ...</span>
+<span class="pl-c"></span>    }
+    
+    <span class="pl-k">func</span> <span class="pl-en">objectMonitor</span>(<span class="pl-smi"><span class="pl-en">monitor</span></span>: ObjectMonitor&lt;MyPersonEntity&gt;, <span class="pl-en">didUpdateObject</span> <span class="pl-smi">object</span>: MyPersonEntity, <span class="pl-smi"><span class="pl-en">changedPersistentKeys</span></span>: <span class="pl-c1">Set</span>&lt;KeyPath&gt;) {
+        <span class="pl-c"><span class="pl-c">//</span> ...</span>
+<span class="pl-c"></span>    }
+    
+    <span class="pl-k">func</span> <span class="pl-en">objectMonitor</span>(<span class="pl-smi"><span class="pl-en">monitor</span></span>: ObjectMonitor&lt;MyPersonEntity&gt;, <span class="pl-en">didDeleteObject</span> <span class="pl-smi">object</span>: MyPersonEntity) {
+        <span class="pl-c"><span class="pl-c">//</span> ...</span>
+<span class="pl-c"></span>    }
+}</pre></div>
+<p>We then need to keep a <code>ObjectMonitor</code> instance and register our <code>ObjectObserver</code> as an observer:</p>
+<div class="highlight highlight-source-swift"><pre><span class="pl-k">let</span> person<span class="pl-k">:</span> MyPersonEntity <span class="pl-k">=</span> <span class="pl-c"><span class="pl-c">//</span> ...</span>
+<span class="pl-c"></span><span class="pl-c1">self</span>.<span class="pl-smi">monitor</span> <span class="pl-k">=</span> CoreStore.<span class="pl-c1">monitorObject</span>(person)
+<span class="pl-c1">self</span>.<span class="pl-smi">monitor</span>.<span class="pl-c1">addObserver</span>(<span class="pl-c1">self</span>)</pre></div>
+<p>The controller will then notify our observer whenever the object's attributes change. You can add multiple <code>ObjectObserver</code>s to a single <code>ObjectMonitor</code> without any problem. This means you can just share around the <code>ObjectMonitor</code> instance to different screens without problem.</p>
+<p>You can get <code>ObjectMonitor</code>'s object through its <code>object</code> property. If the object is deleted, the <code>object</code> property will become <code>nil</code> to prevent further access.</p>
+<p>While <code>ObjectMonitor</code> exposes <code>removeObserver(...)</code> as well, it only stores <code>weak</code> references of the observers and will safely unregister deallocated observers.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#observe-a-list-of-objects" id="user-content-observe-a-list-of-objects"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Observe a list of objects</h3>
+<p>To observe a list of objects, implement one of the <code>ListObserver</code> protocols and specify the <code>EntityType</code>:</p>
+<div class="highlight highlight-source-swift"><pre><span class="pl-k">class</span> <span class="pl-en">MyViewController</span>: <span class="pl-e">UIViewController</span>, <span class="pl-e">ListObserver </span>{
+    <span class="pl-k">func</span> <span class="pl-en">listMonitorWillChange</span>(<span class="pl-smi"><span class="pl-en">monitor</span></span>: ListMonitor&lt;MyPersonEntity&gt;) {
+        <span class="pl-c"><span class="pl-c">//</span> ...</span>
+<span class="pl-c"></span>    }
+    
+    <span class="pl-k">func</span> <span class="pl-en">listMonitorDidChange</span>(<span class="pl-smi"><span class="pl-en">monitor</span></span>: ListMonitor&lt;MyPersonEntity&gt;) {
+        <span class="pl-c"><span class="pl-c">//</span> ...</span>
+<span class="pl-c"></span>    }
+}</pre></div>
+<p>Including <code>ListObserver</code>, there are 3 observer protocols you can implement depending on how detailed you need to handle a change notification:</p>
+<ul>
+<li>
+<code>ListObserver</code>: lets you handle these callback methods:</li>
+</ul>
+<div class="highlight highlight-source-swift"><pre>    <span class="pl-k">func</span> <span class="pl-en">listMonitorWillChange</span>(<span class="pl-smi"><span class="pl-en">monitor</span></span>: ListMonitor&lt;MyPersonEntity&gt;)
+
+    <span class="pl-k">func</span> <span class="pl-en">listMonitorDidChange</span>(<span class="pl-smi"><span class="pl-en">monitor</span></span>: ListMonitor&lt;MyPersonEntity&gt;)</pre></div>
+<ul>
+<li>
+<code>ListObjectObserver</code>: in addition to <code>ListObserver</code> methods, also lets you handle object inserts, updates, and deletes:</li>
+</ul>
+<div class="highlight highlight-source-swift"><pre>    <span class="pl-k">func</span> <span class="pl-en">listMonitor</span>(<span class="pl-smi"><span class="pl-en">monitor</span></span>: ListMonitor&lt;MyPersonEntity&gt;, <span class="pl-en">didInsertObject</span> <span class="pl-smi">object</span>: MyPersonEntity, <span class="pl-en">toIndexPath</span> <span class="pl-smi">indexPath</span>: NSIndexPath)
+
+    <span class="pl-k">func</span> <span class="pl-en">listMonitor</span>(<span class="pl-smi"><span class="pl-en">monitor</span></span>: ListMonitor&lt;MyPersonEntity&gt;, <span class="pl-en">didDeleteObject</span> <span class="pl-smi">object</span>: MyPersonEntity, <span class="pl-en">fromIndexPath</span> <span class="pl-smi">indexPath</span>: NSIndexPath)
+
+    <span class="pl-k">func</span> <span class="pl-en">listMonitor</span>(<span class="pl-smi"><span class="pl-en">monitor</span></span>: ListMonitor&lt;MyPersonEntity&gt;, <span class="pl-en">didUpdateObject</span> <span class="pl-smi">object</span>: MyPersonEntity, <span class="pl-en">atIndexPath</span> <span class="pl-smi">indexPath</span>: NSIndexPath)
+
+    <span class="pl-k">func</span> <span class="pl-en">listMonitor</span>(<span class="pl-smi"><span class="pl-en">monitor</span></span>: ListMonitor&lt;MyPersonEntity&gt;, <span class="pl-en">didMoveObject</span> <span class="pl-smi">object</span>: MyPersonEntity, <span class="pl-smi"><span class="pl-en">fromIndexPath</span></span>: NSIndexPath, <span class="pl-smi"><span class="pl-en">toIndexPath</span></span>: NSIndexPath)</pre></div>
+<ul>
+<li>
+<code>ListSectionObserver</code>: in addition to <code>ListObjectObserver</code> methods, also lets you handle section inserts and deletes:</li>
+</ul>
+<div class="highlight highlight-source-swift"><pre>    <span class="pl-k">func</span> <span class="pl-en">listMonitor</span>(<span class="pl-smi"><span class="pl-en">monitor</span></span>: ListMonitor&lt;MyPersonEntity&gt;, <span class="pl-en">didInsertSection</span> <span class="pl-smi">sectionInfo</span>: NSFetchedResultsSectionInfo, <span class="pl-en">toSectionIndex</span> <span class="pl-smi">sectionIndex</span>: <span class="pl-c1">Int</span>)
+
+    <span class="pl-k">func</span> <span class="pl-en">listMonitor</span>(<span class="pl-smi"><span class="pl-en">monitor</span></span>: ListMonitor&lt;MyPersonEntity&gt;, <span class="pl-en">didDeleteSection</span> <span class="pl-smi">sectionInfo</span>: NSFetchedResultsSectionInfo, <span class="pl-en">fromSectionIndex</span> <span class="pl-smi">sectionIndex</span>: <span class="pl-c1">Int</span>)</pre></div>
+<p>We then need to create a <code>ListMonitor</code> instance and register our <code>ListObserver</code> as an observer:</p>
+<div class="highlight highlight-source-swift"><pre><span class="pl-c1">self</span>.<span class="pl-smi">monitor</span> <span class="pl-k">=</span> CoreStore.<span class="pl-c1">monitorList</span>(
+    <span class="pl-c1">From</span>(MyPersonEntity),
+    <span class="pl-c1">Where</span>(<span class="pl-s"><span class="pl-pds">"</span>age &gt; 30<span class="pl-pds">"</span></span>),
+    <span class="pl-c1">OrderBy</span>(.<span class="pl-c1">Ascending</span>(<span class="pl-s"><span class="pl-pds">"</span>name<span class="pl-pds">"</span></span>)),
+    Tweak { (fetchRequest) <span class="pl-k">-&gt;</span> <span class="pl-c1">Void</span> <span class="pl-k">in</span>
+        fetchRequest.<span class="pl-smi">fetchBatchSize</span> <span class="pl-k">=</span> <span class="pl-c1">20</span>
+    }
+)
+<span class="pl-c1">self</span>.<span class="pl-smi">monitor</span>.<span class="pl-c1">addObserver</span>(<span class="pl-c1">self</span>)</pre></div>
+<p>Similar to <code>ObjectMonitor</code>, a <code>ListMonitor</code> can also have multiple <code>ListObserver</code>s registered to a single <code>ListMonitor</code>.</p>
+<p>If you have noticed, the <code>monitorList(...)</code> method accepts <code>Where</code>, <code>OrderBy</code>, and <code>Tweak</code> clauses exactly like a fetch. As the list maintained by <code>ListMonitor</code> needs to have a deterministic order, at least the <code>From</code> and <code>OrderBy</code> clauses are required.</p>
+<p>A <code>ListMonitor</code> created from <code>monitorList(...)</code> will maintain a single-section list. You can therefore access its contents with just an index:</p>
+<div class="highlight highlight-source-swift"><pre><span class="pl-k">let</span> firstPerson <span class="pl-k">=</span> <span class="pl-c1">self</span>.<span class="pl-smi">monitor</span>[<span class="pl-c1">0</span>]</pre></div>
+<p>If the list needs to be grouped into sections, create the <code>ListMonitor</code> instance with the <code>monitorSectionedList(...)</code> method and a <code>SectionBy</code> clause:</p>
+<div class="highlight highlight-source-swift"><pre><span class="pl-c1">self</span>.<span class="pl-smi">monitor</span> <span class="pl-k">=</span> CoreStore.<span class="pl-c1">monitorSectionedList</span>(
+    <span class="pl-c1">From</span>(MyPersonEntity),
+    <span class="pl-c1">SectionBy</span>(<span class="pl-s"><span class="pl-pds">"</span>age<span class="pl-pds">"</span></span>),
+    <span class="pl-c1">Where</span>(<span class="pl-s"><span class="pl-pds">"</span>gender<span class="pl-pds">"</span></span>, <span class="pl-c1">isEqualTo</span>: <span class="pl-s"><span class="pl-pds">"</span>M<span class="pl-pds">"</span></span>),
+    <span class="pl-c1">OrderBy</span>(.<span class="pl-c1">Ascending</span>(<span class="pl-s"><span class="pl-pds">"</span>age<span class="pl-pds">"</span></span>), .<span class="pl-c1">Ascending</span>(<span class="pl-s"><span class="pl-pds">"</span>name<span class="pl-pds">"</span></span>)),
+    Tweak { (fetchRequest) <span class="pl-k">-&gt;</span> <span class="pl-c1">Void</span> <span class="pl-k">in</span>
+        fetchRequest.<span class="pl-smi">fetchBatchSize</span> <span class="pl-k">=</span> <span class="pl-c1">20</span>
+    }
+)</pre></div>
+<p>A list controller created this way will group the objects by the attribute key indicated by the <code>SectionBy</code> clause. One more thing to remember is that the <code>OrderBy</code> clause should sort the list in such a way that the <code>SectionBy</code> attribute would be sorted together (a requirement shared by <code>NSFetchedResultsController</code>.)</p>
+<p>The <code>SectionBy</code> clause can also be passed a closure to transform the section name into a displayable string:</p>
+<div class="highlight highlight-source-swift"><pre><span class="pl-c1">self</span>.<span class="pl-smi">monitor</span> <span class="pl-k">=</span> CoreStore.<span class="pl-c1">monitorSectionedList</span>(
+    <span class="pl-c1">From</span>(MyPersonEntity),
+    <span class="pl-c1">SectionBy</span>(<span class="pl-s"><span class="pl-pds">"</span>age<span class="pl-pds">"</span></span>) { (sectionName) <span class="pl-k">-&gt;</span> <span class="pl-c1">String</span><span class="pl-k">?</span> <span class="pl-k">in</span>
+        <span class="pl-s"><span class="pl-pds">"</span><span class="pl-pse">\(</span><span class="pl-s1">sectionName</span><span class="pl-pse"><span class="pl-s1">)</span></span> years old<span class="pl-pds">"</span></span>
+    },
+    <span class="pl-c1">OrderBy</span>(.<span class="pl-c1">Ascending</span>(<span class="pl-s"><span class="pl-pds">"</span>age<span class="pl-pds">"</span></span>), .<span class="pl-c1">Ascending</span>(<span class="pl-s"><span class="pl-pds">"</span>name<span class="pl-pds">"</span></span>))
+)</pre></div>
+<p>This is useful when implementing a <code>UITableViewDelegate</code>'s section header:</p>
+<div class="highlight highlight-source-swift"><pre><span class="pl-k">func</span> <span class="pl-en">tableView</span>(<span class="pl-smi"><span class="pl-en">tableView</span></span>: UITableView, <span class="pl-en">titleForHeaderInSection</span> <span class="pl-smi">section</span>: <span class="pl-c1">Int</span>) <span class="pl-k">-&gt;</span> <span class="pl-c1">String</span><span class="pl-k">?</span> {
+    <span class="pl-k">let</span> sectionInfo <span class="pl-k">=</span> <span class="pl-c1">self</span>.<span class="pl-smi">monitor</span>.<span class="pl-c1">sectionInfoAtIndex</span>(section)
+    <span class="pl-c"><span class="pl-c">//</span> sectionInfo is an NSFetchedResultsSectionInfo instance</span>
+<span class="pl-c"></span>    <span class="pl-k">return</span> sectionInfo.<span class="pl-smi">name</span>
+}</pre></div>
+<p>To access the objects of a sectioned list, use an <code>NSIndexPath</code> or a tuple:</p>
+<div class="highlight highlight-source-swift"><pre><span class="pl-k">let</span> indexPath <span class="pl-k">=</span> <span class="pl-c1">NSIndexPath</span>(<span class="pl-c1">forRow</span>: <span class="pl-c1">2</span>, <span class="pl-c1">inSection</span>: <span class="pl-c1">1</span>)
+<span class="pl-k">let</span> person1 <span class="pl-k">=</span> <span class="pl-c1">self</span>.<span class="pl-smi">monitor</span>[indexPath]
+<span class="pl-k">let</span> person2 <span class="pl-k">=</span> <span class="pl-c1">self</span>.<span class="pl-smi">monitor</span>[<span class="pl-c1">1</span>, <span class="pl-c1">2</span>]
+<span class="pl-c"><span class="pl-c">//</span> person1 and person2 are the same object</span></pre></div>
+<h2>
+<a aria-hidden="true" class="anchor" href="#contents" id="user-content-contents"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Contents</h2>
+<ul>
+<li><a class="internal present" href="/JohnEstropia/CoreStore/wiki/TL%3BDR-%28a.k.a.-sample-codes%29">TL;DR (a.k.a. sample codes)</a></li>
+<li><a class="internal present" href="/JohnEstropia/CoreStore/wiki/Architecture">Architecture</a></li>
+<li>CoreStore Tutorials
+<ul>
+<li><a class="internal present" href="/JohnEstropia/CoreStore/wiki/Setting-up">Setting up</a></li>
+<li><a class="internal present" href="/JohnEstropia/CoreStore/wiki/Migrations">Migrations</a></li>
+<li><a class="internal present" href="/JohnEstropia/CoreStore/wiki/Saving-and-processing-transactions">Saving and processing transactions</a></li>
+<li><a class="internal present" href="/JohnEstropia/CoreStore/wiki/Fetching-and-querying">Fetching and querying</a></li>
+<li><a class="internal present" href="/JohnEstropia/CoreStore/wiki/Logging-and-error-handling">Logging and error handling</a></li>
+<li><a class="internal present" href="/JohnEstropia/CoreStore/wiki/Observing-changes-and-notifications">Observing changes and notifications</a></li>
+</ul>
+</li>
+<li><a class="internal present" href="/JohnEstropia/CoreStore/wiki/Installation">Installation</a></li>
+<li><a class="internal present" href="/JohnEstropia/CoreStore/wiki/Changesets">Changesets</a></li>
+</ul>
+
+        </div>
+
+    </div>]

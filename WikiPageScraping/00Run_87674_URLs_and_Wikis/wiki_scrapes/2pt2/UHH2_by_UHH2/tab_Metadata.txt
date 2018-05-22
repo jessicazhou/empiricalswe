@@ -1,0 +1,40 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>A new feature of <code>UHH2</code> is the ability to deal with metadata, simple key-value string data which is valid for a whole sample and not a single event. Typical use cases include:</p>
+<ul>
+<li>store processing information -- e.g. whether jet resolution smearing was already applied -- to prevent certain bugs</li>
+<li>store sample-wide information -- such as the sample cross section -- at the first analysis step and use it at subsequent processing steps</li>
+</ul>
+<p>Metadata is stored in the output root file in an additional output tree with the name <code>uhh2_meta</code>. This tree contains one branch of type string which contains all metadata key/value pairs in the format</p>
+<pre><code>key1===value1
+key2===value2
+</code></pre>
+<p>etc.</p>
+<h1>
+<a aria-hidden="true" class="anchor" href="#setting-and-getting-metadata" id="user-content-setting-and-getting-metadata"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Setting and Getting Metadata</h1>
+<p>Creating new metadata is done in the setup phase during the construction of the <code>AnalysisModule</code> class(es) via the <code>Context</code> object. For example, to create a metadata with name <code>"jer_smearing_applied"</code>, use this in the <code>AnalysisModule</code> constructor:</p>
+<pre><code>ctx.set_metadata("jer_smearing_applied", "true");
+</code></pre>
+<p>Note that keys and values are always strings. Metadata is availbel via <code>Context::get</code> like any other setting, however with the special prefix "meta_". To access the above metadata, use</p>
+<pre><code>ctx.set("meta_jer_smearing_applied");
+</code></pre>
+<p>As an example, refer to the <code>JetResolutionSmearer</code> in <code>common</code> which contains code to detect an attempt to double-smear jets.</p>
+<h1>
+<a aria-hidden="true" class="anchor" href="#internals-and-best-practices" id="user-content-internals-and-best-practices"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Internals and Best Practices</h1>
+<p>Internally, metadata is handled by the framework at different stages:</p>
+<ul>
+<li>when reading in the first input file of a sample -- and before constructing the first <code>AnalysisModule</code> --, the metadata tree ("uhh2_meta") is read out, if present, and all settings found are made available via the <code>Context</code> object just like the settings from the <code>xml</code> file, but with the "meta_"-prefix</li>
+<li>when reading in additional input files, a consistency check is done: as metadata is expected to be consistent for the whole sample, it is an error if metadata is different for two input files for the same sample.</li>
+<li>when writing the first (selected) event to the output, the current metadata values are written to the metadata tree.</li>
+</ul>
+<p>Note that the above algorithm makes metadata round-trip, i.e. all metadata available in the input will be written to the output, without any code refering to metadata explicitly. This behavior is on purpose to keep as much information as possible, but can make it hard to get rid of metadata which might be deserable workaround in some case; see last item of best pracrices below.</p>
+<p>Some best practices:</p>
+<ul>
+<li>use a globally-unique name to prevent name collisions, e.g. including the <code>AnalysisModule</code> class name which created the metadata.</li>
+<li>always create metadata very early, as early as possible. This ensures that other <code>AnalysisModule</code>s depending on that value read the right value and that the framework writes the correct metadata to the output.</li>
+<li>avoid setting metadata value more than once. The current implementation will throw an error if trying to set metadata with a different value (setting the same value is Ok), unless a special "force" flag of the <code>Context::set_metadata</code> is set. The <em>only</em> purpose of this flag is to allow correcting wrong metadata in the input file. If used, it should be done as early as possible in the processing (i.e. at the top of the constructor of the top-level <code>AnalysisModule</code>), such that other <code>AnalysisModule</code>s and the framework only see the new value.</li>
+</ul>
+
+        </div>
+
+    </div>]

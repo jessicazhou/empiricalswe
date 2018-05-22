@@ -1,0 +1,267 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>Timely dataflow is a framework for data-parallel computation.</p>
+<p>In this document, we'll learn how to construct timely dataflow computations. By the end, you'll be able to easily write and run computations on your personal computer, and seamlessly scale them up to multiple threads, processes, and computers.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#hello-dataflow" id="user-content-hello-dataflow"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Hello dataflow</h2>
+<p>Let's start with a simple example computation.</p>
+<p>This example shows off some of the moving parts of timely dataflow. After seeing them for the first time, we'll walk through each of the parts to see what is going on, and get a rough idea for how these computations look.</p>
+<div class="highlight highlight-source-rust"><pre><span class="pl-k">extern</span> <span class="pl-k">crate</span> timely;
+
+<span class="pl-k">use</span> timely<span class="pl-k">::</span>dataflow<span class="pl-k">::</span><span class="pl-k">*</span>;
+<span class="pl-k">use</span> timely<span class="pl-k">::</span>dataflow<span class="pl-k">::</span>operators<span class="pl-k">::</span>{Input, Inspect};
+
+<span class="pl-k">fn</span> <span class="pl-en">main</span>() {
+
+    <span class="pl-c">// initializes and runs a timely dataflow computation</span>
+    timely<span class="pl-k">::</span><span class="pl-en">execute_from_args</span>(std<span class="pl-k">::</span>env<span class="pl-k">::</span><span class="pl-en">args</span>(), <span class="pl-k">|</span>root<span class="pl-k">|</span> {
+
+        <span class="pl-c">// create a new input and inspect its output</span>
+        <span class="pl-k">let</span> <span class="pl-k">mut</span> input <span class="pl-k">=</span> root.<span class="pl-en">dataflow</span>(<span class="pl-k">|</span>scope<span class="pl-k">|</span> {
+            <span class="pl-k">let</span> (input, stream) <span class="pl-k">=</span> scope.<span class="pl-en">new_input</span>();
+            stream.<span class="pl-en">inspect</span>(<span class="pl-k">|</span>x<span class="pl-k">|</span> <span class="pl-c1">println!</span>(<span class="pl-s">"hello {}"</span>, x));
+            input
+        });
+
+        <span class="pl-c">// introduce data and watch!</span>
+        <span class="pl-k">for</span> round <span class="pl-k">in</span> <span class="pl-c1">0</span>..<span class="pl-c1">10</span> {
+            input.<span class="pl-en">send</span>(round);
+            input.<span class="pl-en">advance_to</span>(round <span class="pl-k">+</span> <span class="pl-c1">1</span>);
+            root.<span class="pl-en">step</span>();
+        }
+
+        <span class="pl-c">// seal the input</span>
+        input.<span class="pl-en">close</span>();
+
+        <span class="pl-c">// finish off any remaining work</span>
+        <span class="pl-k">while</span> root.<span class="pl-en">step</span>() { }
+
+    });
+}</pre></div>
+<p>Ok. That isn't so bad. There are definitely some things that need explanation, but at least it all fits on one screen. Let's talk through each of the parts.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#preamble" id="user-content-preamble"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Preamble</h3>
+<p>At the top of the example we see the following:</p>
+<div class="highlight highlight-source-rust"><pre><span class="pl-k">extern</span> <span class="pl-k">crate</span> timely;
+
+<span class="pl-k">use</span> timely<span class="pl-k">::</span>dataflow<span class="pl-k">::</span><span class="pl-k">*</span>;
+<span class="pl-k">use</span> timely<span class="pl-k">::</span>dataflow<span class="pl-k">::</span>operators<span class="pl-k">::</span><span class="pl-k">*</span>;</pre></div>
+<p>The first line is Rust's way of saying that we have an external dependence on the <code>timely</code> crate, which is where all the code for timely dataflow exists. The other two lines explicitly import some types we will need in the program. I'll call them out as we get to them.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#main" id="user-content-main"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Main</h3>
+<p>A timely dataflow program is still just a Rust program, so it should have a <code>main</code> function somewhere in it. In our example, it doesn't really do anything other than make a call in to <code>timely::execute_from_args</code>:</p>
+<div class="highlight highlight-source-rust"><pre><span class="pl-k">fn</span> <span class="pl-en">main</span>() {
+
+    <span class="pl-c">// initializes and runs a timely dataflow computation</span>
+    timely<span class="pl-k">::</span><span class="pl-en">execute_from_args</span>(std<span class="pl-k">::</span>env<span class="pl-k">::</span><span class="pl-en">args</span>(), <span class="pl-k">|</span>root<span class="pl-k">|</span> {</pre></div>
+<p>The call to <code>timely::execute_from_args</code> spins up the timely dataflow infrastructure. The method has two parameters: arguments for execution (the number of workers, where they live, etc) and what each worker should do once it is started up.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#worker" id="user-content-worker"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Worker</h3>
+<p>We now get in to writing the code each worker should execute. I like to think of this as just an extension of <code>main</code>, where I'm writing as if for a single-threaded computation and not stressing about the whole "deployed across a cluster of machines".</p>
+<p>The worker logic is passed <code>root</code> as an argument. This argument wraps up some information about the worker and its environment, but for our purposes is the blank canvas on which we are going to define a dataflow computation.</p>
+<h4>
+<a aria-hidden="true" class="anchor" href="#constructing-a-dataflow" id="user-content-constructing-a-dataflow"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Constructing a dataflow</h4>
+<p>The first thing we do is call <code>scoped</code>, which lets us define a group of dataflow operators in a new dataflow scope. In this group we place an input, inspect its output stream, and return a handle to the input back up.</p>
+<div class="highlight highlight-source-rust"><pre>        <span class="pl-c">// create a new input and inspect its output</span>
+        <span class="pl-k">let</span> <span class="pl-k">mut</span> input <span class="pl-k">=</span> root.<span class="pl-en">scoped</span>(<span class="pl-k">|</span>scope<span class="pl-k">|</span> {
+            <span class="pl-k">let</span> (input, stream) <span class="pl-k">=</span> scope.<span class="pl-en">new_input</span>();
+            stream.<span class="pl-en">inspect</span>(<span class="pl-k">|</span>x<span class="pl-k">|</span> <span class="pl-c1">println!</span>(<span class="pl-s">"hello {}"</span>, x));
+            input
+        });</pre></div>
+<p>Importantly, we haven't actually done any data processing yet. We've only described a dataflow computation in which data pushed in to <code>input</code> flow out through <code>stream</code> and in to the <code>inspect</code> logic.</p>
+<h4>
+<a aria-hidden="true" class="anchor" href="#executing-a-dataflow" id="user-content-executing-a-dataflow"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Executing a dataflow</h4>
+<p>With a dataflow graph constructed, we can now start running it.</p>
+<div class="highlight highlight-source-rust"><pre>        <span class="pl-c">// introduce data and watch!</span>
+        <span class="pl-k">for</span> round <span class="pl-k">in</span> <span class="pl-c1">0</span>..<span class="pl-c1">10</span> {
+            input.<span class="pl-en">send</span>(round);
+            input.<span class="pl-en">advance_to</span>(round <span class="pl-k">+</span> <span class="pl-c1">1</span>);
+            root.<span class="pl-en">step</span>();
+        }</pre></div>
+<p>Recall that <code>input</code> was our handle to the input stream. It takes data from outside the dataflow and introduces it in to the dataflow computation. Here we repeatedly use the <code>send</code> method to introduce records, the numbers <code>0</code> through <code>9</code>.</p>
+<p>After introducing each number we call <code>advance_to</code>. This is part of timely dataflow's advanced technology. This is a signal to the system that we are not going to produce any data with a timestamp less than or equal to <code>round</code>. This would be very useful if the dataflow we constructed needed to know when a group of records were complete, for example if we wanted to count the number of submitted records. We aren't doing that here, so it is a little hard to justify (we could have left it out, but <code>advance_to</code> is also what flushes internal buffers in <code>input</code>).</p>
+<p>The call to <code>root.step()</code> tells timely dataflow to do some work. Internally, it will give each operator a chance to do some computation, which means sending records and applying operator logic. For example, this is where the <code>println!</code> in <code>inspect</code> will run. We could skip this step as well, but records will start to back up in the system. In a streaming system it is generally healthiest to keep records moving.</p>
+<h4>
+<a aria-hidden="true" class="anchor" href="#completing-a-dataflow" id="user-content-completing-a-dataflow"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Completing a dataflow</h4>
+<p>The last thing we do is shut down the dataflow computation.</p>
+<div class="highlight highlight-source-rust"><pre>        <span class="pl-c">// seal the input</span>
+        input.<span class="pl-en">close</span>();
+
+        <span class="pl-c">// finish off any remaining work</span>
+        <span class="pl-k">while</span> root.<span class="pl-en">step</span>() { }
+
+    });
+}</pre></div>
+<p>The call to <code>input.close()</code> indicates that we have no more data to supply through this input. It allows timely dataflow to reach the conclusion that we may be "done". To reach this conclusion, we may need to step the computation several more times (as records may still be in flight in the system). When <code>step()</code> returns false, it means that all inputs are closed, all messages are processed, and no operators have outstanding work.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#saying-hello" id="user-content-saying-hello"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Saying "hello"</h2>
+<p>To run the hello dataflow computation, we need a Rust project. The easiest way to do this is with Rust's <code>cargo</code> tool for package management. In some directory, type</p>
+<pre><code>% cargo new hello --bin
+% cd hello
+</code></pre>
+<p>This directory contains a <code>Cargo.toml</code> file, which you will need to edit to look like the following (the first three lines should be there for you already):</p>
+<pre><code>% cat Cargo.toml
+[package]
+name = "hello"
+version = "0.1.0"
+authors = ["Your name &lt;yourname@you.com&gt;"]
+
+[dependencies]
+timely="*"
+</code></pre>
+<p>If you make sure to put the code we've walked through as the contents of <code>src/main.rs</code>, you should now be able to run your program:</p>
+<pre><code>% cargo run
+Running `target/debug/hello`
+hello 0
+hello 1
+hello 2
+hello 3
+hello 4
+hello 5
+hello 6
+hello 7
+hello 8
+hello 9
+% 
+</code></pre>
+<p>Welcome to timely dataflow!</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#scaling-and-distributing" id="user-content-scaling-and-distributing"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Scaling and distributing</h2>
+<p>Your timely dataflow program can be run with multiple worker threads, and on multiple computers. Whenever you move data between operators, the system will take care of getting the data to the correct worker.</p>
+<p>To run a program with multiple worker threads, use the <code>-w</code> or <code>--workers</code> option followed by a number of workers. This many threads will start up, and each will construct the dataflow graph you indicated.</p>
+<p>To run a program with multiple processes, use the <code>-n</code> or <code>--processes</code> option followed by a number of processes. You will actually need to run the processes yourself, using the same <code>-w</code> and <code>-n</code> options for each, but providing each with a different <code>-p</code> or <code>--process</code> argument (from zero up to the number of workers minus one).</p>
+<p>To run a program on multiple computers, you start multiple processes in the same way as above, but you must also use <code>-h</code> or <code>--hostfile</code> to indicate a text file whose lines are of the form</p>
+<pre><code>host:port
+</code></pre>
+<p>and which indicate the location each of the processes (in order) may be found. For example, to start up four processes with two workers each across three machines, you might plan a <code>hosts.txt</code> file like so:</p>
+<pre><code>% cat hosts.txt
+host1:port1
+host1:port2
+host2:port3
+host3:port4
+</code></pre>
+<p>and then execute the following on each of the machines:</p>
+<pre><code>host1% cargo run -- -w 2 -n 4 --hostfile hosts.txt -p 0
+host1% cargo run -- -w 2 -n 4 --hostfile hosts.txt -p 1
+host2% cargo run -- -w 2 -n 4 --hostfile hosts.txt -p 2
+host3% cargo run -- -w 2 -n 4 --hostfile hosts.txt -p 3
+</code></pre>
+<p>This won't do anything especially interesting with the <code>hello</code> program we've written, because it doesn't exchange any data (each worker locally produces and consumes its own data). Let's make something more interesting!</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#exchanging-data-between-workers" id="user-content-exchanging-data-between-workers"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Exchanging data between workers</h2>
+<p>Let's write a more interesting program that moves data between workers.</p>
+<p>We will use essentially the same program as before, but we will introduce the <code>exchange</code> operator, which moves data between workers based on a function applied to the data: the function must produce an integer, and we use that integer to identify a worker (taking the modulus of the number if it exceeds the number of workers). Because we were exchanging integer records, we will just use the record itself to indicate the target worker.</p>
+<div class="highlight highlight-source-rust"><pre><span class="pl-k">extern</span> <span class="pl-k">crate</span> timely;
+
+<span class="pl-k">use</span> timely<span class="pl-k">::</span>dataflow<span class="pl-k">::</span><span class="pl-k">*</span>;
+<span class="pl-k">use</span> timely<span class="pl-k">::</span>dataflow<span class="pl-k">::</span>operators<span class="pl-k">::</span><span class="pl-k">*</span>;
+
+<span class="pl-k">fn</span> <span class="pl-en">main</span>() {
+
+    <span class="pl-c">// initializes and runs a timely dataflow computation</span>
+    timely<span class="pl-k">::</span><span class="pl-en">execute_from_args</span>(std<span class="pl-k">::</span>env<span class="pl-k">::</span><span class="pl-en">args</span>(), <span class="pl-k">|</span>root<span class="pl-k">|</span> {
+
+        <span class="pl-c">// create a new input and inspect its output</span>
+        <span class="pl-k">let</span> <span class="pl-k">mut</span> input <span class="pl-k">=</span> root.<span class="pl-en">scoped</span>(<span class="pl-k">|</span>scope<span class="pl-k">|</span> {
+            <span class="pl-k">let</span> (input, stream) <span class="pl-k">=</span> scope.<span class="pl-en">new_input</span>();
+            stream.<span class="pl-en">exchange</span>(<span class="pl-k">|</span><span class="pl-k">&amp;</span>x<span class="pl-k">|</span> x)
+                  .<span class="pl-en">inspect</span>(<span class="pl-k">|</span>x<span class="pl-k">|</span> <span class="pl-c1">println!</span>(<span class="pl-s">"hello {}"</span>, x));
+            input
+        });
+
+        <span class="pl-c">// introduce data and watch!</span>
+        <span class="pl-k">for</span> round <span class="pl-k">in</span> <span class="pl-c1">0</span>..<span class="pl-c1">10</span> {
+            input.<span class="pl-en">send</span>(round);
+            input.<span class="pl-en">advance_to</span>(round <span class="pl-k">+</span> <span class="pl-c1">1</span>);
+            root.<span class="pl-en">step</span>();
+        }
+
+        <span class="pl-c">// seal the input</span>
+        input.<span class="pl-en">close</span>();
+
+        <span class="pl-c">// finish off any remaining work</span>
+        <span class="pl-k">while</span> root.<span class="pl-en">step</span>() { }
+
+    });
+}</pre></div>
+<p>If we run this program with two processes on the same computer, we should see</p>
+<pre><code>% cargo run -- -n 2 -p 0
+Running `target/debug/hello`
+hello 0
+hello 0
+hello 2
+hello 2
+hello 4
+hello 4
+hello 6
+hello 6
+hello 8
+hello 8
+% 
+</code></pre>
+<p>and</p>
+<pre><code>% cargo run -- -n 2 -p 1
+Running `target/debug/hello`
+hello 1
+hello 1
+hello 3
+hello 3
+hello 5
+hello 5
+hello 7
+hello 7
+hello 9
+hello 9
+% 
+</code></pre>
+<p>Each worker introduces a copy of the data, and then after the shuffle we have all the even numbers at worker zero and the odd numbers at worker one.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#more-general-operators" id="user-content-more-general-operators"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>More general operators</h2>
+<p>Although exchanging data can be great fun (you just had fun, right?), we would rather write higher-level operators that do the exchanging for us, and then do something interesting.</p>
+<p>There is a fairly handy general operator <code>unary</code>, which can implement any unary operator (one input, one output) using logic that you provide. The <code>unary</code> operator comes in two flavors, <code>unary_stream</code> and <code>unary_notify</code>, distinguished by whether the your operator cares about about progress in the data stream or not.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#unary_stream" id="user-content-unary_stream"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><code>unary_stream</code>
+</h3>
+<p>The <code>unary_stream</code> operator is simpler, so let's start there. It takes three parameters:</p>
+<ol>
+<li>Instructions on whether and how its input should be exchanged.</li>
+<li>A descriptive name.</li>
+<li>Instructions for how to use its input to produce its output.</li>
+</ol>
+<p>Let's just write an example</p>
+<div class="highlight highlight-source-rust"><pre><span class="pl-c">// this is actually the implementation of the `exchange` operator!</span>
+stream.<span class="pl-en">unary_stream</span>(Exchange<span class="pl-k">::</span><span class="pl-en">new</span>(<span class="pl-k">|</span><span class="pl-k">&amp;</span>x<span class="pl-k">|</span> x), <span class="pl-s">"Example"</span>, <span class="pl-k">|</span>input, output<span class="pl-k">|</span> {
+    <span class="pl-k">while</span> <span class="pl-k">let</span> <span class="pl-c1">Some</span>((time, data)) <span class="pl-k">=</span> input.<span class="pl-en">next</span>() {
+        output.<span class="pl-en">session</span>(time).<span class="pl-en">give_content</span>(data);
+    }
+});</pre></div>
+<p>The first argument is a new instance of <code>Exchange</code>. This is a type that describes how data should be exchanged, and it just takes the same type of function we used in the <code>exchange</code> method earlier. The only other valid type is <code>Pipeline</code>, which says that we shouldn't bother exchanging data. There are many natural extensions that we might see in the future, like <code>Broadcast</code>, or <code>RoundRobin</code>, or others!</p>
+<p>The second argument is the descriptive name. You can write whatever you like here.</p>
+<p>The final argument is a Rust closure, where we write some code that is passed two parameters, <code>input</code> and <code>output</code>, and then executed. I have written the code that pulls each message (time and data) from the input, and sends them out the output. The only thing this operator does is exchange its input.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#unary_notify" id="user-content-unary_notify"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><code>unary_notify</code>
+</h3>
+<p>The <code>unary_notify</code> is like <code>unary_stream</code>, but it adds the ability to request and receive notifications from the timely dataflow system about when the operator will no longer receive messages with a in indicated timestamp.</p>
+<p>The operator requires <em>four</em> parameters, the first two of which are the same as with <code>unary_stream</code>. We now need to provide any initial notification requests, a <code>Vec&lt;T&gt;</code>. Also, the operator logic is now specified as a function of three parameters, an input, an output, and a barrier object that supports notification.</p>
+<ol>
+<li>Instructions on whether and how its input should be exchanged.</li>
+<li>A descriptive name.</li>
+<li>A vector of initial notification requests.</li>
+<li>Instructions for how to use its input to produce its output, plus a barrier.</li>
+</ol>
+<p>Let's write an example:</p>
+<div class="highlight highlight-source-rust"><pre><span class="pl-c">// behave like our `unary_stream` example ...</span>
+stream.<span class="pl-en">unary_notify</span>(Exchange<span class="pl-k">::</span><span class="pl-en">new</span>(<span class="pl-k">|</span><span class="pl-k">&amp;</span>x<span class="pl-k">|</span> x), <span class="pl-s">"Example"</span>, <span class="pl-c1">vec!</span>[], <span class="pl-k">|</span>input, output, barrier<span class="pl-k">|</span> {
+    <span class="pl-k">while</span> <span class="pl-k">let</span> <span class="pl-c1">Some</span>((time, data)) <span class="pl-k">=</span> input.<span class="pl-en">next</span>() {
+        barrier.<span class="pl-en">notify_at</span>(time);
+        output.<span class="pl-en">session</span>(time).<span class="pl-en">give_content</span>(data);
+    }
+    <span class="pl-c">// ... except print out when each time completes.</span>
+    <span class="pl-k">while</span> <span class="pl-k">let</span> <span class="pl-c1">Some</span>((time, count)) <span class="pl-k">=</span> barrier.<span class="pl-en">next</span>() {
+        <span class="pl-c1">println!</span>(<span class="pl-s">"time {:?} complete!"</span>, time);
+    }
+});</pre></div>
+
+        </div>
+
+    </div>]

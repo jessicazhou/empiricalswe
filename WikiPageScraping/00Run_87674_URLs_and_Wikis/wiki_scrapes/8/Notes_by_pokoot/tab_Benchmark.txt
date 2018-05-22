@@ -1,0 +1,72 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <h2>
+<a aria-hidden="true" class="anchor" href="#apache" id="user-content-apache"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Apache</h2>
+<p><a href="https://www.youtube.com/watch?v=47w66qKY-4k" rel="nofollow">Video</a></p>
+<pre><code>$ sudo apt-get install apache2-utils
+</code></pre>
+<p>Things to note</p>
+<p><code>n</code> Number of request to perform<br/>
+<code>c</code> Number of multiple request to make</p>
+<p>Lets start testing</p>
+<pre><code>$ ab -n 100 -c 1 http://groovey.dev/post
+</code></pre>
+<p>Most Important stats.</p>
+<div class="highlight highlight-source-shell"><pre>Requests per second:    1812.49 [<span class="pl-c"><span class="pl-c">#</span>/sec] (mean)</span>
+Time per request:       55.173 [ms] (mean)
+
+Percentage of the requests served within a certain <span class="pl-k">time</span> (ms)
+  50%     54
+  66%     57
+  75%     61
+  80%     63
+  90%     67
+  95%     70
+  98%     73
+  99%     76
+ 100%     91 (longest request)
+</pre></div>
+<h2>
+<a aria-hidden="true" class="anchor" href="#siege" id="user-content-siege"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Siege</h2>
+<pre><code>$ sudo apt-get install siege
+
+$ siege -c50 -t10s http://127.0.0.1
+</code></pre>
+<p>Multiple urls</p>
+<pre><code>$ vim urls.txt
+    http://127.0.0.1/index.php
+    http://127.0.0.1/index.php
+    http://127.0.0.1/index.php
+
+$ siege -c50 -t10s -i -f urls.txt
+</code></pre>
+<h2>
+<a aria-hidden="true" class="anchor" href="#sysbench" id="user-content-sysbench"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Sysbench</h2>
+<p>Careful to run on your machine, This might shoot your bill.</p>
+<p><a href="http://www.howtoforge.com/how-to-benchmark-your-system-cpu-file-io-mysql-with-sysbench" rel="nofollow">Tutorial</a></p>
+<p>A tool to test cpu, memory, disk</p>
+<pre><code>$ sudo apt-get install sysbench
+</code></pre>
+<p>Test CPU</p>
+<pre><code>$ sysbench --test=cpu --cpu-max-prime=20000 run
+</code></pre>
+<p>Test FileIO</p>
+<pre><code>$ sysbench --test=fileio --file-total-size=150G prepare
+$ sysbench --test=fileio --file-total-size=150G --file-test-mode=rndrw --init-rng=on --max-time=300 --max-requests=0 run
+$ sysbench --test=fileio --file-total-size=150G cleanup
+</code></pre>
+<p>Test Mysql</p>
+<pre><code>$ sysbench --test=oltp --oltp-table-size=1000000 --mysql-db=test --mysql-user=root --mysql-password=webdevel prepare
+$ sysbench --test=oltp --oltp-table-size=1000000 --mysql-db=test --mysql-user=root --mysql-password=webdevel --max-time=60 --oltp-read-only=on --max-requests=0 --num-threads=8 run
+$ sysbench --test=oltp --mysql-db=test --mysql-user=root --mysql-password=webdevel cleanup
+</code></pre>
+
+        </div>
+
+        <div class="wiki-footer gollum-markdown-content boxed-group" id="wiki-footer">
+          <div class="boxed-group-inner wiki-auxiliary-content markdown-body">
+            <p>Author: Harold Kim Cantil</p>
+
+          </div>
+        </div>
+    </div>]

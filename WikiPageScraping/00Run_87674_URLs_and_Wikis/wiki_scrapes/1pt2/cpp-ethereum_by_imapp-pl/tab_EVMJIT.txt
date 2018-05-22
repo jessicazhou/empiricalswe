@@ -1,0 +1,72 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>EVMJIT is a just-in-time compiler and execution engine for EVM bytecode. It translates EVM instructions to LLVM IR (intermediate representation) and uses LLVM backend to generate native code from the IR.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#building-evmjit-on-ubuntu" id="user-content-building-evmjit-on-ubuntu"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Building EVMJIT on Ubuntu</h2>
+<p>Follow the instructions for installing dependencies and obtaining sources for cpp-ethereum on <a class="internal present" href="/imapp-pl/cpp-ethereum/wiki/Building-on-Ubuntu">Building on Ubuntu</a>.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#installing-and-building-llvm-35" id="user-content-installing-and-building-llvm-35"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Installing and building LLVM 3.5</h3>
+<p>3.5 is the latest stable version of LLVM at the moment of writing this guide. Other versions may work too but have not been tested.</p>
+<p>We are going to checkout LLVM sources into <code>./llvm-3.5-src</code> and build LLVM into <code>./llvm-3.5-build</code>.</p>
+<p>Checkout LLVM 3.5 sources from Subversion repository (detailed instructions on <a href="http://llvm.org/releases/3.5.0/docs/GettingStarted.html#checkout-llvm-from-subversion" rel="nofollow">http://llvm.org/releases/3.5.0/docs/GettingStarted.html#checkout-llvm-from-subversion</a>):</p>
+<pre><code>mkdir llvm-3.5-src
+cd llvm-3.5-src
+svn co http://llvm.org/svn/llvm-project/llvm/tags/RELEASE_350/final .
+</code></pre>
+<p>Build LLVM with cmake (detailed instructions on <a href="http://llvm.org/releases/3.5.0/docs/CMake.html" rel="nofollow">http://llvm.org/releases/3.5.0/docs/CMake.html</a>):</p>
+<pre><code>mkdir ../llvm-3.5-build
+cd ../llvm-3.5-build
+cmake ../llvm-3.5-src
+make
+</code></pre>
+<h3>
+<a aria-hidden="true" class="anchor" href="#building-ethereum-with-evmjit-enabled" id="user-content-building-ethereum-with-evmjit-enabled"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Building ethereum with EVMJIT enabled</h3>
+<p>Now back to the cpp-ethereum building instructions at <a class="internal present" href="/imapp-pl/cpp-ethereum/wiki/Building-on-Ubuntu#user-content-building-the-client">Building on Ubuntu#user-content-building-the-client</a>. Build ethereum tools as described there, with <code>LLVM_DIR</code> set to the location of LLVM cmake config files and with the additional <code>EVMJIT</code> flag:</p>
+<pre><code>cd ../cpp-ethereum/build
+cmake .. -DCMAKE_BUILD_TYPE=Release -DHEADLESS=1 -DLLVM_DIR=../../llvm-3.5-build/share/llvm/cmake -DEVMJIT=1
+</code></pre>
+<p>At the end of output from cmake you should see:</p>
+<pre><code>-- Found LLVM 3.5.0svn
+-- Using LLVMConfig.cmake in: ../../llvm-3.5-build/share/llvm/cmake/
+-- Configuring done
+-- Generating done
+-- Build files have been written to: &lt;cpp-ethereum-root&gt;/build
+</code></pre>
+<p>After running <code>make</code> check that you have <code>libevmjit.so</code> in <code>build/libevmjit</code> and the program <code>evmcc</code> in <code>build/evmcc</code> and you are done.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#building-on-windows-x64" id="user-content-building-on-windows-x64"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Building on Windows x64</h2>
+<h3>
+<a aria-hidden="true" class="anchor" href="#build-llvm-on-windows-x64" id="user-content-build-llvm-on-windows-x64"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Build LLVM on Windows x64</h3>
+<ol>
+<li>
+<p>Download LLVM 3.5.0 source (<a href="http://llvm.org/releases/3.5.0/llvm-3.5.0.src.tar.xz" rel="nofollow">http://llvm.org/releases/3.5.0/llvm-3.5.0.src.tar.xz</a>) and unpack it to <code>/llvm</code> folder (same level as <code>cpp-ethereum</code>)</p>
+</li>
+<li>
+<p>Create &amp; go to folder <code>_build/llvm/x64</code></p>
+</li>
+<li>
+<p>Create Visual Studio 2013 project files with cmake</p>
+<p><code>cmake -G "Visual Studio 12 Win64" -DLLVM_TARGETS_TO_BUILD="X86" ../../../llvm</code></p>
+</li>
+<li>
+<p>Open LLVM.sln and build ALL_BUILD project.</p>
+</li>
+</ol>
+<h3>
+<a aria-hidden="true" class="anchor" href="#enable-llvm-dependency" id="user-content-enable-llvm-dependency"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Enable LLVM dependency</h3>
+<ol>
+<li>Open LLVM.props (Property Manager -&gt; LibEvmJit -&gt; Debug | x64 -&gt; LLVM -&gt; Properties), go to User Macros tab and set LLVMEnabled to 1.</li>
+<li>Add LibEvmJit dependency for projects eth, TestEthereum (Properties -&gt; References -&gt; Add New Reference...)</li>
+</ol>
+<h2>
+<a aria-hidden="true" class="anchor" href="#test" id="user-content-test"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Test</h2>
+<p>Start TestEthereum with option <code>--jit</code> to run tests with JIT.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#using-evmcc" id="user-content-using-evmcc"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Using evmcc</h2>
+<h2>
+<a aria-hidden="true" class="anchor" href="#resources-for-evmjit-developers" id="user-content-resources-for-evmjit-developers"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Resources (for EVMJIT developers)</h2>
+<p>See <a class="internal present" href="/imapp-pl/cpp-ethereum/wiki/ETC-Resources">ETC Resources</a></p>
+
+        </div>
+
+    </div>]

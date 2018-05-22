@@ -1,0 +1,42 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>Sometimes the tests randomly seem to throw the exception models aren't loaded yet.</p>
+<p>The happens because the django.setup() method needs to be called - for example - if the "after all" method in environment.py does not call something that calls django.setup() before it imports the method to reindex from cbh_datastore_ws then the exception below gets thrown - but only if no features have been run (e.g. if running behave and including none of the files)</p>
+<pre><code>behave -i xxxxxnotincluded
+</code></pre>
+<pre><code>Exception AppRegistryNotReady: Models aren't loaded yet.
+Traceback (most recent call last):
+  File "/srv/chembiohub/anaconda2/envs/dev/bin/behave", line 11, in &lt;module&gt;
+    sys.exit(main())
+  File "/srv/chembiohub/anaconda2/envs/dev/lib/python2.7/site-packages/behave/__main__.py", line 109, in main
+    failed = runner.run()
+  File "/srv/chembiohub/anaconda2/envs/dev/lib/python2.7/site-packages/behave/runner.py", line 672, in run
+    return self.run_with_paths()
+  File "/srv/chembiohub/anaconda2/envs/dev/lib/python2.7/site-packages/behave/runner.py", line 693, in run_with_paths
+    return self.run_model()
+  File "/srv/chembiohub/anaconda2/envs/dev/lib/python2.7/site-packages/behave/runner.py", line 504, in run_model
+    self.run_hook('after_all', self.context)
+  File "/srv/chembiohub/anaconda2/envs/dev/lib/python2.7/site-packages/behave/runner.py", line 405, in run_hook
+    self.hooks[name](context, *args)
+  File "cbh_tests/features/environment.py", line 377, in after_all
+    from cbh_datastore_ws.resources import reindex_datapoint_classifications
+  File "/srv/chembiohub/chembiohub_ws/cbh_datastore_ws/resources.py", line 58, in &lt;module&gt;
+    from cbh_core_ws.resources import SimpleResourceURIField, UserHydrate, CBHDictField
+  File "/srv/chembiohub/chembiohub_ws/cbh_core_ws/resources.py", line 274, in &lt;module&gt;
+    class UserResource(ModelResource):
+  File "/srv/chembiohub/chembiohub_ws/cbh_core_ws/resources.py", line 281, in UserResource
+    class Meta:
+  File "/srv/chembiohub/chembiohub_ws/cbh_core_ws/resources.py", line 285, in Meta
+    queryset = get_user_model().objects.all()
+  File "/srv/chembiohub/anaconda2/envs/dev/lib/python2.7/site-packages/django/contrib/auth/__init__.py", line 137, in get_user_model
+    return django_apps.get_model(settings.AUTH_USER_MODEL)
+  File "/srv/chembiohub/anaconda2/envs/dev/lib/python2.7/site-packages/django/apps/registry.py", line 199, in get_model
+    self.check_models_ready()
+  File "/srv/chembiohub/anaconda2/envs/dev/lib/python2.7/site-packages/django/apps/registry.py", line 131, in check_models_ready
+    raise AppRegistryNotReady("Models aren't loaded yet.")
+django.core.exceptions.AppRegistryNotReady: Models aren't loaded yet.
+</code></pre>
+
+        </div>
+
+    </div>]

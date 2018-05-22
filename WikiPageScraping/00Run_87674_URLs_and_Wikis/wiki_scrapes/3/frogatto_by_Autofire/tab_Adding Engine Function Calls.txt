@@ -1,0 +1,23 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>Some of the functions in ObjectFunctions are defined in FFL in functions.cfg, but the majority are calls directly to the Frogatto engine itself. To add a new function to the game we need to modify the C++ source code, specifically that in the ~/src/formula_function.cpp file. Let's look at the <code>sin(x)</code> function in FFL. It is defined by:</p>
+<pre><code>FUNCTION_DEF(sin, 1, 1, "sin(x): Standard sine function.")    
+   const float angle = args()[0]-&gt;evaluate(variables).as_decimal().as_float();    
+   return variant(static_cast&lt;decimal&gt;(sin(angle/radians_to_degrees)));    
+END_FUNCTION_DEF(sin)    
+</code></pre>
+<p>Deconstructing the above function, we see that the call to FUNCTION_DEF() takes four variables. The first is the name of the function as it appears to FFL, <code>sin</code>. The second and third are the minimum and maximum number of args that the FFL function can have. Since <code>sin</code> only takes one number, we have a minimum and maximum of one arg. Next, we have a string which is the function's documentation. This documentation string is a bit short on details.
+Next, we have some c++ code. We assign the a constant floating-point number, <code>angle</code>, to the value which was passed in from FFL. To do this, we use args()[0] to get the first element of the list of args that the function was called with. Since we can only have one arg for this function, we only need to query the first element. Next, we evaluate the arg (since it's from FFL, it's not a standard C++ type we can work with yet) using evaluate(). We evaluate our number as a decimal (it's OK if it's an integer in FFL, evaluate() is smart enough to figure this out), then we evaluate that as a floating point number for c++'s <code>sin()</code> to work with. The next line, we use variant() to return to FFL the decimal result of the floating-point number that <code>sin</code> produced. Since the c++ sine function works in radians and FFL works in degrees, we divide the angle we were passed by the pre-defined constant <code>radians_to_degrees</code>.
+Then we end the function with a call to END_FUNCTION_DEF(), and pass it the name of the function we're done defining, <code>sin</code>.</p>
+<p>To add another function to FFL, you would create a new FUNCTION_DEF and END_FUNCTION_DEF pair below the current function, and substitute the the appropriate values and code for that which defined the sine function.</p>
+<p>However, if it were just that, it would be too easy. There is another form of function definition which works with classes. These classes each have public and private members, which define the function as it appears to FFL and the function return value respectively. Each <em>class</em> must be registered near the bottom, in the <code>functions_table</code> variable. However, this is inconvenient, so all new functions should try to use the FUNCTION_DEF method as described above.</p>
+
+        </div>
+
+        <div class="wiki-footer gollum-markdown-content boxed-group" id="wiki-footer">
+          <div class="boxed-group-inner wiki-auxiliary-content markdown-body">
+            <p>More help can be found via IRC, <a href="irc://irc.freenode.net/#frogatto" rel="nofollow">#Frogatto</a> on freenode.net. This wiki is not a complete reference.</p>
+
+          </div>
+        </div>
+    </div>]

@@ -1,0 +1,46 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>If you need to make many successive requests against the same host,
+you can create client with persistent connection to the host:</p>
+<div class="highlight highlight-source-ruby"><pre><span class="pl-k">begin</span>
+  <span class="pl-c"><span class="pl-c">#</span> create HTTP client with persistent connection to api.icndb.com:</span>
+  http <span class="pl-k">=</span> <span class="pl-c1">HTTP</span>.persistent <span class="pl-s"><span class="pl-pds">"</span>http://api.icndb.com<span class="pl-pds">"</span></span>
+
+  <span class="pl-c"><span class="pl-c">#</span> issue multiple requests using same connection:</span>
+  jokes <span class="pl-k">=</span> <span class="pl-c1">100</span>.times.map { http.get(<span class="pl-s"><span class="pl-pds">"</span>/jokes/random<span class="pl-pds">"</span></span>).to_s }
+<span class="pl-k">ensure</span>
+  <span class="pl-c"><span class="pl-c">#</span> close underlying connection when you don't need it anymore</span>
+  http.close <span class="pl-k">if</span> http
+<span class="pl-k">end</span>
+</pre></div>
+<p>If the optional code block is given, it will be passed the client with
+persistent connection to the host as an argument and <code>client.close</code> will be
+automatically called when the block terminates.
+The value of the block will be returned:</p>
+<div class="highlight highlight-source-ruby"><pre>jokes <span class="pl-k">=</span> <span class="pl-c1">HTTP</span>.persistent <span class="pl-s"><span class="pl-pds">"</span>http://api.icndb.com<span class="pl-pds">"</span></span> <span class="pl-k">do</span> |<span class="pl-smi">http</span>|
+  <span class="pl-c1">100</span>.times.map { http.get(<span class="pl-s"><span class="pl-pds">"</span>/jokes/random<span class="pl-pds">"</span></span>).to_s }
+<span class="pl-k">end</span></pre></div>
+<h4>
+<a aria-hidden="true" class="anchor" href="#note-using-persistent-requests-correctly" id="user-content-note-using-persistent-requests-correctly"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>NOTE: Using persistent requests correctly</h4>
+<p>You must consume response before sending next request via persistent connection.
+That means you need to call <code>#to_s</code>, <code>#parse</code> or <code>#flush</code> on response object.
+In the example above we used <code>http.get("/jokes/random").to_s</code> to get response
+bodies. That works perfectly fine, because <code>#to_s</code> reads off the response.</p>
+<p>Sometimes you don't need response body, or need whole response object to
+access it's status, headers etc instead. You can either call <code>#to_s</code> to
+make sure response was flushed and then use response object itself, or use
+<code>#flush</code> (syntax sugar for <code>#tap(&amp;:to_s)</code> that will do that for you:</p>
+<div class="highlight highlight-source-ruby"><pre>contents <span class="pl-k">=</span> <span class="pl-c1">HTTP</span>.persistent <span class="pl-s"><span class="pl-pds">"</span>http://en.wikipedia.org<span class="pl-pds">"</span></span> <span class="pl-k">do</span> |<span class="pl-smi">http</span>|
+  <span class="pl-s">%w(Hypertext_Transfer_Protocol Git GitHub Linux Hurd)</span>.map <span class="pl-k">do</span> |<span class="pl-smi">page</span>|
+    http.get(<span class="pl-s"><span class="pl-pds">"</span>/wiki/<span class="pl-pse">#{</span><span class="pl-s1">page</span><span class="pl-pse">}</span><span class="pl-pds">"</span></span>).flush
+  <span class="pl-k">end</span>
+<span class="pl-k">end</span></pre></div>
+<h3>
+<a aria-hidden="true" class="anchor" href="#see-also" id="user-content-see-also"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>See Also</h3>
+<ul>
+<li><a class="internal present" href="/httprb/http/wiki/Making-Requests">Making Requests</a></li>
+</ul>
+
+        </div>
+
+    </div>]

@@ -1,0 +1,52 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <h1>
+<a aria-hidden="true" class="anchor" href="#session-tracking" id="user-content-session-tracking"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Session Tracking</h1>
+<p>The Loupe JavaScript agents have been build in conjunction with the <a href="https://github.com/GibraltarSoftware/Gibraltar.Agent.Web.Module">Loupe Web Logging Module</a>
+to provide specific user session tracking capabilities allowing you to gain a better insight into how the user is using the software.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#session-ids" id="user-content-session-ids"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Session Id's</h2>
+<p>Loupe utilises two different ways for tracking your users activity:</p>
+<ol>
+<li>The <a href="https://github.com/GibraltarSoftware/Gibraltar.Agent.Web.Module">Loupe Web Logging Module</a> issues a session cookie with a unique identifier, Session Id, which is
+used on every request to enable logging of all interactions that user undertakes.</li>
+<li>The JavaScript agents generate a unique id, Agent Session Id, on creation and provide that id on every message, or error, that they log.</li>
+</ol>
+<p>The combination of these two ids allows you to:</p>
+<ul>
+<li>link all interactions a user performs in a "session" (where session is until the browser/tab is closed)</li>
+<li>understand what interactions were done in separate tabs/windows during the lifetime of the cookie session</li>
+</ul>
+<p>For example if you are seing data showing a user with the same cookie session Id but multiple Agent Session Ids that they are using
+multiple tabs within the scope of a single "session".</p>
+<p>All log messages record the Session Id and Agent Session Id so that you can always link a message to the appropriate session even if the messages
+are received after those session have ended e.g. message sent at start up from local storage.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#tracking-other-calls-to-the-server" id="user-content-tracking-other-calls-to-the-server"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Tracking other calls to the server</h2>
+<p>To help ensure that all your client interactions can be logged the agent provides a method, <code>clientSessionHeader,</code> which provides you with a
+request header to attach to any ajax requests which the Loupe Logging Module and existing agents will use when they in log information.</p>
+<pre><code>
+        var requestHeader = loupe.clientSessionHeader();
+        var loupeHeader = {};
+        loupeHeader[requestHeader.headerName] = requestHeader.headerValue;
+
+        $.ajax({
+            type: "GET",
+            url: '/home/data',
+            headers: loupeHeader
+        }).done(function (data) {
+            $('#ajaxCallResult').text("succeeded");
+        }).error(function(jqXHR, textStatus) {
+            $('#ajaxCallResult').text("failed:" + jqXHR.status + " " + jqXHR.statusText);
+        });
+
+</code></pre>
+<h2>
+<a aria-hidden="true" class="anchor" href="#overriding-the-session-id" id="user-content-overriding-the-session-id"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Overriding the Session Id</h2>
+<p>If you wish to use your own Session Id you can override the Session Id used on log messages by calling <code>setSessionId</code> this then will be utilised
+by the <a href="https://github.com/GibraltarSoftware/Gibraltar.Agent.Web.Module">Loupe Web Logging Module</a> and existing agents rather than the Id
+that had been set in the cookie.</p>
+
+        </div>
+
+    </div>]

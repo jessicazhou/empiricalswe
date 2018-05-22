@@ -1,0 +1,145 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>First, these instructions are adapted from the instruction here: <a href="https://github.com/nfarina/homebridge/wiki/FreeNAS-9.3-and-9.10-Jail-Installation">FreeNAS 9.3 and 9.10 Jail Installation</a>.</p>
+<p>I went through this process and wanted to share the exact steps for anyone who might need them.</p>
+<ol>
+<li>
+<p>Create BSD Jail Template in FreeNAS.</p>
+<ul>
+<li>Jails &gt; Templates &gt; Add Jail Template</li>
+<li>Template:
+<ul>
+<li>Name:         FreeBSD</li>
+<li>OS:           FreeBSD</li>
+<li>Architecture: x64</li>
+<li>URL:          <a href="http://download.freenas.org/jails/10/x64/freenas-pluginjail-10.3-RELEASE.tgz" rel="nofollow">http://download.freenas.org/jails/10/x64/freenas-pluginjail-10.3-RELEASE.tgz</a>
+</li>
+<li>MTree:        <a href="http://download.freenas.org/jails/10/x64/freenas-pluginjail-10.3-RELEASE.mtree" rel="nofollow">http://download.freenas.org/jails/10/x64/freenas-pluginjail-10.3-RELEASE.mtree</a>
+</li>
+<li>Read-only:    Unchecked</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+<p>Create BSD Jail in FreeNAS.</p>
+<ul>
+<li>Jails &gt; Jails &gt; Add Jail &gt; Advanced</li>
+<li>Jail:
+<ul>
+<li>Jail Name: Homebridge</li>
+<li>Template: FreeBSD</li>
+<li>IPv4 address: &lt;static_ip&gt;</li>
+<li>Autostart: Checked</li>
+<li>VIMAGE: Checked</li>
+<li>All other options default (or based on your custom configuration)</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+<p>Open Shell to new FreeBSD Jail.</p>
+<ul>
+<li>Jails &gt; Jails &gt; Homebridge &gt; Shell (once you click on Homebridge, icons appear at the bottom).</li>
+</ul>
+</li>
+<li>
+<p>Enable SSH.</p>
+<ul>
+<li>
+<code>vi /etc/rc.conf</code>
+<ul>
+<li>sshd_enable="YES"</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+<p>Allow root login. (alternatively you can add a user and use sudo)</p>
+<ul>
+<li>
+<code>vi /etc/ssh/sshd_config</code>
+<ul>
+<li>PermitRootLogin YES</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+<p>Start SSH service.</p>
+<ul>
+<li><code>service sshd start</code></li>
+</ul>
+</li>
+<li>
+<p>Change root password.</p>
+<ul>
+<li><code>passwd</code></li>
+<li>Follow prompts to change root password.</li>
+</ul>
+</li>
+<li>
+<p>Use putty (or alternative) to SSH into your FreeBSD jail at the configured Static IP &lt;static_ip&gt;.</p>
+<ul>
+<li>Login to FreeBSD jail with root:passwd.</li>
+</ul>
+</li>
+<li>
+<p>Install homebridge.</p>
+<pre><code> pkg install -y node npm dbus avahi-libdns gcc git
+ sysrc dbus_enable="YES"
+ sysrc avahi_daemon_enable="YES"
+ ln -s /usr/local/include/avahi-compat-libdns_sd/dns_sd.h /usr/include/dns_sd.h
+ npm install bignum
+ npm install -g homebridge --unsafe-perm=true --allow-root
+ service dbus start
+ service avahi-daemon start
+ mkdir ~/.homebridge
+ cp /usr/local/lib/node_modules/homebridge/config-sample.json ~/.homebridge/config.json
+ npm install -g pm2  --unsafe-perm=true --allow-root
+ pm2 startup rcd
+ sysrc pm2_enable="YES"
+</code></pre>
+</li>
+<li>
+<p>Test homebridge installation.</p>
+<ul>
+<li><code>homebridge</code></li>
+</ul>
+<blockquote>
+<p>Then there may be some error in the CLI (e.g. Platform error),don't  worry ,just modify you configuration file  <code>~/.homebridge/config.json</code> ,this usually because you don't install any device module but the "hue" light had been wrote in the config.json.</p>
+</blockquote>
+<ul>
+<li>CTRL-C to kill.</li>
+</ul>
+</li>
+<li>
+<p>Install homebridge plugins (example: Nest and Wink).</p>
+<pre><code>npm install -g homebridge-nest
+npm install -g homebridge-wink
+touch ~/package.json #Workaround for Wink issue.
+</code></pre>
+</li>
+<li>
+<p>Retest homebridge installation.</p>
+</li>
+<li>
+<p>Modify the config.json with your settings.</p>
+<ul>
+<li><code>vi ~/.homebridge/config.json</code></li>
+</ul>
+</li>
+<li>
+<p>Retest homebridge installation.</p>
+</li>
+<li>
+<p>Once homebridge is working, set it up to always run.</p>
+<pre><code>pm2 start homebridge -- -D
+pm2 save
+</code></pre>
+</li>
+</ol>
+
+        </div>
+
+    </div>]

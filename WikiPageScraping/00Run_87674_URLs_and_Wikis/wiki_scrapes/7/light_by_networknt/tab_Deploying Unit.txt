@@ -1,0 +1,31 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>For a banking application, it is crucial that the application is tested thoroughly before deploying on the production especially customer facing applications like online banking.</p>
+<p>When we build omnichannel app or experience, we need to make sure that the component are well encapsulated and outside dependencies are minimum and documented clearly in order to limit the scope of the regression testing when something is changed.</p>
+<p>Also, in the change management world of banks, it is all about security or the other side of the coin - risk. Even you just change one line of Java code in a big JEE application, the entire application must be regression tested as it is hard to proof that line of code won't impact the other part of the application especially the entire app is deployed as a single unit. Also, the risk would be different if one team is involved in the deployment or two teams are involved. The risk is low if only db script should be applied. On the other hand, if both db script and app need to be deployed, the risk is higher.</p>
+<p>Given the above limitation, we as developers have to find ways to work around it in order to provide faster turnaround to make our customers happy.</p>
+<p>Here is what I did in my projects:</p>
+<ol>
+<li>
+<p>Expose simple reference data, business rules and configurations through table maintenance module to end user so that they can config the application themselves. For example, dropdown list, translations etc. Of cause, a workflow and approval process have to be in place and the module should have strict validations. Above data will be saved in reference tables and changes won't break the application.</p>
+</li>
+<li>
+<p>Make your application rule based and rules can be delivered as a db script. If the dependencies of the rules are clear, it is easy to identify the testing scope once rules are changed. Also, due to only db changes need to be applied, the risk is low from change management perspective. Also, rules can be separated into two part: logic and data. The data portion can be part of the first category and updated by end user.</p>
+</li>
+<li>
+<p>Break large application to smaller deployment unit to lower the risk and resource of regression. For example, if we can deploy app or experience individually, the testing will be scoped around the module and all the modules depending on it. If our deployment units are saved into database, we can have multiple versions of the same module in place and using configuration to control which one to use. In case we have issues on production related to a newly deployed module, we can easily change the configuration in first category to rollback to the previous version which was working.</p>
+</li>
+</ol>
+<p>The following is my proposal for OCA framework in term of deployment.</p>
+<ol>
+<li>
+<p>Make app or experience configuration into database and initialized through REST API. In this case, certain type of customization on the app or experience won't need to deploy the module. Database change through table maintenance will be sufficient enough. This will make our app or experience more flexible and codebase relatively stable.</p>
+</li>
+<li>
+<p>Encapsulate experience into a single module that can be deployed as a single unit. Also, modules are save into database instead of filesystem with multiple versions. An application specific module should depending on certain version of common modules and other modules and dependencies are in database and exposed to table maintenance. Also make it lazy loaded and dynamically registered with Angular. Modules are cached on the browser so it won't put more load on our database or our clustered distributed cache most likely. The advantage is better versioning, multiple versions of experience/app can be used for the same site; better dependency management, if one module is changed, you know who is depending on it and needs to be tested. If a new version of module is deployed, you can specify which part of the site start using it; Easy to packaging and deploying, our build tool can generate db script and can be applied to vary environment including to production; Easy to switch from one experience/app to another similar experience/app as they are all available in db.</p>
+</li>
+</ol>
+
+        </div>
+
+    </div>]

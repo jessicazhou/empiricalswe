@@ -1,0 +1,135 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>Install a GNOME 3.14 / Gentoo / OpenRC system to your PC's (GPT) hard drive in under 15 minutes, from a running live-USB session! These notes assume a UEFI BIOS.</p>
+<blockquote>
+<p>Note that this process is strictly optional, you can simply run GNOME from the live-USB (if experimenting), or follow <a class="internal present" href="/sakaki-/funtoo-2-gentoo/wiki/Setting-Up-the-Overlays%2C-and-Emerging-GNOME-from-Scratch">these notes</a> if you'd rather build from source.</p>
+</blockquote>
+<h2>
+<a aria-hidden="true" class="anchor" href="#introduction" id="user-content-introduction"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Introduction</h2>
+<p>To make use of these instructions, you'll need to be currently booted into (and logged onto) a GNOME session using the live-USB (see <a class="internal present" href="/sakaki-/funtoo-2-gentoo/wiki/Downloading-and-Running-the-Live-USB-Image">these notes</a> if you haven't yet done so).</p>
+<blockquote>
+<p><strong>Warning</strong> - be aware that the below process will wipe any existing software and data on your PC's hard drive, so  be sure to back up first, before proceeding.</p>
+</blockquote>
+<p>We're going to assume here that you want to use GPT partitioning on your PC's hard drive, and that you are going to direct-boot the kernel under UEFI (<em>sans</em> bootloader). If you'd rather use the more conventional MBR / GRUB approach, you should refer to <a class="internal present" href="/sakaki-/funtoo-2-gentoo/wiki/Installing-from-the-Live-USB-to-an-MBR-Drive">these notes</a> instead.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#prepare-your-pcs-hard-drive" id="user-content-prepare-your-pcs-hard-drive"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Prepare your PC's Hard Drive</h2>
+<p>In the following, we'll assume that your PC hard drive is on <code>/dev/sda</code> (you can check with the <code>lsblk</code> command). If it is not, you will have to recompile the kernel, since it has a compiled-in command line that is used when stub-EFI booting.</p>
+<p>We will go for a simple layout here, with 3 partitions (modify as desired; however, be aware that the <code>root</code> partition <em>must</em> reside on <code>/dev/sda3</code> to use the supplied precompiled kernel, again due to the hardcoded command line)):</p>
+<table>
+<thead>
+<tr>
+<th align="left">Partition</th>
+<th align="right">Size</th>
+<th align="right">Filesystem</th>
+<th align="right">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="left">/dev/sda1</td>
+<td align="right">256MiB</td>
+<td align="right">fat32</td>
+<td align="right">EFI system partition</td>
+</tr>
+<tr>
+<td align="left">/dev/sda2</td>
+<td align="right">5GiB</td>
+<td align="right">swap</td>
+<td align="right">Swap (if 4GiB RAM, hibernation wanted)</td>
+</tr>
+<tr>
+<td align="left">/dev/sda3</td>
+<td align="right">Rest of drive</td>
+<td align="right">ext4</td>
+<td align="right">Root partition</td>
+</tr>
+</tbody>
+</table>
+<p>From your GNOME session on the live-USB, open a terminal, get <code>root</code>, and issue:</p>
+<blockquote>
+<p><strong>Warning</strong> - this will delete any data and programs on <code>/dev/sda</code> - only proceed if you are sure!</p>
+</blockquote>
+<pre><code># fdisk /dev/sda
+&lt;type g and Enter (to create a new GPT partition table)&gt;
+&lt;type n and Enter (to create a new partition)&gt;
+&lt;press Enter (to define partition 1)&gt;
+&lt;press Enter (to accept the default start location)&gt;
+&lt;type +256M and press Enter (to make a 256MiB sector, for boot)&gt;
+&lt;type t and press Enter (to change the sector type)&gt;
+&lt;type 1 and Enter (to set as an EFI system partition)&gt;
+&lt;type n and Enter (to create a new partition)&gt;
+&lt;press Enter (to define partition 2)&gt;
+&lt;press Enter (to accept the default start location)&gt;
+&lt;type +5G and press Enter (to make a 5GiB sector, for swap; modify as appropriate)&gt;
+&lt;type t and press Enter (to change the sector type)&gt;
+&lt;press Enter (to accept changing partition 2's type)&gt;
+&lt;type 14 and press Enter (to set the type as swap)&gt;
+&lt;type n and press Enter (to create a new partition)&gt;
+&lt;press Enter (to define partition 3)&gt;
+&lt;press Enter (to accept the default start location)&gt;
+&lt;press Enter (to use all remaining space on the drive)&gt;
+&lt;type p and press Enter (to review the partition table)&gt;
+&lt;type w and press Enter (to write the table and exit)&gt;
+</code></pre>
+<p>Next, format the partitions (you will need <code>sys-fs/dosfstools</code> to format the EFI system partition):</p>
+<pre><code># emerge --ask --verbose sys-fs/dosfstools
+# mkfs.vfat -F 32 -n "EFI" /dev/sda1
+# mkswap -L "swap" /dev/sda2
+# mkfs.ext4 -L "root" /dev/sda3
+</code></pre>
+<h2>
+<a aria-hidden="true" class="anchor" href="#copy-files-from-the-live-usb-image" id="user-content-copy-files-from-the-live-usb-image"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Copy Files from the Live-USB Image</h2>
+<p>Next, we need to mount the hard drive filesystems, and copy the necessary files across from our running image. Issue:</p>
+<pre><code># mkdir /mnt/{sdaboot,sdaroot}
+# mount /dev/sda1 /mnt/sdaboot
+# mount /dev/sda3 /mnt/sdaroot
+</code></pre>
+<p>Now we can copy the root partition contents. The process below isn't quite what your mother would recommend ^-^, but it gets the job done (the first line may take some time to complete):</p>
+<pre><code># cp -ax /bin /dev /etc /home /lib /lib32 /lib64 /root /sbin /tmp /usr /var /mnt/sdaroot/
+# mkdir /mnt/sdaroot/{boot,media,mnt,opt,proc,run,sys}
+</code></pre>
+<p>As we've just blindly copied over the <code>/etc/fstab</code> file from our running USB system, it will be wrong. A valid fstab (for this partition ordering, assuming <code>/dev/sda</code>) has been provided in <code>root</code>'s home directory on the USB image, so copy that over now:</p>
+<pre><code># cp /root/fstab-gpt /mnt/sdaroot/etc/fstab
+</code></pre>
+<p>Lastly for this section, if you have been running <code>sshd</code> from the USB image, you'll probably want to delete your copied host keys (to force a fresh set to be generated for the hard-drive install). Issue:</p>
+<pre><code># rm -f /mnt/sdaroot/etc/ssh/*key*
+</code></pre>
+<p>to do that.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#install-bootable-stub-efi-kernel" id="user-content-install-bootable-stub-efi-kernel"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Install Bootable (Stub-EFI) Kernel</h2>
+<p>Our last task is to install a copy of the kernel to the correct location. We won't need a bootloader here, as the kernel on the image has been built so as to be directly bootable under UEFI. We just need to put it in the correct location. To do this, issue:</p>
+<pre><code># mkdir -pv /mnt/sdaboot/EFI/Boot/
+# cp /boot/vmlinuz-3.17.3-gentoo /mnt/sdaboot/EFI/Boot/bootx64.efi
+# cp /boot/{config,System.map}-3.17.3-gentoo /mnt/sdaboot/EFI/Boot/
+</code></pre>
+<p>This works because most UEFI systems will boot an appropriately formatted executable at the 'magic' path <code>/EFI/Boot/bootx64.efi</code> on the main drive's EFI system partition.</p>
+<p>Lastly, <code>sync</code> filesystems, and dismount:</p>
+<pre><code># sync
+# umount -l /mnt/{sdaboot,sdaroot}
+</code></pre>
+<h2>
+<a aria-hidden="true" class="anchor" href="#reboot" id="user-content-reboot"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Reboot!</h2>
+<p>Your system is installed! To try it out, just issue:</p>
+<pre><code># shutdown -P now
+</code></pre>
+<p>wait for the PC to power down, and remove the live-USB key. Then, power up again. During reboot, enter the BIOS, and turn UEFI boot on. You should <em>not</em> enable secure boot, however, as the kernel is not signed. Exit the BIOS, saving changes.</p>
+<p>If all is well, your PC should reboot directly into your kernel, and then the GNOME login page should come up. If it does, congratulations, you're all done! Login with your existing password (the passwords will have been copied over, along with everything else, from the live-USB).</p>
+<blockquote>
+<p>As a reminder, the password is <code>changeme123</code> for both <code>root</code> and <code>demouser</code> on the live-USB, unless you have already changed this.</p>
+</blockquote>
+<p>You can now work from your PC without needing the USB key. Feel free to create proper user accounts, modify the configuration to your requirements, emerge any additional packages that you want etc.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#next-steps" id="user-content-next-steps"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Next Steps</h2>
+<p>Your installed system has <code>eix</code> configured, and I recommend that you use that when syncing, as it will update the overlays too. See <a class="internal present" href="/sakaki-/funtoo-2-gentoo/wiki/Keeping-Up-to-Date">these notes</a> for more information.</p>
+
+        </div>
+
+        <div class="wiki-footer gollum-markdown-content boxed-group" id="wiki-footer">
+          <div class="boxed-group-inner wiki-auxiliary-content markdown-body">
+            <p><a href="https://github.com/sakaki-/funtoo-2-gentoo">Project Home</a> / <a class="internal present" href="/sakaki-/funtoo-2-gentoo/wiki/Home">Wiki Home</a></p>
+<p><img alt="Creative Commons License" data-canonical-src="https://i.creativecommons.org/l/by-sa/4.0/80x15.png" src="https://camo.githubusercontent.com/d1b3cb5c3bc0b0de6fb5445b1657c03464125482/68747470733a2f2f692e6372656174697665636f6d6d6f6e732e6f72672f6c2f62792d73612f342e302f38307831352e706e67"/>
+Wiki content license: <a href="http://creativecommons.org/licenses/by-sa/4.0/" rel="nofollow">Creative Commons Attribution-ShareAlike 4.0 International License</a></p>
+
+          </div>
+        </div>
+    </div>]

@@ -1,0 +1,104 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>Tom, Bruno, Fred and I discussed the control/interaction architecture yesterday (Jan 15th, 2013). Quick report on the discussion.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#control" id="user-content-control"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Control</h2>
+<p>Currently a Control is an object wrapping a DOM element and including a reference to the map. A control can be given a target DOM element (container). If no target is provided the map's "overlay container" is used as the target.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#current-issue" id="user-content-current-issue"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Current Issue</h3>
+<p>The map currently maintains a collection of controls, and provides a <code>getControls</code> method for accessing the collection. The current design is flawed. In particular the following use-case doesn't work:</p>
+<pre><code>map1.getControls().push(aControl);
+aControl.setMap(map2);
+</code></pre>
+<p>In this case the control is still in map1's controls collection, but it now includes a reference to map2.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#interaction" id="user-content-interaction"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Interaction</h2>
+<p>The map has a collection of Interactions. The map listen to browser events, wrap these browser events in "map browser events" and pass them to the interactions by calling <code>handleMapBrowserEvent</code> on every interaction of the collection. The interaction may handle or ignore the received map browser event, based on its role. The interaction reacts to the event by changing the view (calling <code>view.setCenter</code> for example).</p>
+<p>The order of interactions in the collection matters. If an interaction calls <code>preventDefault()</code> on the map browser event other the interactions at lower indexes in the collection won't receive the event.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#control-classification" id="user-content-control-classification"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Control Classification</h2>
+<p>In OL2 everything is a Control. In particular the notion of Interactions does not exist. A control in OL2 may have no relationship with the DOM.</p>
+<p>We have attempted to categorize each OL2 control and handler, to see where they fit in the OL3 architecture. See below. The result is that there are OL2 controls that are neither controls nor interactions in the OL3 architecture. Solutions must be found for those.</p>
+<pre><code>OL3 CONTROL
+Attribution
+LayerSwitcher
+MousePosition
+OverviewMap
+Pan
+PanZoomBar
+Scale
+ScaleLine
+Zoom
+ZoomToMaxExtent
+
+OL3 INTERACTION
+DragPan
+GetFeature
+KeyboardDefaults
+PinchZoom
+UTFGrid
+WMSGetFeatureInfo
+WMTSGetFeatureInfo
+ZoomBox
+Feature Handler (low level)
+
+OL3 WE DON'T KNOW YET
+ArgParser
+Geolocate
+NavigationHistory
+Permalink
+
+OL3 GEOMETRY MANIPULATION
+DragFeature
+DrawFeature
+Measure
+ModifyFeature
+SLDSelect
+SelectFeature
+Snapping
+Split
+TransformFeature
+Box
+Path Handler
+Point Handler
+Polygon Handler
+RegularPolygon Handler
+
+OL3 NOT RELEVANT
+Button
+EditingToolbar
+NavToolbar
+Panel
+ZoomIn
+ZoomOut
+ZoomPanel
+
+OL3 SOURCE WRAPPER
+CacheRead
+CacheWrite
+
+OL3 LAYER
+Graticule
+
+SHORTCUTS
+Navigation
+PanPanel
+PanZoom
+TouchNavigation
+
+OL3 MAP BROWSER EVENT
+Click Handler
+Drag Handler
+Hover Handler
+Keyboard Handler
+MouseWheel Handler
+Pinch Handler
+
+OL3 IDEAS
+tree of controls
+modifiers to listen to different events
+</code></pre>
+
+        </div>
+
+    </div>]

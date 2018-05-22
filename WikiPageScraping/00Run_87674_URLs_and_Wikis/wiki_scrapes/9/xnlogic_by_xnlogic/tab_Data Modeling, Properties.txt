@@ -1,0 +1,59 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>In previous sections, we have defined relations between parts. In this section, we will learn how to define properties in a part.</p>
+<p>Before we jump into it, let's revisit some <a href="Data-Modeling,-Relations#step-3---create-some-data">code from a previous example</a>. Specifically, notice the following line:</p>
+<div class="highlight highlight-source-ruby"><pre>    app.create <span class="pl-c1">M</span>::<span class="pl-c1">StudentAccount</span>, {<span class="pl-c1">balance:</span> <span class="pl-k">-</span><span class="pl-c1">2500</span>}</pre></div>
+<p>We created all our <code>StudentAccount</code>s with a <code>balance</code> property.
+Therefore, you might expect <code>graph.v(M::StudentAccount).first.properties</code> to contain the key <code>balance</code>.
+Let's try it in the IRB</p>
+<div class="highlight highlight-source-ruby"><pre>jruby<span class="pl-k">-</span><span class="pl-c1">1.7</span>.<span class="pl-c1">16</span> :<span class="pl-c1">023</span> <span class="pl-k">&gt;</span> graph.v(<span class="pl-c1">M</span>::<span class="pl-c1">StudentAccount</span>).first.properties
+ =&gt; {<span class="pl-s"><span class="pl-pds">"</span>created_at<span class="pl-pds">"</span></span>=&gt;<span class="pl-c1">2015</span><span class="pl-k">-</span><span class="pl-c1">01</span><span class="pl-k">-</span><span class="pl-c1">15</span> <span class="pl-c1">15</span>:<span class="pl-c1">46</span>:<span class="pl-c1">58</span> <span class="pl-c1">UTC</span>, <span class="pl-s"><span class="pl-pds">"</span>model_name<span class="pl-pds">"</span></span>=&gt;<span class="pl-s"><span class="pl-pds">"</span>student_account<span class="pl-pds">"</span></span>}</pre></div>
+<p>As we can see, the <code>balance</code> property is missing.<br/>
+In fact, when you create model objects using xnlogic, the default behaviour is to discard properties that are not defined.</p>
+<p>So, let's define the <code>balance</code> property in the <code>StudentAccount</code> part:</p>
+<div class="highlight highlight-source-ruby"><pre><span class="pl-k">module</span> <span class="pl-en">StudentAccount</span>
+    xn_part
+
+    property <span class="pl-c1">:balance</span>, <span class="pl-c1">type:</span> <span class="pl-c1">:numeric</span>
+
+    from_one <span class="pl-c1">:Student</span>
+<span class="pl-k">end</span></pre></div>
+<p>After reloading the code, let's re-create our student accounts by running the following code in the IRB:</p>
+<div class="highlight highlight-source-ruby"><pre>graph.transaction <span class="pl-k">do</span>
+  graph.v(<span class="pl-c1">M</span>::<span class="pl-c1">StudentAccount</span>).delete!
+  
+  app.create <span class="pl-c1">M</span>::<span class="pl-c1">StudentAccount</span>, {<span class="pl-c1">balance:</span> <span class="pl-c1">0</span>}
+  app.create <span class="pl-c1">M</span>::<span class="pl-c1">StudentAccount</span>, {<span class="pl-c1">balance:</span> <span class="pl-c1">0</span>}
+  app.create <span class="pl-c1">M</span>::<span class="pl-c1">StudentAccount</span>, {<span class="pl-c1">balance:</span> <span class="pl-k">-</span><span class="pl-c1">2500</span>}
+
+<span class="pl-k">end</span></pre></div>
+<p>And now, let's test things again:</p>
+<div class="highlight highlight-source-ruby"><pre>jruby<span class="pl-k">-</span><span class="pl-c1">1.7</span>.<span class="pl-c1">16</span> :<span class="pl-c1">048</span> <span class="pl-k">&gt;</span> student_account <span class="pl-k">=</span> graph.v(<span class="pl-c1">M</span>::<span class="pl-c1">StudentAccount</span>).first
+
+jruby<span class="pl-k">-</span><span class="pl-c1">1.7</span>.<span class="pl-c1">16</span> :<span class="pl-c1">049</span> <span class="pl-k">&gt;</span> student_account.balance
+ =&gt; <span class="pl-c1">0</span> 
+
+jruby<span class="pl-k">-</span><span class="pl-c1">1.7</span>.<span class="pl-c1">16</span> :<span class="pl-c1">050</span> <span class="pl-k">&gt;</span> graph.transaction <span class="pl-k">do</span>
+jruby<span class="pl-k">-</span><span class="pl-c1">1.7</span>.<span class="pl-c1">16</span> :<span class="pl-c1">051</span> <span class="pl-k">&gt;</span>     student_account.balance <span class="pl-k">=</span> <span class="pl-c1">42</span>
+jruby<span class="pl-k">-</span><span class="pl-c1">1.7</span>.<span class="pl-c1">16</span> :<span class="pl-c1">052</span>?<span class="pl-k">&gt;</span>   <span class="pl-k">end</span>
+
+jruby<span class="pl-k">-</span><span class="pl-c1">1.7</span>.<span class="pl-c1">16</span> :<span class="pl-c1">053</span> <span class="pl-k">&gt;</span> student_account.balance
+ =&gt; <span class="pl-c1">42</span> </pre></div>
+<p>We can notice two things that have changed:</p>
+<ol>
+<li>The <code>balance</code> property was saved (in the underlying vertex).</li>
+<li>xnlogic generated methods to get/set the <code>balance</code> property.</li>
+</ol>
+<p>You may have noticed that we defined the <code>balance</code> property to be of type <code>:numeric</code>.
+What will happen if we try to assign it something that is not a number?</p>
+<div class="highlight highlight-source-ruby"><pre>jruby<span class="pl-k">-</span><span class="pl-c1">1.7</span>.<span class="pl-c1">16</span> :<span class="pl-c1">054</span> <span class="pl-k">&gt;</span> graph.transaction <span class="pl-k">do</span>
+jruby<span class="pl-k">-</span><span class="pl-c1">1.7</span>.<span class="pl-c1">16</span> :<span class="pl-c1">055</span> <span class="pl-k">&gt;</span>     student_account.balance <span class="pl-k">=</span> <span class="pl-s"><span class="pl-pds">"</span>Not numeric<span class="pl-pds">"</span></span>
+jruby<span class="pl-k">-</span><span class="pl-c1">1.7</span>.<span class="pl-c1">16</span> :<span class="pl-c1">056</span>?<span class="pl-k">&gt;</span>   <span class="pl-k">end</span>
+
+jruby<span class="pl-k">-</span><span class="pl-c1">1.7</span>.<span class="pl-c1">16</span> :<span class="pl-c1">057</span> <span class="pl-k">&gt;</span> student_account.balance
+ =&gt; <span class="pl-c1">nil</span> </pre></div>
+<p>As you can see, xnlogic will not assign a value of incorrect type, it will simply assign the property with <code>nil</code>. You may find this behaviour odd, but it will make sense later when we introduce the notion of <em>actions</em>. The idea is that operations that change the graph must be defined in an action, and an action can be rolled back if someone tries to set invalid data.</p>
+
+        </div>
+
+    </div>]

@@ -1,0 +1,35 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>Twitch.tv runs a custom IRC server that doesn't support the full IRC protocol. This has required some tweaks in <a href="DevVersion"><strong>PircBotX 2.1</strong>, see the DevVersion page for how to get it</a></p>
+<p>First to connect you need an OAuth token as specified here: <a href="http://help.twitch.tv/customer/portal/articles/1302780-twitch-irc" rel="nofollow">http://help.twitch.tv/customer/portal/articles/1302780-twitch-irc</a></p>
+<p>The connect section translates to</p>
+<pre><code>new Configuration.Builder()
+	.setAutoNickChange(false) //Twitch doesn't support multiple users
+	.setOnJoinWhoEnabled(false) //Twitch doesn't support WHO command
+	.setCapEnabled(true)
+	.addCapHandler(new EnableCapHandler("twitch.tv/membership")) //Twitch by default doesn't send JOIN, PART, and NAMES unless you request it, see https://github.com/justintv/Twitch-API/blob/master/IRC.md#membership
+
+	.addServer("irc.twitch.tv")
+	.setName("MyTwitchUsername") //Your twitch.tv username
+	.setServerPassword("oauth:bigAlphanumericString") //Your oauth password from http://twitchapps.com/tmi
+	.addAutoJoinChannel("#vgbootcamp") //Some twitch channel
+
+	.addListener(new MyListener())
+	//The rest of your config...
+</code></pre>
+<p>Explained:</p>
+<ul>
+<li>Note: Recently Twitch implemented <code>CAP LS</code> so <code>setCapEnabled(false)</code> is no longer necessary.</li>
+<li>
+<code>setOnJoinWhoEnabled(false)</code> is required as twitch doesn't support the WHO command. This also means every user's getLogin()/getIdent() and getHostname() will be null until they talk, because that's the first time their full hostmask is sent. From Issue #248</li>
+<li>
+<code>.addCapHandler(new EnableCapHandler("twitch.tv/membership"))</code> is recommended as twitch by default doesn't send JOIN, PART, and NAMES responses. This means the channel will confusingly only have 1 user: the bot itself.</li>
+</ul>
+<p>Optionally you can enable IRCv3 Message Tags as defined here ( <a href="https://github.com/justintv/Twitch-API/blob/master/IRC.md#tags">https://github.com/justintv/Twitch-API/blob/master/IRC.md#tags</a> ) for more information about the user with:</p>
+<pre><code>.addCapHandler(new EnableCapHandler("twitch.tv/tags"))
+</code></pre>
+<p>The tag data is available in MessageEvent.getTags()</p>
+
+        </div>
+
+    </div>]

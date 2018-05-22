@@ -1,0 +1,64 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>What formats (and special rules) our Image and Audio files must conform to.</p>
+<p>#Images
+###for objects:</p>
+<ul>
+<li>
+<p>Frogatto only supports one image type:  <a href="http://en.wikipedia.org/wiki/Portable_Network_Graphics" rel="nofollow">PNGs</a>.  JPEG support might be reasonable, and our libraries would support it with some additional work, but you'll need to come to us with a compelling use case before we add the feature (this isn't a show-stopper for you; it'll just eat up some additional data space).</p>
+</li>
+<li>
+<p>We may have issues with PNG8 files, we encourage everyone to use PNG24 files.</p>
+</li>
+<li>
+<p>We rarely use it ourselves, but we do have full support for PNG alpha channels.  What we use instead, and which is more convenient for pixel-art, is a pair of "magic colors".  Any pixel with the RGB values #f9303d or #6f6d51 will be made entirely transparent in the game.  The biggest benefit of magic-colors is it allowing us to annotate directly in the images; primarily, we use this to draw the frame bounds images are sliced at, since visually figuring out where they are from the actual markup is time-consuming and error prone - as is lining up images in a spritesheet without these.</p>
+</li>
+<li>
+<p>It's possible to reference an animation in which every frame is a separate image, but we have a slew of conveniences for what are called "spritesheets": series of animation frames arranged in rows and columns, all within as few images (often just one) as possible.  You're encouraged to use spritesheets for all animations.</p>
+</li>
+<li>
+<p>We have a few limitations on image size; first, all image files must be an even number of pixels in both dimensions (the files themselves, not the animations on them.  Second, if you're going to repeat an image (in the manner used by ropes, or our parallax backgrounds), it needs to be a power-of-two along the dimension that repeats.</p>
+</li>
+<li>
+<p>For memory usage, it's encouraged that you don't exceed "power-of-two" boundaries by a small amount, because the game will internally expand that texture to the full limit of the next po2 unit in that dimension; for example, if you have a texture that's 533 pixels wide, the game will pad it to a full 1024 pixels wide, internally.  In memory, another 512x512 block of uncompressed 32bpp data is 2 megabytes in size, so this can really add up.  Naturally, this is barely an issue with small powers-of-two like going from 32x32-&gt;32x64; you should only worry about this at sizes about 512x512px.  Generally, if you're exceeding 512x512, you should just make another spritesheet for the additional animations.</p>
+</li>
+<li>
+<p>We do have a system for compiling images into enormous texture atlases, so you shouldn't knock yourself out optimizing your spritesheets by hand.  It's a waste of time, the script will do better than you can ever hope to.  Optimize your spritesheets for human readability, and ease-of-editing, not size.</p>
+</li>
+</ul>
+<p>###for backgrounds:</p>
+<ul>
+<li>
+<p>As mentioned above, backgrounds have a restriction that they have to be a power-of-two in the direction they repeat in.  Backgrounds will always repeat horizontally, but whether they repeat vertically is optional (this can be set separately for up and down; a background can start at a certain height, and only repeat in one direction).  Background images thus always have to be a power-of-two horizontally, but vertically is a matter of whether you need them to repeat.  Backgrounds that don't need to repeat vertically can be stacked together in a single image.</p>
+</li>
+<li>
+<p>Backgrounds are layered in the order they're drawn in; later things go on top.  For optimization reasons, you're encouraged to put large blocks of stuff that need to be drawn as a batch, all in the same image (like our layers that comprise the ocean in frogatto).  This way, they can all be drawn as one operation.</p>
+</li>
+</ul>
+<p>###for tiles:</p>
+<ul>
+<li>tile sheets must be a multiple of 16x16 pixels.</li>
+</ul>
+<p>#Audio:</p>
+<ul>
+<li>
+<p>Frogatto supports WAV and OGG files for sound effects, with no real limitations on format (that I'm aware of, at least).  Frogatto supports only OGG files for looped background music.  Don't be confused - sound effects themselves can be looped; but we're referring specifically to the stuff that gets done with the <code>music('filename.ogg')</code> function.</p>
+</li>
+<li>
+<p>Because the iPhone has a coprocessor specially dedicated to playing music, we re-encode our music for the iOS version.  Using the coprocessor is not just a colossal boost to performance (allowing the game to run decently at all, on the oldest iPhones), but is also a huge savings to battery life even on new mobile devices.  We require WAV files for sound effects (formatted as 16-bit, little-endian, mono, and 44khz), and AAC files for music (anything exported specifically by iTunes, which works some special mojo to ensure they're friendly to the coprocessor - don't use other programs, they might end up much slower.  OSX has a commandline tool 'afconvert', which can be used to automate conversion, although we haven't tried it.</p>
+</li>
+</ul>
+<p>#Video:
+Frogatto has no support for video files, such as might be used for a prerendered cutscene.</p>
+<p>#3d Model:
+Frogatto has no support for 3d models. Yes, the game is written in OpenGL, no, that doesn't imply a 3d game.  All that's implied is that it would be conceivably possible at some point, but we have no plans at the moment.</p>
+
+        </div>
+
+        <div class="wiki-footer gollum-markdown-content boxed-group" id="wiki-footer">
+          <div class="boxed-group-inner wiki-auxiliary-content markdown-body">
+            <p>More help can be found via IRC, <a href="irc://irc.freenode.net/#frogatto" rel="nofollow">#Frogatto</a> on freenode.net. This wiki is not a complete reference.</p>
+
+          </div>
+        </div>
+    </div>]

@@ -1,0 +1,109 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>Silksmith publishes .silk packages on nexus via gradles publishing extension. There are already some package published here <a href="https://bintray.com/silksmith-io/silk" rel="nofollow">https://bintray.com/silksmith-io/silk</a> (some externs might need some more love)</p>
+<h1>
+<a aria-hidden="true" class="anchor" href="#setup" id="user-content-setup"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Setup</h1>
+<pre><code>apply plugin: 'maven-publish'
+publishing {
+	publications {
+		maven(MavenPublication) {
+			groupId 'org.example.foogroup'
+			from components.silk
+		}
+     }
+}
+</code></pre>
+<h1>
+<a aria-hidden="true" class="anchor" href="#publishing-third-party-libraries" id="user-content-publishing-third-party-libraries"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Publishing third party libraries</h1>
+<p>Silksmith comes with two helper class to package existing libraries like jQuery, Bootstrap etc.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#downloadfiles-task" id="user-content-downloadfiles-task"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>DownloadFiles Task</h2>
+<p>If the library is provided somewhere in the web to download, you can define a download task and use its output as source dir.</p>
+<pre><code>task download(type: io.silksmith.task.DownloadFiles) {
+    url = "http://sinonjs.org/releases/sinon-1.12.1.js"
+
+}
+silksmith.source {
+    main {
+        statics {
+            srcDir download.outputs.files.singleFile
+        }
+    }
+}
+pack.dependsOn download
+```
+## GitFiles Task
+Very often the library resource is provided via a git repository, especially all libraries available via bower. Therefore you can use the *GitFiles* Task to specifiy the repo and the branch/tag/commit you want to checkout and also use its output as source directory
+
+```
+task github(type: io.silksmith.task.GitFiles) {
+    url = "https://github.com/jquery/jquery.git"
+    checkout = "1.11.2"
+}
+
+silksmith.source {
+    main {
+	    statics {
+	        srcDir "$github.outputs.files.singleFile/dist"
+	        include "jquery.min.js"
+	        include "jquery.min.map"
+	    }
+    }
+}
+```
+# Version
+Since many packages may be 3rd party libraries but will come with externs we typically use the libraries version for the package plus a kind of build indicator to distingiuish fixes/updates on the externs e.g.:
+```
+version = "1.11.2+smith.1"
+version = "1.11.2+smith.3"
+...
+```
+# Licensing
+There are several things you can do to mention a license for the different sources
+
+Name the license in the silk.json and also if it is a third party reference the origin:
+```
+pack.manifest {
+    metainfo {
+        scss {
+            license = 'MIT'
+            origin "https://example.org/.."
+        }
+        statics {
+            license = 'Apache-2.0'
+            origin "https://github.com/..."
+        }
+        externs {
+            license = 'FooBar Licsene'
+            origin "https://github.com/..."
+        }
+    }
+}
+```
+
+You can also bundle the license file in the package itself, they then can be found in the packages license folder:
+
+```
+pack.scssLicense {
+    from "$myGitFileTask.outputs.files.singleFile/LICENSE"
+}
+pack.externsLicense {
+    from file("myLicense.txt")
+}
+```
+# Internal structure of .silk packages
+
+```
+my-package-1.0.1+smith.0.silk/
+- js/ #Closure JS Sources
+- externs/ #Externs for Closure JS
+- scss/ #SCSS 
+- statics/ #Statics  
+silk.json #Extra stuff for later :)
+
+```
+</code></pre>
+
+        </div>
+
+    </div>]

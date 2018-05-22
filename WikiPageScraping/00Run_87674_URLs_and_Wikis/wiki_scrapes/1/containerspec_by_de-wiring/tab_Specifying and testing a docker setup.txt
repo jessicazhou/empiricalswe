@@ -1,0 +1,304 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>This blog post is about test driven infrastructure in a docker-enabled environment. It shows how to specify and execute tests</p>
+<ul>
+<li>about what images are stored on local docker storage,</li>
+<li>what properties these images have (i.e. where they come from),</li>
+<li>whether images comply to certain standards (i.e. pre-defined ports to be exposed).</li>
+<li>about containers that are running (or not),</li>
+<li>what images they're built on,</li>
+<li>what properties containers have (i.e. run as non-root, expose ports, ...),</li>
+<li>about containers being linked to other containers.</li>
+</ul>
+<p>It uses ruby, <a href="www.serverspec.org">serverspec</a> and cucumber to express these tests and make them executable in a very convient way, since the execution "engine" is shipped as a container as well. That means we can use containers to test a container setup!</p>
+<p><strong>But why testing infrastructure?</strong> Because</p>
+<ul>
+<li>... this way, developers or architects are able to specify not only a single service, but a system composed of services, running as containers on a single host. A full "environment", whether this be development, staging or production.</li>
+<li>... the specification is portable and can be executed on other hosts to ensure that environments are built identically.</li>
+<li>... it can be used as a security measure, to ensure having the right containers in place, configured correctly.</li>
+<li>... it is a readable way of monitoring: already written nagios checks like <code>docker ps | grep .. | wc -l</code> to check something?</li>
+</ul>
+<h2>
+<a aria-hidden="true" class="anchor" href="#start" id="user-content-start"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Start</h2>
+<p>The only prerequisite is docker, so let's start by pulling our serverspec and cucumber containers:</p>
+<pre><code>$ docker pull dewiring/spec_serverspec
+$ docker pull dewiring/spec_cucumber
+</code></pre>
+<p>To describe a setup, we would also need containers to test against. Pull some more images to play with:</p>
+<pre><code>$ docker pull nginx:1.7.8
+$ docker pull node:0.10.33-slim
+$ docker pull redis:2.8.12
+</code></pre>
+<h2>
+<a aria-hidden="true" class="anchor" href="#specs-for-images" id="user-content-specs-for-images"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Specs for images</h2>
+<p>First step would be to express that we expect these images to be present on local storage. Let's try this using serverspec:</p>
+<pre><code>$ mkdir serverspec &amp;&amp; cd serverspec
+$ cat &gt;image_exists_spec.rb &lt;&lt;EOF
+require 'spec_helper.rb'
+
+describe docker_image 'nginx:1.7.8' do 
+  it { should exist }
+end
+
+describe docker_image 'node:0.10.33-slim' do 
+  it { should exist }
+end
+
+describe docker_image 'redis:2.8.12' do 
+  it { should exist }
+end
+
+EOF
+</code></pre>
+<p>More infos on serverspec and its syntax can be found on its <a href="http://serverspec.org/resource_types.html" rel="nofollow">resource type page</a></p>
+<p>To execute it, run spec_serverspec image, mount the docker socket and the current directory to /spec:</p>
+<pre><code>$ docker run \
+  --rm \
+  -v /var/run/docker.sock:/var/run/docker.sock:ro \
+  -v `pwd`:/spec \
+  dewiring/spec_serverspec
+</code></pre>
+<p>To make it easier we alias it:</p>
+<pre><code>$ alias serverspec="docker run --rm -v /var/run/docker.sock:/var/run/docker.sock:ro -v `pwd`:/spec dewiring/spec_serverspec"
+
+$ serverspec
+/usr/bin/ruby2.1 -I/var/lib/gems/2.1.0/gems/rspec-support-3.1.2/lib:/var/lib/gems/2.1.0/gems/rspec-core-3.1.7/lib /var/lib/gems/2.1.0/gems/rspec-core-3.1.7/exe/rspec --pattern spec/localhost/\*_spec.rb
+
+Docker image "nginx:1.7.8"
+  should exist
+
+Docker image "node:0.10.33-slim"
+  should exist
+
+Docker image "redis:2.8.12"
+  should exist
+
+Finished in 0.13388 seconds (files took 0.36542 seconds to load)
+3 examples, 0 failures
+</code></pre>
+<p>Easy. Play around with the image names of the spec file to i.e. provoke errors. Let's express the inverse meaning, for example an apache2 image should not be present:</p>
+<pre><code>$ cat &gt;no_apache_spec.rb &lt;&lt;EOF
+require 'spec_helper.rb'
+
+describe docker_image 'dockerfile/apache2' do 
+  it { should_not exist }
+end
+EOF
+
+$ serverspec
+(...)
+Docker image "dockerfile/apache2"
+  should not exist
+</code></pre>
+<p>Using serverspec we're able to express conditions upon image properties yielded by <code>docker inspect</code>, i.e.:</p>
+<pre><code>$ cat &gt;nginx_port_spec.rb &lt;&lt;EOF
+require 'spec_helper.rb'
+
+describe docker_image 'nginx:1.7.8' do 
+  its(['Config.ExposedPorts']) { should include '443/tcp' }
+  its(['Author']) { should match /^NGINX Docker Maintainers.*/ } 
+end
+EOF
+
+$ serverspec
+(...)
+Docker image "nginx:1.7.8"
+  ["Config.ExposedPorts"]
+    should include "443/tcp"
+  ["Author"]
+    should match /^NGINX Docker Maintainers.*/
+</code></pre>
+<p>Using this syntax we're able to check upon all inspection values, comparing strings, regular expressions and array inclusion.</p>
+<p>Serverspec syntax is a DSL of ruby. Given Cucumber and its Gherkin syntax, this can also be expressed in a more human-readable fashion:</p>
+<pre><code>$ cd ..
+$ mkdir containerspec &amp;&amp; cd containerspec
+$ cat &gt;nginx_image.feature &lt;&lt;EOF
+Feature: NGINX-Image present and valid
+
+Scenario: NGINX Base Image
+  Given i pull 'nginx:1.7.8'
+  When there are images tagged 'nginx:1.7.8'
+  Then 'Author' should be like 'NGINX Docker Maintainers'
+  Then within Config, 'Env' should be set
+  Then within Config, 'Env' should be like 'NGINX_VERSION=1.7.8-1~wheezy'
+  Then within Config, 'ExposedPorts' should be set
+  Then within Config, 'ExposedPorts' should be like '80/tcp'
+  Then within Config, 'ExposedPorts' should be like '443/tcp'
+  Then within Config, 'Volumes' should be like '/var/cache/nginx'
+  Then within Config, 'Cmd' should be like '["nginx", "-g", "daemon off;"]'
+EOF
+</code></pre>
+<p>This snippet includes more examples, such as Environment entries to be present, volumes to be mounted etc. It can be run using <code>dewiring/spec_cucumber</code> container, pretty much the same way as with serverspec above.
+Setting an alias for it makes it easier to run:</p>
+<pre><code>$ alias containerspec="docker run --rm -v /var/run/docker.sock:/var/run/docker.sock:ro -v `pwd`:/spec dewiring/spec_cucumber"
+
+$ containerspec
+Feature: NGINX-Image present and valid
+
+  Scenario: NGINX Base Image                                                  # features/nginx_image.feature:3
+    Given i pull 'nginx:1.7.8'                                                # /project_step_definitions/image_definitions.rb:51
+    When there are images tagged 'nginx:1.7.8'                                # /project_step_definitions/image_definitions.rb:78
+    Then 'Author' should be like 'NGINX Docker Maintainers'                   # /project_step_definitions/image_definitions.rb:105
+    Then within Config, 'Env' should be set                                   # /project_step_definitions/image_definitions.rb:181
+    Then within Config, 'Env' should be like 'NGINX_VERSION=1.7.8-1~wheezy'   # /project_step_definitions/image_definitions.rb:138
+    Then within Config, 'ExposedPorts' should be set                          # /project_step_definitions/image_definitions.rb:181
+    Then within Config, 'ExposedPorts' should be like '80/tcp'                # /project_step_definitions/image_definitions.rb:138
+    Then within Config, 'ExposedPorts' should be like '443/tcp'               # /project_step_definitions/image_definitions.rb:138
+    Then within Config, 'Volumes' should be like '/var/cache/nginx'           # /project_step_definitions/image_definitions.rb:138
+    Then within Config, 'Cmd' should be like '["nginx", "-g", "daemon off;"]' # /project_step_definitions/image_definitions.rb:138
+
+1 scenario (1 passed)
+10 steps (10 passed)
+0m3.040s
+</code></pre>
+<p>How does it work?</p>
+<ul>
+<li>
+<em>Given</em> would locate and (if necessary) pull the specified image</li>
+<li>
+<em>When</em> selects the image to be inspected according to its name</li>
+<li>
+<em>Then</em> uses <code>docker inspect</code> to query fields and compare with the spec.</li>
+</ul>
+<p>To learn more about supported Given/When/Then matchers, see the according <a href="https://github.com/de-wiring/containerspec/wiki/Step-definitions-overview">Wiki</a> Page.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#specs-for-containers" id="user-content-specs-for-containers"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Specs for Containers</h2>
+<p>Now great that we have images and they look ok, next step is to do the same with running containers. Let's start an nginx:</p>
+<pre><code>$ docker run \
+	--detach \
+	--name "demo_nginx" \
+	-v /tmp:/usr/share/nginx/html \
+	-p 8443:443 \
+	nginx:1.7.8
+26cd62727d604aede035256f87d9ca87d0870e66be7a1b9b23b40ea789744bbb
+</code></pre>
+<p>This does not do anything useful with nginx, but it mounts a volume and exposes a port.  Using serverspec we can express that i.e. a container by that name should be running, and it should have some properties:</p>
+<pre><code>$ cd ../serverspec
+$ cat &gt;nginx_present_spec.rb &lt;&lt;EOF
+require 'spec_helper.rb'
+
+describe docker_container 'demo_nginx' do 
+  it { should exist }
+  it { should be_running }
+
+  it { should have_volume('/usr/share/nginx/html','/tmp') }
+  its(['HostConfig.PortBindings']) { should include '443/tcp' } 
+
+end
+EOF
+
+$ serverspec
+(...)
+Docker container "demo_nginx"
+  should exist
+  should be running
+  should have volume "/usr/share/nginx/html", "/tmp"
+  ["HostConfig.PortBindings"]
+    should include "443/tcp"
+(...)
+</code></pre>
+<p>The same can be achieved using cucumber and containerspec. Matchers are similar to the images example above:</p>
+<pre><code>$ cd ../containerspec
+$ cat &gt;nginx_present.feature &lt;&lt;EOF
+Feature: Nginx container running correctly.
+
+Scenario: NGINX Container
+  When there is a running container named 'demo_nginx'
+  Then it should run on image 'nginx:1.7.8'
+
+EOF
+
+$ containerspec
+(...)
+Feature: Nginx container running correctly.
+
+  Scenario: NGINX Container                              # features/nginx_present.feature:3
+    When there is a running container named 'demo_nginx' # /project_step_definitions/container_definitions.rb:29
+    Then it should run on image 'nginx:1.7.8'            # /project_step_definitions/container_definitions.rb:240
+
+(...)
+</code></pre>
+<p>What happens if we tweak the image name to, say, <code>nginx:1.7.9</code>? Editing it in vi, running containerspec gives us:</p>
+<pre><code>(...)
+  Scenario: NGINX Container                              # features/nginx_present.feature:3
+    When there is a running container named 'demo_nginx' # /project_step_definitions/container_definitions.rb:29
+    Then it should run on image 'nginx:1.7.9'            # /project_step_definitions/container_definitions.rb:240
+      1 containers do not run on image nginx:1.7.9, but should: 7a0dd924222c (RuntimeError)
+      /project_step_definitions/container_definitions.rb:245:in `/^(it|they) should run on image '(.*)'$/'
+      features/nginx_present.feature:5:in `Then it should run on image 'nginx:1.7.9''
+
+Failing Scenarios:
+cucumber features/nginx_present.feature:3 # Scenario: NGINX Container
+(...)
+</code></pre>
+<p>Meep, it says <code>1 containers do not run on image nginx:1.7.9, but should: 7a0dd924222c</code>. Same when we change the When-Clause to match container named, say, 'demo_nginy':</p>
+<pre><code>$ containerspec
+(...)
+  Scenario: NGINX Container                              # features/nginx_present.feature:3
+    When there is a running container named 'demo_nginy' # /project_step_definitions/container_definitions.rb:29
+      No running containers named demo_nginy found (RuntimeError)
+(...)
+</code></pre>
+<p>So this is also helpful in ensure that named containers are present. This matcher is also available for regular expressions, i.e. "nginx_[0-9]".</p>
+<p>So lets extends the spec a bit more:</p>
+<pre><code>$ cat &gt;nginx_present.feature &lt;&lt;EOF
+Feature: Nginx container running correctly.
+
+Scenario: NGINX Container
+  When there is a running container named 'demo_nginx'
+  Then it should run on image 'nginx:1.7.8'
+  And containers should not expose port '80'
+  And containers should expose port '443' on host port '8443'
+  And container volume '/etc/nginx/sites-enabled' should be mounted
+  And container volume '/var/log/nginx' should not be mounted
+
+EOF
+
+</code></pre>
+<p>Unlike serverspec, containerspec is able to address multiple images and containers in a single pass, so we can express things like:</p>
+<pre><code>$ cat &gt;generics.feature &lt;&lt;EOF
+Feature: Security
+
+Scenario: No privileged, no ssh port exposed
+  When there are running containers named like 'demo_'
+  Then they should not run privileged
+  And containers should not expose port '22'
+EOF
+</code></pre>
+<p>This would check all containers named /demo_/. Ensure that it does by running a container named demo_ssh and exposing port 22:</p>
+<pre><code>$ docker run -p 22022:22 -tdi --name "demo_ssh" debian:jessie
+0d27c130182d259869b431dfb346e8e3ef339703349abf4124ec3380dbecec36
+$ containerspec
+(...)
+  And containers should not expose port '22'           # /project_step_definitions/container_definitions.rb:230
+      1 containers do expose port 22/tcp, but should not: 0d27c130182d (RuntimeError)
+(...)
+</code></pre>
+<p>The current set of matchers allows for checking</p>
+<ul>
+<li>User ("should not run as root", "should run as ...")</li>
+<li>Environment ("its environment should include ...")</li>
+<li>Volumes ("container volume .. should be mounted")</li>
+<li>Exposed Ports ("container should expose port .. on host port ...")</li>
+<li>Linking ("it should be linked to ...")</li>
+</ul>
+<p>A more detailed example can be found in the <a href="https://github.com/de-wiring/containerspec/tree/master/tests/example-tests">examples</a> section.</p>
+<p>So what is this good for? We can express a functional application as a set of containers that must be present and running, with certain properties, how they are linked together, what ports they expose and so on. This could possibly be integrated into monitoring processes. Furthermore we can express security checks, not only on running containers but also on images that are pulled from registries, i.e. if certain versions of packages or images are present, which images may run privileged and which may not, and so on.</p>
+<p>So there are quite a number of use cases for using specs in a docker container world.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#links" id="user-content-links"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Links</h2>
+<ul>
+<li><a href="serverspec.org">Serverspec</a></li>
+<li><a href="https://github.com/serverspec/serverspec/pull/482">Examples for serverspec/docker resource types</a></li>
+<li><a href="http://www.infrabricks.de/blog/2014/04/25/serverspec-server-spezifizieren-und-testen/" rel="nofollow">German post on serverspec basics</a></li>
+</ul>
+
+        </div>
+
+        <div class="wiki-footer gollum-markdown-content boxed-group" id="wiki-footer">
+          <div class="boxed-group-inner wiki-auxiliary-content markdown-body">
+            <p>de-wiring are Andreas Schmidt, Dustin Huptas. © 2014,2015</p>
+
+          </div>
+        </div>
+    </div>]

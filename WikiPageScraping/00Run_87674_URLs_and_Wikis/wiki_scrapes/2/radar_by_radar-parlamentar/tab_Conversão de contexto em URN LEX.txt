@@ -1,0 +1,98 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>A <a href="https://en.wikipedia.org/wiki/Lex_(URN)" rel="nofollow"><em>URN LEX</em></a> é o padrão adotado pelo <a href="https://pt.wikipedia.org/wiki/LexML_Brasil" rel="nofollow">LexML-Brasil</a> e outras autoridades pelo mundo, para identificar univocamente e de forma transparente documentos legislativos e jurídicos. Quanto à <em>URN LEX</em> ser um nome transparente, ver o <a href="http://projeto.lexml.gov.br/documentacao/destaques-lexml#nomes-persistentes" rel="nofollow">mini-tutorial</a>.</p>
+<p>Sintaticamente, conforme lembrado <a href="https://github.com/lexml/lexml-coleta-validador/blob/master/doc/validacoes.txt">neste resumo</a>, a <em>URN LEX</em> deve estar toda em letras minúsculas (sem acentos e com pontos no lugar de espaços) e deve iniciar com
+<code>urn:lex:&lt;localidade&gt;:&lt;autoridade&gt;:&lt;tipo-documento&gt;</code>
+<br/>podendo ser seguida por <code>:&lt;descritor&gt;</code>.</p>
+<p>Na <a href="https://github.com/radar-parlamentar/radar/issues/273">issue #273</a> foi proposto o uso das <em>URN LEX</em> para poder expressar <em>links</em> na interface final com o usuário, e para garantir a interoperabilidade do banco de dados do Radar com outros Dados Abertos.</p>
+<p>##O problema que a URN LEX resolve ##
+No Radar temos tabelas com metadados das proposições legislativas (título, data, código, etc.), e para designar uma proposição específica, basta chamá-la pelo seu <code>id</code>,</p>
+<p><code>SELECT * FROM modelagem_proposicao WHERE id=123</code></p>
+<p>retorna tudo o que queremos saber da proposição de ID 123. Mas o público não vai referir o <code>ID 123</code>, ele vai referir a <em>"Proposição legislativa 00029, de 2011, do tipo PLV do Senado Federal Brasileiro"</em>, que é de fato uma das alternativas de se referir ao documento, ou seja, o seu nome ou apelido "completo". Quais os campos (ano, tipo, autoridade, etc.) em uma cláusula SQL <code>WHERE</code> garantem unicidade?  quais são mais importantes para o público?  e para trocar dados com sistemas externos?</p>
+<p>Tudo isso já foi estudado e resolvido pela equipe do LexML, e pelo fato deles poderem impor certas convenções que vem sendo adotados, inclusive pelo E-PING.  Qualquer sistema vai conversar com o Radar se os registros da tabela <code>modelagem_proposicao</code>  apresentarem mais um campo, contendo a sua <em>URN LEX</em>.  Como o registro (em JOIN com a tabela <code>modelagem_casalegislativa</code>) oferece todas as informações de "contexto", o problema aqui se resume à <strong>conversão de contexto em <i>URN LEX</i></strong>. É um problema <a href="https://en.wikipedia.org/wiki/Lookup_table" rel="nofollow">típico de mapeamento "de para"</a>.</p>
+<p>O problema não é grande, a consulta abaixo mostra exatamente quantos registros precisam ser mapeados,</p>
+<div class="highlight highlight-source-sql"><pre><span class="pl-k">SELECT DISTINCT</span> esfera,nome,sigla
+<span class="pl-k">FROM</span> 
+  modelagem_casalegislativa c <span class="pl-k">INNER JOIN</span>  modelagem_proposicao p
+  <span class="pl-k">ON</span> <span class="pl-c1">p</span>.<span class="pl-c1">casa_legislativa_id</span> <span class="pl-k">=</span> <span class="pl-c1">c</span>.<span class="pl-c1">id</span>
+<span class="pl-k">ORDER BY</span> <span class="pl-c1">1</span>,<span class="pl-c1">2</span>,<span class="pl-c1">3</span>;  <span class="pl-c"><span class="pl-c">--</span> menos de 30 itens no DUMP de 2015-04</span></pre></div>
+<p>A primeira alternativa que se coloca é realizar manualmente o mapeamento... Mas é interessante para escalabilidade e confiabilidade automatizar o tanto quanto for possível.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#metodologia-para-construir-o-mapeamento" id="user-content-metodologia-para-construir-o-mapeamento"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Metodologia para construir o mapeamento</h2>
+<p>Apesar de existirem <a href="http://www.febrac.org.br/novafebrac/index.php?option=com_content&amp;view=article&amp;id=740" rel="nofollow">glossários razoáveis</a>, a melhor fonte para obter os descritores que precisamos aqui no Radar, está no Git do LexML.
+Justamente o mapeamento das siglas para <code>&lt;autoridade&gt;</code> e <code>&lt;tipo-documento&gt;</code> já foi realizado por eles, e está bem estruturado em XML (ex.  nos <a href="http://dadosabertos.senado.gov.br/dataset/vocabul-rios-controlados-da-urn-lex" rel="nofollow">dados abertos do Senado</a>), sendo o melhor já pegar tudo junto num XML só, que é o <a href="https://github.com/lexml/lexcomp/blob/master/qc-presentation/web/xml/configuracao.xml">lexcomp/configuracao.xml</a>.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#solu%C3%A7%C3%A3o-parte-1" id="user-content-solução-parte-1"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Solução, parte 1</h3>
+<p>Como já indicado na <a href="https://github.com/radar-parlamentar/radar/issues/273#issuecomment-97997428">issue #273</a>, uma VIEW SQL para as proposições é a solução,</p>
+<div class="highlight highlight-source-sql"><pre><span class="pl-k">CREATE</span> <span class="pl-k">VIEW</span> <span class="pl-en">modelagem_proposicao_lex</span> <span class="pl-k">AS</span>
+<span class="pl-k">SELECT</span> 
+  modelagem_radar2lex(<span class="pl-c1">c</span>.<span class="pl-c1">esfera</span>,<span class="pl-c1">c</span>.<span class="pl-c1">nome</span>,sigla) <span class="pl-k">||</span> <span class="pl-s"><span class="pl-pds">'</span>:<span class="pl-pds">'</span></span> <span class="pl-k">||</span> <span class="pl-c1">p</span>.<span class="pl-c1">ano</span> <span class="pl-k">||</span> <span class="pl-s"><span class="pl-pds">'</span>;<span class="pl-pds">'</span></span><span class="pl-k">||</span> <span class="pl-c1">p</span>.<span class="pl-c1">numero</span> <span class="pl-k">as</span> urnlex,
+  p.<span class="pl-k">*</span>,  
+  <span class="pl-c1">c</span>.<span class="pl-c1">nome</span>,  <span class="pl-c1">c</span>.<span class="pl-c1">nome_curto</span>,    <span class="pl-c"><span class="pl-c">--</span> autoridade</span>
+  <span class="pl-c1">c</span>.<span class="pl-c1">esfera</span>,   <span class="pl-c1">c</span>.<span class="pl-c1">local</span>        <span class="pl-c"><span class="pl-c">--</span> jurisdição</span>
+<span class="pl-k">FROM</span> 
+  modelagem_casalegislativa c <span class="pl-k">INNER JOIN</span>  modelagem_proposicao p
+  <span class="pl-k">ON</span> <span class="pl-c1">p</span>.<span class="pl-c1">casa_legislativa_id</span> <span class="pl-k">=</span> <span class="pl-c1">c</span>.<span class="pl-c1">id</span>;
+
+<span class="pl-k">CREATE</span> <span class="pl-k">TABLE</span> <span class="pl-en">modelagem_prefixoLexml</span> (
+   chave_radar <span class="pl-k">text</span>,
+   prefixolex <span class="pl-k">text</span>,
+   UNIQUE (chave_radar),
+   UNIQUE (prefixolex)
+   );
+
+<span class="pl-k">CREATE</span> <span class="pl-k">FUNCTION</span> <span class="pl-en">modelagem_radar2lex</span>(<span class="pl-k">text</span>,<span class="pl-k">text</span>,<span class="pl-k">text</span>) RETURNS <span class="pl-k">text</span> <span class="pl-k">AS</span>
+$func$
+  <span class="pl-k">SELECT</span> prefixolex <span class="pl-k">FROM</span> modelagem_prefixoLexml <span class="pl-k">WHERE</span> chave_radar<span class="pl-k">=</span>$<span class="pl-c1">1</span><span class="pl-k">||</span><span class="pl-s"><span class="pl-pds">'</span>:<span class="pl-pds">'</span></span><span class="pl-k">||</span>$<span class="pl-c1">2</span><span class="pl-k">||</span><span class="pl-s"><span class="pl-pds">'</span>:<span class="pl-pds">'</span></span><span class="pl-k">||</span>$<span class="pl-c1">3</span>;
+$func$ LANGUAGE sql IMMUTABLE;</pre></div>
+<p>A função <code>radar2lex()</code> pode ser utilizada de outras formas. Ela é simples porque recupera dados de uma tabela faz papel de <em>cache</em>  dos mapeamentos.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#solu%C3%A7%C3%A3o-parte-2" id="user-content-solução-parte-2"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Solução, parte 2</h3>
+<p>A <em>URN LEX</em> dá preferência à expressão de <code>&lt;tipo-documento&gt;</code> por extenso, ao invés do uso de siglas.  O padrão LexML oferece vocabulários de apoio, que permitem o mapeamento das siglas. No <code>configuracao.xml</code> são listados primeiramente os termos completos (ex. "Lei Complementar" por extenso), deixando a interpretação das abreviações restritas ao contexto (ex. "PL" significa "Lei Complementar" apenas no contexto <code>camara.deputados</code>).</p>
+<p>Como não há acoplamento entre autoridade e tipo, pode-se primeiro resolver o mapeamento de autoridades, na mesma tabela,</p>
+<div class="highlight highlight-source-sql"><pre> <span class="pl-k">INSERT INTO</span> modelagem_prefixoLexml (chave_radar,prefixolex) <span class="pl-k">VALUES</span>
+  (<span class="pl-s"><span class="pl-pds">'</span>FEDERAL:Senado:<span class="pl-pds">'</span></span>, <span class="pl-s"><span class="pl-pds">'</span>br:senado.federal:<span class="pl-pds">'</span></span>),
+  (<span class="pl-s"><span class="pl-pds">'</span>FEDERAL:Câmara dos Deputados:<span class="pl-pds">'</span></span>, <span class="pl-s"><span class="pl-pds">'</span>br:camara.deputados:<span class="pl-pds">'</span></span>),
+  (<span class="pl-s"><span class="pl-pds">'</span>MUNICIPAL:Câmara Municipal de São Paulo:<span class="pl-pds">'</span></span>, <span class="pl-s"><span class="pl-pds">'</span>br;sao.paulo;sao.paulo:camara.municipal:<span class="pl-pds">'</span></span>);</pre></div>
+<p>Com isso podemos explorar todos as siglas e urns do <code>configuracao.xml</code>... Supondo que o XML tenha sido transferido para uma tabela <code>tmp_lexml_configuracao</code> (elemento <em>TipoDocumento</em>), temos:</p>
+<div class="highlight highlight-source-sql"><pre><span class="pl-k">SELECT DISTINCT</span> esfera <span class="pl-k">||</span><span class="pl-s"><span class="pl-pds">'</span>:<span class="pl-pds">'</span></span><span class="pl-k">||</span>nome<span class="pl-k">||</span><span class="pl-s"><span class="pl-pds">'</span>:<span class="pl-pds">'</span></span><span class="pl-k">||</span>sigla <span class="pl-k">as</span> prefix_radar, <span class="pl-c1">t</span>.<span class="pl-c1">xmlid</span>
+<span class="pl-k">FROM</span>   modelagem_casalegislativa c <span class="pl-k">INNER JOIN</span>  modelagem_proposicao p
+       <span class="pl-k">ON</span> <span class="pl-c1">p</span>.<span class="pl-c1">casa_legislativa_id</span> <span class="pl-k">=</span> <span class="pl-c1">c</span>.<span class="pl-c1">id</span>,
+       tmp_lexml_configuracao t 
+<span class="pl-k">WHERE</span> <span class="pl-c1">t</span>.<span class="pl-c1">SiglaDocumento</span><span class="pl-k">=</span>sigla <span class="pl-k">AND</span> <span class="pl-c1">t</span>.<span class="pl-c1">xmlid</span> <span class="pl-k">LIKE</span> modelagem_radar2lex(esfera,nome,<span class="pl-s"><span class="pl-pds">'</span><span class="pl-pds">'</span></span>) <span class="pl-k">||</span> <span class="pl-s"><span class="pl-pds">'</span>%<span class="pl-pds">'</span></span>
+<span class="pl-k">ORDER BY</span> <span class="pl-c1">1</span>,<span class="pl-c1">2</span>;</pre></div>
+<p>que gera os dados abaixo,</p>
+<div class="highlight highlight-source-sql"><pre> <span class="pl-k">INSERT INTO</span> modelagem_prefixoLexml (chave_radar,prefixolex) <span class="pl-k">VALUES</span>
+  (<span class="pl-s"><span class="pl-pds">'</span>FEDERAL:Câmara dos Deputados:PDC<span class="pl-pds">'</span></span>, <span class="pl-s"><span class="pl-pds">'</span>br:camara.deputados:projeto.decreto.legislativo;pdc<span class="pl-pds">'</span></span>),
+  <span class="pl-c"><span class="pl-c">--</span> ('FEDERAL:Câmara dos Deputados:PDC', 'br:camara.deputados:projeto.resolucao;pdc'),</span>
+  (<span class="pl-s"><span class="pl-pds">'</span>FEDERAL:Câmara dos Deputados:PEC<span class="pl-pds">'</span></span>, <span class="pl-s"><span class="pl-pds">'</span>br:camara.deputados:proposta.emenda.constituicao;pec<span class="pl-pds">'</span></span>),
+  (<span class="pl-s"><span class="pl-pds">'</span>FEDERAL:Câmara dos Deputados:PL<span class="pl-pds">'</span></span>, <span class="pl-s"><span class="pl-pds">'</span>br:camara.deputados:projeto.lei;pl<span class="pl-pds">'</span></span>),
+  (<span class="pl-s"><span class="pl-pds">'</span>FEDERAL:Câmara dos Deputados:PLP<span class="pl-pds">'</span></span>, <span class="pl-s"><span class="pl-pds">'</span>br:camara.deputados:projeto.lei.complementar;plp<span class="pl-pds">'</span></span>),
+  (<span class="pl-s"><span class="pl-pds">'</span>FEDERAL:Senado:PDS<span class="pl-pds">'</span></span>, <span class="pl-s"><span class="pl-pds">'</span>br:senado.federal:projeto.decreto.legislativo;pds<span class="pl-pds">'</span></span>),
+  (<span class="pl-s"><span class="pl-pds">'</span>FEDERAL:Senado:PEC<span class="pl-pds">'</span></span>, <span class="pl-s"><span class="pl-pds">'</span>br:senado.federal:proposta.emenda.constituicao;pec<span class="pl-pds">'</span></span>),
+  (<span class="pl-s"><span class="pl-pds">'</span>FEDERAL:Senado:PLC<span class="pl-pds">'</span></span>, <span class="pl-s"><span class="pl-pds">'</span>br:senado.federal:projeto.lei;plc<span class="pl-pds">'</span></span>),
+  <span class="pl-c"><span class="pl-c">--</span>('FEDERAL:Senado:PLC', 'br:senado.federal:projeto.lei;pln'),  </span>
+  (<span class="pl-s"><span class="pl-pds">'</span>FEDERAL:Senado:PLS<span class="pl-pds">'</span></span>, <span class="pl-s"><span class="pl-pds">'</span>br:senado.federal:projeto.lei;pls<span class="pl-pds">'</span></span>),
+  (<span class="pl-s"><span class="pl-pds">'</span>FEDERAL:Senado:PRS<span class="pl-pds">'</span></span>, <span class="pl-s"><span class="pl-pds">'</span>br:senado.federal:projeto.resolucao;prs<span class="pl-pds">'</span></span>),
+  (<span class="pl-s"><span class="pl-pds">'</span>FEDERAL:Senado:SCD<span class="pl-pds">'</span></span>, <span class="pl-s"><span class="pl-pds">'</span>br:senado.federal:substitutivo.camara.deputados.projeto.lei.senado;scd<span class="pl-pds">'</span></span>);</pre></div>
+<p>São Paulo não faz parte desse arquivo XML, mas está presente nas <a href="http://dadosabertos.senado.leg.br/dataset/vocabul-rios-controlados-da-urn-lex" rel="nofollow">localidades fixadas pelos dados abertos</a> e pelos antigos <a href="http://projeto.lexml.gov.br/vocabularios" rel="nofollow">dados de vocabulário</a>.</p>
+<div class="highlight highlight-source-sql"><pre> <span class="pl-k">INSERT INTO</span> modelagem_prefixoLexml (chave_radar,prefixolex) <span class="pl-k">VALUES</span>
+  (<span class="pl-s"><span class="pl-pds">'</span>MUNICIPAL:Câmara Municipal de São Paulo:PDL<span class="pl-pds">'</span></span>, <span class="pl-s"><span class="pl-pds">'</span>br;sao.paulo;sao.paulo:camara.municipal:projeto.decreto.legislativo;pdl<span class="pl-pds">'</span></span>),
+  (<span class="pl-s"><span class="pl-pds">'</span>MUNICIPAL:Câmara Municipal de São Paulo:PL<span class="pl-pds">'</span></span>, <span class="pl-s"><span class="pl-pds">'</span>br;sao.paulo;sao.paulo:camara.municipal:projeto.lei;pl<span class="pl-pds">'</span></span>),
+  (<span class="pl-s"><span class="pl-pds">'</span>MUNICIPAL:Câmara Municipal de São Paulo:PLO<span class="pl-pds">'</span></span>, <span class="pl-s"><span class="pl-pds">'</span>br;sao.paulo;sao.paulo:camara.municipal:projeto.lei.organica;plo<span class="pl-pds">'</span></span>);</pre></div>
+<hr/>
+<p>#NOTAS E CURIOSIDADES#
+Olhando <a href="http://www.lexml.gov.br/urn/urn:lex:br:camara.deputados:projeto.lei;pl:2009;5883" rel="nofollow">esse Projeto de Lei 5.883 da Câmara</a> vão perceber que um Projeto de Lei é considerado evolutivamente um objeto só, mas como conteúdo pode ser considerado dois, pois corre o risco de mostrar duas caras diferentes...</p>
+<ul>
+<li>
+<code>urn:lex:br:camara.deputados:projeto.lei;pl:2009;5883</code> (dá o título por ser origem)</li>
+<li>
+<code>urn:lex:br:senado.federal:projeto.lei;plc:2010;6</code>  (vira outro processo)</li>
+</ul>
+<p>... É como uma segunda edição de livro, daquelas "melhorada e ampliada", ou uma obra que o pai morre e o filho termina.
+Enfim, o rigor técnico assusta de ver dois IDs para o mesmo conteúdo, mas o rigor semântico exige essa separação.</p>
+<p>NOTA: para o Radar, se os dois documentos (Senado e Câmara) são "mesmo conteúdo", deveriam gerar mesma semelhança partidária nas votações (!)... Que tal buscar correlação nisso? Ou seja, quando o comportamento do partido na Câmara e no Senado foi mantido e quando não?</p>
+
+        </div>
+
+    </div>]

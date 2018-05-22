@@ -1,0 +1,121 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p><code>query.py</code> contains only one class: <code>SearchQuery</code>.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#class-searchquery" id="user-content-class-searchquery"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><code>class SearchQuery</code>
+</h2>
+<p>The <code>SearchQuery</code> class provides shortcut methods for programmatically building up a search API query string using similar syntax to Django's <code>QuerySet</code> class. <code>SearchQuery</code>s can be filtered, ordered and have keyword search terms added to them. This complete example (based on the film example from the README) shows how it's typically used:</p>
+<p>First, let's define our document class (the same <code>FilmDocument</code> class as in the README with some extras):</p>
+<pre><code>from search import indexes, fields
+
+class FilmDocument(indexes.DocumentModel):
+    title = fields.TextField(null=False, default='Untitled')
+    description = fields.TextField()
+    rating = fields.FloatField(minimum=0, maximum=10)
+    released = fields.DateField()
+</code></pre>
+<p>Now let's create some films and index them with the search API.</p>
+<pre><code>from datetime import date
+from myapp.documents import FilmDocument
+from search.indexes import Index
+
+films_index = Index(name='films')
+
+die_hard = FilmDocument(
+    title='Die Hard',
+    description='Bloody awesome',
+    rating=9.8,
+    released=date(1989, 02, 03)
+)
+dirty_harry = FilmDocument(
+    title='Dirty Harry',
+    description='A film where lots of people die',
+    rating=8.7,
+    released=date(1971, 12, 23)
+)
+die_hard_2 = FilmDocument(
+    title='Die Hard 2: Die Harder',
+    description='Just as awesome as Die Hard',
+    rating=9,
+    released=date(1990, 08, 17)
+)
+magnum_force = FilmDocument(
+    title='Magnum Force',
+    description='Sequel to Dirty Harry',
+    rating=8.9,
+    released=date(1973, 12, 25)
+)
+
+films_index.add([die_hard, dirty_harry, die_hard_2, magnum_force])
+</code></pre>
+<p>We have 4 films in our film index now: <em>Dirty Harry</em>, <em>Die Hard</em>, <em>Die Hard 2</em> and <em>Magnum Force</em>. Now we want to be able to search and filter them. Let's search for 'die':</p>
+<pre><code>search_query = films_index.search(FilmDocument) # This returns a SearchQuery instance
+results = search_query.keywords('die')
+</code></pre>
+<p>Note here that <code>results</code> is still a <code>SearchQuery</code> instance, and there has not yet been a request to the search API. This only happens when the results are requested in some manner:</p>
+<pre><code>&gt;&gt;&gt; # The search API call happens at this point
+&gt;&gt;&gt; for film in results:
+&gt;&gt;&gt;    print film.title
+'Die Hard'
+'Die Hard 2: Die Harder'
+'Dirty Harry'
+
+&gt;&gt;&gt; # The search API is NOT called again for this iteration though, since results
+&gt;&gt;&gt; # are cached on the SearchQuery object
+&gt;&gt;&gt; for film in results:
+&gt;&gt;&gt;    print film.title
+'Die Hard 2: Die Harder'
+'Die Hard'
+'Dirty Harry'
+</code></pre>
+<p>Just as expected, it matches both <em>Die Hard</em> films and <em>Dirty Harry</em> (because of 'die' in the description.) But what if we only wanted those films that have 'die' in the title? We can narrow the search by filtering the search query like so:</p>
+<pre><code>search_query = films_index.search(FilmDocument)
+results = search_query.filter(title__contains='die')
+
+&gt;&gt;&gt; for film in results:
+&gt;&gt;&gt;     print film.title
+'Die Hard 2: Die Harder'
+'Die Hard'
+</code></pre>
+<p>Notice that <code>.keywords()</code> isn't used anymore, but <code>.filter()</code>. This filter only matches film documents where the title of the film contains the word 'die'. <code>filter</code> can be used to filter on any of the properties on the document. Say we wanted films that were released after 1980:</p>
+<pre><code>search_query = films_index.search(FilmDocument)
+results = search_query.filter(released__gte=date(1980, 01, 01))
+</code></pre>
+<p>This would only match the <em>Die Hard</em> film documents because they're the only ones released in or after 1980. The '__gte' in the keyword argument name means that it should filter the 'released' field for dates greater than or equal to the given date. There are a number of these __xxx comparison operators, see the filter section for a full list.</p>
+<p>Keywords and filters can be combined and chained as many times as required, for example, the following query matches all films that contain 'die' anywhere in their text fields, have a rating above 9.0 and were released on or after 1990:</p>
+<pre><code>search_query = films_index.search(FilmDocument)
+results = search_query.keywords('die').filter(rating__gt=9).filter(released__gt=date(1980, 01, 01))
+
+&gt;&gt;&gt; for film in results:
+&gt;&gt;&gt;     print film.title
+'Die Hard 2: Die Harder'
+</code></pre>
+<p>Search results can also be ordered using the <code>.order()</code> method:</p>
+<pre><code>search_query = films_index.search(FilmDocument)
+results = search_query.keywords('dirty').order_by('title')
+
+&gt;&gt;&gt; for film in results:
+&gt;&gt;&gt;     print film.title
+'Dirty Harry'
+'Magnum Force'
+</code></pre>
+<p>By prefixing the field to order by with a '-' the order will be reversed, so in the above example, <em>Magnum Force</em> would come before <em>Dirty Harry</em>.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#constructor" id="user-content-constructor"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Constructor</h3>
+<p><code>SearchQuery(index, document_class=None, ids_only=False)</code></p>
+<p>Created a search query for the index <code>index</code>, an instance of <code>indexes.Index</code>, instantiating <code>document_class</code> objects with the results. If <code>ids_only</code> is <code>True</code>, results won't be objects of <code>document_class</code> but the ids of the documents matching the query.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#instance-methods" id="user-content-instance-methods"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Instance methods</h3>
+<h4>
+<a aria-hidden="true" class="anchor" href="#keywordskeywords_query" id="user-content-keywordskeywords_query"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><code>keywords(keywords_query)</code>
+</h4>
+<h4>
+<a aria-hidden="true" class="anchor" href="#filterkwargs" id="user-content-filterkwargs"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><code>filter(**kwargs)</code>
+</h4>
+<h4>
+<a aria-hidden="true" class="anchor" href="#orderargs" id="user-content-orderargs"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a><code>order(*args)</code>
+</h4>
+
+        </div>
+
+    </div>]

@@ -1,0 +1,115 @@
+[<div class="wiki-body gollum-asciidoc-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <div>
+<div>Table of Contents</div>
+<ul>
+<li>
+<a href="#soap">SOAP</a>
+<ul>
+<li><a href="#jax-ws">JAX-WS</a></li>
+<li><a href="#soap-custom-mapping">SOAP Custom Mapping</a></li>
+<li><a href="#soap-testing">SOAP Testing</a></li>
+</ul>
+</li>
+</ul>
+</div>
+<h1 id="user-content-soap">
+<a aria-hidden="true" class="anchor" href="#soap" id="user-content-soap"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>SOAP</h1>
+<div>
+<p><a href="https://en.wikipedia.org/wiki/SOAP" rel="nofollow">SOAP</a> is a common protocol for <a href="guide-service-layer">services</a> that is rather complex and heavy. It allows to build inter-operable and well specified services (see WSDL). SOAP is transport neutral what is not only an advantage. We strongly recommend to use HTTPS transport and ignore additional complex standards like WS-Security and use established HTTP-Standards such as RFC2617 (and RFC5280).</p>
+</div>
+<div>
+<h2 id="user-content-jax-ws">
+<a aria-hidden="true" class="anchor" href="#jax-ws" id="user-content-jax-ws"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>JAX-WS</h2>
+<div>
+<div>
+<p>For building web-services with Java we use the <a href="https://jcp.org/en/jsr/detail?id=224" rel="nofollow">JAX-WS</a> standard.
+There are two approaches:</p>
+</div>
+<div>
+<ul>
+<li>
+<p>code first</p>
+</li>
+<li>
+<p>contract first</p>
+</li>
+</ul>
+</div>
+<div>
+<p>Here is an example in case you define a code-first service.
+We define a regular interface to define the API of the service and annotate it with JAX-WS annotations:</p>
+</div>
+<div>
+<div>
+<div class="highlight highlight-source-java"><pre><span class="pl-k">@WebService</span>
+<span class="pl-k">public</span> <span class="pl-k">interface</span> <span class="pl-en">TablemanagmentWebService</span> {
+
+  <span class="pl-k">@WebMethod</span>
+  <span class="pl-k">@WebResult</span>(<span class="pl-c1">name</span> <span class="pl-k">=</span> <span class="pl-s"><span class="pl-pds">"</span>message<span class="pl-pds">"</span></span>)
+  <span class="pl-smi">TableEto</span> <span class="pl-en">getTable</span>(<span class="pl-k">@WebParam</span>(<span class="pl-c1">name</span> <span class="pl-k">=</span> <span class="pl-s"><span class="pl-pds">"</span>id<span class="pl-pds">"</span></span>) <span class="pl-smi">String</span> <span class="pl-v">id</span>);
+
+}</pre></div>
+</div>
+</div>
+<div>
+<p>And here is a simple implementation of the service:</p>
+</div>
+<div>
+<div>
+<div class="highlight highlight-source-java"><pre><span class="pl-k">@Named</span>(<span class="pl-s"><span class="pl-pds">"</span>TablemanagementWebService<span class="pl-pds">"</span></span>)
+<span class="pl-k">@WebService</span>(<span class="pl-c1">endpointInterface</span> <span class="pl-k">=</span> <span class="pl-s"><span class="pl-pds">"</span>io.oasp.gastronomy.restaurant.tablemanagement.service.api.ws.TablemanagmentWebService<span class="pl-pds">"</span></span>)
+<span class="pl-k">public</span> <span class="pl-k">class</span> <span class="pl-en">TablemanagementWebServiceImpl</span> <span class="pl-k">implements</span> <span class="pl-e">TablemanagmentWebService</span> {
+
+  <span class="pl-k">private</span> <span class="pl-smi">Tablemanagement</span> tableManagement;
+
+  <span class="pl-k">@Override</span>
+  <span class="pl-k">public</span> <span class="pl-smi">TableEto</span> <span class="pl-en">getTable</span>(<span class="pl-smi">String</span> <span class="pl-v">id</span>) {
+
+    <span class="pl-k">return</span> <span class="pl-c1">this</span><span class="pl-k">.</span>tableManagement<span class="pl-k">.</span>findTable(id);
+  }</pre></div>
+</div>
+</div>
+<div>
+<p>Finally we have to register our service implementation in the spring configuration file <code>beans-service.xml</code>:</p>
+</div>
+<div>
+<div>
+<div class="highlight highlight-text-xml"><pre>  &lt;<span class="pl-ent">jaxws</span><span class="pl-ent">:</span><span class="pl-ent">endpoint</span> <span class="pl-e">id</span>=<span class="pl-s"><span class="pl-pds">"</span>tableManagement<span class="pl-pds">"</span></span> <span class="pl-e">implementor</span>=<span class="pl-s"><span class="pl-pds">"</span>#TablemanagementWebService<span class="pl-pds">"</span></span> <span class="pl-e">address</span>=<span class="pl-s"><span class="pl-pds">"</span>/ws/Tablemanagement/v1_0<span class="pl-pds">"</span></span>/&gt;</pre></div>
+</div>
+</div>
+<div>
+<p>The <code>implementor</code> attribute references an existing bean with the ID <code>TablemanagementWebService</code> that corresponds to the <code>@Named</code> annotation of our implementation (see <a href="guide-dependency-injection">dependency injection guide</a>). The <code>address</code> attribute defines the URL path of the service.</p>
+</div>
+</div>
+</div>
+<div>
+<h2 id="user-content-soap-custom-mapping">
+<a aria-hidden="true" class="anchor" href="#soap-custom-mapping" id="user-content-soap-custom-mapping"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>SOAP Custom Mapping</h2>
+<div>
+<div>
+<p>In order to map custom <a href="guide-datatype">datatypes</a> or other types that do not follow the Java bean conventions, you need to write adapters for JAXB (see <a href="guide-xml">XML</a>).</p>
+</div>
+</div>
+</div>
+<div>
+<h2 id="user-content-soap-testing">
+<a aria-hidden="true" class="anchor" href="#soap-testing" id="user-content-soap-testing"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>SOAP Testing</h2>
+<div>
+<div>
+<p>For testing SOAP services in general consult the <a href="guide-testing">testing guide</a>.</p>
+</div>
+<div>
+<p>For testing SOAP services manually we strongly recommend <a href="http://www.soapui.org/" rel="nofollow">SoapUI</a>.</p>
+</div>
+</div>
+</div>
+        </div>
+
+        <div class="wiki-footer gollum-markdown-content boxed-group" id="wiki-footer">
+          <div class="boxed-group-inner wiki-auxiliary-content markdown-body">
+            <p><a href="http://creativecommons.org/licenses/by-nd/4.0/" rel="nofollow"><img alt="Creative Commons License Agreement" data-canonical-src="http://i.creativecommons.org/l/by-nd/4.0/88x31.png" src="https://camo.githubusercontent.com/171d004f9ccb9199e35ac8ec3d99ede916037a9f/687474703a2f2f692e6372656174697665636f6d6d6f6e732e6f72672f6c2f62792d6e642f342e302f38387833312e706e67"/></a><br/><span>This documentation</span> is licensed under the <a href="http://creativecommons.org/licenses/by-nd/4.0/" rel="nofollow">Creative Commons License (Attribution-NoDerivatives 4.0 International)</a>.</p>
+
+          </div>
+        </div>
+    </div>]

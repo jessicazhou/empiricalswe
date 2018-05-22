@@ -1,0 +1,86 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>Trying to set up <code>RSelenium</code>, after running <code>rsDriver()</code> and allowing it to install [3 versions of] Selenium,</p>
+<pre><code>find / -iname "selenium-server-standalone-*" 2&gt; /dev/null
+</code></pre>
+<pre><code>/home/louis/.local/share/binman_seleniumserver/generic/3.3.1/selenium-server-standalone-3.3.1.jar
+/home/louis/.local/share/binman_seleniumserver/generic/3.4.0/selenium-server-standalone-3.4.0.jar
+/home/louis/.local/share/binman_seleniumserver/generic/3.3.0/selenium-server-standalone-3.3.0.jar
+</code></pre>
+<p><code>rsDriver()</code> reports what appears to be an incompatibility with my default Java, reproduced directly via:</p>
+<div class="highlight highlight-source-shell"><pre>java -jar /home/louis/.local/share/binman_seleniumserver/generic/3.4.0/selenium-server-standalone-3.4.0.jar</pre></div>
+<pre><code>Exception in thread "main" java.lang.UnsupportedClassVersionError: org/openqa/grid/selenium/GridLauncherV3 : Unsupported major.minor version 52.0
+        at java.lang.ClassLoader.defineClass1(Native Method)
+        at java.lang.ClassLoader.defineClass(ClassLoader.java:800)
+        at java.security.SecureClassLoader.defineClass(SecureClassLoader.java:142)
+        at java.net.URLClassLoader.defineClass(URLClassLoader.java:449)
+        at java.net.URLClassLoader.access$100(URLClassLoader.java:71)
+        at java.net.URLClassLoader$1.run(URLClassLoader.java:361)
+        at java.net.URLClassLoader$1.run(URLClassLoader.java:355)
+        at java.security.AccessController.doPrivileged(Native Method)
+        at java.net.URLClassLoader.findClass(URLClassLoader.java:354)
+        at java.lang.ClassLoader.loadClass(ClassLoader.java:425)
+        at sun.misc.Launcher$AppClassLoader.loadClass(Launcher.java:308)
+        at java.lang.ClassLoader.loadClass(ClassLoader.java:358)
+        at sun.launcher.LauncherHelper.checkAndLoadMain(LauncherHelper.java:482)
+</code></pre>
+<p><a href="https://stackoverflow.com/questions/22489398/unsupported-major-minor-version-52-0#35866015" rel="nofollow">According to StackOverflow</a> this "52.0" corresponds to:</p>
+<blockquote>
+<ul>
+<li>J2SE 9 = 53</li>
+<li>J2SE 8 = 52</li>
+<li>J2SE 7 = 51</li>
+<li>J2SE 6.0 = 50</li>
+<li>J2SE 5.0 = 49</li>
+<li>JDK 1.4 = 48</li>
+<li>JDK 1.3 = 47</li>
+<li>JDK 1.2 = 46</li>
+<li>JDK 1.1 = 45</li>
+</ul>
+<p>Thus, the 'major.minor version 52.0' error is possibly because the jar was compiled in jdk 1.8, but you are trying to run it using a jdk 1.7 environment. The reported number is the required number, not the number you are using. To solve this, it's always better to have the jdk and jre pointed to the same version.</p>
+</blockquote>
+<p>Running <code>find / -iname "jre*" 2&gt; /dev/null</code> I can see that I have:</p>
+<pre><code>/usr/lib/jvm/java-1.5.0-gcj-4.8-amd64/jre
+/usr/lib/jvm/java-7-openjdk-amd64/jre
+/usr/lib/jvm/java-6-openjdk-amd64/jre
+/usr/share/jetty/jre1.5
+/usr/share/jetty/lib/jre1.5
+</code></pre>
+<p>to choose from, while my default Java is:</p>
+<pre><code>ls -l `which java`
+lrwxrwxrwx 1 root root 22 Apr  6  2014 /usr/bin/java -&gt; /etc/alternatives/java
+</code></pre>
+<pre><code>ls -l /etc/alternatives/java
+lrwxrwxrwx 1 root root 46 Apr  6  2014 /etc/alternatives/java -&gt; /usr/lib/jvm/java-7-openjdk-amd64/jre/bin/java
+</code></pre>
+<p>So in short I need to update my JRE to <strong>8</strong>.0 to match the jar compiled in JDK 1.<strong>8</strong></p>
+<ul>
+<li><a href="https://www.java.com/en/download/linux_manual.jsp" rel="nofollow">Java [Runtime Environment] download page</a></li>
+<li><a href="https://docs.oracle.com/javase/8/docs/technotes/guides/install/linux_jre.html#CFHBJIIG" rel="nofollow">info on JRE 8 installation for Linux</a></li>
+</ul>
+<p>Below are the commands adapted from <a href="https://community.linuxmint.com/tutorial/view/1091" rel="nofollow">this installation guide for Linux Mint</a> (which missed out a <code>sudo</code> here and there and only removed OpenJDK v6)</p>
+<ul>
+<li>NB JRE filename here is <code>jre-8u144-linux-x64.tar.gz</code>, current at time of writing, adapt as suitable</li>
+</ul>
+<div class="highlight highlight-source-shell"><pre>sudo apt-get update <span class="pl-k">&amp;&amp;</span> sudo apt-get remove openjdk-6-jre <span class="pl-k">&amp;&amp;</span> sudo apt-get remove openjdk-7-jre
+sudo apt-get autoremove <span class="pl-k">&amp;&amp;</span> sudo apt-get clean
+<span class="pl-c1">cd</span> <span class="pl-k">~</span>/Downloads
+tar -zxvf jre-8u144-linux-x64.tar.gz
+sudo mv -v jre1.8.0_<span class="pl-k">*</span> /opt/java/64
+sudo update-alternatives --install <span class="pl-s"><span class="pl-pds">"</span>/usr/bin/java<span class="pl-pds">"</span></span> <span class="pl-s"><span class="pl-pds">"</span>java<span class="pl-pds">"</span></span> <span class="pl-s"><span class="pl-pds">"</span>/opt/java/64/jre1.8.0_144/bin/java<span class="pl-pds">"</span></span> 1
+sudo update-alternatives --set java /opt/java/64/jre1.8.0_144/bin/java</pre></div>
+<p><code>java -version</code> will now show the updated version</p>
+<p>There's also an extra bit to run if you're a Firefox user:</p>
+<pre><code>mkdir -v ~/.mozilla/plugins
+ln -s /opt/java/64/jre1.8.0_144/lib/amd64/libnpjp2.so ~/.mozilla/plugins/
+</code></pre>
+
+        </div>
+
+        <div class="wiki-footer gollum-markdown-content boxed-group" id="wiki-footer">
+          <div class="boxed-group-inner wiki-auxiliary-content markdown-body">
+            <p><a href="https://github.com/lmmx/devnotes/wiki">Main page</a></p>
+
+          </div>
+        </div>
+    </div>]

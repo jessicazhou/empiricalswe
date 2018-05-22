@@ -1,0 +1,42 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>Beyond what django does automatically, we create these indexes:</p>
+<h1>
+<a aria-hidden="true" class="anchor" href="#nearest-neighbor-queries" id="user-content-nearest-neighbor-queries"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Nearest neighbor queries</h1>
+<p>These seem to make the candidate lookups faster</p>
+<pre><code>CREATE INDEX idx_trees_conditionvariantlookup_variant_code ON trees_conditionvariantlookup (variant_code);
+CREATE INDEX idx_treelive_summary_test ON treelive_summary (fia_forest_type_name, pct_of_totalba, calc_dbh_class);
+</code></pre>
+<p>But these don't possibly due to the NOT IN clause on fia_forest_type_name?</p>
+<pre><code>CREATE INDEX idx_treelive_summary_test ON treelive_summary (fia_forest_type_name, pct_of_totalba, calc_dbh_class);
+CREATE INDEX idx_treelive_summary_fia_forest_type_name ON treelive_summary (fia_forest_type_name);
+CREATE INDEX idx_treelive_summary_pct_of_totalba ON treelive_summary (pct_of_totalba);
+</code></pre>
+<h1>
+<a aria-hidden="true" class="anchor" href="#metrics-queries" id="user-content-metrics-queries"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Metrics queries</h1>
+<h4>
+<a aria-hidden="true" class="anchor" href="#for-where-clauses" id="user-content-for-where-clauses"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>For where clauses</h4>
+<pre><code>        CREATE INDEX idx_trees_fvsaggregate_var ON trees_fvsaggregate (var);
+        CREATE INDEX idx_trees_fvsaggregate_year ON trees_fvsaggregate (year);
+        CREATE INDEX idx_trees_fvsaggregate_cond ON trees_fvsaggregate (cond);
+        CREATE INDEX idx_trees_fvsaggregate_rx ON trees_fvsaggregate (rx);
+        CREATE INDEX idx_trees_fvsaggregate_offset ON trees_fvsaggregate ("offset");
+
+        CREATE INDEX idx_trees_scenariostand_cond_id ON trees_scenariostand (cond_id);
+        CREATE INDEX idx_trees_scenariostand_scenario_id ON trees_scenariostand (scenario_id);
+        CREATE INDEX idx_trees_scenariostand_rx_internal_num ON trees_scenariostand (rx_internal_num);
+        CREATE INDEX idx_trees_scenariostand_offset ON trees_scenariostand ("offset");
+
+VACUUM ANALYZE;
+</code></pre>
+<p>When loading the data, it can help to remove them</p>
+<pre><code>DROP INDEX idx_trees_fvsaggregate_var;
+DROP INDEX idx_trees_fvsaggregate_year;
+DROP INDEX idx_trees_fvsaggregate_cond;
+DROP INDEX idx_trees_fvsaggregate_rx ;
+DROP INDEX idx_trees_fvsaggregate_offset;
+</code></pre>
+
+        </div>
+
+    </div>]

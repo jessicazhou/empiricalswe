@@ -1,0 +1,96 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>Analogue provides two way of interacting between your objects and the database : <strong>mappers</strong> and <strong>repositories</strong>. They share some common behaviour, as the store() and delete() methods, but they also differ in many points.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#mapper" id="user-content-mapper"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Mapper</h2>
+<p>Mappers are accessed by invoking :</p>
+<div class="highlight highlight-text-html-php"><pre><span class="pl-s1"></span>
+<span class="pl-s1"><span class="pl-c"><span class="pl-c">//</span> $entity can be either an instance or the name of the class.</span></span>
+<span class="pl-s1"><span class="pl-smi">$analogue</span><span class="pl-k">-&gt;</span>mapper(<span class="pl-smi">$entity</span>); </span>
+<span class="pl-s1"></span></pre></div>
+<p>One Mapper object is created by Entity class during a request lifecycle, subsequently calling the mapper() method will return the already created instance.</p>
+<p>You can run complex queries directly against the mapper object :</p>
+<pre><code>$mapper-&gt;where('age', '&gt;', '18')-&gt;orWhere('tutor_approvation', '=', true)-&gt;get();
+</code></pre>
+<p>Which the mapper will turn into an Entity object according to the configuration provided in the EntityMap.</p>
+<p>As Analogue queries are provided by the Illuminate Query Builder, you can consult the <a href="http://laravel.com/docs/5.0/queries" rel="nofollow">Laravel Documentation</a> for more information on how to build advanced queries.</p>
+<p>The Mapper class cannot be extended, although you can add custom commands to it (that's how the SoftDeletingPlugin add the restore() command).</p>
+<p>The mapper has a few important methods :</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#storemixed-entity" id="user-content-storemixed-entity"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>store(<em>mixed</em> $entity)</h3>
+<p>Persist an Entity, a Collection, or an array of entity into the database.</p>
+<div class="highlight highlight-text-html-php"><pre><span class="pl-s1"><span class="pl-smi">$mapper</span><span class="pl-k">-&gt;</span>store(<span class="pl-smi">$user</span>);</span>
+<span class="pl-s1"></span>
+<span class="pl-s1"><span class="pl-smi">$mapper</span><span class="pl-k">-&gt;</span>store([<span class="pl-smi">$userA</span>, <span class="pl-smi">$userB</span>]);</span></pre></div>
+<h3>
+<a aria-hidden="true" class="anchor" href="#deletemixed-entity" id="user-content-deletemixed-entity"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>delete(<em>mixed</em> $entity)</h3>
+<p>Remove an Entity, a Collection, or an array of entity from the database.</p>
+<div class="highlight highlight-text-html-php"><pre><span class="pl-s1"><span class="pl-smi">$mapper</span><span class="pl-k">-&gt;</span>delete(<span class="pl-smi">$user</span>);</span></pre></div>
+<h3>
+<a aria-hidden="true" class="anchor" href="#query" id="user-content-query"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>query()</h3>
+<p>Return a new query builder instance.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#globalquery" id="user-content-globalquery"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>globalQuery()</h3>
+<p>Return a query builder without query scopes.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#repository" id="user-content-repository"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Repository</h2>
+<p>On the opposite, Repository class can (and are meant) to be extended.</p>
+<p>Creating your custom repository is very easy :</p>
+<div class="highlight highlight-text-html-php"><pre><span class="pl-s1"><span class="pl-k">use</span> <span class="pl-c1">Analogue\ORM\Repository</span>;</span>
+<span class="pl-s1"></span>
+<span class="pl-s1"><span class="pl-k">class</span> <span class="pl-en">UserRepository</span> <span class="pl-k">extends</span> <span class="pl-e">Repository</span> {</span>
+<span class="pl-s1">    </span>
+<span class="pl-s1">    <span class="pl-k">public</span> <span class="pl-k">function</span> <span class="pl-c1">__construct</span>()</span>
+<span class="pl-s1">    {</span>
+<span class="pl-s1">        <span class="pl-k">parent</span><span class="pl-k">::</span>__construct(<span class="pl-c1">User</span><span class="pl-k">::</span><span class="pl-c1">class</span>);</span>
+<span class="pl-s1">    }</span>
+<span class="pl-s1"></span>
+<span class="pl-s1">}</span>
+<span class="pl-s1"></span></pre></div>
+<p>As the __construct() method takes no argument, the repositories are easily injected into services using dependency injection.</p>
+<p>The Repository will embed the $mapper property corresponding to your entity.</p>
+<p>For example, we can factorize the previous example in our custom repo :</p>
+<div class="highlight highlight-text-html-php"><pre><span class="pl-s1"></span>
+<span class="pl-s1">    <span class="pl-k">public</span> <span class="pl-k">function</span> <span class="pl-en">getAllowedUsers</span>()</span>
+<span class="pl-s1">    {</span>
+<span class="pl-s1">        <span class="pl-k">return</span> <span class="pl-smi">$this</span><span class="pl-k">-&gt;</span><span class="pl-smi">mapper</span><span class="pl-k">-&gt;</span>where(<span class="pl-s"><span class="pl-pds">'</span>age<span class="pl-pds">'</span></span>, <span class="pl-s"><span class="pl-pds">'</span>&gt;<span class="pl-pds">'</span></span>, <span class="pl-s"><span class="pl-pds">'</span>18<span class="pl-pds">'</span></span>)</span>
+<span class="pl-s1">            <span class="pl-k">-&gt;</span>orWhere(<span class="pl-s"><span class="pl-pds">'</span>tutor_approvation<span class="pl-pds">'</span></span>, <span class="pl-s"><span class="pl-pds">'</span>=<span class="pl-pds">'</span></span>, <span class="pl-c1">true</span>)<span class="pl-k">-&gt;</span>get();</span>
+<span class="pl-s1">    }</span>
+<span class="pl-s1"></span></pre></div>
+<p>The base repository has a few handful methods :</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#all" id="user-content-all"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>all()</h3>
+<p>Return all the Entities from the table.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#findid" id="user-content-findid"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>find($id)</h3>
+<p>Return a specific Entity by its primary key.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#firstmatchingarray-attributes" id="user-content-firstmatchingarray-attributes"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>firstMatching(array $attributes)</h3>
+<p>Return the first entity matching the given attributes.</p>
+<div class="highlight highlight-text-html-php"><pre><span class="pl-s1"></span>
+<span class="pl-s1"><span class="pl-smi">$repository</span><span class="pl-k">-&gt;</span>firstMatching([<span class="pl-s"><span class="pl-pds">'</span>name<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-s"><span class="pl-pds">'</span>john<span class="pl-pds">'</span></span>]);</span>
+<span class="pl-s1"></span></pre></div>
+<h3>
+<a aria-hidden="true" class="anchor" href="#allmatchingarray-attributes" id="user-content-allmatchingarray-attributes"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>allMatching(array $attributes)</h3>
+<p>Return all the entities matching the given attributes.</p>
+<div class="highlight highlight-text-html-php"><pre><span class="pl-s1"></span>
+<span class="pl-s1"><span class="pl-smi">$repository</span><span class="pl-k">-&gt;</span>allMatching([<span class="pl-s"><span class="pl-pds">'</span>age<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-c1">30</span>]);</span>
+<span class="pl-s1"></span></pre></div>
+<h3>
+<a aria-hidden="true" class="anchor" href="#paginateperpage--null" id="user-content-paginateperpage--null"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>paginate($perPage = null)</h3>
+<p>Return a paginator instance. If $perPage is omitted, the default configured in the
+EntityMap will be used.</p>
+<h3>
+<a aria-hidden="true" class="anchor" href="#storemixed-entity-1" id="user-content-storemixed-entity-1"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>store(<em>mixed</em> $entity)</h3>
+<p>Persist an Entity, a Collection, or an array of entity into the database.</p>
+<div class="highlight highlight-text-html-php"><pre><span class="pl-s1"><span class="pl-smi">$repository</span><span class="pl-k">-&gt;</span>store(<span class="pl-smi">$user</span>);</span>
+<span class="pl-s1"></span></pre></div>
+<h3>
+<a aria-hidden="true" class="anchor" href="#deletemixed-entity-1" id="user-content-deletemixed-entity-1"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>delete(<em>mixed</em> $entity)</h3>
+<p>Remove an Entity, a Collection, or an array of entity from the database.</p>
+<div class="highlight highlight-text-html-php"><pre><span class="pl-s1"><span class="pl-smi">$repository</span><span class="pl-k">-&gt;</span>delete(<span class="pl-smi">$user</span>);</span>
+<span class="pl-s1"></span></pre></div>
+
+        </div>
+
+    </div>]

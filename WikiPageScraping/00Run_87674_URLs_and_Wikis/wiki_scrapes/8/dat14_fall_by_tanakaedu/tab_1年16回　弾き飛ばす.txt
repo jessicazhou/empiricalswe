@@ -1,0 +1,213 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <h1>
+<a aria-hidden="true" class="anchor" href="#%E7%9D%80%E5%9C%B0%E5%87%A6%E7%90%86%E3%81%AE%E8%A6%8B%E7%9B%B4%E3%81%97" id="user-content-着地処理の見直し"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>着地処理の見直し</h1>
+<p>前回までの着地処理だと、地面から足が離れた時に床の側面に衝突したと判定される場合があり、着地フラグが正しく判定されていなかった。以下のように修正する</p>
+<ul>
+<li>CPlayerBase.csを開く</li>
+<li>着地のチェックを強化するために、以下の関数を追加する</li>
+</ul>
+<div class="highlight highlight-source-cs"><pre>	<span class="pl-c"><span class="pl-c">/*</span>* 着地中<span class="pl-c">*/</span></span>
+	<span class="pl-k">void</span> <span class="pl-en">OnCollisionStay</span>(<span class="pl-en">Collision</span> <span class="pl-smi">col</span>) {
+		<span class="pl-k">if</span> (<span class="pl-en">checkGround</span> (<span class="pl-smi">col</span>)) {
+			<span class="pl-smi">isGrounded</span> <span class="pl-k">=</span> <span class="pl-c1">true</span>;
+		}
+	}</pre></div>
+<ul>
+<li>[void checkGround(Collision col)]関数を以下のように修正する。非常にシンプルになる</li>
+</ul>
+<div class="highlight highlight-source-cs"><pre>	<span class="pl-c"><span class="pl-c">/*</span>* 指定のCollisionが地面かを判定<span class="pl-c">*/</span></span>
+	<span class="pl-k">bool</span> <span class="pl-en">checkGround</span>(<span class="pl-en">Collision</span> <span class="pl-smi">col</span>) {
+		<span class="pl-k">return</span> <span class="pl-smi">col</span>.<span class="pl-smi">transform</span>.<span class="pl-smi">position</span>.<span class="pl-smi">y</span> <span class="pl-k">-</span> <span class="pl-smi">transform</span>.<span class="pl-smi">position</span>.<span class="pl-smi">y</span>
+			<span class="pl-k">&lt;</span> <span class="pl-k">-</span>(<span class="pl-smi">col</span>.<span class="pl-smi">collider</span>.<span class="pl-smi">bounds</span>.<span class="pl-smi">extents</span>.<span class="pl-smi">y</span><span class="pl-k">+</span><span class="pl-smi">collider</span>.<span class="pl-smi">bounds</span>.<span class="pl-smi">extents</span>.<span class="pl-smi">y</span>) <span class="pl-k">*</span> <span class="pl-c1">0.9f</span>;
+	}</pre></div>
+<ul>
+<li>col.transform.position.y - transform.position.yは、ぶつかった相手と自分のY方向の差</li>
+<li>col.collider.bounds.extents.y+collider.bounds.extents.yは、ぶつかった相手と自分のY方向の当たり判定の合計</li>
+<li>当たり判定の合計のまま判定すると、誤差でチェックが失敗することがあるので、90%に大きさを縮小してから比較</li>
+<li>Y方向の差が、当たり判定の合計の90%のマイナスより小さい場合、ぶつかった相手は自分の足元にあるとみなしてtrueを返させている</li>
+</ul>
+<p>以上で、他のキャラクタの頭に乗った時も正しく着地するようになる。
+なお、キャラクタにCapsuleColliderを利用している場合は、当たり判定の高さはcollider.bounds.extents.yでは取れないので、以下のように修正するとよい。</p>
+<div class="highlight highlight-source-cs"><pre>	<span class="pl-c"><span class="pl-c">/*</span>* 指定のCollisionが地面かを判定<span class="pl-c">*/</span></span>
+	<span class="pl-k">bool</span> <span class="pl-en">checkGround</span>(<span class="pl-en">Collision</span> <span class="pl-smi">col</span>) {
+		<span class="pl-c"><span class="pl-c">//</span> CapsuleCollider版</span>
+		<span class="pl-k">float</span> <span class="pl-smi">targy</span> <span class="pl-k">=</span> <span class="pl-smi">col</span>.<span class="pl-smi">collider</span>.<span class="pl-smi">bounds</span>.<span class="pl-smi">extents</span>.<span class="pl-smi">y</span>;
+		<span class="pl-c"><span class="pl-c">//</span> 相手がBoxColliderを持たない場合</span>
+		<span class="pl-k">if</span> (<span class="pl-smi">targy</span> <span class="pl-k">&lt;=</span> <span class="pl-c1">0</span>) {
+			<span class="pl-smi">targy</span> <span class="pl-k">=</span> <span class="pl-smi">col</span>.<span class="pl-smi">gameObject</span>.<span class="pl-en">GetComponent</span>&lt;<span class="pl-en">CapsuleCollider</span>&gt;().<span class="pl-smi">height</span><span class="pl-k">/</span><span class="pl-c1">2f</span>;
+		}
+		<span class="pl-k">return</span> <span class="pl-smi">col</span>.<span class="pl-smi">transform</span>.<span class="pl-smi">position</span>.<span class="pl-smi">y</span> <span class="pl-k">-</span> <span class="pl-smi">transform</span>.<span class="pl-smi">position</span>.<span class="pl-smi">y</span>
+			<span class="pl-k">&lt;</span> <span class="pl-k">-</span>(<span class="pl-smi">targy</span><span class="pl-k">+</span><span class="pl-en">GetComponent</span>&lt;<span class="pl-en">CapsuleCollider</span>&gt;().<span class="pl-smi">height</span><span class="pl-k">/</span><span class="pl-c1">2f</span>) <span class="pl-k">*</span> <span class="pl-c1">0.9f</span>;
+	}</pre></div>
+<h1>
+<a aria-hidden="true" class="anchor" href="#%E8%A1%9D%E7%AA%81%E5%87%A6%E7%90%86" id="user-content-衝突処理"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>衝突処理</h1>
+<p>現状では、同じ移動力で押し合うだけなので、相手を押し出すことは難しい。そこで、誰かにぶつかった時に、お互いにはね飛ぶようにする。</p>
+<p>どのような条件で跳ね飛ばすかはあとで考えることにして、まずは跳ね飛ばす処理を実装する。以下のようなことをしよう。</p>
+<ul>
+<li>相手のTagがPlayerかEnemyの時、発動</li>
+<li>ぶつかった相手がダメージ中の時は何もしない(TagをDamageにしておいて、検索に引っかからないようにする)</li>
+<li>相手のx-z速度と自分のx-z速度を比較して、同じか、自分の方が遅かったらダメージ状態にする。自分の方が速かったら何もしない</li>
+<li>自分の速度を、DAMAGE_BREAKかけて減速させる。y速度はそのまま</li>
+<li>速度yを0にした相手の速度に、DAMAGE_RATEをかけた値を加速度として求める</li>
+<li>求めた加速度の大きさ(magnitude)が、DAMAGE_MINを上回っていたらそのまま。下回っていたら加速度の大きさをDAMAGE_MINに修正する</li>
+<li>算出した加速度を、自分にAddForceする(力を加えるためのメソッド)</li>
+<li>相手の速度をそのままにしておくと有利すぎるので、攻撃した相手のx-z速度を0にする</li>
+<li>ダメージ状態になっていなかったら以下の処理を行う</li>
+<li>自分のTagをDamegeに変更する</li>
+<li>一定時間が経過したら、Damegeタグをもとに戻して、アニメを解除するようにする</li>
+<li>タグがDamage中は、キー操作できないようにする</li>
+</ul>
+<h1>
+<a aria-hidden="true" class="anchor" href="#%E6%89%8B%E9%A0%86" id="user-content-手順"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>手順</h1>
+<h2>
+<a aria-hidden="true" class="anchor" href="#damage%E3%82%BF%E3%82%B0%E3%82%92%E8%BF%BD%E5%8A%A0" id="user-content-damageタグを追加"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Damageタグを追加</h2>
+<ul>
+<li>[Hierarchy]ビューから[Enemy]や[Player]を選択</li>
+<li>[Inspector]の[Tag]メニューから[Add Tags...]を選択</li>
+<li>空いているElementにDamageと入力</li>
+</ul>
+<h2>
+<a aria-hidden="true" class="anchor" href="#%E6%B1%8E%E7%94%A8%E3%81%AE%E5%A4%89%E6%95%B0%E3%82%92%E8%BF%BD%E5%8A%A0" id="user-content-汎用の変数を追加"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>汎用の変数を追加</h2>
+<ul>
+<li>CPlayerBaseスクリプトをダブルクリックして開く</li>
+<li>以下を追加</li>
+</ul>
+<div class="highlight highlight-source-cs"><pre>	<span class="pl-c"><span class="pl-c">/*</span>* ぶつかった時に速度にかける係数<span class="pl-c">*/</span></span>
+	<span class="pl-k">public</span> <span class="pl-k">float</span> <span class="pl-smi">DAMAGE_RATE</span> <span class="pl-k">=</span> <span class="pl-c1">200f</span>;
+	<span class="pl-c"><span class="pl-c">/*</span>* 最低ダメージ加速度<span class="pl-c">*/</span></span>
+	<span class="pl-k">public</span> <span class="pl-k">float</span> <span class="pl-smi">DAMAGE_MIN</span> <span class="pl-k">=</span> <span class="pl-c1">200f</span>;	
+	<span class="pl-c"><span class="pl-c">/*</span>* ダメージ秒数<span class="pl-c">*/</span></span>
+	<span class="pl-k">public</span> <span class="pl-k">float</span> <span class="pl-smi">DAMAGE_TIME</span> <span class="pl-k">=</span> <span class="pl-c1">1f</span>;
+	<span class="pl-c"><span class="pl-c">/*</span>* ダメージ時の加速<span class="pl-c">*/</span></span>
+	<span class="pl-k">public</span> <span class="pl-k">float</span> <span class="pl-smi">DAMAGE_ADD</span> <span class="pl-k">=</span> <span class="pl-c1">0.5f</span>;
+	<span class="pl-c"><span class="pl-c">/*</span>* ダメージ時の抵抗<span class="pl-c">*/</span></span>
+	<span class="pl-k">public</span> <span class="pl-k">float</span> <span class="pl-smi">DAMAGE_DRAG</span> <span class="pl-k">=</span> <span class="pl-c1">0.99f</span>;
+	<span class="pl-c"><span class="pl-c">/*</span>* ダメージをうけた時に減速させる割合<span class="pl-c">*/</span></span>
+	<span class="pl-k">public</span> <span class="pl-k">float</span> <span class="pl-smi">DAMAGE_BREAK</span> <span class="pl-k">=</span> <span class="pl-c1">0.01f</span>;</pre></div>
+<h2>
+<a aria-hidden="true" class="anchor" href="#%E6%B1%8E%E7%94%A8%E3%81%AE%E8%A1%9D%E7%AA%81%E9%96%A2%E6%95%B0%E3%82%92%E8%BF%BD%E5%8A%A0" id="user-content-汎用の衝突関数を追加"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>汎用の衝突関数を追加</h2>
+<ul>
+<li>引き続き、CPlayerBaseスクリプト内から、[void OnCollisionEnter]関数を探し、以下のように修正する</li>
+</ul>
+<div class="highlight highlight-source-cs"><pre>	<span class="pl-c"><span class="pl-c">/*</span>* なにかとぶつかった<span class="pl-c">*/</span></span>
+	<span class="pl-k">void</span> <span class="pl-en">OnCollisionEnter</span>(<span class="pl-en">Collision</span> <span class="pl-smi">col</span>) {
+		<span class="pl-c"><span class="pl-c">//</span> isGrounded = isGruonded | checkGround(col);</span>
+		<span class="pl-c"><span class="pl-c">//</span> isGroundedとcheckGround(col)のうち、どちらか一方でも</span>
+		<span class="pl-c"><span class="pl-c">//</span> trueならtrueになる。</span>
+		<span class="pl-smi">isGrounded</span> <span class="pl-k">|=</span> <span class="pl-en">checkGround</span>(<span class="pl-smi">col</span>);
+
+		<span class="pl-c"><span class="pl-c">//</span> 相手がPlayerタグかEnemyタグの時は、衝突処理</span>
+		<span class="pl-k">if</span> ((<span class="pl-smi">col</span>.<span class="pl-smi">gameObject</span>.<span class="pl-smi">tag</span> <span class="pl-k">==</span> <span class="pl-s"><span class="pl-pds">"</span>Player<span class="pl-pds">"</span></span>) <span class="pl-k">||</span> (<span class="pl-smi">col</span>.<span class="pl-smi">gameObject</span>.<span class="pl-smi">tag</span> <span class="pl-k">==</span> <span class="pl-s"><span class="pl-pds">"</span>Enemy<span class="pl-pds">"</span></span>))
+		{
+			<span class="pl-c"><span class="pl-c">//</span> 自分と相手の速度からy</span>
+			<span class="pl-en">Vector3</span> <span class="pl-smi">myvel</span> <span class="pl-k">=</span>  <span class="pl-smi">rigidbody</span>.<span class="pl-smi">velocity</span>;
+			<span class="pl-smi">myvel</span>.<span class="pl-smi">y</span> <span class="pl-k">=</span> <span class="pl-c1">0f</span>;
+			<span class="pl-en">Vector3</span> <span class="pl-smi">othvel</span> <span class="pl-k">=</span> <span class="pl-smi">col</span>.<span class="pl-smi">gameObject</span>.<span class="pl-smi">rigidbody</span>.<span class="pl-smi">velocity</span>;
+			<span class="pl-smi">othvel</span>.<span class="pl-smi">y</span> <span class="pl-k">=</span> <span class="pl-c1">0f</span>;
+
+			<span class="pl-c"><span class="pl-c">//</span> 自分の方が速ければ何もしない</span>
+			<span class="pl-k">if</span> (<span class="pl-smi">myvel</span>.<span class="pl-smi">magnitude</span> <span class="pl-k">&gt;</span> <span class="pl-smi">othvel</span>.<span class="pl-smi">magnitude</span>) {
+				<span class="pl-k">return</span>;
+			}
+
+			<span class="pl-c"><span class="pl-c">//</span> 自分の速度を減らしておく</span>
+			<span class="pl-smi">myvel</span> <span class="pl-k">=</span> <span class="pl-smi">DAMAGE_BREAK</span><span class="pl-k">*</span><span class="pl-smi">rigidbody</span>.<span class="pl-smi">velocity</span>;
+			<span class="pl-smi">myvel</span>.<span class="pl-smi">y</span> <span class="pl-k">=</span> <span class="pl-smi">rigidbody</span>.<span class="pl-smi">velocity</span>.<span class="pl-smi">y</span>;
+			<span class="pl-smi">rigidbody</span>.<span class="pl-smi">velocity</span> <span class="pl-k">=</span> <span class="pl-smi">myvel</span>;
+
+			<span class="pl-c"><span class="pl-c">//</span> ダメージ加速度を算出</span>
+			<span class="pl-smi">othvel</span> <span class="pl-k">=</span> <span class="pl-smi">othvel</span><span class="pl-k">*</span><span class="pl-smi">DAMAGE_RATE</span>;
+			<span class="pl-smi">rigidbody</span>.<span class="pl-en">AddForce</span>(<span class="pl-smi">othvel</span>.<span class="pl-smi">magnitude</span> <span class="pl-k">&gt;=</span> <span class="pl-smi">DAMAGE_MIN</span> <span class="pl-k">?</span> <span class="pl-smi">othvel</span><span class="pl-k">:</span><span class="pl-smi">othvel</span>.<span class="pl-smi">normalized</span><span class="pl-k">*</span><span class="pl-smi">DAMAGE_MIN</span>);
+			<span class="pl-c"><span class="pl-c">//</span>rigidbody.AddForce(othvel.normalized*DAMAGE_MIN);</span>
+
+			<span class="pl-c"><span class="pl-c">//</span> 相手の速度は0にする</span>
+			<span class="pl-smi">othvel</span> <span class="pl-k">=</span> <span class="pl-smi">Vector3</span>.<span class="pl-smi">zero</span>;
+			<span class="pl-smi">othvel</span>.<span class="pl-smi">y</span> <span class="pl-k">=</span> <span class="pl-smi">col</span>.<span class="pl-smi">gameObject</span>.<span class="pl-smi">rigidbody</span>.<span class="pl-smi">velocity</span>.<span class="pl-smi">y</span>;
+			<span class="pl-smi">col</span>.<span class="pl-smi">gameObject</span>.<span class="pl-smi">rigidbody</span>.<span class="pl-smi">velocity</span> <span class="pl-k">=</span> <span class="pl-smi">othvel</span>;
+
+			<span class="pl-c"><span class="pl-c">//</span> ダメージ中は新たにInvokeは設定しない</span>
+			<span class="pl-k">if</span> (<span class="pl-k">!</span><span class="pl-en">IsInvoking</span>()) {
+				<span class="pl-c"><span class="pl-c">//</span>// 一定時間後にダメージから復帰させる</span>
+				<span class="pl-en">Invoke</span> (<span class="pl-s"><span class="pl-pds">"</span>SetTag<span class="pl-pds">"</span></span><span class="pl-k">+</span><span class="pl-smi">gameObject</span>.<span class="pl-smi">tag</span>,<span class="pl-smi">DAMAGE_TIME</span>);
+				<span class="pl-c"><span class="pl-c">//</span>// 自分のタグをDAMAGEに変更</span>
+				<span class="pl-smi">gameObject</span>.<span class="pl-smi">tag</span> <span class="pl-k">=</span> <span class="pl-s"><span class="pl-pds">"</span>Damage<span class="pl-pds">"</span></span>;
+			}
+		}
+	}</pre></div>
+<ul>
+<li>ダメージから回復させるための以下の２つの関数を追加する</li>
+</ul>
+<div class="highlight highlight-source-cs"><pre>	<span class="pl-k">protected</span> <span class="pl-k">void</span> <span class="pl-en">SetTagPlayer</span>() {
+		<span class="pl-smi">gameObject</span>.<span class="pl-smi">tag</span> <span class="pl-k">=</span> <span class="pl-s"><span class="pl-pds">"</span>Player<span class="pl-pds">"</span></span>;
+	}
+
+	<span class="pl-k">protected</span> <span class="pl-k">void</span> <span class="pl-en">SetTagEnemy</span>() {
+		<span class="pl-smi">gameObject</span>.<span class="pl-smi">tag</span> <span class="pl-k">=</span> <span class="pl-s"><span class="pl-pds">"</span>Enemy<span class="pl-pds">"</span></span>;
+	}</pre></div>
+<ul>
+<li>[protected void UpdateMove]関数を探して、以下のように修正する</li>
+</ul>
+<div class="highlight highlight-source-cs"><pre>	<span class="pl-c"><span class="pl-c">//</span> Update is called once per frame</span>
+	<span class="pl-k">protected</span> <span class="pl-k">void</span> <span class="pl-en">UpdateMove</span> (<span class="pl-k">float</span> <span class="pl-smi">ix</span>,<span class="pl-k">float</span> <span class="pl-smi">iz</span>,<span class="pl-k">bool</span> <span class="pl-smi">jump</span>) {
+		<span class="pl-c"><span class="pl-c">//</span> 移動方向を確認</span>
+		<span class="pl-en">Vector3</span> <span class="pl-smi">move</span> <span class="pl-k">=</span> <span class="pl-smi">Vector3</span>.<span class="pl-smi">zero</span>;
+		<span class="pl-smi">move</span>.<span class="pl-smi">x</span> <span class="pl-k">=</span> <span class="pl-smi">ix</span>;
+		<span class="pl-smi">move</span>.<span class="pl-smi">z</span> <span class="pl-k">=</span> <span class="pl-smi">iz</span>;
+		
+		<span class="pl-k">if</span> (<span class="pl-smi">isGrounded</span>) {
+			<span class="pl-c"><span class="pl-c">//</span> ジャンプ</span>
+			<span class="pl-k">if</span> (<span class="pl-smi">jump</span>) {
+				<span class="pl-en">Vector3</span> <span class="pl-smi">jp</span> <span class="pl-k">=</span> <span class="pl-smi">rigidbody</span>.<span class="pl-smi">velocity</span>;
+				<span class="pl-smi">jp</span>.<span class="pl-smi">y</span> <span class="pl-k">=</span> <span class="pl-smi">JUMP_VEL</span>;
+				<span class="pl-smi">rigidbody</span>.<span class="pl-smi">velocity</span> <span class="pl-k">=</span> <span class="pl-smi">jp</span>;
+				<span class="pl-smi">sanim</span>.<span class="pl-en">JumpAnim</span>();
+			}
+			<span class="pl-k">else</span> {
+				<span class="pl-smi">sanim</span>.<span class="pl-en">OnGroundAnim</span>();
+			}
+			<span class="pl-c"><span class="pl-c">//</span> ダメージ中かどうか</span>
+			<span class="pl-k">if</span> (<span class="pl-smi">gameObject</span>.<span class="pl-smi">tag</span> <span class="pl-k">==</span> <span class="pl-s"><span class="pl-pds">"</span>Damage<span class="pl-pds">"</span></span>) {
+				<span class="pl-en">movePlayer</span> (<span class="pl-smi">DAMAGE_ADD</span>,<span class="pl-smi">DAMAGE_DRAG</span>,<span class="pl-smi">move</span>);
+			}
+			<span class="pl-k">else</span> {
+				<span class="pl-en">movePlayer</span>(<span class="pl-smi">WALK_ADD</span>,<span class="pl-smi">WALK_DRAG</span>,<span class="pl-smi">move</span>);
+			}
+		}
+		<span class="pl-k">else</span> {
+			<span class="pl-c"><span class="pl-c">//</span> isGroundedフラグがfalseの時は、強制的にアニメのongroundをリセット</span>
+			<span class="pl-smi">sanim</span>.<span class="pl-en">ResetOnGround</span>();
+			<span class="pl-c"><span class="pl-c">//</span> ダメージ中かどうか</span>
+			<span class="pl-k">if</span> (<span class="pl-smi">gameObject</span>.<span class="pl-smi">tag</span> <span class="pl-k">==</span> <span class="pl-s"><span class="pl-pds">"</span>Damage<span class="pl-pds">"</span></span>) {
+				<span class="pl-en">movePlayer</span> (<span class="pl-smi">DAMAGE_ADD</span>,<span class="pl-smi">DAMAGE_DRAG</span>,<span class="pl-smi">move</span>);
+			}
+			<span class="pl-k">else</span> {
+				<span class="pl-en">movePlayer</span> (<span class="pl-smi">JUMP_ADD</span>,<span class="pl-smi">JUMP_DRAG</span>,<span class="pl-smi">move</span>);
+			}
+		}
+	}</pre></div>
+<p>以上。</p>
+<ul>
+<li>自分の好みに調整してみよう</li>
+<li>ダメージ中、Damageアニメに切り替わるようにしてみよう</li>
+<li>ジャンプ中にぶつかるとあまりにも大きく吹っ飛ぶ。修正方法を検討してみよう</li>
+</ul>
+<h1>
+<a aria-hidden="true" class="anchor" href="#%E3%83%9F%E3%82%B9%E3%81%AE%E5%AE%9F%E8%A3%85" id="user-content-ミスの実装"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>ミスの実装</h1>
+<p>手順を記す</p>
+<ul>
+<li>ステージ下にBoxColliderを配置し、キャラクタがこぼれないような大きなサイズにしておく</li>
+<li>BoxColliderのIsTriggerにチェックを入れる</li>
+<li>CMissというスクリプトを作成</li>
+<li>OnTriggerEnter()関数を作成して、相手がPlayerだったら座標を書き換えて、ゲームステージに復帰させる</li>
+</ul>
+<h2>
+<a aria-hidden="true" class="anchor" href="#%E3%81%9D%E3%81%AE%E4%BB%96" id="user-content-その他"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>その他</h2>
+<ul>
+<li>プレイヤにミス回数の変数を持たせて、ミスする度にカウントする</li>
+<li>OnGUIなどでミス回数を表示する</li>
+</ul>
+
+        </div>
+
+    </div>]

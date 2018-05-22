@@ -1,0 +1,73 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <h1>
+<a aria-hidden="true" class="anchor" href="#troubleshooting" id="user-content-troubleshooting"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Troubleshooting</h1>
+<h2>
+<a aria-hidden="true" class="anchor" href="#port-in-use-free-the-ports" id="user-content-port-in-use-free-the-ports"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Port in use? Free the ports!</h2>
+<p>Make sure Apache / Nginx is not running on your local machine on port <code>80</code>.
+The same goes for MySQL if it's running on port <code>3306</code> on <code>localhost</code>.
+To stop those on a default OSX install:</p>
+<pre><code>$ sudo apachectl stop
+$ mysql.server stop
+</code></pre>
+<p>Or if there's another Docker Compose instance running, <code>cd</code> to that project dir and shut down the cluster:</p>
+<div class="highlight highlight-source-shell"><pre>$ docker-compose stop</pre></div>
+<h2>
+<a aria-hidden="true" class="anchor" href="#everything-snafu" id="user-content-everything-snafu"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Everything SNAFU</h2>
+<p>If a machine is stuck and won't shut down, try stopping all containers first.
+Then restart the Docker Compose cluster. You shouldn't be losing any data this way.</p>
+<p><em>Remove the dollar signs for Fish shell.</em></p>
+<div class="highlight highlight-source-shell"><pre>$ docker-compose stop
+$ docker stop <span class="pl-s"><span class="pl-pds">$(</span>docker ps -a -q<span class="pl-pds">)</span></span>
+$ docker-sync-stack start</pre></div>
+<h3>
+<a aria-hidden="true" class="anchor" href="#snafuer-than-snafu-%EF%B8%8F" id="user-content-snafuer-than-snafu-️"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Snafu'er than Snafu ☠️</h3>
+<p>If everything is still failing and you're close to insanity, you can try this collection of hardcore methods. Be prepared to lose all of your (database) data though:</p>
+<div class="highlight highlight-source-shell"><pre>$ docker-compose stop
+$ docker-sync-stack clean
+$ docker stop <span class="pl-s"><span class="pl-pds">$(</span>docker ps -a -q<span class="pl-pds">)</span></span>
+$ docker rm -f <span class="pl-s"><span class="pl-pds">$(</span>docker ps -a -q<span class="pl-pds">)</span></span>
+$ docker rmi -f <span class="pl-s"><span class="pl-pds">$(</span>docker images -q<span class="pl-pds">)</span></span>
+$ docker system prune</pre></div>
+<h2>
+<a aria-hidden="true" class="anchor" href="#old-version-of-a-docker-image" id="user-content-old-version-of-a-docker-image"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Old version of a Docker image</h2>
+<p>To enforce a pull of the latest used Docker images:</p>
+<pre><code>$ docker-compose pull
+</code></pre>
+<h2>
+<a aria-hidden="true" class="anchor" href="#node-is-going-cray-cray--npm-install-is-choking" id="user-content-node-is-going-cray-cray--npm-install-is-choking"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Node is going cray-cray / <code>npm install</code> is choking!</h2>
+<p>If you have done an <code>npm install</code> before on your host system (f.i. OSX), these are not compiled for the right system inside the web server (Debian).</p>
+<p>Solution is to compile again inside the container:</p>
+<div class="highlight highlight-source-shell"><pre>$ rm -rf node_modules
+$ dock npm i</pre></div>
+<h2>
+<a aria-hidden="true" class="anchor" href="#cant-reach-host" id="user-content-cant-reach-host"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Can't reach host</h2>
+<ul>
+<li>Is Docker running?</li>
+<li>Are you using the right IP address? In the Docker for Mac (beta / edge) client this is <code>localhost</code> by default, in the older Docker-machine client this is <code>192.168.99.100</code>.</li>
+</ul>
+<h2>
+<a aria-hidden="true" class="anchor" href="#mysql-error" id="user-content-mysql-error"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>MySQL error</h2>
+<p>MySQL at it again 🙄</p>
+<pre><code>--initialize specified but the data directory has files in it. Aborting.
+</code></pre>
+<p>Does the database tell you this during startup of your Docker image?
+This is caused by a permission error on the mounted data volume. If this happens, please report it to us, with instructions on how to reproduce it.
+As a workaround, you can delete <code>application/data/docker/*</code> and restart the server, which will empty the database and force MySQL to reinitialize.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#it-works-on-my-host-but-not-in-docker" id="user-content-it-works-on-my-host-but-not-in-docker"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>It works on my host, but not in Docker</h2>
+<p>Something is happening and it seems to be specifically tied to the Docker setup?
+To debug, you can take a look at the setup that we use for Docker.
+It consists of 3 opensource images:</p>
+<ul>
+<li>the <a href="https://github.com/grrr-amsterdam/garp3-httpd-docker">web server</a>
+</li>
+<li>the <a href="https://github.com/grrr-amsterdam/garp3-db-docker">database server</a>
+</li>
+<li>and the <a href="https://github.com/grrr-amsterdam/garp3-data-docker">data storage container</a>
+</li>
+</ul>
+
+        </div>
+
+    </div>]

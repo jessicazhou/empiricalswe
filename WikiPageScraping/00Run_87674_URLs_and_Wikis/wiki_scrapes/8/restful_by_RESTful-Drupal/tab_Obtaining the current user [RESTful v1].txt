@@ -1,0 +1,89 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>It might sometimes be necessary to retrieve information about the currently authenticated user. This is not provided by RESTful out-of-the-box, but can be achieved by extending the <code>users</code> resource to respond to the special ID <code>me</code>. This will allow requests to <code>api/v1.1/users/me</code> (or <code>api/users/me</code> if you have no later API version of the <code>users</code> resource.)</p>
+<p>Note that since RESTful does not actually log a user in but rather authenticates each individual request, there's no "state of being logged in".</p>
+<p>To implement the <code>/me</code> special case, we will create version 1.1 of the user resource.</p>
+<ul>
+<li>copy <code>restful/plugins/restful/user/user/1.0/*</code> to <code>mymodule/plugins/restful/user/user/1.1/*</code>
+</li>
+<li>rename the two files to <code>RestfulEntityUser__1_1.class.php</code> and <code>users__1_1.inc</code>
+</li>
+<li>edit <code>users__1_1.inc</code> and modify the <code>class</code> and add major and minor version keys as follows:</li>
+</ul>
+<div class="highlight highlight-text-html-php"><pre><span class="pl-pse">&lt;?php</span><span class="pl-s1"></span>
+<span class="pl-s1"></span>
+<span class="pl-s1"><span class="pl-c"><span class="pl-c">//</span> By checking the variable, we allow implementing modules to easily implement</span></span>
+<span class="pl-s1"><span class="pl-c"><span class="pl-c">//</span> their own "users" resource.</span></span>
+<span class="pl-s1"><span class="pl-k">if</span> (variable_get(<span class="pl-s"><span class="pl-pds">'</span>restful_enable_users_resource<span class="pl-pds">'</span></span>, <span class="pl-c1">TRUE</span>)) {</span>
+<span class="pl-s1"></span>
+<span class="pl-s1">  <span class="pl-smi">$plugin</span> <span class="pl-k">=</span> <span class="pl-c1">array</span>(</span>
+<span class="pl-s1">    <span class="pl-s"><span class="pl-pds">'</span>label<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> t(<span class="pl-s"><span class="pl-pds">'</span>User<span class="pl-pds">'</span></span>),</span>
+<span class="pl-s1">    <span class="pl-s"><span class="pl-pds">'</span>description<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> t(<span class="pl-s"><span class="pl-pds">'</span>Export the "User" entity.<span class="pl-pds">'</span></span>),</span>
+<span class="pl-s1">    <span class="pl-s"><span class="pl-pds">'</span>resource<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-s"><span class="pl-pds">'</span>users<span class="pl-pds">'</span></span>,</span>
+<span class="pl-s1">    <span class="pl-s"><span class="pl-pds">'</span>class<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-s"><span class="pl-pds">'</span>RestfulEntityUser__1_1<span class="pl-pds">'</span></span>,</span>
+<span class="pl-s1">    <span class="pl-s"><span class="pl-pds">'</span>entity_type<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-s"><span class="pl-pds">'</span>user<span class="pl-pds">'</span></span>,</span>
+<span class="pl-s1">    <span class="pl-s"><span class="pl-pds">'</span>bundle<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-s"><span class="pl-pds">'</span>user<span class="pl-pds">'</span></span>,</span>
+<span class="pl-s1">    <span class="pl-c"><span class="pl-c">//</span> Try to authenticate users with all available authentication types.</span></span>
+<span class="pl-s1">    <span class="pl-s"><span class="pl-pds">'</span>authentication_types<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-c1">TRUE</span>,</span>
+<span class="pl-s1">    <span class="pl-c"><span class="pl-c">//</span> Allow anonymous users to access the resource, given they have the right</span></span>
+<span class="pl-s1">    <span class="pl-c"><span class="pl-c">//</span> permissions.</span></span>
+<span class="pl-s1">    <span class="pl-s"><span class="pl-pds">'</span>authentication_optional<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-c1">TRUE</span>,</span>
+<span class="pl-s1">    <span class="pl-s"><span class="pl-pds">'</span>major_version<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-c1">1</span>,</span>
+<span class="pl-s1">    <span class="pl-s"><span class="pl-pds">'</span>minor_version<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-c1">1</span>,</span>
+<span class="pl-s1">  );</span>
+<span class="pl-s1">}</span></pre></div>
+<ul>
+<li>edit the <code>RestfulEntityUser__1_1.class.php</code> as follows:</li>
+</ul>
+<div class="highlight highlight-text-html-php"><pre><span class="pl-pse">&lt;?php</span><span class="pl-s1"></span>
+<span class="pl-s1"></span>
+<span class="pl-s1"><span class="pl-c"><span class="pl-c">/**</span></span></span>
+<span class="pl-s1"><span class="pl-c"> * @file</span></span>
+<span class="pl-s1"><span class="pl-c"> * Contains RestfulEntityUser__1_1.</span></span>
+<span class="pl-s1"><span class="pl-c"> <span class="pl-c">*/</span></span></span>
+<span class="pl-s1"></span>
+<span class="pl-s1"><span class="pl-k">class</span> <span class="pl-en">RestfulEntityUser__1_1</span> <span class="pl-k">extends</span> <span class="pl-e">RestfulEntityBaseUser</span> {</span>
+<span class="pl-s1">  <span class="pl-k">public</span> <span class="pl-k">function</span> <span class="pl-en">viewEntities</span>(<span class="pl-smi">$ids_string</span>) {    </span>
+<span class="pl-s1">    <span class="pl-k">if</span> (<span class="pl-smi">$ids_string</span> <span class="pl-k">===</span> <span class="pl-s"><span class="pl-pds">'</span>me<span class="pl-pds">'</span></span>) {</span>
+<span class="pl-s1">      <span class="pl-smi">$account</span> <span class="pl-k">=</span> <span class="pl-smi">$this</span><span class="pl-k">-&gt;</span>getAccount();</span>
+<span class="pl-s1">      <span class="pl-smi">$ids_string</span> <span class="pl-k">=</span> <span class="pl-smi">$account</span><span class="pl-k">-&gt;</span><span class="pl-smi">uid</span>;</span>
+<span class="pl-s1">    }</span>
+<span class="pl-s1">    </span>
+<span class="pl-s1">    <span class="pl-k">return</span> <span class="pl-k">parent</span><span class="pl-k">::</span>viewEntities(<span class="pl-smi">$ids_string</span>);</span>
+<span class="pl-s1">  }</span>
+<span class="pl-s1">}</span></pre></div>
+<p>Note that we cannot use <code>global $user;</code> since this user may not have authenticated using cookie-based authentication, but rather one of the other auth methods provided by RESTful. The <code>getAccount()</code> method is provided by RESTful so we can obtain the user object which was authenticated from the REST request no matter which of the available authentication methods was used.</p>
+<p>If the user hasn't authenticated, an empty data array will be returned.</p>
+<h6>
+<a aria-hidden="true" class="anchor" href="#request" id="user-content-request"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>REQUEST</h6>
+<p><code>http://drupalsite.local/api/users/me</code></p>
+<p>If the request also contains basic auth containing Drupal username and password, or an auth cookie, then RESTful will attempt to authenticate this user, but will otherwise return an empty data array.</p>
+<h6>
+<a aria-hidden="true" class="anchor" href="#response" id="user-content-response"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>RESPONSE</h6>
+<p>Non-authenticated user:</p>
+<div class="highlight highlight-source-json"><pre>{
+  <span class="pl-s"><span class="pl-pds">"</span>data<span class="pl-pds">"</span></span>: [],
+  <span class="pl-s"><span class="pl-pds">"</span>self<span class="pl-pds">"</span></span>: {
+    <span class="pl-s"><span class="pl-pds">"</span>title<span class="pl-pds">"</span></span>: <span class="pl-s"><span class="pl-pds">"</span>Self<span class="pl-pds">"</span></span>,
+    <span class="pl-s"><span class="pl-pds">"</span>href<span class="pl-pds">"</span></span>: <span class="pl-s"><span class="pl-pds">"</span>http://drupalsite.local/api/v1.1/users/me<span class="pl-pds">"</span></span>
+  }
+}</pre></div>
+<p>Sample authenticated user:</p>
+<div class="highlight highlight-source-json"><pre>{
+  <span class="pl-s"><span class="pl-pds">"</span>data<span class="pl-pds">"</span></span>: [
+    {
+      <span class="pl-s"><span class="pl-pds">"</span>id<span class="pl-pds">"</span></span>: <span class="pl-s"><span class="pl-pds">"</span>1<span class="pl-pds">"</span></span>,
+      <span class="pl-s"><span class="pl-pds">"</span>label<span class="pl-pds">"</span></span>: <span class="pl-s"><span class="pl-pds">"</span>admin<span class="pl-pds">"</span></span>,
+      <span class="pl-s"><span class="pl-pds">"</span>self<span class="pl-pds">"</span></span>: <span class="pl-s"><span class="pl-pds">"</span>http://drupalsite.local/api/v1.1/users/1<span class="pl-pds">"</span></span>,
+      <span class="pl-s"><span class="pl-pds">"</span>mail<span class="pl-pds">"</span></span>: <span class="pl-s"><span class="pl-pds">"</span>admin.drupalsite@gmail.com<span class="pl-pds">"</span></span>
+    }
+  ],
+  <span class="pl-s"><span class="pl-pds">"</span>self<span class="pl-pds">"</span></span>: {
+    <span class="pl-s"><span class="pl-pds">"</span>title<span class="pl-pds">"</span></span>: <span class="pl-s"><span class="pl-pds">"</span>Self<span class="pl-pds">"</span></span>,
+    <span class="pl-s"><span class="pl-pds">"</span>href<span class="pl-pds">"</span></span>: <span class="pl-s"><span class="pl-pds">"</span>http://drupalsite.local/api/v1.1/users/me<span class="pl-pds">"</span></span>
+  }
+}</pre></div>
+
+        </div>
+
+    </div>]

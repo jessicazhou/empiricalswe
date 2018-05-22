@@ -1,0 +1,80 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>#原理#
+Hummer由三部分组成，分别是<strong>客户端</strong>、<strong>服务端</strong>、<strong>注册中心</strong>。目前注册中心只支持zookeeper<br/>
+<em><strong>服务端</strong></em><br/>
+服务端目前由Netty提供底层网络支持，当Netty接收到符合hummer协议的请求时，会对请求包进行解包，开成一个RPC请求对象，然后传到disruptor的事件处理器中，由disputor的处理器查找对应的服务并完成调用及返回<br/>
+<em><strong>客户端</strong></em><br/>
+客户端主要的作用是将一个正常的方法调用包装成一个rpc请求然后路由到一个提供此服务的服务端，然后用Future在本地等待，直到调用返回，否则会超时。</p>
+<p><em><strong>注册中心</strong></em><br/>
+注册中心主要是管理所有的服务及提供此服务的机器ip与端口，并在新增服务或服务删除时通知客户端，以防止客户端访问到无效的地址</p>
+<p>#使用
+hummer暂时还未加入到maven的中央仓库，现在只能将源代码下下来，然后自行构建。构建完成后，将hummer引入到自己的工程，在classpath下加入<strong>hummer.properties</strong>配置文件，配置内容参见***配置***。<br/>
+注册服务的代码如下</p>
+<pre><code>IHello hello = new HelloImpl();
+ServiceMetadata metadata = new ServiceMetadata();
+metadata.setServiceName(IHello.class.getName());
+metadata.setTarget(hello);
+metadata.setVersion("1.0.0");
+ServiceRegistry.registerService(metadata);
+</code></pre>
+<p>客户端代码如下：</p>
+<pre><code>ClientMetaData metadata=new ClientMetaData();
+metadata.setService(IHello.class.getName());
+metadata.setVersion("1.0.0");
+IHello hello=(IHello)ProxyFactory.getProxy(metadata);
+System.out.println(hello.sayHello("dreamlee"));
+</code></pre>
+<p>#Spring示例#
+hummer提供spring的schema方式使用，使用方法如下：</p>
+<pre><code>&lt;?xml version="1.0" encoding="UTF-8"?&gt;
+&lt;beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:hummer="http://code.alibaba-inc.com/schema/hummer"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans 
+	http://www.springframework.org/schema/beans/spring-beans-2.5.xsd
+	http://code.alibaba-inc.com/schema/hummer
+	http://code.alibaba-inc.com/schema/hummer/hummer.xsd"&gt;
+
+
+	&lt;bean id="helloImpl" class="org.hummer.service.test.HelloService"&gt;&lt;/bean&gt;
+	
+	&lt;hummer:service target="helloImpl" version="1.0.0" interface="org.hummer.service.test.IHello"/&gt;
+	
+	&lt;hummer:reference id="test" interface="org.hummer.service.test.IHello" version="1.0.0"/&gt;
+&lt;/beans&gt;
+</code></pre>
+<p>其中hummer:service为注册服务。而hummer:reference为引用服务，与一个普通的spring bean一样的使用即可
+#配置#</p>
+<pre><code>#netty的connect线程的数量
+serverBossThreads=16
+#netty的工作线程的数量
+serverWorkerThreads=32
+
+requestProssorThreads=32
+#服务端端口号
+serverPort=6288
+#客户端netty工作线程数量
+clientWorkerThreads=16
+#zookeeper注册中心地址
+configRegistryAddress=localhost:2181
+responseProssorThreads=16
+#server端等待策略（可选的有TimeoutBlocking,Blocking,BusySpin,PhasedBackoff,Sleeping,Yielding）
+serverWaitStrategy=Yielding
+#client端等待策略
+clientWaitStrategy=Blocking
+#server端disruptor处理器数
+serverEventChannelNum=4
+#server端的处理器占用cpu数(其中ps为机器的总cpu数)
+serverCoreUse=ps/2
+</code></pre>
+
+        </div>
+
+        <div class="wiki-footer gollum-markdown-content boxed-group" id="wiki-footer">
+          <div class="boxed-group-inner wiki-auxiliary-content markdown-body">
+            <p>@Dream.Lee</p>
+
+          </div>
+        </div>
+    </div>]

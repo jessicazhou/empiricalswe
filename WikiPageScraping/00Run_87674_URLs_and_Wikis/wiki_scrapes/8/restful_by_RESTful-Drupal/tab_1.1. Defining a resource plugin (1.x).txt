@@ -1,0 +1,135 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>See "Defining our RESTful Plugin" on <a href="http://www.edhollinghurst.com/blog/getting-started-with-restful.html" rel="nofollow">http://www.edhollinghurst.com/blog/getting-started-with-restful.html</a> for a tutorial covering the basics.</p>
+<p>NOTE: if you need your endpoint to be protected by authentication, you must specify the <code>authentication_types</code> key. Either specify an array of auth types, or <code>TRUE</code> for any.</p>
+<div class="highlight highlight-text-html-php"><pre><span class="pl-s1"><span class="pl-smi">$plugin</span> <span class="pl-k">=</span> <span class="pl-c1">array</span>(</span>
+<span class="pl-s1">  <span class="pl-c"><span class="pl-c">//</span> ...</span></span>
+<span class="pl-s1">  <span class="pl-c"><span class="pl-c">//</span> Try to authenticate users with all available authentication types.</span></span>
+<span class="pl-s1">  <span class="pl-s"><span class="pl-pds">'</span>authentication_types<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-c1">TRUE</span>,</span>
+<span class="pl-s1">);</span></pre></div>
+<h3>
+<a aria-hidden="true" class="anchor" href="#plugin-definition-properties" id="user-content-plugin-definition-properties"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Plugin definition properties</h3>
+<p>The <code>$plugin</code> array may contain the following properties (taken from <code>restful/includes/RestfulManager.php</code>):</p>
+<ul>
+<li>
+<strong>description</strong>: The description of the resource. Defaults to empty string.</li>
+<li>
+<strong>discoverable</strong>: Determines if the resource should be discoverable by the
+"discovery" resource. Defaults to TRUE.</li>
+<li>
+<strong>data_provider_options</strong>: An array of options specific to the data provider.
+For example the DB query data provider requires the table name in order to
+know which table to act upon. Defaults to an empty array.</li>
+<li>
+<strong>major_version</strong>: The major version of the resource. This will change the URL
+of the resource endpoint. For example setting major version to 2 for the
+"articles" resource will result with "api/v2/articles" as the URL. Defaults
+to 1.</li>
+<li>
+<strong>minor_version</strong>: The minor version of the resource. Setting the minor version
+via CURL is done by setting HTTP_X_RESTFUL_MINOR_VERSION in the HTTP headers.
+Defaults to 0.</li>
+<li>
+<strong>options</strong>: Array of options needed for the plugin. See
+"per_role_content__1_0.inc" in RESTful example module. Defaults to empty
+array.</li>
+<li>
+<strong>entity type</strong>: The entity type of the resource. Defaults to FALSE, which
+indicates the resource isn't connected to any entity type.</li>
+<li>
+<strong>bundle</strong>: The name of a single bundle the resource is connected to. Defaults
+to FALSE.</li>
+<li>
+<strong>authentication_types</strong>: TRUE or Array with name of authentication providers
+that should "protect" the resource, and ensure only authenticated users can
+use it. If set to TRUE, then all the existing authentication providers
+would be used until the user is authenticated. If user was not
+authenticated with any of the authentication providers, an
+\RestfulUnauthorizedException exception would be thrown.
+Defaults to empty array, which means no authentication is done by default.</li>
+<li>
+<strong>authentication_optional</strong>: If "authentication_types" and TRUE this determines
+if the resource may be accessed by an anonymous user when no provider was
+able to authenticate the user. Otherwise a \RestfulUnauthorizedException
+exception would be thrown.</li>
+<li>
+<strong>hook_menu</strong>: Determines if RESTful module should declare the resource in its
+pwn hook_menu(). If FALSE, it is up to the implementing module to declare
+it. Defaults to TRUE.</li>
+<li>
+<strong>render_cache</strong>: Stores the cache settings. An associative array with:
+<ul>
+<li>render: Set it to FALSE to disable the render cache completely
+Defaults to FALSE.</li>
+<li>class: The cache class for this resource. Defaults to NULL, which
+will probably end up resolving to 'DrupalDatabaseCache'.</li>
+<li>bin: The name of the bin. It is the developer's responsibility to
+create this bin in the cache backend if it does not exist. Defaults to
+'cache_restful'.</li>
+<li>expire: TTL for the cache records. See DrupalCacheInterface::set()
+for the allowed values. Defaults to CACHE_PERMANENT.</li>
+<li>simple_invalidate: Set it to false to prevent the RESTful module to
+invalidate any cache it may have been generated. The developer will be
+responsible to invalidate caches in this scenario. Defaults to TRUE.</li>
+<li>granularity: DRUPAL_CACHE_PER_USER or DRUPAL_CACHE_PER_ROLE.</li>
+</ul>
+</li>
+<li>
+<strong>rate_limit</strong>: The configuration array for the rate limits. There is a special
+limit category called 'global' that will not be limited to resource but
+will aggregate all request hits across all resources. To enable the global
+limit set the variable 'restful_global_rate_limit' to the desired limit and
+'restful_global_rate_period' to the wanted period.
+<ul>
+<li>period: A \DateInterval object representing the period on which the rate
+limitations apply.</li>
+<li>event: The name of the event to limit as declared in the rate_limit
+plugin.</li>
+<li>limits: An associative array with the number of allowed requests in the
+selected period for every role.</li>
+</ul>
+</li>
+</ul>
+<div class="highlight highlight-text-html-php"><pre><span class="pl-s1">    <span class="pl-c1">array</span>(</span>
+<span class="pl-s1">      <span class="pl-s"><span class="pl-pds">'</span>request<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-c1">array</span>(</span>
+<span class="pl-s1">        <span class="pl-s"><span class="pl-pds">'</span>event<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-s"><span class="pl-pds">'</span>request<span class="pl-pds">'</span></span>,</span>
+<span class="pl-s1">        <span class="pl-s"><span class="pl-pds">'</span>period<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-k">new</span> <span class="pl-c1">\DateInterval</span>(<span class="pl-s"><span class="pl-pds">'</span>P1D<span class="pl-pds">'</span></span>),</span>
+<span class="pl-s1">        <span class="pl-s"><span class="pl-pds">'</span>limits<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-c1">array</span>(</span>
+<span class="pl-s1">          <span class="pl-s"><span class="pl-pds">'</span>authenticated user<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-c1">100</span>,</span>
+<span class="pl-s1">          <span class="pl-s"><span class="pl-pds">'</span>anonymous user<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-c1">10</span>,</span>
+<span class="pl-s1">          <span class="pl-s"><span class="pl-pds">'</span>administrator<span class="pl-pds">'</span></span> <span class="pl-k">=&gt;</span> <span class="pl-c1">\</span><span class="pl-c1">RestfulRateLimitManager</span><span class="pl-k">::</span><span class="pl-c1">UNLIMITED_RATE_LIMIT</span>,</span>
+<span class="pl-s1">        ),</span>
+<span class="pl-s1">      ),</span>
+<span class="pl-s1">    ),</span></pre></div>
+<ul>
+<li>
+<strong>autocomplete</strong>: Stores the autocomplete settings. An associative array with:
+<ul>
+<li>enable: Determines if the autocomplete functionality should be used.
+Defaults to TRUE.</li>
+<li>range: Determines how many matches should return on every query. Defaults
+to 10.</li>
+<li>operator: Determines the operator used to match the given string. Values
+can be 'STARTS_WITH' or 'CONTAINS'. Defaults to 'CONTAINS'.</li>
+</ul>
+</li>
+<li>
+<strong>formatter</strong>: The name of the formatter plugin. It defaults to the contents of
+the variable 'restful_default_output_formatter'. If the variable is empty
+it defaults to 'hal_json'.</li>
+<li>
+<strong>url_params</strong>: Associative array to configure if the "sort", "filter" and "range" url parameters should be allowed. Defaults to TRUE in all of them.</li>
+<li>
+<strong>view_mode</strong>: Associative array that contains two keys:
+<ul>
+<li>
+<strong>name</strong>: The name of the view mode to read from to add the public fields.</li>
+<li>
+<strong>field_map</strong>: An associative array that pairs the name of the Drupal field with the name of the exposed (public) field.</li>
+</ul>
+</li>
+</ul>
+
+        </div>
+
+    </div>]

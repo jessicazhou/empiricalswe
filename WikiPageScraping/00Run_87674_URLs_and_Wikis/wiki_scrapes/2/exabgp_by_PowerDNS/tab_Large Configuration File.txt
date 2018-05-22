@@ -1,0 +1,21 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>An ExaBGP configuration file with the full internet routing table can have up to nearly 3 million lines and weights over 50 MB.</p>
+<p>Parsing such a file take <em>ages</em>, therefore we recommend an alternate approach: there is an undocumented API command in the code "announce attribute", by undocumented we mean not officially supported yet as the code is a bad hack in need of good cleanup.</p>
+<p>The syntax would be something like</p>
+<pre><code> announce attributes next-hop 192.168.0.1 med 100 nlri 10.0.0.0/16 192.0.2.0/24
+</code></pre>
+<p>It prevent ExaBGP to have to parse the attribute multiple times and provide an enormous gain on the "normal" announce syntax for a full internet routing table.</p>
+<p>To best use it you should make sure every peer has :</p>
+<pre><code>auto-flush false;
+group-updates true;
+</code></pre>
+<p>It disable automatic update generation: updates will only be sent to the routers when you explicitly request it and make sure NLRI are grouped in the same update when the packet is generated.</p>
+<p>Then once you have announced enough route you can force route propagation when useful.</p>
+<pre><code>flush route
+</code></pre>
+<p>It should give you much better performance than a single large configuration file, but should you <em>need</em> to have a single file we advise you to use the latest version of ExaBGP and the single line syntax for the routes.</p>
+
+        </div>
+
+    </div>]

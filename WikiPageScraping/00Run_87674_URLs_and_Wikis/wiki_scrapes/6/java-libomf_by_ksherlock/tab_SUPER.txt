@@ -1,0 +1,163 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>$F7 <strong>SUPER</strong> - This is a supercompressed relocation-dictionary record, Each <a class="internal present" href="/ksherlock/java-libomf/wiki/SUPER">SUPER</a> record is the equivalent of many <a class="internal present" href="/ksherlock/java-libomf/wiki/cRELOC">cRELOC</a>, <a class="internal present" href="/ksherlock/java-libomf/wiki/cINTERSEG">cINTERSEG</a>, and <a class="internal present" href="/ksherlock/java-libomf/wiki/INTERSEG">INTERSEG</a> records. It contains a 4-byte length, a 1-byte record type, and one or more subrecords of variable size, as follows:</p>
+<table>
+<thead>
+<tr>
+<th align="left"></th>
+<th align="left"></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="left">Opcode:</td>
+<td align="left">$F7</td>
+</tr>
+<tr>
+<td align="left">Length:</td>
+<td align="left">number of bytes in the rest of the record (4 bytes)</td>
+</tr>
+<tr>
+<td align="left">Type:</td>
+<td align="left">0-37 (1 byte)</td>
+</tr>
+<tr>
+<td align="left">subrecords:</td>
+<td align="left">(variable size)</td>
+</tr>
+</tbody>
+</table>
+<p>When <code>SUPER</code> records are used, some of the relocation information is stored in the <a class="internal present" href="/ksherlock/java-libomf/wiki/LCONST">LCONST</a> record at the address to be patched.</p>
+<p>The length field indicates the number of bytes in the rest of the <a class="internal present" href="/ksherlock/java-libomf/wiki/SUPER">SUPER</a> record (that is, the number of bytes exclusive of the opcode and the length field).</p>
+<p>The type byte indicates the type of <code>SUPER</code> record. There are 38 types of <a class="internal present" href="/ksherlock/java-libomf/wiki/SUPER">SUPER</a> record:</p>
+<table>
+<thead>
+<tr>
+<th>Value</th>
+<th>Super Record Type</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0</td>
+<td><code>SUPER RELOC2</code></td>
+</tr>
+<tr>
+<td>1</td>
+<td><code>SUPER RELOC3</code></td>
+</tr>
+<tr>
+<td>2-37</td>
+<td>
+<code>SUPER INTERSEG1</code>-<code>SUPER INTERSEG36</code>
+</td>
+</tr>
+</tbody>
+</table>
+<p><code>SUPER RELOC2</code>: This record can be used instead of <a class="internal present" href="/ksherlock/java-libomf/wiki/cRELOC">cRELOC</a> records that have a bit-shift count of zero and that relocate two bytes.</p>
+<p><code>SUPER RELOC3</code>: This record can be used instead of <a class="internal present" href="/ksherlock/java-libomf/wiki/cRELOC">cRELOC</a> records that have a bit-shift count of zero and that relocate three bytes.</p>
+<p><code>SUPER INTERSEG1</code>: This record can be used instead of <a class="internal present" href="/ksherlock/java-libomf/wiki/cINTERSEG">cINTERSEG</a> records that have a bit-shift count of zero and that relocate three bytes.</p>
+<p><code>SUPER INTERSEG2</code> through <code>SUPER INTERSEG12</code>: The number in the name of the record refers to the file number of the file in which the record is used. For example, to relocate an address in file 6, use a <code>SUPER INTERSEG6</code> record. These records can be used instead of <a class="internal present" href="/ksherlock/java-libomf/wiki/INTERSEG">INTERSEG</a> records that meet the following criteria:</p>
+<ul>
+<li>Both offsets are less than $10000.</li>
+<li>The segment number is less than 256.</li>
+<li>The bit-shift count is 0.</li>
+<li>The record relocates 3 bytes.</li>
+<li>The file number is from 2 through 12.</li>
+</ul>
+<p><code>SUPER INTERSEG13</code> through <code>SUPER INTERSEG24</code>: These records can be used instead of <a class="internal present" href="/ksherlock/java-libomf/wiki/cINTERSEG">cINTERSEG</a> records that have a bit-shift count of zero, that relocate two bytes, and that have a segment number of n minus 12, where n is a number from 13 to 24. For example, to replace a <a class="internal present" href="/ksherlock/java-libomf/wiki/cINTERSEG">cINTERSEG</a> record in segment 6, use a <code>SUPER INTERSEG18</code> record.</p>
+<p><code>SUPER INTERSEG25</code> through <code>SUPER INTERSEG36</code>: These records can be used instead of <a class="internal present" href="/ksherlock/java-libomf/wiki/cINTERSEG">cINTERSEG</a> records that have a bit-shift count of $F0 (-16), that relocate two bytes, and that have a segment number of n minus 24, where n is a number from 25 to 36. For example, to replace a <a class="internal present" href="/ksherlock/java-libomf/wiki/cINTERSEG">cINTERSEG</a> record in segment 6, use a <code>SUPER INTERSEG30</code> record.</p>
+<p>Each subrecord consists of either a 1-byte offset count followed by a list of 1-byte offsets, or a 1-byte skip count.</p>
+<p>Each offset count indicates how many offsets are listed in this subrecord. The offsets are one byte each. Each offset corresponds to the low byte of the first (2-byte) offset in the equivalent <a class="internal present" href="/ksherlock/java-libomf/wiki/INTERSEG">INTERSEG</a>, <a class="internal present" href="/ksherlock/java-libomf/wiki/cRELOC">cRELOC</a>, or <a class="internal present" href="/ksherlock/java-libomf/wiki/cINTERSEG">cINTERSEG</a> record. The high byte of the offset is indicated by the location of this offset count in the SUPER record: Each subsequent offset count indicates the next 256 bytes of the load segment. Each skip count indicates the number of 256-byte pages to skip; that is, a skip count indicates that there are no offsets within a certain number of 256-byte pages of the
+load segment.</p>
+<p>For example, if patches must be made at offsets 0020, 0030, 0140, and 0550 in the load segment, the subrecords would include the following fields:</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>2 20 30</td>
+<td>the first 256-byte page of the load segment has two patches: one at offset 20 and one at offset 30</td>
+</tr>
+<tr>
+<td>1 40</td>
+<td>the second 256-byte page has one patch at offset 40</td>
+</tr>
+<tr>
+<td>skip-3</td>
+<td>skip the next three 256-byte pages</td>
+</tr>
+<tr>
+<td>1 50</td>
+<td>the sixth 256-byte page has one patch at offset 50</td>
+</tr>
+</tbody>
+</table>
+<p>In the actual <a class="internal present" href="/ksherlock/java-libomf/wiki/SUPER">SUPER</a> record, the patch count byte is the number of offsets minus one, and the skip count byte has the high bit set. A <code>SUPER INTERSEG1</code> record with the offsets in the preceding example would look like this:</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>$F7</td>
+<td>opcode</td>
+</tr>
+<tr>
+<td>$00000009</td>
+<td>number of bytes in the rest of the record</td>
+</tr>
+<tr>
+<td>$02</td>
+<td>
+<code>INTERSEGl</code>-type <code>SUPER</code> record</td>
+</tr>
+<tr>
+<td>$01</td>
+<td>the first 256-byte page has two patches</td>
+</tr>
+<tr>
+<td>$20</td>
+<td>patch the load segment at offset $0020</td>
+</tr>
+<tr>
+<td>$30</td>
+<td>patch the segment at $0030</td>
+</tr>
+<tr>
+<td>$00</td>
+<td>the second page has one patch</td>
+</tr>
+<tr>
+<td>$40</td>
+<td>patch the segment at $0140</td>
+</tr>
+<tr>
+<td>$83</td>
+<td>skip the next three 256-byte pages</td>
+</tr>
+<tr>
+<td>$00</td>
+<td>the sixth page has one patch</td>
+</tr>
+<tr>
+<td>$50</td>
+<td>patch the segment at $0550</td>
+</tr>
+</tbody>
+</table>
+<p>A comparison with the <a class="internal present" href="/ksherlock/java-libomf/wiki/RELOC">RELOC</a> record shows that a <code>SUPER RELOC</code> record is missing the offset of the reference. Similarly, the <code>SUPER INTERSEG1</code> through <code>SUPER INTERSEG12</code> records are missing the segment number and offset of the subroutine referenced. The offsets (which are two bytes long) are stored in the <a class="internal present" href="/ksherlock/java-libomf/wiki/LCONST">LCONST</a> record at the "to be patched" location. For the <code>SUPER INTERSEG1</code> through <code>SUPER INTERSEG12</code> records, the segment number is stored in the third byte of the "to be patched" location.</p>
+<p>For example, if the example given in the discussion of the <a class="internal present" href="/ksherlock/java-libomf/wiki/INTERSEG">INTERSEG</a> record were instead referenced through a <a class="internal present" href="/ksherlock/java-libomf/wiki/SUPER">SUPER</a> <code>INTERSEG1</code> record, the value $0345 (the offset of the subroutine referenced) would be stored at offset $0721 in the load segment (the offset of the instruction's operand). The segment number ($0A) would be stored at offset $0723, as follows:</p>
+<pre><code>45 03 0A
+</code></pre>
+
+        </div>
+
+    </div>]

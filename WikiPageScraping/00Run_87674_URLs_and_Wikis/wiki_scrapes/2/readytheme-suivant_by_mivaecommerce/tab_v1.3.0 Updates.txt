@@ -1,0 +1,489 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>Updates and additions to support the new features released in Miva 9.4:</p>
+<ul>
+<li><a href="http://www.miva.com/mm9.4_template_changes.html" rel="nofollow">http://www.miva.com/mm9.4_template_changes.html</a></li>
+</ul>
+<p>##IMPORTANT
+When installing the updated ReadyTheme, the new Client Dimensions item will be created and assigned to the site. If you are performing updates to an existing site, you will need to create the item and assign it yourself. <a href="http://docs.miva.com/docs/client-dimensions" rel="nofollow">DOCUMENTATION</a></p>
+<p>####HEAD Tag
+Added new pages to "screenCheck" variable:</p>
+<pre><code>&lt;mvt:assign name="g.screenCheck" value="'ABAL,ACAD,ACED,AFAD,AFCL,AFED,ACLN,BASK,CEML,CPWD,FPWD,GFTL,INVC,LOGN,LOGOUT,OCST,OPAY,OPRC,ORHL,ORDH,ORDL,ORDS,OSEL,OUS1,OUSL,OUSM,PLMT,PRINTP,RGFT,SFNT,UATM,UATR,WLAD,WLED,WISH,WLGN,WLST,WPCK'" /&gt;
+</code></pre>
+<p>Replaced existing canonical IF statement with:</p>
+<pre><code>&lt;mvt:if expr="'CTGY' CIN l.settings:page:code"&gt;
+	&lt;link rel="canonical" href="&amp;mvte:category:link;" /&gt;
+&lt;mvt:elseif expr="l.settings:page:code EQ 'PROD' OR l.settings:page:code EQ 'PATR'"&gt;
+	&lt;link rel="canonical" href="&amp;mvt:product:link;" /&gt;
+&lt;mvt:else&gt;
+	&lt;link rel="canonical" href="&amp;mvte:urls:_self:auto;" /&gt;
+&lt;/mvt:if&gt;
+</code></pre>
+<p>Replaced existing META IF statement with new prodctgy_meta item:</p>
+<pre><code>&lt;mvt:item name="prodctgy_meta" param="combined" /&gt;
+</code></pre>
+<p>Added new clientdimensions item:</p>
+<pre><code>&lt;mvt:item name="clientdimensions" /&gt;
+</code></pre>
+<p>####Global Footer
+Added Helpful Links item to mobile footer:</p>
+<pre><code>&lt;nav id="js-mobile-footer-links" class="mobile-menu mobile-menu-bottom mobile-footer-links medium-hide"&gt;
+	&lt;div class="mobile-menu-header"&gt;LINKS&lt;a href="" class="silver close-mobile-menu"&gt;&amp;times;&lt;/a&gt;&lt;/div&gt;
+	&lt;mvt:item name="readytheme" param="navigationset( 'helpful_links' )" /&gt;
+&lt;/nav&gt;
+&lt;!-- end mobile-footer-links --&gt;
+</code></pre>
+<p>####../js/scripts.js
+Added support for forgot password on WLGN page:</p>
+<pre><code>},
+
+jsWLGN: function () {
+	// ---- Open Forgot Password ---- //
+	cornerstoneUX.sharedFunctions.openForgotPassword();
+</code></pre>
+<p>Updated footerNavControl function for better iOS user experience and removed screen toggling:<br/>
+Replace:</p>
+<pre><code>function footerNavControl () {
+	if ($(window).innerWidth() &lt; 704) {
+		if ($('#js-mobile-footer-links ul').length == 0) {
+			$('#js-mobile-footer-links').append($('#js-footer-links').find('ul'));
+		};
+	}
+	else {
+		if ($('#js-footer-links ul').length == 0) {
+			$('#js-footer-links').append($('#js-mobile-footer-links').find('ul'));
+		};
+	};
+	/* Corrects positioning of virtual keyboard */
+	$(document).on('focus', 'input, select, textarea', function () {
+		$('#mobile-footer').css('position', 'static');
+	});
+	$(document).on('blur', 'input, select, textarea', function () {
+		$('#mobile-footer').css('position', 'fixed');
+	});
+};
+</code></pre>
+<p>With:</p>
+<pre><code>function footerNavControl () {
+	/* Corrects positioning of virtual keyboard */
+	$(document).on('focus', 'input, select, textarea', function () {
+		$('#mobile-footer').hide();
+	});
+	$(document).on('blur', 'input, select, textarea', function () {
+		$('#mobile-footer').show();
+	});
+};
+</code></pre>
+<p>Updated addToCart function to work with new URI function and other button text:<br/>
+Replace:</p>
+<pre><code>function addToCart () {
+	$('#js-add-to-cart').on('click', function (e) {
+		var purchaseForm = $('#js-purchase-product');
+		// Check the form is not currently submitting
+		if (purchaseForm.data('formstatus') !== 'submitting') {
+			// Set up variables
+			var form = purchaseForm,
+				formData = form.serialize(),
+				randomNo = Math.ceil(Math.random() * 1000000), // IE Hack: Creating random number to refresh ajax call
+				formUrl = form.attr('action') + '&amp;v=' + randomNo,
+				formMethod = form.attr('method'),
+				responseMessage = $('#js-purchase-message'),
+				miniBasket = $('#js-mini-basket-container'),
+				processingImage = $('#js-processing-purchase'),
+				purchaseButton = $(this);
+			
+			// Add status data to form
+			form.data('formstatus', 'submitting');
+			
+			// Show processing message
+			processingImage.show();
+			purchaseButton.toggleDisabled().val('Processing...');
+			responseMessage.html('').hide();
+			
+			// Send data to server for validation
+			$.ajax({
+				url: formUrl,
+				type: formMethod,
+				data: formData,
+				success: function(data, textStatus, jqXHR) {
+					if (data.search(/id="js-BASK"/i) != -1) {
+						$('html, body').animate({scrollTop: '0px'}, 250);
+						var responseMiniBasket = $(data).find('#js-mini-basket-container'),
+							miniBasketCount = responseMiniBasket.contents()[1].getAttribute('data-itemcount'),
+							miniBasketSubtotal = ' ' + responseMiniBasket.contents()[1].getAttribute('data-subtotal'),
+							miniBasketLinkCount = $('#js-mini-basket-count, #js-mobile-basket-button .notification'),
+							miniBasketLinkSubtotal = $('#js-mini-basket-subtotal');
+						
+						miniBasketLinkCount.text(miniBasketCount); // Update basket quantity (display only)
+						miniBasketLinkSubtotal.text(miniBasketSubtotal); // Update basket subtotal (display only)
+						
+						miniBasket.html(responseMiniBasket.contents()).addClass('open');
+						setTimeout(function () {
+							miniBasket.removeClass('open');
+						}, 5000);
+
+						// Re-Initialize Attribute Machine (if it is active)
+						if (typeof attrMachCall !== 'undefined') {
+							attrMachCall.Initialize();
+						};
+					}
+					else if(data.search(/id="js-PATR"/i) != -1) {
+						var missingAttrs = [];
+						form.find('.required').each(function () {
+							missingAttrs.push(' ' + $(this).attr('title'));
+						});
+						responseMessage.html('All &lt;em class="red"&gt;Required&lt;/em&gt; options have not been selected.&lt;br /&gt;Please review the following options: &lt;span class="red"&gt;' + missingAttrs + '&lt;/span&gt;.').fadeIn().delay(5000).fadeOut();
+					}
+					else if(data.search(/id="js-PLMT"/i) != -1) {
+						responseMessage.html('We do not have enough of the Size/Color you have selected.&lt;br /&gt;Please adjust your quantity.').fadeIn().delay(3000).fadeOut();
+					}
+					else if(data.search(/id="js-POUT"/i) != -1) {
+						responseMessage.html('The Size/Color you have selected is out of stock.&lt;br /&gt;Please review your options or check back later.').fadeIn().delay(3000).fadeOut(); 
+					}
+					else {
+						responseMessage.html('Please review options.').fadeIn().delay(3000).fadeOut();
+					};
+					
+					// Hide processing message and reset formstatus
+					processingImage.hide();
+					purchaseButton.toggleDisabled().val('Add to Cart');
+					form.data('formstatus', 'idle');
+				},
+				error: function (jqXHR, textStatus, errorThrown) {
+				}
+			});
+		};
+		// Prevent form from submitting
+		e.preventDefault();
+	});
+};
+var addToCart = new addToCart;
+</code></pre>
+<p>With:</p>
+<pre><code>function addToCart () {
+	$('#js-add-to-cart').on('click', function (e) {
+		var purchaseForm = $('#js-purchase-product');
+		// Check the form is not currently submitting
+		if (purchaseForm.data('formstatus') !== 'submitting') {
+			// Set up variables
+			var form = purchaseForm,
+				formData = form.serialize(),
+				randomNo = Math.ceil(Math.random() * 1000000), // IE Hack: Creating random number to refresh ajax call
+				formUrl = form.attr('action'),
+				formMethod = form.attr('method'),
+				responseMessage = $('#js-purchase-message'),
+				miniBasket = $('#js-mini-basket-container'),
+				processingImage = $('#js-processing-purchase'),
+				purchaseButton = $(this),
+				purchaseButtonText = purchaseButton.val();
+			
+				if (/\?/.test(formUrl)) {
+					formUrl = formUrl + '&amp;v=' + randomNo;
+				}
+				else {
+					formUrl = formUrl + '?v=' + randomNo;
+				};
+
+			// Add status data to form
+			form.data('formstatus', 'submitting');
+			
+			// Show processing message
+			processingImage.show();
+			purchaseButton.toggleDisabled().val('Processing...');
+			responseMessage.html('').hide();
+			
+			// Send data to server for validation
+			$.ajax({
+				url: formUrl,
+				type: formMethod,
+				data: formData,
+				success: function(data, textStatus, jqXHR) {
+					if (data.search(/id="js-BASK"/i) != -1) {
+						$('html, body').animate({scrollTop: '0px'}, 250);
+						var responseMiniBasket = $(data).find('#js-mini-basket-container'),
+							miniBasketCount = responseMiniBasket.contents()[1].getAttribute('data-itemcount'),
+							miniBasketSubtotal = ' ' + responseMiniBasket.contents()[1].getAttribute('data-subtotal'),
+							miniBasketLinkCount = $('#js-mini-basket-count, #js-mobile-basket-button .notification'),
+							miniBasketLinkSubtotal = $('#js-mini-basket-subtotal');
+						
+						miniBasketLinkCount.text(miniBasketCount); // Update basket quantity (display only)
+						miniBasketLinkSubtotal.text(miniBasketSubtotal); // Update basket subtotal (display only)
+						
+						miniBasket.html(responseMiniBasket.contents()).addClass('open');
+						setTimeout(function () {
+							miniBasket.removeClass('open');
+						}, 5000);
+
+						// Re-Initialize Attribute Machine (if it is active)
+						if (typeof attrMachCall !== 'undefined') {
+							attrMachCall.Initialize();
+						};
+					}
+					else if(data.search(/id="js-PATR"/i) != -1) {
+						var missingAttrs = [];
+						form.find('.required').each(function () {
+							missingAttrs.push(' ' + $(this).attr('title'));
+						});
+						responseMessage.html('All &lt;em class="red"&gt;Required&lt;/em&gt; options have not been selected.&lt;br /&gt;Please review the following options: &lt;span class="red"&gt;' + missingAttrs + '&lt;/span&gt;.').fadeIn().delay(5000).fadeOut();
+					}
+					else if(data.search(/id="js-PLMT"/i) != -1) {
+						responseMessage.html('We do not have enough of the Size/Color you have selected.&lt;br /&gt;Please adjust your quantity.').fadeIn().delay(3000).fadeOut();
+					}
+					else if(data.search(/id="js-POUT"/i) != -1) {
+						responseMessage.html('The Size/Color you have selected is out of stock.&lt;br /&gt;Please review your options or check back later.').fadeIn().delay(3000).fadeOut(); 
+					}
+					else {
+						responseMessage.html('Please review options.').fadeIn().delay(3000).fadeOut();
+					};
+					
+					// Hide processing message and reset formstatus
+					processingImage.hide();
+					purchaseButton.toggleDisabled().val(purchaseButtonText);
+					form.data('formstatus', 'idle');
+				},
+				error: function (jqXHR, textStatus, errorThrown) {
+				}
+			});
+		};
+		// Prevent form from submitting
+		e.preventDefault();
+	});
+};
+var addToCart = new addToCart;
+</code></pre>
+<p>####../js/plugins.js
+Updated Mobile Navigation Functions to make search box more performant:<br/>
+Replace:</p>
+<pre><code>(function(f){if(Array.prototype.forEach){var b=document.body;f=document.querySelector("#js-site-overlay");var g=document.querySelectorAll(".toggle-slide-top"),h=document.querySelectorAll(".toggle-slide-right"),a=document.querySelectorAll(".toggle-slide-bottom"),c=document.querySelectorAll(".toggle-slide-left");document.querySelector(".mobile-menu-top");document.querySelector(".mobile-menu-right");document.querySelector(".mobile-menu-bottom");document.querySelector(".mobile-menu-left");var d;[].slice.call(g).forEach(function(a, c){a.addEventListener("click",function(e){e.stopPropagation();e.preventDefault();e.stopImmediatePropagation();b.className+=" mobile-menu-active mobile-menu-top-open";d="mobile-menu-active mobile-menu-top-open"})});[].slice.call(h).forEach(function(a,c){a.addEventListener("click",function(e){e.stopPropagation();e.preventDefault();e.stopImmediatePropagation();b.className+=" mobile-menu-active mobile-menu-right-open";d="mobile-menu-active mobile-menu-right-open"})});[].slice.call(a).forEach(function(a, c){a.addEventListener("click",function(a){a.stopPropagation();a.preventDefault();a.stopImmediatePropagation();b.className+=" mobile-menu-active mobile-menu-bottom-open";d="mobile-menu-active mobile-menu-bottom-open"})});[].slice.call(c).forEach(function(a,c){a.addEventListener("click",function(a){a.stopPropagation();a.preventDefault();a.stopImmediatePropagation();b.className+=" mobile-menu-active mobile-menu-left-open";d="mobile-menu-active mobile-menu-left-open"})});f.addEventListener("click",function(a){a.stopPropagation(); a.preventDefault();a.stopImmediatePropagation();b.className=b.className.replace(" "+d,"").replace(d,"");d=""});[].slice.call(document.querySelectorAll(".close-mobile-menu")).forEach(function(a,c){a.addEventListener("click",function(a){a.stopPropagation();a.preventDefault();a.stopImmediatePropagation();b.className=b.className.replace(" "+d,"").replace(d,"");d=""})})}})(window); function mobileNavigation(){function f(){960&gt;=$(window).innerWidth()?0==$("#js-mobile-navigation ul").length&amp;&amp;(g.show(),$(b).append(h),$("#js-mobile-navigation ul li span").each(function(){if("0"!=$(this).next().length){$(this).addClass("parent");var a=$(this).children("a").text();$(this).parent("li").append('&lt;span data-name="'+a+'" data-rt-icon="&amp;#x64;" class="next"&gt;&lt;/span&gt;')}})):0==$("#js-navigation-bar ul").length&amp;&amp;(g.hide(),$("#js-mobile-navigation").find($(".clone").remove()),$("#js-navigation-bar").append(h.removeClass("hide")), $(".next").remove())}var b=$("#js-mobile-navigation"),g=$("#js-mobile-menu-button"),h=$("#js-navigation-set");$(window).on("load resize",function(){f()});b.on("click","span.next",function(a){a.stopPropagation();a.preventDefault();a.stopImmediatePropagation();$(this).siblings("span").closest("ul").addClass("hide");$parent=$(this).text();$new=$(this).prev("ul").clone().addClass("clone").appendTo(b);a=$(this).attr("data-name");$('&lt;li&gt;&lt;span class="back"&gt;&lt;a&gt;&amp;#9668; Back&lt;/a&gt;&lt;/span&gt;&lt;/li&gt;').prependTo($new); if($(".navigation-trail").length)c=$(this).parent("li").siblings(".navigation-trail").clone(),$(c).children("span").append(" / "+a),c.prependTo($new);else{var c=$('&lt;li class="navigation-trail"&gt;&lt;span&gt;Home&lt;/span&gt;&lt;/li&gt;').prependTo($new);$(c).children("span").append(" / "+a)}});b.on("click","span.back",function(a){a.stopPropagation();a.preventDefault();a.stopImmediatePropagation();$(this).closest("ul").prev("ul").removeClass("hide");breadcrumb=$("a.root").text();last=breadcrumb.substr(breadcrumb.lastIndexOf(" / ")+ 1);$old=$(this).closest("ul");$old.remove();$("a.root").html(function(a,b){return b.replace(last,"")})})}mobileNavigation=new mobileNavigation;
+</code></pre>
+<p>With:</p>
+<pre><code>(function(f){if(Array.prototype.forEach){var b=document.body;f=document.querySelector("#js-site-overlay");var g=document.querySelectorAll(".toggle-slide-top"),h=document.querySelectorAll(".toggle-slide-right"),a=document.querySelectorAll(".toggle-slide-bottom"),c=document.querySelectorAll(".toggle-slide-left");document.querySelector(".mobile-menu-top");document.querySelector(".mobile-menu-right");document.querySelector(".mobile-menu-bottom");document.querySelector(".mobile-menu-left");var d;[].slice.call(g).forEach(function(a, c){a.addEventListener("click",function(e){e.stopPropagation();e.preventDefault();e.stopImmediatePropagation();b.className+=" mobile-menu-active mobile-menu-top-open";d="mobile-menu-active mobile-menu-top-open"})});[].slice.call(h).forEach(function(a,c){a.addEventListener("click",function(e){e.stopPropagation();e.preventDefault();e.stopImmediatePropagation();b.className+=" mobile-menu-active mobile-menu-right-open";d="mobile-menu-active mobile-menu-right-open"})});[].slice.call(a).forEach(function(a, c){a.addEventListener("click",function(a){a.stopPropagation();a.preventDefault();a.stopImmediatePropagation();b.className+=" mobile-menu-active mobile-menu-bottom-open";d="mobile-menu-active mobile-menu-bottom-open"})});[].slice.call(c).forEach(function(a,c){a.addEventListener("click",function(a){a.stopPropagation();a.preventDefault();a.stopImmediatePropagation();b.className+=" mobile-menu-active mobile-menu-left-open";d="mobile-menu-active mobile-menu-left-open"})});f.addEventListener("click",function(a){a.stopPropagation(); a.preventDefault();a.stopImmediatePropagation();b.className=b.className.replace(" "+d,"").replace(d,"");d=""});[].slice.call(document.querySelectorAll(".close-mobile-menu")).forEach(function(a,c){a.addEventListener("click",function(a){a.stopPropagation();a.preventDefault();a.stopImmediatePropagation();b.className=b.className.replace(" "+d,"").replace(d,"");d=""})})}})(window);
+function mobileNavigation(){function f(){960&gt;=$(window).innerWidth()?0==$("#js-mobile-navigation ul").length&amp;&amp;(g.show(),$(b).append(h),$("#js-mobile-navigation ul li span").each(function(){if("0"!=$(this).next().length){$(this).addClass("parent");var a=$(this).children("a").text();$(this).parent("li").append('&lt;span data-name="'+a+'" data-rt-icon="&amp;#x64;" class="next"&gt;&lt;/span&gt;')}})):0==$("#js-navigation-bar ul").length&amp;&amp;(g.hide(),$("#js-mobile-navigation").find($(".clone").remove()),$("#js-navigation-bar").prepend(h.removeClass("hide")), $(".next").remove())}var b=$("#js-mobile-navigation"),g=$("#js-mobile-menu-button"),h=$("#js-navigation-set");$(window).on("load resize",function(){f()});b.on("click","span.next",function(a){a.stopPropagation();a.preventDefault();a.stopImmediatePropagation();$(this).siblings("span").closest("ul").addClass("hide");$parent=$(this).text();$new=$(this).prev("ul").clone().addClass("clone").appendTo(b);a=$(this).attr("data-name");$('&lt;li&gt;&lt;span class="back"&gt;&lt;a&gt;&amp;#9668; Back&lt;/a&gt;&lt;/span&gt;&lt;/li&gt;').prependTo($new); if($(".navigation-trail").length)c=$(this).parent("li").siblings(".navigation-trail").clone(),$(c).children("span").append(" / "+a),c.prependTo($new);else{var c=$('&lt;li class="navigation-trail"&gt;&lt;span&gt;Home&lt;/span&gt;&lt;/li&gt;').prependTo($new);$(c).children("span").append(" / "+a)}});b.on("click","span.back",function(a){a.stopPropagation();a.preventDefault();a.stopImmediatePropagation();$(this).closest("ul").prev("ul").removeClass("hide");breadcrumb=$("a.root").text();last=breadcrumb.substr(breadcrumb.lastIndexOf(" / ")+ 1);$old=$(this).closest("ul");$old.remove();$("a.root").html(function(a,b){return b.replace(last,"")})})}mobileNavigation=new mobileNavigation;
+</code></pre>
+<p>####...css/forms.css
+Updated vendor specific placeholder support:<br/>
+Replace:</p>
+<pre><code>input:-moz-placeholder,
+textarea:-moz-placeholder {
+	color: #8a7b7b;
+	font-size: inherit;
+}
+input::-moz-placeholder,
+textarea::-moz-placeholder {
+	color: #8a7b7b;
+	font-size: inherit;
+}
+input:-ms-input-placeholder,
+textarea:-ms-input-placeholder {
+	color: #8a7b7b;
+	font-size: inherit;
+	line-height: inherit;
+}
+input::-webkit-input-placeholder,
+textarea::-webkit-input-placeholder {
+	color: #8a7b7b;
+	font-size: inherit;
+	line-height: inherit;
+}
+</code></pre>
+<p>With:</p>
+<pre><code>:-moz-placeholder {
+	color: #8a7b7b;
+	font-size: inherit;
+}
+::-moz-placeholder {
+	color: #8a7b7b;
+	font-size: inherit;
+}
+:-ms-input-placeholder {
+	color: #8a7b7b !important;
+	font-size: inherit !important;
+	line-height: inherit !important;
+}
+::-webkit-input-placeholder {
+	color: #8a7b7b;
+	font-size: inherit;
+	line-height: inherit;
+}
+</code></pre>
+<p>####...css/structure.css
+Updated "main-header" at line 99 add:</p>
+<pre><code>overflow:hidden;
+</code></pre>
+<hr/>
+<h2>
+<a aria-hidden="true" class="anchor" href="#additional-issues-fixed" id="user-content-additional-issues-fixed"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Additional issues fixed:</h2>
+<p>##<a href="https://github.com/mivaecommerce/readytheme-suivant/issues/5">Issue #5</a>
+####Edit Page: PROD: Product Display Layout: Advanced Mode
+Replace:</p>
+<pre><code>&lt;div class="column whole medium-all-hidden"&gt;
+	&lt;h1 class="normal nm"&gt;&amp;mvte:product:name;&lt;/h1&gt;
+	&lt;small&gt;&amp;mvte:product:code;&lt;/small&gt;
+	&lt;div class="breaker"&gt;&lt;/div&gt;
+	&lt;mvt:if expr="l.settings:product:price GT 0"&gt;
+		&lt;div id="js-mobile-price-value" class="h3 charcoal nm" data-base-price="&amp;mvt:product:price;"&gt;&amp;mvt:product:formatted_price;&lt;/div&gt;
+	&lt;mvt:else&gt;
+		&lt;div id="js-mobile-price-value" class="all-hidden" data-base-price="&amp;mvt:product:price;"&gt;&lt;/div&gt;
+	&lt;/mvt:if&gt;
+	&lt;mvt:if expr="l.settings:product:base_price GT l.settings:product:price"&gt;
+		&lt;p&gt;Normally: &lt;s id="js-additional-price"&gt;&amp;mvt:product:formatted_base_price;&lt;/s&gt;&lt;/p&gt;
+	&lt;/mvt:if&gt;
+	&lt;div id="js-product-discounts"&gt;&lt;/div&gt;
+&lt;/div&gt;
+</code></pre>
+<p>With:</p>
+<pre><code>&lt;mvt:if expr="l.settings:clientdimensions:width LT 768"&gt;
+	&lt;div class="column whole medium-all-hidden"&gt;
+		&lt;h1 class="nm"&gt;&lt;span class="normal"&gt;&amp;mvte:product:name;&lt;/span&gt;&lt;/h1&gt;
+		&lt;small&gt;&amp;mvte:product:code;&lt;/small&gt;
+		&lt;div class="breaker"&gt;&lt;/div&gt;
+		&lt;mvt:if expr="l.settings:product:price GT 0"&gt;
+			&lt;div id="js-price-value" class="h3 charcoal nm" data-base-price="&amp;mvt:product:price;"&gt;&amp;mvt:product:formatted_price;&lt;/div&gt;
+		&lt;mvt:else&gt;
+			&lt;div id="js-price-value" class="all-hidden" data-base-price="&amp;mvt:product:price;"&gt;&lt;/div&gt;
+		&lt;/mvt:if&gt;
+		&lt;mvt:if expr="l.settings:product:base_price GT l.settings:product:price"&gt;
+			&lt;p&gt;Normally: &lt;s id="js-additional-price"&gt;&amp;mvt:product:formatted_base_price;&lt;/s&gt;&lt;/p&gt;
+		&lt;/mvt:if&gt;
+		&lt;div id="js-product-discounts"&gt;&lt;/div&gt;
+	&lt;/div&gt;
+&lt;/mvt:if&gt;
+</code></pre>
+<hr/>
+<p>##<a href="https://github.com/mivaecommerce/readytheme-suivant/issues/6">Issue #6</a>
+####Edit Page: PROD: Product Display Layout: Advanced Mode
+Replace:</p>
+<pre><code>&lt;mvt:if expr="g.hasSwatches"&gt;
+	&lt;div class="column whole product-swatches"&gt;
+		&lt;label class="medium"&gt;Color&lt;/label&gt;
+		&lt;span id="js-swatch-name" class="bold swatch-name"&gt;&amp;nbsp;&lt;/span&gt;
+		&lt;hr noshade /&gt;
+		&lt;div id="js-swatches"&gt;&lt;/div&gt;
+	&lt;/div&gt;
+&lt;/mvt:if&gt;
+</code></pre>
+<p>With:</p>
+<pre><code>&lt;mvt:if expr="g.hasSwatches"&gt;
+	&lt;div class="column whole product-swatches"&gt;
+		&lt;label class="medium"&gt;&amp;mvte:global:swatch_prompt;&lt;/label&gt;
+		&lt;span id="js-swatch-name" class="bold swatch-name"&gt;&amp;nbsp;&lt;/span&gt;
+		&lt;hr noshade /&gt;
+		&lt;div id="js-swatches"&gt;&lt;/div&gt;
+	&lt;/div&gt;
+&lt;/mvt:if&gt;
+</code></pre>
+<hr/>
+<p>##<a href="https://github.com/mivaecommerce/readytheme-suivant/issues/7">Issue #7</a>
+####Edit Page: PROD: Product Display Layout: Advanced Mode
+Replace:</p>
+<pre><code>&lt;span data-icon="&amp;#x54;" id="js-main-image-zoom" class="main-image" data-index="0"&gt;&lt;img src="graphics/en-US/cssui/blank.gif" alt="&amp;mvte:product:name;" title="&amp;mvte:product:name;" id="js-main-image" data-image="&amp;mvt:product:customfield_values:productimagecustomfields:main;" /&gt;&lt;/span&gt;
+</code></pre>
+<p>With:</p>
+<pre><code>&lt;mvt:if expr="l.settings:product:customfield_values:customfields:product_flag NE 'none'"&gt;
+	&lt;mvt:assign name="l.settings:product:flag" value="'flag--' $ tolower(l.settings:product:customfield_values:customfields:product_flag)" /&gt;
+&lt;/mvt:if&gt;
+&lt;span class="flag &amp;mvt:product:flag;"&gt;
+	&lt;mvt:if expr="NOT ISNULL l.settings:product:customfield_values:productimagecustomfields:main"&gt;
+		&lt;span data-icon="&amp;#x54;" id="js-main-image-zoom" class="main-image" data-index="0"&gt;&lt;img src="graphics/en-US/cssui/blank.gif" alt="&amp;mvte:product:name;" title="&amp;mvte:product:name;" id="js-main-image" data-image="&amp;mvt:product:customfield_values:productimagecustomfields:main;" /&gt;&lt;/span&gt;
+	&lt;mvt:else&gt;
+		&lt;span class="main-image" data-index="0"&gt;&lt;img src="graphics/en-US/cssui/blank.gif" alt="&amp;mvte:product:name;" title="&amp;mvte:product:name;" id="js-main-image" data-image="&amp;mvt:product:customfield_values:productimagecustomfields:main;" /&gt;&lt;/span&gt;
+	&lt;/mvt:if&gt;
+&lt;/span&gt;
+</code></pre>
+<hr/>
+<p>##<a href="https://github.com/mivaecommerce/readytheme-suivant/issues/">Issue #8</a>
+####Edit Page: PROD: Product Display Layout: Advanced Mode
+This has been addresses in the update for <a href="https://github.com/mivaecommerce/readytheme-suivant/issues/5">Issue #5</a></p>
+<hr/>
+<p>##<a href="https://github.com/mivaecommerce/readytheme-suivant/issues/9">Issue #9</a>
+####Edit Page: PROD: Product Display Layout Image Machine
+Replace:</p>
+<pre><code>&lt;mvt:assign name="l.settings:clean:product:name" value="glosub(l.settings:product:name, asciichar(39), '&amp;#39;')" /&gt;
+&lt;script&gt;
+	var gallery = [],
+		thumbnailIndex = 0;
+
+	ImageMachine.prototype.ImageMachine_Generate_Thumbnail = function (thumbnail_image, main_image, closeup_image, type_code) {
+		var thumbnail,
+			img;
+	
+		thumbnail = document.createElement('div');
+		thumbnail.className = 'column one-third medium-one-fourth';
+		thumbnail.setAttribute('data-index', thumbnailIndex++);
+		
+		if (typeof(thumbnail_image) == 'string' &amp;&amp; thumbnail_image.length &gt; 0) {
+			img = document.createElement('img');
+			img.src = thumbnail_image;
+			thumbnail.appendChild(img);
+			gallery.push({
+				src: closeup_image,
+				title: '&amp;mvt:clean:product:name;'
+			});
+		};
+		return thumbnail;
+	};
+&lt;/script&gt;
+</code></pre>
+<p>With:</p>
+<pre><code>&lt;mvt:assign name="l.settings:clean:product:name" value="glosub(l.settings:product:name, asciichar(39), '&amp;#39;')" /&gt;
+&lt;script&gt;
+	var gallery = [],
+		thumbnailIndex = 0;
+
+	ImageMachine.prototype.ImageMachine_Generate_Thumbnail = function (thumbnail_image, main_image, closeup_image, type_code) {
+		var thumbnail,
+			img;
+	
+		thumbnail = document.createElement('div');
+		thumbnail.className = 'column one-third medium-one-fourth';
+		thumbnail.setAttribute('data-index', thumbnailIndex++);
+		
+		if (typeof(thumbnail_image) == 'string' &amp;&amp; thumbnail_image.length &gt; 0) {
+			img = document.createElement('img');
+			img.src = thumbnail_image;
+			thumbnail.appendChild(img);
+		};
+		if (typeof(closeup_image) == 'string' &amp;&amp; closeup_image.length &gt; 0) {
+			gallery.push({
+				src: closeup_image,
+				title: '&amp;mvt:clean:product:name;'
+			});
+		};
+		return thumbnail;
+	};
+&lt;/script&gt;
+</code></pre>
+<hr/>
+<p>##<a href="https://github.com/mivaecommerce/readytheme-suivant/issues/10">Issue #10</a>
+####../js/scripts.js
+Replace:</p>
+<pre><code>function outOfStock () {
+	var button = $('#js-add-to-cart');
+		
+	if (button.is(':disabled') == true) {
+		button.addClass('bg-gray').val('Sold Out');
+	}
+	else {
+		button.removeClass('bg-gray').val('Add to Cart');
+	};
+};
+outOfStock ();
+</code></pre>
+<p>With:</p>
+<pre><code>function outOfStock () {
+	var button = $('#js-add-to-cart'),
+		buttonText = button.val();
+		
+	if (button.is(':disabled') == true) {
+		button.addClass('bg-gray').val('Sold Out');
+	}
+	else {
+		button.removeClass('bg-gray').val(buttonText);
+	};
+};
+outOfStock ();
+</code></pre>
+
+        </div>
+
+    </div>]

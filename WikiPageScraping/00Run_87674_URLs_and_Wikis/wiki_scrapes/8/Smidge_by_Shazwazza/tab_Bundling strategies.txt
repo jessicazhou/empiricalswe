@@ -1,0 +1,50 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>There are some different strategies when it comes to using bundles.
+This will discuss some of them.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#single-bundle-for-entire-site" id="user-content-single-bundle-for-entire-site"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Single Bundle for Entire Site</h2>
+<p>Define a bundle containing all of your sites javascript (even js that's only used on particular pages) and render it in your <code>_layout.cshtml</code>.</p>
+<pre><code> bundles.Create("site-bundle", //bundle name
+            new JavaScriptFile("~/Js/Bundle1/site.js"),
+            new JavaScriptFile("~/Js/Bundle1/somevendor.js"),
+            new JavaScriptFile("~/Js/Bundle1/pageA.js")
+            new JavaScriptFile("~/Js/Bundle1/pageB.js"));
+</code></pre>
+<p>This results in a larger bundle for the browser to load initially, but it can be cached as you navigate from page to page, which means navigation should be speedier.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#common-bundle-plus-page-specific-bundle" id="user-content-common-bundle-plus-page-specific-bundle"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Common Bundle plus Page Specific Bundle</h2>
+<p>Define a common bundle, which will include files you want to be loaded on every page.</p>
+<pre><code> bundles.Create("site-bundle", //bundle name
+            new JavaScriptFile("~/Js/Bundle1/site.js"),
+            new JavaScriptFile("~/Js/Bundle1/somevendor.js"));         
+
+</code></pre>
+<p>Then render the common bundle in <code>_layout.cshtml</code></p>
+<pre><code>&lt;script src="site-bundle" type="text/javascript"&gt;&lt;/script&gt;
+</code></pre>
+<p>Now define seperate bundle for each page:</p>
+<pre><code> bundles.Create("pageA", //bundle name
+            new JavaScriptFile("~/Js/Bundle1/pageA.js"));                   
+</code></pre>
+<p>And render the page specific bundle within each pages razor file:</p>
+<p><code>PageA.cshtml</code>:</p>
+<pre><code>&lt;script src="pageA" type="text/javascript"&gt;&lt;/script&gt;
+</code></pre>
+<h2>
+<a aria-hidden="true" class="anchor" href="#page-specific-bundles" id="user-content-page-specific-bundles"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Page specific bundles</h2>
+<p>Don't define a site / common bundle or render anything in the <code>_layout</code>.
+Just create a bundle for each page of your site, including all of / only the javascript that the page needs.</p>
+<pre><code> bundles.Create("pageA", //bundle name
+            new JavaScriptFile("~/Js/Bundle1/site.js"),
+            new JavaScriptFile("~/Js/Bundle1/somevendor.js"),
+            new JavaScriptFile("~/Js/Bundle1/pageA.js"));      
+
+</code></pre>
+<p>There are pro's and con's to each approach, so it's up to you around which strategy you want to use.</p>
+<p>Remember you can always use different strategies for particular pages, by making them use a different <code>_Layout</code>.</p>
+<p>For example, perhaps your registration page, you want it to load in the quickest possible time for new visitors, who are unlikely to have anything cached. So you can use a specific layout for the registration page <code>_RegistrationLayout.cshtml</code> that doesnt define any common / site bundle, and then in <code>Registration.cshtml</code> render a page specific bundle only. For the rest of your pages using the default layout, you could use the Common bundle plus page bundle approach.</p>
+
+        </div>
+
+    </div>]

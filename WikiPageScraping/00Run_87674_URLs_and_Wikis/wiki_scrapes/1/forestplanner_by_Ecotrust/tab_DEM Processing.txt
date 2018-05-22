@@ -1,0 +1,32 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>See scripts/process_dems.sh</p>
+<p>Handling aspects</p>
+<pre><code>$ gdaldem aspect elevation.tif aspect.tif
+$ gdal_calc.py -A aspect.tif --calc "cos(radians(A))" --format "GTiff" --outfile cos_aspect.tif  
+$ gdal_calc.py -A aspect.tif --calc "sin(radians(A))" --format "GTiff" --outfile sin_aspect.tif
+</code></pre>
+<p><a href="http://forums.esri.com/Thread.asp?c=93&amp;f=995&amp;t=211300" rel="nofollow">http://forums.esri.com/Thread.asp?c=93&amp;f=995&amp;t=211300</a></p>
+<p>Python code to calculate true average aspect (<code>arctan2(sum(cos), sum(sin)</code>)</p>
+<div class="highlight highlight-source-python"><pre><span class="pl-k">import</span> math
+
+<span class="pl-c"><span class="pl-c">#</span> 9 cells, 3 facing NNW, the others NNE </span>
+<span class="pl-c"><span class="pl-c">#</span> average should be roughly north</span>
+aspects_deg <span class="pl-k">=</span> [<span class="pl-c1">357</span>,<span class="pl-c1">357</span>,<span class="pl-c1">358</span>,<span class="pl-c1">45</span>,<span class="pl-c1">21</span>,<span class="pl-c1">13</span>,<span class="pl-c1">55</span>,<span class="pl-c1">28</span>,<span class="pl-c1">24</span>]
+aspects_deg <span class="pl-k">=</span> [<span class="pl-c1">float</span>(x) <span class="pl-k">for</span> x <span class="pl-k">in</span> aspects_deg]
+<span class="pl-c1">print</span> <span class="pl-c1">sum</span>(aspects_deg)<span class="pl-k">/</span><span class="pl-c1">9.0</span>
+<span class="pl-c"><span class="pl-c">#</span> mean aspect of 139.7 (SE) is DEFINITELY NOT RIGHT</span>
+
+<span class="pl-c"><span class="pl-c">#</span> convert to radians </span>
+aspects_rad <span class="pl-k">=</span> [math.radians(x) <span class="pl-k">for</span> x <span class="pl-k">in</span> aspects_deg]
+cos <span class="pl-k">=</span> [math.sin(x) <span class="pl-k">for</span> x <span class="pl-k">in</span> aspects_rad]
+sin <span class="pl-k">=</span> [math.cos(x) <span class="pl-k">for</span> x <span class="pl-k">in</span> aspects_rad]
+
+avg_aspect_rad <span class="pl-k">=</span> math.atan2(<span class="pl-c1">sum</span>(cos), <span class="pl-c1">sum</span>(sin))
+avg_aspect_deg <span class="pl-k">=</span> math.degrees(avg_aspect_rad)
+<span class="pl-c1">print</span> avg_aspect_deg
+<span class="pl-c"><span class="pl-c">#</span>avg_aspect_deg == 19.625 .. CORRECT! </span></pre></div>
+
+        </div>
+
+    </div>]

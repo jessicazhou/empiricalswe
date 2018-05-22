@@ -1,0 +1,79 @@
+[<div class="wiki-body gollum-markdown-content instapaper_body" id="wiki-body">
+        <div class="markdown-body">
+          <p>Download a complete system live-USB image, write it to a USB key, and boot your PC with it... the quickest way to try out GNOME 3.14 under OpenRC in Gentoo!</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#prerequisites" id="user-content-prerequisites"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Prerequisites</h2>
+<p>To try this out, you will need:</p>
+<ul>
+<li>A USB key of at least 8GB capacity, with a 512-byte sector size (most standard USB keys should work).</li>
+<li>A PC with which to download and decompress the supplied image, and write it to the USB key. This is most easily done on a Linux machine of some sort, but tools are also available for Windows (see <a href="http://tukaani.org/xz/" rel="nofollow">here</a> and <a href="http://sourceforge.net/projects/win32diskimager/" rel="nofollow">here</a>, for example). In the instructions below I'm going to assume you're using Linux.</li>
+<li>A target PC (perhaps the same machine) on which to run the image. It should have a 64-bit processor. The existing OS (if any) on the machine will be unaffected by running the live-USB.</li>
+</ul>
+<h2>
+<a aria-hidden="true" class="anchor" href="#downloading-and-writing-the-image" id="user-content-downloading-and-writing-the-image"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Downloading and Writing the Image</h2>
+<p>On your Linux box, issue:</p>
+<pre><code># wget -c https://github.com/sakaki-/funtoo-2-gentoo/releases/download/0.95.0/genome.img.xz
+# wget -c https://github.com/sakaki-/funtoo-2-gentoo/releases/download/0.95.0/genome.img.xz.asc
+</code></pre>
+<p>to fetch the compressed disk image file (978MiB) and its signature.</p>
+<p>Next, if you like, verify the image using <code>gpg</code> (this step is optional):</p>
+<pre><code># gpg --keyserver pool.sks-keyservers.net --recv-key DDE76CEA
+# gpg --verify genome.img.xz.asc genome.img.xz
+</code></pre>
+<p>Assuming that reports 'Good signature', you can proceed.</p>
+<p>Next, insert (into your Linux box) the USB key on which you want to install the image, and determine its device path (this will be something like <code>/dev/sdb</code>, <code>/dev/sdc</code> etc.; the actual path will depend on your system, you can use the <code>lsblk</code> tool to help you). Unmount any existing partitions of the USB key that may have automounted (using <code>umount</code>). Then issue:</p>
+<blockquote>
+<p><strong>Warning</strong> - this will <em>destroy</em> all existing data on the target drive, so please double-check that you have the path correct!</p>
+</blockquote>
+<pre><code># xzcat genome.img.xz &gt; /dev/sdX &amp;&amp; sync
+</code></pre>
+<p>Substitute the actual USB key device path, for example <code>/dev/sdc</code>, for <code>/dev/sdX</code> in the above command. Make sure to reference the device, <strong>not</strong> a partition within it (so e.g., <code>/dev/sdc</code> and not <code>/dev/sdc1</code>; <code>/dev/sdd</code> and not <code>/dev/sdd1</code> etc.)</p>
+<p>The above <code>xzcat</code> to the USB key will take some time, due to the decompression (it takes between 15 and 30 minutes on my machine, depending on the USB key used). It should exit cleanly when done - if you get a message saying 'No space left on device', then your USB key is too small for the image, and you should try again with a larger capacity one.</p>
+<blockquote>
+<p>The actual size of the uncompressed image is 15,633,408 * 512-byte sectors = 8,004,304,896 bytes.</p>
+</blockquote>
+<h2>
+<a aria-hidden="true" class="anchor" href="#booting" id="user-content-booting"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Booting!</h2>
+<p>Start with your target PC powered down. Insert the USB key into a free slot on the machine, and power up. As the machine starts, enter your BIOS and set the boot order so that the USB key is checked first (otherwise, whatever OS is on your machine's hard drive will come up instead!). See <a href="http://www.wikihow.com/Set-Your-Computer-to-Boot-from-USB-Flash-Drive#Boot_from_the_Flash_Drive_sub" rel="nofollow">these instructions</a> for example. The key required to enter the BIOS is system-specific (try Esc, F2, F9, F12, or as prompted during boot).</p>
+<blockquote>
+<p>If you have a UEFI BIOS, you will need to turn compatibility ('CSM') mode on (as the image uses a conventional MBR layout) and you may also need to turn off 'ultra fast boot' (if present) since this can render USB devices invisible during early startup. Remember to revert any changes when you are done, and want to boot back into the machine's native OS again (particularly if using secure boot).</p>
+</blockquote>
+<p>If all goes well, you should briefly see a GRUB bootloader screen, then the usual textual output as the kernel loads, mounts root and boots Gentoo. After this, the graphical GNOME login screen should appear! Click on the <code>demouser</code> tile, and type in <code>changeme123</code> (<code>demouser</code>'s initial password), and you should be running GNOME!</p>
+<blockquote>
+<p>You may need to move the mouse / press a key to show the login screen, if it is initially blank. Also, if you get shown the GNOME 'lock screen' instead (this has a large time and date in the centre) just press any key to clear this, and display the main login page.</p>
+</blockquote>
+<blockquote>
+<p>Note that, as shipped, the system uses a UK locale and keymap, so if you have problems entering the password, use the on-screen keyboard. You can easily change the keyboard settings etc. once logged into GNOME.</p>
+</blockquote>
+<h2>
+<a aria-hidden="true" class="anchor" href="#running-gnome" id="user-content-running-gnome"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Running GNOME</h2>
+<p>Once logged in, have fun and explore GNOME! The root password is also <code>changeme123</code>. If you need a wireless network connection, click on the top-right 'power' icon and follow the prompts under "Wi-Fi". You can see all the installed applications by moving your mouse quickly into the top left "Activities" corner, and clicking on the 'nine squares' tile in the dock that then appears on the left.</p>
+<blockquote>
+<p>The kernel configuration used for the image is based on that from the Gentoo 'minimal install iso', with additional graphics drivers enabled (and a few other small changes). In particular, to keep the image a reasonable size, not all possible Wi-Fi drivers are present, so you may find that Wi-Fi support is absent on your machine (a situation easily rectified, should you wish to install GNOME permanently, using <code>genkernel --menuconfig all</code>).</p>
+</blockquote>
+<p>Any changes you make will be saved to the USB, so they'll be there next time you boot from the USB key. The image has a full Portage tree installed, so you can <code>emerge</code> packages if you like (be sure to set an appropriate mirror if you plan to do much of this).</p>
+<p>Of course, to revert back to the standard OS on your machine, simply power down, remove the USB key, and power up again.</p>
+<h2>
+<a aria-hidden="true" class="anchor" href="#next-steps" id="user-content-next-steps"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Next Steps</h2>
+<p>If you like this GNOME 3.14 / OpenRC / Gentoo system, and want to install it permanently on your PC's hard drive, you can do so easily (it takes less than 15 minutes, when booted from the USB image, as you are currently). Full instructions are provided <a class="internal present" href="/sakaki-/funtoo-2-gentoo/wiki/Installing-from-the-Live-USB-to-an-MBR-Drive">here</a> (for a conventional, MBR setup) and <a class="internal present" href="/sakaki-/funtoo-2-gentoo/wiki/Installing-from-the-Live-USB-to-a-GPT-Drive">here</a> (for UEFI/GPT). (Note, this is strictly optional, you can always continue to run GNOME / Gentoo from the USB key, if you are just experimenting.)</p>
+<blockquote>
+<p>If you'd rather install from source, see <a class="internal present" href="/sakaki-/funtoo-2-gentoo/wiki/Setting-Up-the-Overlays%2C-and-Emerging-GNOME-from-Scratch">these instructions</a> instead.</p>
+</blockquote>
+<h2>
+<a aria-hidden="true" class="anchor" href="#miscellaneous-points" id="user-content-miscellaneous-points"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z" fill-rule="evenodd"></path></svg></a>Miscellaneous Points</h2>
+<ul>
+<li>If you have a USB key larger than the minimum 8GB, after writing the image you can easily extend the size of the third (root) partition (using <code>fdisk</code> and <code>resize2fs</code>), so you have more space to work in. See <a href="http://geekpeek.net/resize-filesystem-fdisk-resize2fs/" rel="nofollow">these instructions</a>, for example.</li>
+<li>To play MP4 videos in GNOME (in <code>Totem</code> and <code>Web</code>), you'll need to install the <code>gst-plugins-libav</code> package (<code>emerge --ask --verbose media-plugins/gst-plugins-libav</code>, as root).</li>
+</ul>
+
+        </div>
+
+        <div class="wiki-footer gollum-markdown-content boxed-group" id="wiki-footer">
+          <div class="boxed-group-inner wiki-auxiliary-content markdown-body">
+            <p><a href="https://github.com/sakaki-/funtoo-2-gentoo">Project Home</a> / <a class="internal present" href="/sakaki-/funtoo-2-gentoo/wiki/Home">Wiki Home</a></p>
+<p><img alt="Creative Commons License" data-canonical-src="https://i.creativecommons.org/l/by-sa/4.0/80x15.png" src="https://camo.githubusercontent.com/d1b3cb5c3bc0b0de6fb5445b1657c03464125482/68747470733a2f2f692e6372656174697665636f6d6d6f6e732e6f72672f6c2f62792d73612f342e302f38307831352e706e67"/>
+Wiki content license: <a href="http://creativecommons.org/licenses/by-sa/4.0/" rel="nofollow">Creative Commons Attribution-ShareAlike 4.0 International License</a></p>
+
+          </div>
+        </div>
+    </div>]
